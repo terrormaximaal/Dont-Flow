@@ -1,8 +1,7 @@
 import { Scene } from 'phaser';
-import { SWIPE_DOMINANCE, SWIPE_THRESHOLD } from '../config/constants';
+import { DragAnchor, evaluateDrag, LaneIntent } from './swipe';
 
-/** -1 = one lane left, +1 = one lane right. */
-export type LaneIntent = -1 | 1;
+export type { LaneIntent };
 
 /**
  * Turns touch swipes and arrow keys into lane-change intents.
@@ -16,8 +15,7 @@ export class InputSystem
     private readonly onIntent: (direction: LaneIntent) => void;
 
     /** Where the current drag was last measured from. */
-    private anchorX = 0;
-    private anchorY = 0;
+    private anchor: DragAnchor = { x: 0, y: 0 };
     private dragging = false;
 
     /** Steering is switched off once the run is over. */
@@ -59,6 +57,9 @@ export class InputSystem
     setEnabled (enabled: boolean): void
     {
         this.enabled = enabled;
+
+        //  Drop any drag in progress, so re-enabling cannot resume a gesture
+        //  measured from before the game was interrupted.
         this.dragging = false;
     }
 
@@ -86,8 +87,7 @@ export class InputSystem
         }
 
         this.dragging = true;
-        this.anchorX = pointer.x;
-        this.anchorY = pointer.y;
+        this.anchor = { x: pointer.x, y: pointer.y };
     }
 
     private onPointerMove (pointer: Phaser.Input.Pointer): void
@@ -97,27 +97,14 @@ export class InputSystem
             return;
         }
 
-        const dx = pointer.x - this.anchorX;
-        const dy = pointer.y - this.anchorY;
+        const result = evaluateDrag(this.anchor, pointer.x, pointer.y);
 
-        if (Math.abs(dx) < SWIPE_THRESHOLD)
+        this.anchor = result.anchor;
+
+        if (result.intent !== 0)
         {
-            return;
+            this.onIntent(result.intent);
         }
-
-        //  Ignore drags that are mostly vertical, so a scroll-like gesture does
-        //  not steer.
-        if (Math.abs(dx) < Math.abs(dy) * SWIPE_DOMINANCE)
-        {
-            return;
-        }
-
-        this.onIntent(dx > 0 ? 1 : -1);
-
-        //  Re-anchor instead of ending the gesture, so one long drag can cross
-        //  two lanes without lifting the finger.
-        this.anchorX = pointer.x;
-        this.anchorY = pointer.y;
     }
 
     private onPointerUp (): void

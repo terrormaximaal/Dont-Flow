@@ -74,6 +74,14 @@ export const SWIPE_THRESHOLD = 26;
 //  so vertical drags do not steer the drop.
 export const SWIPE_DOMINANCE = 1.2;
 
+//  How far a drag may wander vertically before it is measured afresh.
+//
+//  Without this, vertical distance accumulates from the point the finger first
+//  landed and never resets, so a drag that starts downwards can never steer
+//  again however far sideways it later goes - the input simply dies. Thumbs
+//  move in arcs, so that is a normal way to hold the phone, not an edge case.
+export const SWIPE_REANCHOR_DISTANCE = 40;
+
 // ---------------------------------------------------------------------------
 //  Track visuals
 // ---------------------------------------------------------------------------
