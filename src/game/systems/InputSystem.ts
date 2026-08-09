@@ -20,6 +20,9 @@ export class InputSystem
     private anchorY = 0;
     private dragging = false;
 
+    /** Steering is switched off once the run is over. */
+    private enabled = true;
+
     constructor (scene: Scene, onIntent: (direction: LaneIntent) => void)
     {
         this.scene = scene;
@@ -53,18 +56,35 @@ export class InputSystem
         this.scene.input.on('pointerupoutside', this.onPointerUp, this);
     }
 
+    setEnabled (enabled: boolean): void
+    {
+        this.enabled = enabled;
+        this.dragging = false;
+    }
+
     private moveLeft (): void
     {
-        this.onIntent(-1);
+        if (this.enabled)
+        {
+            this.onIntent(-1);
+        }
     }
 
     private moveRight (): void
     {
-        this.onIntent(1);
+        if (this.enabled)
+        {
+            this.onIntent(1);
+        }
     }
 
     private onPointerDown (pointer: Phaser.Input.Pointer): void
     {
+        if (!this.enabled)
+        {
+            return;
+        }
+
         this.dragging = true;
         this.anchorX = pointer.x;
         this.anchorY = pointer.y;

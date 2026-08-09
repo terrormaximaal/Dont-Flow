@@ -1,6 +1,8 @@
 import { AUTO, Game, Scale } from 'phaser';
 import { COLOR_BG, GAME_HEIGHT, GAME_WIDTH } from './config/constants';
+import { LevelSelect } from './scenes/LevelSelect';
 import { Play } from './scenes/Play';
+import { Title } from './scenes/Title';
 
 //  The game is authored in portrait at a fixed design resolution and letterboxed
 //  to fit whatever screen it lands on, so every device sees the same layout.
@@ -14,7 +16,10 @@ const config: Phaser.Types.Core.GameConfig = {
         mode: Scale.FIT,
         autoCenter: Scale.CENTER_BOTH
     },
+    //  First in the list is the scene the game boots into.
     scene: [
+        Title,
+        LevelSelect,
         Play
     ]
 };

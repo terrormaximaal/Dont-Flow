@@ -1,7 +1,8 @@
 import { Scene } from 'phaser';
 import {
-    COLOR_DROP_HIGHLIGHT,
     COLOR_DROP_NEUTRAL,
+    COLOR_VALUES,
+    ColorId,
     DEPTH_DROP,
     DROP_LEAN_MAX,
     DROP_LEAN_REFERENCE_SPEED,
@@ -12,6 +13,7 @@ import {
     START_LANE
 } from '../config/constants';
 import { clampLane, laneCenterX } from '../systems/Lanes';
+import { drawTeardrop } from '../ui/shapes';
 import { clamp } from '../utils/math';
 
 /**
@@ -32,11 +34,24 @@ export class Drop
     /** Sideways speed in px/s, derived from the slide. Drives lean & stretch. */
     private lateralVelocity: number = 0;
 
+    /**
+     * The colour the drop currently carries, or null before it has passed its
+     * first gate. Orb matching compares this, not the hex value.
+     */
+    private colorId: ColorId | null = null;
+
     private color: number = COLOR_DROP_NEUTRAL;
+
+    /** Overrides `color` while a hit flash is playing. */
+    private flashColor: number | null = null;
+    private flashTimer: Phaser.Time.TimerEvent | null = null;
+
+    private readonly scene: Scene;
     private readonly gfx: Phaser.GameObjects.Graphics;
 
     constructor (scene: Scene)
     {
+        this.scene = scene;
         this.gfx = scene.add.graphics();
         this.gfx.setDepth(DEPTH_DROP);
         this.gfx.setPosition(this.x, DROP_SCREEN_Y);
@@ -54,13 +69,49 @@ export class Drop
     }
 
     /**
-     * Repaint the drop. Colour gates will call this later.
+     * Take on a gate's colour.
      */
-    setColor (color: number): void
+    setColorId (id: ColorId): void
     {
-        this.color = color;
+        this.colorId = id;
+        this.color = COLOR_VALUES[id];
 
         this.redraw();
+    }
+
+    getColorId (): ColorId | null
+    {
+        return this.colorId;
+    }
+
+    /**
+     * Hidden once the completion panel is up. The panel's buttons reach down
+     * over where the drop rests, leaving just its tip poking out above them.
+     */
+    setVisible (visible: boolean): void
+    {
+        this.gfx.setVisible(visible);
+    }
+
+    /**
+     * Briefly repaint the drop, to sell a wrong-colour hit.
+     */
+    flash (color: number, duration: number): void
+    {
+        //  Cancel any flash still running, so back-to-back hits do not let the
+        //  first one's timer clear the second one early.
+        this.flashTimer?.remove();
+
+        this.flashColor = color;
+        this.redraw();
+
+        this.flashTimer = this.scene.time.delayedCall(duration, () => {
+
+            this.flashColor = null;
+            this.flashTimer = null;
+            this.redraw();
+
+        });
     }
 
     getLane (): number
@@ -108,24 +159,9 @@ export class Drop
         this.gfx.setScale(1 + stretch, 1 - (stretch * 0.6));
     }
 
-    /**
-     * A teardrop built from a circle and a triangle - flat colour, no assets.
-     * Drawn around a local origin at the centre of the bulb.
-     */
     private redraw (): void
     {
-        const r = DROP_RADIUS;
-
-        this.gfx.clear();
-
-        this.gfx.fillStyle(this.color, 1);
-        this.gfx.fillTriangle(-r * 0.62, -r * 0.62, 0, -r * 2.05, r * 0.62, -r * 0.62);
-        this.gfx.fillCircle(0, 0, r);
-
-        //  Offset highlight, so the drop reads as a volume and its rotation is
-        //  actually visible.
-        this.gfx.fillStyle(COLOR_DROP_HIGHLIGHT, 0.28);
-        this.gfx.fillCircle(-r * 0.3, -r * 0.3, r * 0.34);
+        drawTeardrop(this.gfx, DROP_RADIUS, this.flashColor ?? this.color);
     }
 
     destroy (): void

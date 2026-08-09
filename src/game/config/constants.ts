@@ -22,6 +22,19 @@ export const START_LANE = 1;
 //  The drop never moves up or down the screen - the track scrolls past it.
 export const DROP_SCREEN_Y = GAME_HEIGHT * 0.72;
 
+/**
+ * When this matches, the game is unplayable and asks to be rotated.
+ *
+ * Orientation alone is not enough: a desktop window is landscape too, and the
+ * game must stay keyboard-playable there. Gating on height as well means only
+ * short landscape viewports - phones on their side - are blocked, while desktop
+ * and landscape tablets play on.
+ *
+ * `public/style.css` shows the notice from the identical media query. The two
+ * have to be changed together.
+ */
+export const BLOCK_LANDSCAPE_QUERY = '(orientation: landscape) and (max-height: 520px)';
+
 // ---------------------------------------------------------------------------
 //  Motion
 // ---------------------------------------------------------------------------
@@ -80,6 +93,205 @@ export const LANE_LINE_THICKNESS = 2;
 export const TRACK_EDGE_THICKNESS = 3;
 
 // ---------------------------------------------------------------------------
+//  Gameplay colours
+//
+//  The colour a drop carries is an identity ('blue' / 'red'), not a hex value,
+//  so matching an orb is a cheap string compare and the palette can be
+//  restyled here without touching any logic.
+// ---------------------------------------------------------------------------
+
+export type ColorId = 'blue' | 'red';
+
+export const COLOR_BLUE = 0x3fa9f5;
+export const COLOR_RED = 0xff4d5a;
+
+export const COLOR_VALUES: Record<ColorId, number> = {
+    blue: COLOR_BLUE,
+    red: COLOR_RED
+};
+
+// ---------------------------------------------------------------------------
+//  Gates
+// ---------------------------------------------------------------------------
+
+export const GATE_HEIGHT = 104;
+export const GATE_BAR_THICKNESS = 7;
+export const GATE_PANEL_ALPHA = 0.22;
+export const GATE_POST_WIDTH = 4;
+export const GATE_POST_ALPHA = 0.55;
+
+// ---------------------------------------------------------------------------
+//  Finish
+// ---------------------------------------------------------------------------
+
+export const FINISH_HEIGHT = 44;
+export const FINISH_ROWS = 2;
+export const FINISH_COLUMNS = 6;
+export const COLOR_FINISH_LIGHT = 0xf2f6ff;
+export const COLOR_FINISH_DARK = 0x1b2540;
+
+/** The track eases to a stop rather than freezing on the finish line. */
+export const FINISH_SLOWDOWN_MS = 520;
+
+// ---------------------------------------------------------------------------
+//  Saving
+// ---------------------------------------------------------------------------
+
+/** localStorage key. The version suffix lets a future format start clean. */
+export const STORAGE_KEY = 'dont-flow.save';
+
+/** Bumping this discards saves written by an older, incompatible format. */
+export const SAVE_VERSION = 1;
+
+/** Reload drops the player back into the level they were last on. */
+export const RESUME_AT_LAST_LEVEL = true;
+
+// ---------------------------------------------------------------------------
+//  Energy
+//
+//  Starting a level costs energy, which refills with real time. This gates how
+//  much can be played in a sitting; it is not health, and it never affects a
+//  run once started.
+// ---------------------------------------------------------------------------
+
+export const MAX_ENERGY = 5;
+
+/** Real time to regain one energy. */
+export const ENERGY_REFILL_MS = 10 * 60 * 1000;
+
+/** Charged once per level start, including retries. */
+export const ENERGY_COST_PER_LEVEL = 1;
+
+export const ENERGY_PIP_RADIUS = 7;
+export const ENERGY_PIP_GAP = 9;
+export const ENERGY_TIMER_SIZE = 13;
+export const ENERGY_TIMER_OFFSET = 20;
+export const COLOR_ENERGY_FULL = 0x3fa9f5;
+export const COLOR_ENERGY_EMPTY = 0x243352;
+
+export const TITLE_ENERGY_Y = GAME_HEIGHT * 0.775;
+export const MENU_ENERGY_Y = 134;
+
+// ---------------------------------------------------------------------------
+//  Level complete overlay
+// ---------------------------------------------------------------------------
+
+export const OVERLAY_FADE_MS = 260;
+export const OVERLAY_DIM_ALPHA = 0.78;
+export const COLOR_OVERLAY_DIM = 0x060a14;
+
+export const OVERLAY_TITLE_SIZE = 34;
+export const OVERLAY_SCORE_SIZE = 76;
+export const OVERLAY_DETAIL_SIZE = 20;
+export const OVERLAY_BEST_SIZE = 18;
+export const COLOR_NEW_BEST = '#ffc857';
+
+export const BUTTON_WIDTH = 220;
+export const BUTTON_HEIGHT = 62;
+export const BUTTON_LABEL_SIZE = 24;
+export const BUTTON_GAP = 14;
+export const COLOR_BUTTON = 0x3fa9f5;
+export const COLOR_BUTTON_LABEL = '#04101f';
+export const COLOR_BUTTON_SECONDARY = 0x243352;
+export const COLOR_BUTTON_SECONDARY_LABEL = '#c3d0e8';
+export const COLOR_BUTTON_LOCKED = 0x141d33;
+export const COLOR_BUTTON_LOCKED_LABEL = '#4a5675';
+
+// ---------------------------------------------------------------------------
+//  Menus
+// ---------------------------------------------------------------------------
+
+/** Menu screens scroll the track behind them, at a fraction of play speed. */
+export const MENU_SCROLL_SPEED = 90;
+
+export const TITLE_LOGO_Y = GAME_HEIGHT * 0.30;
+export const TITLE_DROP_RADIUS = 30;
+export const TITLE_SIZE = 46;
+export const TITLE_TAGLINE_SIZE = 15;
+export const TITLE_BUTTONS_Y = GAME_HEIGHT * 0.60;
+
+export const MENU_HEADING_SIZE = 26;
+export const MENU_HEADING_Y = 92;
+
+/** Level select rows. */
+export const LEVEL_ROW_WIDTH = 300;
+export const LEVEL_ROW_HEIGHT = 68;
+export const LEVEL_ROW_GAP = 12;
+//  Leaves room for the energy meter and its countdown above the first row.
+export const LEVEL_ROW_FIRST_Y = 214;
+export const LEVEL_ROW_NAME_SIZE = 22;
+export const LEVEL_ROW_DETAIL_SIZE = 14;
+export const LEVEL_ROW_TEXT_INSET = 22;
+
+// ---------------------------------------------------------------------------
+//  Pause
+// ---------------------------------------------------------------------------
+
+/** Kept at a comfortable touch size rather than the size of the icon. */
+export const PAUSE_BUTTON_SIZE = 44;
+export const PAUSE_BUTTON_MARGIN = 14;
+export const PAUSE_BAR_WIDTH = 5;
+export const PAUSE_BAR_HEIGHT = 16;
+export const PAUSE_BAR_GAP = 6;
+export const COLOR_PAUSE_ICON = 0xc3d0e8;
+
+// ---------------------------------------------------------------------------
+//  Orbs & scoring
+// ---------------------------------------------------------------------------
+
+export const ORB_RADIUS = 13;
+export const ORB_CORE_ALPHA = 0.3;
+
+//  How close the drop's centre must be to an orb's lane, horizontally, to touch
+//  it. Derived from the two radii, with a little slack so a near miss that
+//  looks like a hit counts as one.
+export const ORB_CATCH_SLACK = 4;
+export const ORB_CATCH_RADIUS = DROP_RADIUS + ORB_RADIUS + ORB_CATCH_SLACK;
+
+export const SCORE_PER_ORB = 10;
+
+// ---------------------------------------------------------------------------
+//  Feedback
+// ---------------------------------------------------------------------------
+
+export const BURST_PARTICLES = 12;
+export const BURST_PARTICLE_RADIUS = 4;
+export const BURST_SPEED_MIN = 70;
+export const BURST_SPEED_MAX = 150;
+export const BURST_DURATION = 420;
+
+/** How long the drop stays red after touching a wrong-coloured orb. */
+export const FLASH_DURATION = 160;
+export const COLOR_FLASH = 0xff2b3d;
+
+/** Haptic pulse lengths in ms. Silently ignored where unsupported. */
+export const HAPTIC_COLLECT_MS = 12;
+export const HAPTIC_MISS_MS = 45;
+
+// ---------------------------------------------------------------------------
+//  HUD
+// ---------------------------------------------------------------------------
+
+export const HUD_LEVEL_MARGIN_TOP = 15;
+export const HUD_LEVEL_SIZE = 15;
+export const HUD_MARGIN_TOP = 38;
+export const HUD_SCORE_SIZE = 44;
+export const HUD_COMBO_SIZE = 22;
+export const HUD_FONT = 'Arial Black, Arial, Helvetica, sans-serif';
+export const COLOR_HUD_TEXT = '#e8f1ff';
+export const COLOR_HUD_DIM = '#7f8db0';
+
+/** Combo is only worth showing once it is actually a streak. */
+export const COMBO_VISIBLE_FROM = 2;
+
+// ---------------------------------------------------------------------------
+//  Course
+// ---------------------------------------------------------------------------
+
+//  How far past the drop an object travels before it is destroyed.
+export const CULL_MARGIN = 200;
+
+// ---------------------------------------------------------------------------
 //  Palette
 // ---------------------------------------------------------------------------
 
@@ -99,4 +311,9 @@ export const COLOR_DROP_HIGHLIGHT = 0xffffff;
 
 export const DEPTH_TRACK = 0;
 export const DEPTH_RUNGS = 1;
+export const DEPTH_GATES = 5;
+export const DEPTH_ORBS = 6;
 export const DEPTH_DROP = 20;
+export const DEPTH_FX = 25;
+export const DEPTH_HUD = 40;
+export const DEPTH_OVERLAY = 50;
