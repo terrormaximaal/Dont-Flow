@@ -108,14 +108,33 @@ export const TRACK_EDGE_THICKNESS = 3;
 //  restyled here without touching any logic.
 // ---------------------------------------------------------------------------
 
-export type ColorId = 'blue' | 'red';
+export type ColorId =
+    | 'red'
+    | 'blue'
+    | 'yellow'
+    | 'orange'
+    | 'purple'
+    | 'cyan'
+    | 'green'
+    | 'pink'
+    | 'magenta';
 
 export const COLOR_BLUE = 0x3fa9f5;
 export const COLOR_RED = 0xff4d5a;
 
+//  Chosen to stay separable at a glance on a phone: no two sit close in hue,
+//  and all are bright enough to read against both the light and dark worlds.
+//  A level should still only use colours from opposite ends of this set.
 export const COLOR_VALUES: Record<ColorId, number> = {
+    red: COLOR_RED,
     blue: COLOR_BLUE,
-    red: COLOR_RED
+    yellow: 0xffd23f,
+    orange: 0xff8c42,
+    purple: 0xa964ff,
+    cyan: 0x2fe3d0,
+    green: 0x5ddf6a,
+    pink: 0xff7ab8,
+    magenta: 0xff4fd8
 };
 
 // ---------------------------------------------------------------------------
@@ -262,6 +281,16 @@ export const ORB_CATCH_RADIUS = DROP_RADIUS + ORB_RADIUS + ORB_CATCH_SLACK;
 
 export const SCORE_PER_ORB = 10;
 
+/**
+ * A wrong colour costs double what a right one pays.
+ *
+ * The score is allowed to go negative rather than being floored at zero: the
+ * penalty has to be felt, and hiding it would make a bad run read the same as a
+ * cautious one.
+ */
+export const WRONG_COLOR_MULTIPLIER = 2;
+export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
+
 // ---------------------------------------------------------------------------
 //  Feedback
 // ---------------------------------------------------------------------------
@@ -279,6 +308,18 @@ export const COLOR_FLASH = 0xff2b3d;
 /** Haptic pulse lengths in ms. Silently ignored where unsupported. */
 export const HAPTIC_COLLECT_MS = 12;
 export const HAPTIC_MISS_MS = 45;
+
+/** Screen kick on a wrong colour. Short and small - a nudge, not a jolt. */
+export const SHAKE_DURATION = 190;
+export const SHAKE_INTENSITY = 0.007;
+
+/** The points won or lost, floating up from where it happened. */
+export const FLOAT_SCORE_RISE = 52;
+export const FLOAT_SCORE_DURATION = 720;
+export const FLOAT_SCORE_SIZE = 22;
+export const FLOAT_SCORE_PENALTY_SIZE = 27;
+export const COLOR_SCORE_GAIN = '#9df5c4';
+export const COLOR_SCORE_LOSS = '#ff6b78';
 
 // ---------------------------------------------------------------------------
 //  HUD
