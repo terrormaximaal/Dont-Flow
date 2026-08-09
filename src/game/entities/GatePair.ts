@@ -8,11 +8,11 @@ import {
     GATE_PANEL_ALPHA,
     GATE_POST_ALPHA,
     GATE_POST_WIDTH,
-    LANE_WIDTH,
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../config/constants';
 import { GatePairSpec } from '../config/level';
+import { gateSideAt, gateSplitX } from '../systems/contact';
 import { screenYFor } from '../systems/World';
 
 /**
@@ -27,6 +27,7 @@ export class GatePair
     triggered = false;
 
     private readonly splitX: number;
+    private readonly splitAfterLane: 0 | 1;
     private readonly colors: [ ColorId, ColorId ];
     private readonly container: Phaser.GameObjects.Container;
 
@@ -34,7 +35,8 @@ export class GatePair
     {
         this.distance = spec.distance;
         this.colors = spec.colors;
-        this.splitX = TRACK_LEFT + ((spec.splitAfterLane + 1) * LANE_WIDTH);
+        this.splitAfterLane = spec.splitAfterLane;
+        this.splitX = gateSplitX(spec.splitAfterLane);
 
         this.container = scene.add.container(0, 0);
         this.container.setDepth(DEPTH_GATES);
@@ -75,7 +77,7 @@ export class GatePair
      */
     colorAt (x: number): ColorId
     {
-        return x < this.splitX ? this.colors[0] : this.colors[1];
+        return this.colors[gateSideAt(x, this.splitAfterLane)];
     }
 
     update (travelled: number): number
