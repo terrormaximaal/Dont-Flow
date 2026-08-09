@@ -14,7 +14,7 @@ import {
 } from '../config/constants';
 import { clampLane, laneCenterX } from '../systems/Lanes';
 import { drawTeardrop } from '../ui/shapes';
-import { clamp } from '../utils/math';
+import { clamp, easeTowards } from '../utils/math';
 
 /**
  * The player. It holds a *target* lane and eases towards it every frame - the
@@ -130,15 +130,16 @@ export class Drop
     update (dt: number): void
     {
         const targetX = laneCenterX(this.targetLane);
+        const previousX = this.x;
 
         //  Exponential smoothing. Frame-rate independent, never overshoots, and
         //  re-targeting mid-slide (a fast double swipe) stays seamless.
-        const t = 1 - Math.exp(-LANE_CHANGE_SPEED * dt);
-        const previousX = this.x;
+        this.x = easeTowards(this.x, targetX, LANE_CHANGE_SPEED, dt);
 
-        this.x += (targetX - this.x) * t;
-
-        this.lateralVelocity = (this.x - previousX) / dt;
+        //  A zero delta - possible on the first step, or when two frames land in
+        //  the same millisecond - would make this 0/0. The NaN goes straight
+        //  into the rotation and scale below and the drop vanishes for a frame.
+        this.lateralVelocity = dt > 0 ? (this.x - previousX) / dt : 0;
 
         this.applyTransform();
     }

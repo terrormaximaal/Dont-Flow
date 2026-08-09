@@ -171,6 +171,10 @@ export const COLOR_ENERGY_EMPTY = 0x243352;
 
 export const TITLE_ENERGY_Y = GAME_HEIGHT * 0.775;
 export const MENU_ENERGY_Y = 134;
+export const OVERLAY_ENERGY_Y = GAME_HEIGHT * 0.835;
+
+/** How often the completion panel refreshes its energy countdown. */
+export const OVERLAY_ENERGY_TICK_MS = 500;
 
 // ---------------------------------------------------------------------------
 //  Level complete overlay
@@ -280,6 +284,13 @@ export const HUD_COMBO_SIZE = 22;
 export const HUD_FONT = 'Arial Black, Arial, Helvetica, sans-serif';
 export const COLOR_HUD_TEXT = '#e8f1ff';
 export const COLOR_HUD_DIM = '#7f8db0';
+
+//  The HUD sits in front of the track, so orbs pass directly behind the score.
+//  An outline in the background colour separates the text from whatever is
+//  under it, without needing a panel behind it.
+export const COLOR_HUD_STROKE = '#0b1020';
+export const HUD_STROKE_THICKNESS = 5;
+export const HUD_STROKE_THICKNESS_SMALL = 3;
 
 /** Combo is only worth showing once it is actually a streak. */
 export const COMBO_VISIBLE_FROM = 2;

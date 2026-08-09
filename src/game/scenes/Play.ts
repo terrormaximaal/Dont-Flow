@@ -238,7 +238,7 @@ export class Play extends Scene
                     onPrimary: () => this.startLevel(hasNext ? this.levelIndex + 1 : 0),
                     onRetry: () => this.startLevel(this.levelIndex),
                     onMenu: () => this.scene.start('Title')
-                });
+                }, new EnergySystem(this.save));
 
             }
         });
