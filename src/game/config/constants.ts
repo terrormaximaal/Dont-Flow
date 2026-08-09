@@ -134,6 +134,19 @@ export const COLOR_FINISH_DARK = 0x1b2540;
 export const FINISH_SLOWDOWN_MS = 520;
 
 // ---------------------------------------------------------------------------
+//  Saving
+// ---------------------------------------------------------------------------
+
+/** localStorage key. The version suffix lets a future format start clean. */
+export const STORAGE_KEY = 'dont-flow.save';
+
+/** Bumping this discards saves written by an older, incompatible format. */
+export const SAVE_VERSION = 1;
+
+/** Reload drops the player back into the level they were last on. */
+export const RESUME_AT_LAST_LEVEL = true;
+
+// ---------------------------------------------------------------------------
 //  Level complete overlay
 // ---------------------------------------------------------------------------
 
@@ -144,6 +157,8 @@ export const COLOR_OVERLAY_DIM = 0x060a14;
 export const OVERLAY_TITLE_SIZE = 34;
 export const OVERLAY_SCORE_SIZE = 76;
 export const OVERLAY_DETAIL_SIZE = 20;
+export const OVERLAY_BEST_SIZE = 18;
+export const COLOR_NEW_BEST = '#ffc857';
 
 export const BUTTON_WIDTH = 220;
 export const BUTTON_HEIGHT = 62;

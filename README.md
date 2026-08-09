@@ -20,9 +20,11 @@ What is in:
 - A finish gate and a level-complete panel
 - Three levels, each with its own layout, speed and row spacing, played in
   sequence
+- Saved progress: best score per level, and a reload resumes the level you were
+  on
 
-Deliberately **not** in yet: menus, energy, and saving. Progress is per session -
-nothing is persisted, and score resets at the start of each level.
+Deliberately **not** in yet: menus and energy. Score resets at the start of each
+level - only the per-level best is kept.
 
 ## Requirements
 
@@ -82,6 +84,7 @@ others.
 | `src/game/systems/Lanes.ts` | Lane index to screen x |
 | `src/game/systems/World.ts` | Track distance to screen y |
 | `src/game/systems/ScoreSystem.ts` | Score and combo bookkeeping |
+| `src/game/systems/SaveSystem.ts` | Progress in localStorage |
 | `src/game/systems/Effects.ts` | Particle bursts and haptics |
 | `src/game/systems/OrientationGuard.ts` | Pauses the run while the device is sideways |
 | `src/game/ui/Hud.ts` | Score and combo readout |
@@ -152,6 +155,23 @@ Two rules worth keeping:
   two gates, so a centred split would leave the middle lane straddling both.
   `splitAfterLane` puts the join on a lane edge instead; alternating it between
   sections keeps the layout varied.
+
+## Saved progress
+
+Progress lives in `localStorage` under `dont-flow.save`: the level you were last
+on, the furthest you have reached, and the best score for each level. A reload
+drops you back into the level you were on - set `RESUME_AT_LAST_LEVEL` to
+`false` in `constants.ts` to always start at level 1 instead.
+
+`SaveSystem` treats the stored value as hostile. It can be missing, corrupt,
+written by an older build, sized for a different number of levels, or unreadable
+outright - Safari's private mode throws on access rather than returning null.
+Every one of those falls back to an empty save held in memory, so the game always
+starts and only persistence is lost. Bumping `SAVE_VERSION` discards saves from
+an incompatible format rather than guessing at a migration.
+
+`furthestLevel` is recorded but unused - a level-select menu will want it, and
+storing it now means the history exists by the time that is built.
 
 ## Notes
 

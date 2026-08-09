@@ -10,11 +10,13 @@ import {
     COLOR_BUTTON_SECONDARY_LABEL,
     COLOR_HUD_DIM,
     COLOR_HUD_TEXT,
+    COLOR_NEW_BEST,
     COLOR_OVERLAY_DIM,
     DEPTH_OVERLAY,
     GAME_HEIGHT,
     GAME_WIDTH,
     HUD_FONT,
+    OVERLAY_BEST_SIZE,
     OVERLAY_DETAIL_SIZE,
     OVERLAY_DIM_ALPHA,
     OVERLAY_FADE_MS,
@@ -27,6 +29,12 @@ export interface LevelCompleteResult
     levelName: string;
     score: number;
     bestCombo: number;
+
+    /** Best score stored for this level, after this run has been recorded. */
+    bestScore: number;
+
+    /** Whether this run set that best. */
+    isNewBest: boolean;
 
     /** False on the last level, which changes the wording and the primary action. */
     hasNext: boolean;
@@ -88,7 +96,9 @@ export class LevelComplete
         score.setOrigin(0.5);
         layer.add(score);
 
-        const detail = scene.add.text(GAME_WIDTH / 2, centerY + 40, `BEST COMBO x${result.bestCombo}`, {
+        //  "COMBO" is this run's longest streak; "BEST" is the stored score for
+        //  the level. Naming both "best" read as a contradiction.
+        const detail = scene.add.text(GAME_WIDTH / 2, centerY + 38, `COMBO x${result.bestCombo}`, {
             fontFamily: HUD_FONT,
             fontSize: OVERLAY_DETAIL_SIZE,
             color: COLOR_HUD_DIM
@@ -96,6 +106,20 @@ export class LevelComplete
 
         detail.setOrigin(0.5);
         layer.add(detail);
+
+        const best = scene.add.text(
+            GAME_WIDTH / 2,
+            centerY + 68,
+            result.isNewBest ? 'NEW BEST!' : `BEST ${result.bestScore}`,
+            {
+                fontFamily: HUD_FONT,
+                fontSize: OVERLAY_BEST_SIZE,
+                color: result.isNewBest ? COLOR_NEW_BEST : COLOR_HUD_DIM
+            }
+        );
+
+        best.setOrigin(0.5);
+        layer.add(best);
 
         //  Guard the whole panel: one press wins, however it was triggered, so a
         //  double tap during the fade cannot fire two scene restarts.

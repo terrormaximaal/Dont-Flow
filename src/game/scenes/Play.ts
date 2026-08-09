@@ -7,7 +7,8 @@ import {
     FORWARD_SPEED,
     HAPTIC_COLLECT_MS,
     HAPTIC_MISS_MS,
-    MAX_DELTA
+    MAX_DELTA,
+    RESUME_AT_LAST_LEVEL
 } from '../config/constants';
 import { buildLevel } from '../config/level';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
@@ -16,6 +17,7 @@ import { Course } from '../systems/Course';
 import { Effects } from '../systems/Effects';
 import { InputSystem } from '../systems/InputSystem';
 import { OrientationGuard } from '../systems/OrientationGuard';
+import { SaveSystem } from '../systems/SaveSystem';
 import { ScoreSystem } from '../systems/ScoreSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Hud } from '../ui/Hud';
@@ -33,6 +35,7 @@ export class Play extends Scene
     private input_: InputSystem;
     private effects: Effects;
     private scoring: ScoreSystem;
+    private save: SaveSystem;
     private hud: Hud;
 
     /** Which level of LEVELS is being played. Carried across restarts as scene data. */
@@ -62,7 +65,13 @@ export class Play extends Scene
      */
     init (data: { levelIndex?: number })
     {
-        this.levelIndex = clampLevelIndex(data?.levelIndex ?? 0);
+        this.save = new SaveSystem();
+
+        //  An explicit level wins; without one this is a fresh load, which
+        //  resumes wherever the player left off.
+        const requested = data?.levelIndex ?? (RESUME_AT_LAST_LEVEL ? this.save.getResumeLevel() : 0);
+
+        this.levelIndex = clampLevelIndex(requested);
     }
 
     create ()
@@ -75,6 +84,10 @@ export class Play extends Scene
         const level = LEVELS[this.levelIndex];
 
         this.forwardSpeed = level.forwardSpeed ?? FORWARD_SPEED;
+
+        //  Recorded as the level begins, not when it ends, so quitting midway
+        //  still comes back to the right place.
+        this.save.setCurrentLevel(this.levelIndex);
 
         this.track = new TrackScroller(this);
         this.drop = new Drop(this);
@@ -142,11 +155,15 @@ export class Play extends Scene
                 this.hud.setVisible(false);
 
                 const hasNext = hasNextLevel(this.levelIndex);
+                const score = this.scoring.getScore();
+                const isNewBest = this.save.recordScore(this.levelIndex, score);
 
                 new LevelComplete(this, {
                     levelName: LEVELS[this.levelIndex].name,
-                    score: this.scoring.getScore(),
+                    score,
                     bestCombo: this.scoring.getBestCombo(),
+                    bestScore: this.save.getBestScore(this.levelIndex),
+                    isNewBest,
                     hasNext
                 }, {
                     //  Past the last level, the primary action loops back to the
