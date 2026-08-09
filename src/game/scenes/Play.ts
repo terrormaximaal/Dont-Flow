@@ -10,6 +10,7 @@ import {
     MAX_DELTA
 } from '../config/constants';
 import { buildLevel } from '../config/level';
+import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { Course } from '../systems/Course';
 import { Effects } from '../systems/Effects';
@@ -34,6 +35,12 @@ export class Play extends Scene
     private scoring: ScoreSystem;
     private hud: Hud;
 
+    /** Which level of LEVELS is being played. Carried across restarts as scene data. */
+    private levelIndex = 0;
+
+    /** This level's forward speed, which may override the global default. */
+    private forwardSpeed = FORWARD_SPEED;
+
     /** Distance travelled in track pixels. Everything else is placed from this. */
     private distance = 0;
 
@@ -49,6 +56,15 @@ export class Play extends Scene
         super('Play');
     }
 
+    /**
+     * Restarting passes the level to play back in, so the same scene serves
+     * every level.
+     */
+    init (data: { levelIndex?: number })
+    {
+        this.levelIndex = clampLevelIndex(data?.levelIndex ?? 0);
+    }
+
     create ()
     {
         //  Reset explicitly: Phaser reuses the scene instance across restarts,
@@ -56,13 +72,17 @@ export class Play extends Scene
         this.distance = 0;
         this.speed.scale = 1;
 
+        const level = LEVELS[this.levelIndex];
+
+        this.forwardSpeed = level.forwardSpeed ?? FORWARD_SPEED;
+
         this.track = new TrackScroller(this);
         this.drop = new Drop(this);
         this.effects = new Effects(this);
         this.scoring = new ScoreSystem();
-        this.hud = new Hud(this);
+        this.hud = new Hud(this, level.name);
 
-        this.course = new Course(this, buildLevel(), {
+        this.course = new Course(this, buildLevel(level), {
             onGate: (color) => this.drop.setColorId(color),
             onOrb: (orb, matched, y) => this.onOrb(orb.x, y, matched),
             onFinish: () => this.onFinish()
@@ -121,13 +141,27 @@ export class Play extends Scene
 
                 this.hud.setVisible(false);
 
+                const hasNext = hasNextLevel(this.levelIndex);
+
                 new LevelComplete(this, {
+                    levelName: LEVELS[this.levelIndex].name,
                     score: this.scoring.getScore(),
-                    bestCombo: this.scoring.getBestCombo()
-                }, () => this.scene.restart());
+                    bestCombo: this.scoring.getBestCombo(),
+                    hasNext
+                }, {
+                    //  Past the last level, the primary action loops back to the
+                    //  first rather than dead-ending.
+                    onPrimary: () => this.startLevel(hasNext ? this.levelIndex + 1 : 0),
+                    onRetry: () => this.startLevel(this.levelIndex)
+                });
 
             }
         });
+    }
+
+    private startLevel (levelIndex: number): void
+    {
+        this.scene.restart({ levelIndex });
     }
 
     update (_time: number, delta: number)
@@ -135,7 +169,7 @@ export class Play extends Scene
         //  Clamp so a stalled frame cannot jump the drop across the track.
         const dt = Math.min(delta / 1000, MAX_DELTA);
 
-        this.distance += FORWARD_SPEED * this.speed.scale * dt;
+        this.distance += this.forwardSpeed * this.speed.scale * dt;
 
         this.track.update(this.distance);
         this.drop.update(dt);

@@ -148,8 +148,11 @@ export const OVERLAY_DETAIL_SIZE = 20;
 export const BUTTON_WIDTH = 220;
 export const BUTTON_HEIGHT = 62;
 export const BUTTON_LABEL_SIZE = 24;
+export const BUTTON_GAP = 14;
 export const COLOR_BUTTON = 0x3fa9f5;
 export const COLOR_BUTTON_LABEL = '#04101f';
+export const COLOR_BUTTON_SECONDARY = 0x243352;
+export const COLOR_BUTTON_SECONDARY_LABEL = '#c3d0e8';
 
 // ---------------------------------------------------------------------------
 //  Orbs & scoring
@@ -188,7 +191,9 @@ export const HAPTIC_MISS_MS = 45;
 //  HUD
 // ---------------------------------------------------------------------------
 
-export const HUD_MARGIN_TOP = 34;
+export const HUD_LEVEL_MARGIN_TOP = 15;
+export const HUD_LEVEL_SIZE = 15;
+export const HUD_MARGIN_TOP = 38;
 export const HUD_SCORE_SIZE = 44;
 export const HUD_COMBO_SIZE = 22;
 export const HUD_FONT = 'Arial Black, Arial, Helvetica, sans-serif';

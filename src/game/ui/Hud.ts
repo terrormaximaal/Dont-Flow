@@ -7,6 +7,8 @@ import {
     GAME_WIDTH,
     HUD_COMBO_SIZE,
     HUD_FONT,
+    HUD_LEVEL_MARGIN_TOP,
+    HUD_LEVEL_SIZE,
     HUD_MARGIN_TOP,
     HUD_SCORE_SIZE
 } from '../config/constants';
@@ -17,13 +19,23 @@ import {
  */
 export class Hud
 {
+    private readonly levelText: Phaser.GameObjects.Text;
     private readonly scoreText: Phaser.GameObjects.Text;
     private readonly comboText: Phaser.GameObjects.Text;
 
     private shownCombo = -1;
 
-    constructor (scene: Scene)
+    constructor (scene: Scene, levelName: string)
     {
+        this.levelText = scene.add.text(GAME_WIDTH / 2, HUD_LEVEL_MARGIN_TOP, `LEVEL ${levelName}`, {
+            fontFamily: HUD_FONT,
+            fontSize: HUD_LEVEL_SIZE,
+            color: COLOR_HUD_DIM
+        });
+
+        this.levelText.setOrigin(0.5, 0);
+        this.levelText.setDepth(DEPTH_HUD);
+
         this.scoreText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP, '0', {
             fontFamily: HUD_FONT,
             fontSize: HUD_SCORE_SIZE,
@@ -54,6 +66,7 @@ export class Hud
      */
     setVisible (visible: boolean): void
     {
+        this.levelText.setVisible(visible);
         this.scoreText.setVisible(visible);
         this.comboText.setVisible(visible);
     }

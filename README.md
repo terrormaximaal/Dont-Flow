@@ -8,7 +8,7 @@ not. Reach the finish with the best score you can.
 
 ![screenshot](screenshot.png)
 
-## Status: first playable
+## Status
 
 What is in:
 
@@ -17,9 +17,12 @@ What is in:
 - Colour gates spanning the track
 - Matching orbs (score + combo + burst + haptic) and wrong-coloured orbs
   (combo reset + red flash)
-- A finish gate, a **LEVEL COMPLETE** panel and a restart button
+- A finish gate and a level-complete panel
+- Three levels, each with its own layout, speed and row spacing, played in
+  sequence
 
-Deliberately **not** in yet: menus, a level system, energy, and saving.
+Deliberately **not** in yet: menus, energy, and saving. Progress is per session -
+nothing is persisted, and score resets at the start of each level.
 
 ## Requirements
 
@@ -40,7 +43,8 @@ npm scripts.
 |---|---|
 | Swipe left / right | Move one lane. A single drag can cross two lanes without lifting your finger. |
 | Arrow keys, or A / D | Move one lane |
-| Tap **RESTART**, or space / enter | Play again from the completion screen |
+| Tap **NEXT LEVEL** / **START OVER**, or space / enter | Continue from the completion screen |
+| Tap **RETRY** | Replay the level you just finished |
 
 Vertical drags are ignored, so a scroll-like gesture does not steer.
 
@@ -65,7 +69,8 @@ others.
 | Path | Responsibility |
 |---|---|
 | `src/game/config/constants.ts` | Every tunable value in the game |
-| `src/game/config/level.ts` | The course layout, as data |
+| `src/game/config/level.ts` | The level format, and compiling one into a course |
+| `src/game/config/levels.ts` | The levels themselves |
 | `src/game/scenes/Play.ts` | Wires the systems together and owns forward distance |
 | `src/game/entities/Drop.ts` | The player: lane easing, lean, colour, hit flash |
 | `src/game/entities/GatePair.ts` | Two colour gates spanning the track |
@@ -104,24 +109,39 @@ most:
 
 ## Authoring a level
 
-`src/game/config/level.ts` describes the course as a list of sections. Each
-section is one gate pair followed by rows of orbs, written as text - one
-character per lane, `B` for a blue orb, `R` for red, `.` for empty:
+Levels live in `src/game/config/levels.ts` as entries in `LEVELS`, and are played
+in array order. `level.ts` holds the format and the compiler; `levels.ts` holds
+only content, so adding a level never means touching game code.
+
+A level is a list of sections. Each section is one gate pair followed by rows of
+orbs, written as text - one character per lane, `B` for a blue orb, `R` for red,
+`.` for empty:
 
 ```ts
 {
-    splitAfterLane: 0,
-    colors: [ 'blue', 'red' ],
-    rows: [
-        'B.R',
-        '.BR',
-        'RB.'
+    name: '4',
+    forwardSpeed: 560,   // optional, defaults to FORWARD_SPEED
+    rowSpacing: 140,     // optional, defaults to ORB_ROW_SPACING
+    sections: [
+        {
+            splitAfterLane: 0,
+            colors: [ 'blue', 'red' ],
+            rows: [
+                'B.R',
+                '.BR',
+                'RB.'
+            ]
+        }
     ]
 }
 ```
 
-`buildLevel()` expands the sections into absolute distances, so spacing is
-controlled by the constants at the top of that file rather than by hand.
+`buildLevel()` expands the sections into absolute distances, so spacing comes
+from the constants at the top of `level.ts` rather than being positioned by hand.
+
+Difficulty has three dials: `forwardSpeed`, `rowSpacing`, and how much the orbs
+of one colour zig-zag between lanes. The third is what forces steering - a colour
+that stays in one lane can be followed without moving at all.
 
 Two rules worth keeping:
 

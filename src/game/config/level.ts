@@ -1,13 +1,18 @@
 import { ColorId, LANE_COUNT } from './constants';
 
-//  The layout of the one and only course.
+//  The shape of a course, and how an authored level is expanded into one.
+//  The levels themselves live in `levels.ts` - this file is the format, not the
+//  content.
 //
-//  Distances are in track pixels. Nothing here is a screen position - the
-//  course is a line the drop travels along, and the renderer works out where
-//  each piece currently sits.
+//  Distances are in track pixels. Nothing here is a screen position: a course is
+//  a line the drop travels along, and the renderer works out where each piece
+//  currently sits.
 
 // ---------------------------------------------------------------------------
-//  Spacing
+//  Default spacing
+//
+//  A level may override the row spacing to tighten or loosen its rhythm; the
+//  rest is shared by every level.
 // ---------------------------------------------------------------------------
 
 /** Quiet run before the first gate, so the player can find the controls. */
@@ -16,7 +21,7 @@ export const LEAD_IN = 900;
 /** Gap between a gate and the first orb row that follows it. */
 export const GATE_TO_ORBS = 260;
 
-/** Gap between orb rows. */
+/** Default gap between orb rows. */
 export const ORB_ROW_SPACING = 175;
 
 /** Gap between the last orb of a section and the next gate. */
@@ -26,24 +31,57 @@ export const SECTION_GAP = 420;
 export const FINISH_GAP = 520;
 
 // ---------------------------------------------------------------------------
-//  Section layout
+//  Authored level format
 // ---------------------------------------------------------------------------
 
-export interface GatePairSpec
+export interface SectionSpec
 {
-    distance: number;
-
     /**
      * The lane boundary the two gates meet on. 0 splits after the first lane,
      * 1 after the second.
      *
      * Three lanes and two gates cannot split down the middle without leaving
      * the centre lane straddling both, so the split sits on a lane boundary and
-     * alternates between sections.
+     * is worth alternating between sections.
      */
     splitAfterLane: 0 | 1;
 
     /** Colours of the left and right gate. */
+    colors: [ ColorId, ColorId ];
+
+    /**
+     * One string per orb row, one character per lane:
+     * 'B' blue orb, 'R' red orb, '.' empty.
+     *
+     * Keep at most two orbs per row. Three would leave no empty lane, forcing
+     * the drop through an orb it may not match, and a combo should only ever
+     * break through a player's own mistake.
+     */
+    rows: string[];
+}
+
+export interface LevelSpec
+{
+    /** Shown in the HUD and on the completion panel. */
+    name: string;
+
+    /** Overrides FORWARD_SPEED for this level. Faster reads as harder. */
+    forwardSpeed?: number;
+
+    /** Overrides ORB_ROW_SPACING for this level. Tighter reads as busier. */
+    rowSpacing?: number;
+
+    sections: SectionSpec[];
+}
+
+// ---------------------------------------------------------------------------
+//  Compiled course
+// ---------------------------------------------------------------------------
+
+export interface GatePairSpec
+{
+    distance: number;
+    splitAfterLane: 0 | 1;
     colors: [ ColorId, ColorId ];
 }
 
@@ -61,84 +99,26 @@ export interface Level
     finishDistance: number;
 }
 
-interface SectionSpec
-{
-    splitAfterLane: 0 | 1;
-    colors: [ ColorId, ColorId ];
-
-    /**
-     * One string per orb row, one character per lane:
-     * 'B' blue orb, 'R' red orb, '.' empty.
-     *
-     * Keep at most two orbs per row. Three would leave no empty lane, forcing
-     * the drop through an orb it may not match, and a combo should only ever
-     * break through a player's own mistake.
-     */
-    rows: string[];
-}
-
-const SECTIONS: SectionSpec[] = [
-    {
-        splitAfterLane: 0,
-        colors: [ 'blue', 'red' ],
-        rows: [
-            'B.R',
-            'B.R',
-            '.BR',
-            'B.R',
-            'BR.',
-            'B.R',
-            '.BR',
-            'B.R'
-        ]
-    },
-    {
-        splitAfterLane: 1,
-        colors: [ 'red', 'blue' ],
-        rows: [
-            'R.B',
-            '.RB',
-            'R.B',
-            'RB.',
-            'R.B',
-            '.RB',
-            'R.B',
-            'RB.'
-        ]
-    },
-    {
-        splitAfterLane: 1,
-        colors: [ 'blue', 'red' ],
-        rows: [
-            'B.R',
-            '.BR',
-            'RB.',
-            'B.R',
-            'R.B',
-            '.RB',
-            'BR.',
-            'B.R'
-        ]
-    }
-];
-
 const ORB_CHARS: Record<string, ColorId> = {
     B: 'blue',
     R: 'red'
 };
 
 /**
- * Expands the authored sections into a flat list of gates and orbs with
- * absolute distances.
+ * Expands an authored level into a flat list of gates and orbs with absolute
+ * distances.
  */
-export function buildLevel (): Level
+export function buildLevel (spec: LevelSpec): Level
 {
+    const rowSpacing = spec.rowSpacing ?? ORB_ROW_SPACING;
+
     const gates: GatePairSpec[] = [];
     const orbs: OrbSpec[] = [];
 
     let cursor = LEAD_IN;
+    let lastOrbDistance = cursor;
 
-    for (const section of SECTIONS)
+    for (const section of spec.sections)
     {
         gates.push({
             distance: cursor,
@@ -160,16 +140,16 @@ export function buildLevel (): Level
                 }
             }
 
-            rowDistance += ORB_ROW_SPACING;
+            lastOrbDistance = rowDistance;
+            rowDistance += rowSpacing;
         }
 
-        //  rowDistance has already stepped past the final row.
-        cursor = (rowDistance - ORB_ROW_SPACING) + SECTION_GAP;
+        cursor = lastOrbDistance + SECTION_GAP;
     }
 
     return {
         gates,
         orbs,
-        finishDistance: (cursor - SECTION_GAP) + FINISH_GAP
+        finishDistance: lastOrbDistance + FINISH_GAP
     };
 }
