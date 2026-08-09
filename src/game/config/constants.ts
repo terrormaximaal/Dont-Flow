@@ -168,6 +168,44 @@ export const COLOR_BUTTON = 0x3fa9f5;
 export const COLOR_BUTTON_LABEL = '#04101f';
 export const COLOR_BUTTON_SECONDARY = 0x243352;
 export const COLOR_BUTTON_SECONDARY_LABEL = '#c3d0e8';
+export const COLOR_BUTTON_LOCKED = 0x141d33;
+export const COLOR_BUTTON_LOCKED_LABEL = '#4a5675';
+
+// ---------------------------------------------------------------------------
+//  Menus
+// ---------------------------------------------------------------------------
+
+/** Menu screens scroll the track behind them, at a fraction of play speed. */
+export const MENU_SCROLL_SPEED = 90;
+
+export const TITLE_LOGO_Y = GAME_HEIGHT * 0.30;
+export const TITLE_DROP_RADIUS = 30;
+export const TITLE_SIZE = 46;
+export const TITLE_TAGLINE_SIZE = 15;
+export const TITLE_BUTTONS_Y = GAME_HEIGHT * 0.60;
+
+export const MENU_HEADING_SIZE = 26;
+export const MENU_HEADING_Y = 92;
+
+/** Level select rows. */
+export const LEVEL_ROW_WIDTH = 300;
+export const LEVEL_ROW_HEIGHT = 68;
+export const LEVEL_ROW_GAP = 12;
+export const LEVEL_ROW_FIRST_Y = 200;
+export const LEVEL_ROW_NAME_SIZE = 22;
+export const LEVEL_ROW_DETAIL_SIZE = 14;
+export const LEVEL_ROW_TEXT_INSET = 22;
+
+// ---------------------------------------------------------------------------
+//  Pause
+// ---------------------------------------------------------------------------
+
+export const PAUSE_BUTTON_SIZE = 38;
+export const PAUSE_BUTTON_MARGIN = 14;
+export const PAUSE_BAR_WIDTH = 5;
+export const PAUSE_BAR_HEIGHT = 16;
+export const PAUSE_BAR_GAP = 6;
+export const COLOR_PAUSE_ICON = 0xc3d0e8;
 
 // ---------------------------------------------------------------------------
 //  Orbs & scoring

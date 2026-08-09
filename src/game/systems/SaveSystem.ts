@@ -151,6 +151,12 @@ export class SaveSystem
         return this.data.currentLevel;
     }
 
+    /** Highest level reached, which is how far level select is unlocked. */
+    getFurthestLevel (): number
+    {
+        return this.data.furthestLevel;
+    }
+
     getBestScore (levelIndex: number): number
     {
         return this.data.bestScores[clampLevelIndex(levelIndex)] ?? 0;

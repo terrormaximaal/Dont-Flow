@@ -22,9 +22,10 @@ What is in:
   sequence
 - Saved progress: best score per level, and a reload resumes the level you were
   on
+- A title screen and a level select, unlocked as far as you have reached
 
-Deliberately **not** in yet: menus and energy. Score resets at the start of each
-level - only the per-level best is kept.
+Deliberately **not** in yet: energy. Score resets at the start of each level -
+only the per-level best is kept.
 
 ## Requirements
 
@@ -73,6 +74,8 @@ others.
 | `src/game/config/constants.ts` | Every tunable value in the game |
 | `src/game/config/level.ts` | The level format, and compiling one into a course |
 | `src/game/config/levels.ts` | The levels themselves |
+| `src/game/scenes/Title.ts` | Title screen, and where the game boots |
+| `src/game/scenes/LevelSelect.ts` | Level rows, unlocked from saved progress |
 | `src/game/scenes/Play.ts` | Wires the systems together and owns forward distance |
 | `src/game/entities/Drop.ts` | The player: lane easing, lean, colour, hit flash |
 | `src/game/entities/GatePair.ts` | Two colour gates spanning the track |
@@ -89,6 +92,8 @@ others.
 | `src/game/systems/OrientationGuard.ts` | Pauses the run while the device is sideways |
 | `src/game/ui/Hud.ts` | Score and combo readout |
 | `src/game/ui/LevelComplete.ts` | End-of-run panel |
+| `src/game/ui/Button.ts` | The tappable label every screen uses |
+| `src/game/ui/shapes.ts` | The teardrop, shared by the player and the logo |
 
 ### How position works
 

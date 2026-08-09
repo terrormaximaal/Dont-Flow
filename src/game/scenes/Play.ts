@@ -153,6 +153,7 @@ export class Play extends Scene
             onComplete: () => {
 
                 this.hud.setVisible(false);
+                this.drop.setVisible(false);
 
                 const hasNext = hasNextLevel(this.levelIndex);
                 const score = this.scoring.getScore();
@@ -169,7 +170,8 @@ export class Play extends Scene
                     //  Past the last level, the primary action loops back to the
                     //  first rather than dead-ending.
                     onPrimary: () => this.startLevel(hasNext ? this.levelIndex + 1 : 0),
-                    onRetry: () => this.startLevel(this.levelIndex)
+                    onRetry: () => this.startLevel(this.levelIndex),
+                    onMenu: () => this.scene.start('Title')
                 });
 
             }

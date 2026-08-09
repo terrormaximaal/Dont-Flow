@@ -1,6 +1,5 @@
 import { Scene } from 'phaser';
 import {
-    COLOR_DROP_HIGHLIGHT,
     COLOR_DROP_NEUTRAL,
     COLOR_VALUES,
     ColorId,
@@ -14,6 +13,7 @@ import {
     START_LANE
 } from '../config/constants';
 import { clampLane, laneCenterX } from '../systems/Lanes';
+import { drawTeardrop } from '../ui/shapes';
 import { clamp } from '../utils/math';
 
 /**
@@ -85,6 +85,15 @@ export class Drop
     }
 
     /**
+     * Hidden once the completion panel is up. The panel's buttons reach down
+     * over where the drop rests, leaving just its tip poking out above them.
+     */
+    setVisible (visible: boolean): void
+    {
+        this.gfx.setVisible(visible);
+    }
+
+    /**
      * Briefly repaint the drop, to sell a wrong-colour hit.
      */
     flash (color: number, duration: number): void
@@ -150,24 +159,9 @@ export class Drop
         this.gfx.setScale(1 + stretch, 1 - (stretch * 0.6));
     }
 
-    /**
-     * A teardrop built from a circle and a triangle - flat colour, no assets.
-     * Drawn around a local origin at the centre of the bulb.
-     */
     private redraw (): void
     {
-        const r = DROP_RADIUS;
-
-        this.gfx.clear();
-
-        this.gfx.fillStyle(this.flashColor ?? this.color, 1);
-        this.gfx.fillTriangle(-r * 0.62, -r * 0.62, 0, -r * 2.05, r * 0.62, -r * 0.62);
-        this.gfx.fillCircle(0, 0, r);
-
-        //  Offset highlight, so the drop reads as a volume and its rotation is
-        //  actually visible.
-        this.gfx.fillStyle(COLOR_DROP_HIGHLIGHT, 0.28);
-        this.gfx.fillCircle(-r * 0.3, -r * 0.3, r * 0.34);
+        drawTeardrop(this.gfx, DROP_RADIUS, this.flashColor ?? this.color);
     }
 
     destroy (): void

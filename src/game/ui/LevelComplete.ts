@@ -2,12 +2,6 @@ import { Scene } from 'phaser';
 import {
     BUTTON_GAP,
     BUTTON_HEIGHT,
-    BUTTON_LABEL_SIZE,
-    BUTTON_WIDTH,
-    COLOR_BUTTON,
-    COLOR_BUTTON_LABEL,
-    COLOR_BUTTON_SECONDARY,
-    COLOR_BUTTON_SECONDARY_LABEL,
     COLOR_HUD_DIM,
     COLOR_HUD_TEXT,
     COLOR_NEW_BEST,
@@ -23,6 +17,7 @@ import {
     OVERLAY_SCORE_SIZE,
     OVERLAY_TITLE_SIZE
 } from '../config/constants';
+import { Button } from './Button';
 
 export interface LevelCompleteResult
 {
@@ -47,6 +42,9 @@ export interface LevelCompleteActions
 
     /** Play the same level again. */
     onRetry: () => void;
+
+    /** Back to the title screen. */
+    onMenu: () => void;
 }
 
 /**
@@ -138,27 +136,28 @@ export class LevelComplete
 
         };
 
-        const primaryY = centerY + 130;
+        const primaryY = centerY + 124;
+        const step = BUTTON_HEIGHT + BUTTON_GAP;
 
-        this.addButton(
-            scene,
-            layer,
-            primaryY,
-            result.hasNext ? 'NEXT LEVEL' : 'START OVER',
-            COLOR_BUTTON,
-            COLOR_BUTTON_LABEL,
-            once(actions.onPrimary)
-        );
+        const buttons: Array<[ string, 'primary' | 'secondary', () => void ]> = [
+            [ result.hasNext ? 'NEXT LEVEL' : 'START OVER', 'primary', actions.onPrimary ],
+            [ 'RETRY', 'secondary', actions.onRetry ],
+            [ 'MENU', 'secondary', actions.onMenu ]
+        ];
 
-        this.addButton(
-            scene,
-            layer,
-            primaryY + BUTTON_HEIGHT + BUTTON_GAP,
-            'RETRY',
-            COLOR_BUTTON_SECONDARY,
-            COLOR_BUTTON_SECONDARY_LABEL,
-            once(actions.onRetry)
-        );
+        buttons.forEach(([ label, variant, action ], index) => {
+
+            const button = new Button(scene, {
+                x: GAME_WIDTH / 2,
+                y: primaryY + (index * step),
+                label,
+                variant,
+                onPress: once(action)
+            });
+
+            layer.add(button.container);
+
+        });
 
         //  Desktop players have their hands on the keyboard already.
         const primaryKey = once(actions.onPrimary);
@@ -172,32 +171,5 @@ export class LevelComplete
             duration: OVERLAY_FADE_MS,
             ease: 'Quad.Out'
         });
-    }
-
-    private addButton (
-        scene: Scene,
-        layer: Phaser.GameObjects.Container,
-        y: number,
-        text: string,
-        fill: number,
-        labelColor: string,
-        onPress: () => void
-    ): void
-    {
-        const button = scene.add.rectangle(GAME_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT, fill);
-
-        button.setInteractive({ useHandCursor: true });
-        button.on('pointerdown', onPress);
-
-        layer.add(button);
-
-        const label = scene.add.text(GAME_WIDTH / 2, y, text, {
-            fontFamily: HUD_FONT,
-            fontSize: BUTTON_LABEL_SIZE,
-            color: labelColor
-        });
-
-        label.setOrigin(0.5);
-        layer.add(label);
     }
 }
