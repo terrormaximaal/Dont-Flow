@@ -80,6 +80,41 @@ export const LANE_LINE_THICKNESS = 2;
 export const TRACK_EDGE_THICKNESS = 3;
 
 // ---------------------------------------------------------------------------
+//  Gameplay colours
+//
+//  The colour a drop carries is an identity ('blue' / 'red'), not a hex value,
+//  so matching an orb is a cheap string compare and the palette can be
+//  restyled here without touching any logic.
+// ---------------------------------------------------------------------------
+
+export type ColorId = 'blue' | 'red';
+
+export const COLOR_BLUE = 0x3fa9f5;
+export const COLOR_RED = 0xff4d5a;
+
+export const COLOR_VALUES: Record<ColorId, number> = {
+    blue: COLOR_BLUE,
+    red: COLOR_RED
+};
+
+// ---------------------------------------------------------------------------
+//  Gates
+// ---------------------------------------------------------------------------
+
+export const GATE_HEIGHT = 104;
+export const GATE_BAR_THICKNESS = 7;
+export const GATE_PANEL_ALPHA = 0.22;
+export const GATE_POST_WIDTH = 4;
+export const GATE_POST_ALPHA = 0.55;
+
+// ---------------------------------------------------------------------------
+//  Course
+// ---------------------------------------------------------------------------
+
+//  How far past the drop an object travels before it is destroyed.
+export const CULL_MARGIN = 200;
+
+// ---------------------------------------------------------------------------
 //  Palette
 // ---------------------------------------------------------------------------
 
@@ -99,4 +134,5 @@ export const COLOR_DROP_HIGHLIGHT = 0xffffff;
 
 export const DEPTH_TRACK = 0;
 export const DEPTH_RUNGS = 1;
+export const DEPTH_GATES = 5;
 export const DEPTH_DROP = 20;

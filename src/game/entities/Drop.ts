@@ -2,6 +2,8 @@ import { Scene } from 'phaser';
 import {
     COLOR_DROP_HIGHLIGHT,
     COLOR_DROP_NEUTRAL,
+    COLOR_VALUES,
+    ColorId,
     DEPTH_DROP,
     DROP_LEAN_MAX,
     DROP_LEAN_REFERENCE_SPEED,
@@ -32,6 +34,12 @@ export class Drop
     /** Sideways speed in px/s, derived from the slide. Drives lean & stretch. */
     private lateralVelocity: number = 0;
 
+    /**
+     * The colour the drop currently carries, or null before it has passed its
+     * first gate. Orb matching compares this, not the hex value.
+     */
+    private colorId: ColorId | null = null;
+
     private color: number = COLOR_DROP_NEUTRAL;
     private readonly gfx: Phaser.GameObjects.Graphics;
 
@@ -54,13 +62,19 @@ export class Drop
     }
 
     /**
-     * Repaint the drop. Colour gates will call this later.
+     * Take on a gate's colour.
      */
-    setColor (color: number): void
+    setColorId (id: ColorId): void
     {
-        this.color = color;
+        this.colorId = id;
+        this.color = COLOR_VALUES[id];
 
         this.redraw();
+    }
+
+    getColorId (): ColorId | null
+    {
+        return this.colorId;
     }
 
     getLane (): number

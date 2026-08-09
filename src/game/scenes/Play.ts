@@ -1,6 +1,8 @@
 import { Scene } from 'phaser';
 import { FORWARD_SPEED, MAX_DELTA } from '../config/constants';
+import { buildLevel } from '../config/level';
 import { Drop } from '../entities/Drop';
+import { Course } from '../systems/Course';
 import { InputSystem } from '../systems/InputSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 
@@ -12,6 +14,7 @@ export class Play extends Scene
 {
     private drop: Drop;
     private track: TrackScroller;
+    private course: Course;
     private input_: InputSystem;
 
     /** Distance travelled in track pixels. Everything else is placed from this. */
@@ -24,8 +27,16 @@ export class Play extends Scene
 
     create ()
     {
+        //  Reset explicitly: Phaser reuses the scene instance across restarts,
+        //  so field initialisers do not run again.
+        this.distance = 0;
+
         this.track = new TrackScroller(this);
         this.drop = new Drop(this);
+
+        this.course = new Course(this, buildLevel(), {
+            onGate: (color) => this.drop.setColorId(color)
+        });
 
         this.input_ = new InputSystem(this, (direction) => this.drop.moveLane(direction));
 
@@ -41,5 +52,6 @@ export class Play extends Scene
 
         this.track.update(this.distance);
         this.drop.update(dt);
+        this.course.update(this.distance, this.drop.getX());
     }
 }
