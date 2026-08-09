@@ -108,6 +108,37 @@ export const GATE_POST_WIDTH = 4;
 export const GATE_POST_ALPHA = 0.55;
 
 // ---------------------------------------------------------------------------
+//  Finish
+// ---------------------------------------------------------------------------
+
+export const FINISH_HEIGHT = 44;
+export const FINISH_ROWS = 2;
+export const FINISH_COLUMNS = 6;
+export const COLOR_FINISH_LIGHT = 0xf2f6ff;
+export const COLOR_FINISH_DARK = 0x1b2540;
+
+/** The track eases to a stop rather than freezing on the finish line. */
+export const FINISH_SLOWDOWN_MS = 520;
+
+// ---------------------------------------------------------------------------
+//  Level complete overlay
+// ---------------------------------------------------------------------------
+
+export const OVERLAY_FADE_MS = 260;
+export const OVERLAY_DIM_ALPHA = 0.78;
+export const COLOR_OVERLAY_DIM = 0x060a14;
+
+export const OVERLAY_TITLE_SIZE = 34;
+export const OVERLAY_SCORE_SIZE = 76;
+export const OVERLAY_DETAIL_SIZE = 20;
+
+export const BUTTON_WIDTH = 220;
+export const BUTTON_HEIGHT = 62;
+export const BUTTON_LABEL_SIZE = 24;
+export const COLOR_BUTTON = 0x3fa9f5;
+export const COLOR_BUTTON_LABEL = '#04101f';
+
+// ---------------------------------------------------------------------------
 //  Orbs & scoring
 // ---------------------------------------------------------------------------
 
@@ -186,3 +217,4 @@ export const DEPTH_ORBS = 6;
 export const DEPTH_DROP = 20;
 export const DEPTH_FX = 25;
 export const DEPTH_HUD = 40;
+export const DEPTH_OVERLAY = 50;

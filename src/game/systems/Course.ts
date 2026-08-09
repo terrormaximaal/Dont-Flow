@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 import { ColorId, CULL_MARGIN, GAME_HEIGHT, ORB_CATCH_RADIUS } from '../config/constants';
 import { Level } from '../config/level';
+import { FinishGate } from '../entities/FinishGate';
 import { GatePair } from '../entities/GatePair';
 import { Orb } from '../entities/Orb';
 
@@ -11,6 +12,9 @@ export interface CourseEvents
 
     /** The drop has touched an orb. `matched` is whether the colours agreed. */
     onOrb: (orb: Orb, matched: boolean, y: number) => void;
+
+    /** The drop has crossed the finish line. */
+    onFinish: () => void;
 }
 
 /**
@@ -26,11 +30,13 @@ export class Course
     private gates: GatePair[] = [];
     private orbs: Orb[] = [];
 
+    private readonly finish: FinishGate;
     private readonly events: CourseEvents;
 
     constructor (scene: Scene, level: Level, events: CourseEvents)
     {
         this.events = events;
+        this.finish = new FinishGate(scene, level.finishDistance);
 
         //  The whole course is only a few dozen objects, so it is built up
         //  front and culled behind the drop rather than streamed in.
@@ -56,6 +62,15 @@ export class Course
 
         this.updateGates(travelled, dropX, cullY);
         this.updateOrbs(travelled, dropX, dropColor, cullY);
+
+        this.finish.update(travelled);
+
+        if (!this.finish.triggered && travelled >= this.finish.distance)
+        {
+            this.finish.triggered = true;
+
+            this.events.onFinish();
+        }
     }
 
     private updateGates (travelled: number, dropX: number, cullY: number): void

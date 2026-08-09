@@ -2,6 +2,7 @@ import { Scene } from 'phaser';
 import {
     COLOR_FLASH,
     COLOR_VALUES,
+    FINISH_SLOWDOWN_MS,
     FLASH_DURATION,
     FORWARD_SPEED,
     HAPTIC_COLLECT_MS,
@@ -16,6 +17,7 @@ import { InputSystem } from '../systems/InputSystem';
 import { ScoreSystem } from '../systems/ScoreSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Hud } from '../ui/Hud';
+import { LevelComplete } from '../ui/LevelComplete';
 
 /**
  * The one and only scene for now. It owns the single piece of shared state -
@@ -34,6 +36,13 @@ export class Play extends Scene
     /** Distance travelled in track pixels. Everything else is placed from this. */
     private distance = 0;
 
+    /**
+     * Multiplier on the forward speed. Tweened to zero at the finish line so
+     * the track eases to a stop instead of freezing mid-flow. Wrapped in an
+     * object because that is what a tween can target.
+     */
+    private readonly speed = { scale: 1 };
+
     constructor ()
     {
         super('Play');
@@ -44,6 +53,7 @@ export class Play extends Scene
         //  Reset explicitly: Phaser reuses the scene instance across restarts,
         //  so field initialisers do not run again.
         this.distance = 0;
+        this.speed.scale = 1;
 
         this.track = new TrackScroller(this);
         this.drop = new Drop(this);
@@ -53,7 +63,8 @@ export class Play extends Scene
 
         this.course = new Course(this, buildLevel(), {
             onGate: (color) => this.drop.setColorId(color),
-            onOrb: (orb, matched, y) => this.onOrb(orb.x, y, matched)
+            onOrb: (orb, matched, y) => this.onOrb(orb.x, y, matched),
+            onFinish: () => this.onFinish()
         });
 
         this.input_ = new InputSystem(this, (direction) => this.drop.moveLane(direction));
@@ -88,12 +99,38 @@ export class Play extends Scene
         this.hud.setCombo(this.scoring.getCombo());
     }
 
+    /**
+     * Crossing the finish line: hand back control of the run, coast to a stop,
+     * then show the result.
+     */
+    private onFinish (): void
+    {
+        this.input_.setEnabled(false);
+
+        this.tweens.add({
+            targets: this.speed,
+            scale: 0,
+            duration: FINISH_SLOWDOWN_MS,
+            ease: 'Quad.Out',
+            onComplete: () => {
+
+                this.hud.setVisible(false);
+
+                new LevelComplete(this, {
+                    score: this.scoring.getScore(),
+                    bestCombo: this.scoring.getBestCombo()
+                }, () => this.scene.restart());
+
+            }
+        });
+    }
+
     update (_time: number, delta: number)
     {
         //  Clamp so a stalled frame cannot jump the drop across the track.
         const dt = Math.min(delta / 1000, MAX_DELTA);
 
-        this.distance += FORWARD_SPEED * dt;
+        this.distance += FORWARD_SPEED * this.speed.scale * dt;
 
         this.track.update(this.distance);
         this.drop.update(dt);

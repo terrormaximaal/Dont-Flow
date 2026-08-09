@@ -48,6 +48,16 @@ export class Hud
         this.scoreText.setText(String(score));
     }
 
+    /**
+     * Hidden once the run ends - the completion panel reports the score itself,
+     * and a live combo showing through the dim contradicts the final total.
+     */
+    setVisible (visible: boolean): void
+    {
+        this.scoreText.setVisible(visible);
+        this.comboText.setVisible(visible);
+    }
+
     setCombo (combo: number): void
     {
         if (combo === this.shownCombo)
