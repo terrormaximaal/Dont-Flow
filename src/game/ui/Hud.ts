@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 import {
     COLOR_HUD_DIM,
+    COLOR_HUD_STROKE,
     COLOR_HUD_TEXT,
     COMBO_VISIBLE_FROM,
     DEPTH_HUD,
@@ -10,7 +11,9 @@ import {
     HUD_LEVEL_MARGIN_TOP,
     HUD_LEVEL_SIZE,
     HUD_MARGIN_TOP,
-    HUD_SCORE_SIZE
+    HUD_SCORE_SIZE,
+    HUD_STROKE_THICKNESS,
+    HUD_STROKE_THICKNESS_SMALL
 } from '../config/constants';
 
 /**
@@ -30,7 +33,9 @@ export class Hud
         this.levelText = scene.add.text(GAME_WIDTH / 2, HUD_LEVEL_MARGIN_TOP, `LEVEL ${levelName}`, {
             fontFamily: HUD_FONT,
             fontSize: HUD_LEVEL_SIZE,
-            color: COLOR_HUD_DIM
+            color: COLOR_HUD_DIM,
+            stroke: COLOR_HUD_STROKE,
+            strokeThickness: HUD_STROKE_THICKNESS_SMALL
         });
 
         this.levelText.setOrigin(0.5, 0);
@@ -39,7 +44,9 @@ export class Hud
         this.scoreText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP, '0', {
             fontFamily: HUD_FONT,
             fontSize: HUD_SCORE_SIZE,
-            color: COLOR_HUD_TEXT
+            color: COLOR_HUD_TEXT,
+            stroke: COLOR_HUD_STROKE,
+            strokeThickness: HUD_STROKE_THICKNESS
         });
 
         this.scoreText.setOrigin(0.5, 0);
@@ -48,7 +55,9 @@ export class Hud
         this.comboText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP + HUD_SCORE_SIZE + 8, '', {
             fontFamily: HUD_FONT,
             fontSize: HUD_COMBO_SIZE,
-            color: COLOR_HUD_DIM
+            color: COLOR_HUD_DIM,
+            stroke: COLOR_HUD_STROKE,
+            strokeThickness: HUD_STROKE_THICKNESS_SMALL
         });
 
         this.comboText.setOrigin(0.5, 0);

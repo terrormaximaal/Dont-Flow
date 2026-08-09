@@ -281,6 +281,13 @@ export const HUD_FONT = 'Arial Black, Arial, Helvetica, sans-serif';
 export const COLOR_HUD_TEXT = '#e8f1ff';
 export const COLOR_HUD_DIM = '#7f8db0';
 
+//  The HUD sits in front of the track, so orbs pass directly behind the score.
+//  An outline in the background colour separates the text from whatever is
+//  under it, without needing a panel behind it.
+export const COLOR_HUD_STROKE = '#0b1020';
+export const HUD_STROKE_THICKNESS = 5;
+export const HUD_STROKE_THICKNESS_SMALL = 3;
+
 /** Combo is only worth showing once it is actually a streak. */
 export const COMBO_VISIBLE_FROM = 2;
 
