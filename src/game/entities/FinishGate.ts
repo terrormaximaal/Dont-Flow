@@ -9,10 +9,12 @@ import {
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../config/constants';
+import { fillProjectedQuad } from '../systems/Projection';
 import { screenYFor } from '../systems/World';
 
 /**
- * The end of the course: a chequered band across the full track.
+ * The end of the course: a chequered band across the full track, projected into
+ * the corridor so it lies flat in the world rather than across the screen.
  */
 export class FinishGate
 {
@@ -21,48 +23,49 @@ export class FinishGate
     /** Set once the drop has crossed, so completion only fires one time. */
     triggered = false;
 
-    private readonly container: Phaser.GameObjects.Container;
+    private readonly gfx: Phaser.GameObjects.Graphics;
 
     constructor (scene: Scene, distance: number)
     {
         this.distance = distance;
 
-        this.container = scene.add.container(0, 0);
-        this.container.setDepth(DEPTH_GATES);
-
-        const cellWidth = TRACK_WIDTH / FINISH_COLUMNS;
-        const cellHeight = FINISH_HEIGHT / FINISH_ROWS;
-
-        for (let row = 0; row < FINISH_ROWS; row++)
-        {
-            for (let column = 0; column < FINISH_COLUMNS; column++)
-            {
-                const color = (row + column) % 2 === 0 ? COLOR_FINISH_LIGHT : COLOR_FINISH_DARK;
-
-                const cell = scene.add.rectangle(
-                    TRACK_LEFT + (column * cellWidth) + (cellWidth / 2),
-                    ((row - (FINISH_ROWS / 2)) * cellHeight) + (cellHeight / 2),
-                    cellWidth,
-                    cellHeight,
-                    color
-                );
-
-                this.container.add(cell);
-            }
-        }
+        this.gfx = scene.add.graphics();
+        this.gfx.setDepth(DEPTH_GATES);
     }
 
     update (travelled: number): number
     {
         const y = screenYFor(this.distance, travelled);
 
-        this.container.y = y;
+        const cellWidth = TRACK_WIDTH / FINISH_COLUMNS;
+        const cellHeight = FINISH_HEIGHT / FINISH_ROWS;
+        const top = y - (FINISH_HEIGHT / 2);
+
+        const gfx = this.gfx;
+
+        gfx.clear();
+
+        for (let row = 0; row < FINISH_ROWS; row++)
+        {
+            const near = top + ((row + 1) * cellHeight);
+            const far = top + (row * cellHeight);
+
+            for (let column = 0; column < FINISH_COLUMNS; column++)
+            {
+                const left = TRACK_LEFT + (column * cellWidth);
+                const right = left + cellWidth;
+
+                gfx.fillStyle((row + column) % 2 === 0 ? COLOR_FINISH_LIGHT : COLOR_FINISH_DARK, 1);
+
+                fillProjectedQuad(gfx, left, right, far, near);
+            }
+        }
 
         return y;
     }
 
     destroy (): void
     {
-        this.container.destroy();
+        this.gfx.destroy();
     }
 }

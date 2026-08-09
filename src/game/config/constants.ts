@@ -36,6 +36,36 @@ export const DROP_SCREEN_Y = GAME_HEIGHT * 0.72;
 export const BLOCK_LANDSCAPE_QUERY = '(orientation: landscape) and (max-height: 520px)';
 
 // ---------------------------------------------------------------------------
+//  Diagonal projection
+//
+//  The world is authored straight - lanes and distances - and sheared into a
+//  diagonal corridor only when it is drawn. Collision never sees any of this,
+//  which is what keeps the tilt free to change without touching gameplay.
+// ---------------------------------------------------------------------------
+
+/**
+ * Horizontal shift per pixel of depth. Positive leans the corridor so the far
+ * end sits to the left and the near end to the right, giving a bottom-right to
+ * top-left run.
+ */
+//  Capped by readability rather than taste: at 0.19 the far end of the corridor
+//  reaches the left screen edge, and any more would push oncoming orbs off it
+//  before the player could read them.
+export const PROJECTION_SHEAR = 0.18;
+
+/** The depth the shear pivots around: the drop's own line stays put. */
+export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
+
+/**
+ * How much narrower the corridor gets with distance. 0 is a flat shear, 1 would
+ * taper to nothing at the top of the screen.
+ */
+export const PROJECTION_TAPER = 0.34;
+
+/** Depth at which the taper is fully applied. */
+export const PROJECTION_DEPTH = GAME_HEIGHT;
+
+// ---------------------------------------------------------------------------
 //  Motion
 // ---------------------------------------------------------------------------
 

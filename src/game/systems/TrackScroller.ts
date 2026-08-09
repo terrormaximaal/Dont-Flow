@@ -5,10 +5,8 @@ import {
     COLOR_SIDE_TICK,
     COLOR_TRACK,
     COLOR_TRACK_EDGE,
-    DEPTH_RUNGS,
     DEPTH_TRACK,
     GAME_HEIGHT,
-    GAME_WIDTH,
     LANE_COUNT,
     LANE_LINE_THICKNESS,
     LANE_WIDTH,
@@ -23,89 +21,48 @@ import {
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../config/constants';
+import { depthScale, fillProjectedQuad, projectX } from './Projection';
+
+/** How far beyond the screen the corridor is drawn, so its ends are never seen. */
+const OVERDRAW = 140;
+
+const TOP = -OVERDRAW;
+const BOTTOM = GAME_HEIGHT + OVERDRAW;
 
 /**
- * Draws the track and scrolls it to sell forward motion.
+ * The corridor the drop travels down, drawn as a diagonal run through the world.
  *
- * Nothing here actually moves through the world: a fixed pool of bars is
- * repositioned by `distance % span` every frame, so the cost is constant no
- * matter how far the player travels.
+ * Redrawn every frame into a single Graphics rather than moving a pool of
+ * rectangles. The projection shifts every point by its own depth, so a lane
+ * divider is a slanted line and a cross-bar is a shifted, narrowed one - shapes
+ * that cannot be expressed by moving an axis-aligned rectangle. It is a few
+ * dozen line segments a frame, which costs nothing.
+ *
+ * The projection is affine, so straight lines stay straight and only the two
+ * ends of each need projecting.
  */
 export class TrackScroller
 {
-    private readonly rungs: Phaser.GameObjects.Rectangle[] = [];
-    private readonly sideTicks: Phaser.GameObjects.Rectangle[] = [];
+    private readonly gfx: Phaser.GameObjects.Graphics;
 
-    /** Wrap length for the rungs, kept an exact multiple of the spacing. */
+    /** Wrap length, kept an exact multiple of the spacing. */
     private readonly rungSpan: number;
     private readonly sideSpan: number;
+    private readonly rungCount: number;
+    private readonly sideCount: number;
 
     constructor (scene: Scene)
     {
-        this.drawStaticTrack(scene);
+        this.gfx = scene.add.graphics();
+        this.gfx.setDepth(DEPTH_TRACK);
 
-        const rungCount = Math.ceil((GAME_HEIGHT + RUNG_SPACING) / RUNG_SPACING);
+        const span = BOTTOM - TOP;
 
-        this.rungSpan = rungCount * RUNG_SPACING;
+        this.rungCount = Math.ceil(span / RUNG_SPACING);
+        this.rungSpan = this.rungCount * RUNG_SPACING;
 
-        for (let i = 0; i < rungCount; i++)
-        {
-            const rung = scene.add.rectangle(GAME_WIDTH / 2, 0, TRACK_WIDTH, RUNG_THICKNESS, COLOR_RUNG);
-
-            rung.setDepth(DEPTH_RUNGS);
-
-            this.rungs.push(rung);
-        }
-
-        const sideCount = Math.ceil((GAME_HEIGHT + SIDE_TICK_SPACING) / SIDE_TICK_SPACING);
-
-        this.sideSpan = sideCount * SIDE_TICK_SPACING;
-
-        const leftX = TRACK_LEFT - SIDE_TICK_GAP - (SIDE_TICK_WIDTH / 2);
-        const rightX = TRACK_LEFT + TRACK_WIDTH + SIDE_TICK_GAP + (SIDE_TICK_WIDTH / 2);
-
-        for (let i = 0; i < sideCount; i++)
-        {
-            for (const x of [ leftX, rightX ])
-            {
-                const tick = scene.add.rectangle(x, 0, SIDE_TICK_WIDTH, SIDE_TICK_THICKNESS, COLOR_SIDE_TICK);
-
-                tick.setDepth(DEPTH_TRACK);
-
-                this.sideTicks.push(tick);
-            }
-        }
-    }
-
-    /**
-     * The parts that never move: the track slab, the lane dividers and the two
-     * outer edges.
-     */
-    private drawStaticTrack (scene: Scene): void
-    {
-        const slab = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, TRACK_WIDTH, GAME_HEIGHT, COLOR_TRACK);
-
-        slab.setDepth(DEPTH_TRACK);
-
-        for (let i = 1; i < LANE_COUNT; i++)
-        {
-            const line = scene.add.rectangle(
-                TRACK_LEFT + (i * LANE_WIDTH),
-                GAME_HEIGHT / 2,
-                LANE_LINE_THICKNESS,
-                GAME_HEIGHT,
-                COLOR_LANE_LINE
-            );
-
-            line.setDepth(DEPTH_TRACK);
-        }
-
-        for (const x of [ TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH ])
-        {
-            const edge = scene.add.rectangle(x, GAME_HEIGHT / 2, TRACK_EDGE_THICKNESS, GAME_HEIGHT, COLOR_TRACK_EDGE);
-
-            edge.setDepth(DEPTH_TRACK);
-        }
+        this.sideCount = Math.ceil(span / SIDE_TICK_SPACING);
+        this.sideSpan = this.sideCount * SIDE_TICK_SPACING;
     }
 
     /**
@@ -113,20 +70,76 @@ export class TrackScroller
      */
     update (distance: number): void
     {
-        for (let i = 0; i < this.rungs.length; i++)
+        const gfx = this.gfx;
+
+        gfx.clear();
+
+        this.fillSlab(gfx);
+        this.strokeRails(gfx);
+        this.strokeRungs(gfx, distance);
+        this.strokeSideTicks(gfx, distance);
+    }
+
+    /** The corridor floor: a quad, since the two ends are different widths. */
+    private fillSlab (gfx: Phaser.GameObjects.Graphics): void
+    {
+        gfx.fillStyle(COLOR_TRACK, 1);
+
+        fillProjectedQuad(gfx, TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH, TOP, BOTTOM);
+    }
+
+    /** Lane dividers and the two outer edges, running away down the corridor. */
+    private strokeRails (gfx: Phaser.GameObjects.Graphics): void
+    {
+        gfx.lineStyle(LANE_LINE_THICKNESS, COLOR_LANE_LINE, 1);
+
+        for (let i = 1; i < LANE_COUNT; i++)
         {
-            this.rungs[i].y = (((i * RUNG_SPACING) + distance) % this.rungSpan) - RUNG_SPACING;
+            const x = TRACK_LEFT + (i * LANE_WIDTH);
+
+            gfx.lineBetween(projectX(x, TOP), TOP, projectX(x, BOTTOM), BOTTOM);
         }
 
-        //  The side marks scroll slower than the track, which reads as distance.
+        gfx.lineStyle(TRACK_EDGE_THICKNESS, COLOR_TRACK_EDGE, 1);
+
+        for (const x of [ TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH ])
+        {
+            gfx.lineBetween(projectX(x, TOP), TOP, projectX(x, BOTTOM), BOTTOM);
+        }
+    }
+
+    /** Cross-bars flowing towards the player, which is what reads as speed. */
+    private strokeRungs (gfx: Phaser.GameObjects.Graphics, distance: number): void
+    {
+        const right = TRACK_LEFT + TRACK_WIDTH;
+
+        for (let i = 0; i < this.rungCount; i++)
+        {
+            const y = TOP + ((((i * RUNG_SPACING) + distance) % this.rungSpan));
+
+            //  Thinner with distance, along with everything else at that depth.
+            gfx.lineStyle(RUNG_THICKNESS * depthScale(y), COLOR_RUNG, 1);
+            gfx.lineBetween(projectX(TRACK_LEFT, y), y, projectX(right, y), y);
+        }
+    }
+
+    /** Marks outside the corridor, scrolling slower to give the world depth. */
+    private strokeSideTicks (gfx: Phaser.GameObjects.Graphics, distance: number): void
+    {
         const sideDistance = distance * SIDE_TICK_PARALLAX;
 
-        for (let i = 0; i < this.sideTicks.length; i++)
-        {
-            //  Two ticks (left and right) share each row, hence the halving.
-            const row = Math.floor(i / 2);
+        const leftOuter = TRACK_LEFT - SIDE_TICK_GAP - SIDE_TICK_WIDTH;
+        const leftInner = TRACK_LEFT - SIDE_TICK_GAP;
+        const rightInner = TRACK_LEFT + TRACK_WIDTH + SIDE_TICK_GAP;
+        const rightOuter = rightInner + SIDE_TICK_WIDTH;
 
-            this.sideTicks[i].y = (((row * SIDE_TICK_SPACING) + sideDistance) % this.sideSpan) - SIDE_TICK_SPACING;
+        for (let i = 0; i < this.sideCount; i++)
+        {
+            const y = TOP + ((((i * SIDE_TICK_SPACING) + sideDistance) % this.sideSpan));
+
+            gfx.lineStyle(SIDE_TICK_THICKNESS * depthScale(y), COLOR_SIDE_TICK, 1);
+            gfx.lineBetween(projectX(leftOuter, y), y, projectX(leftInner, y), y);
+            gfx.lineBetween(projectX(rightInner, y), y, projectX(rightOuter, y), y);
         }
     }
 }
