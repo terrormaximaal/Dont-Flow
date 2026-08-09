@@ -171,6 +171,10 @@ export const COLOR_ENERGY_EMPTY = 0x243352;
 
 export const TITLE_ENERGY_Y = GAME_HEIGHT * 0.775;
 export const MENU_ENERGY_Y = 134;
+export const OVERLAY_ENERGY_Y = GAME_HEIGHT * 0.835;
+
+/** How often the completion panel refreshes its energy countdown. */
+export const OVERLAY_ENERGY_TICK_MS = 500;
 
 // ---------------------------------------------------------------------------
 //  Level complete overlay

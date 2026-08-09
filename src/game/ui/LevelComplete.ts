@@ -13,11 +13,15 @@ import {
     OVERLAY_BEST_SIZE,
     OVERLAY_DETAIL_SIZE,
     OVERLAY_DIM_ALPHA,
+    OVERLAY_ENERGY_TICK_MS,
+    OVERLAY_ENERGY_Y,
     OVERLAY_FADE_MS,
     OVERLAY_SCORE_SIZE,
     OVERLAY_TITLE_SIZE
 } from '../config/constants';
-import { Button } from './Button';
+import { EnergySystem } from '../systems/EnergySystem';
+import { Button, ButtonVariant } from './Button';
+import { EnergyMeter } from './EnergyMeter';
 
 export interface LevelCompleteResult
 {
@@ -53,8 +57,12 @@ export interface LevelCompleteActions
  */
 export class LevelComplete
 {
-    constructor (scene: Scene, result: LevelCompleteResult, actions: LevelCompleteActions)
+    constructor (scene: Scene, result: LevelCompleteResult, actions: LevelCompleteActions, energy: EnergySystem)
     {
+        //  The run just played has already been paid for, so this is what is
+        //  left for another one.
+        const canPlayAgain = energy.canPlay();
+
         const layer = scene.add.container(0, 0);
 
         layer.setDepth(DEPTH_OVERLAY);
@@ -139,9 +147,15 @@ export class LevelComplete
         const primaryY = centerY + 124;
         const step = BUTTON_HEIGHT + BUTTON_GAP;
 
-        const buttons: Array<[ string, 'primary' | 'secondary', () => void ]> = [
-            [ result.hasNext ? 'NEXT LEVEL' : 'START OVER', 'primary', actions.onPrimary ],
-            [ 'RETRY', 'secondary', actions.onRetry ],
+        //  Both ways on cost energy, so with none left they are built inert
+        //  rather than live and bouncing the player back to the title with no
+        //  explanation. Menu always works.
+        const playVariant = canPlayAgain ? 'primary' : 'locked';
+        const retryVariant = canPlayAgain ? 'secondary' : 'locked';
+
+        const buttons: Array<[ string, ButtonVariant, () => void ]> = [
+            [ result.hasNext ? 'NEXT LEVEL' : 'START OVER', playVariant, actions.onPrimary ],
+            [ 'RETRY', retryVariant, actions.onRetry ],
             [ 'MENU', 'secondary', actions.onMenu ]
         ];
 
@@ -157,6 +171,16 @@ export class LevelComplete
 
             layer.add(button.container);
 
+        });
+
+        //  Shown either way: it is what is left for another run, and the only
+        //  thing that explains a locked button.
+        const meter = new EnergyMeter(scene, OVERLAY_ENERGY_Y, energy, layer);
+
+        scene.time.addEvent({
+            delay: OVERLAY_ENERGY_TICK_MS,
+            loop: true,
+            callback: () => meter.update()
         });
 
         //  Desktop players have their hands on the keyboard already.

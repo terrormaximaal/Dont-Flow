@@ -29,18 +29,36 @@ export class EnergyMeter
     private shownEnergy = -1;
     private shownLabel = '';
 
-    constructor (scene: Scene, y: number, energy: EnergySystem)
+    /**
+     * @param layer Optional container to draw into. Overlays need this: their
+     *              own depth puts them above the HUD, so a meter left at HUD
+     *              depth would render underneath the dim.
+     */
+    constructor (scene: Scene, y: number, energy: EnergySystem, layer?: Phaser.GameObjects.Container)
     {
         this.energy = energy;
 
         const step = (ENERGY_PIP_RADIUS * 2) + ENERGY_PIP_GAP;
         const left = (GAME_WIDTH / 2) - (((MAX_ENERGY - 1) * step) / 2);
 
+        const place = (object: Phaser.GameObjects.Arc | Phaser.GameObjects.Text) => {
+
+            if (layer)
+            {
+                layer.add(object);
+            }
+            else
+            {
+                object.setDepth(DEPTH_HUD);
+            }
+
+        };
+
         for (let i = 0; i < MAX_ENERGY; i++)
         {
             const pip = scene.add.circle(left + (i * step), y, ENERGY_PIP_RADIUS, COLOR_ENERGY_EMPTY);
 
-            pip.setDepth(DEPTH_HUD);
+            place(pip);
 
             this.pips.push(pip);
         }
@@ -52,7 +70,8 @@ export class EnergyMeter
         });
 
         this.timerText.setOrigin(0.5, 0);
-        this.timerText.setDepth(DEPTH_HUD);
+
+        place(this.timerText);
 
         this.update();
     }
