@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { GAME_WIDTH, LANE_COUNT, LANE_WIDTH, TRACK_LEFT, TRACK_WIDTH } from '../src/game/config/constants';
+import {
+    GAME_WIDTH,
+    LANE_CHANGE_SPEED,
+    LANE_COUNT,
+    LANE_WIDTH,
+    TRACK_LEFT,
+    TRACK_WIDTH
+} from '../src/game/config/constants';
 import { clampLane, laneCenterX } from '../src/game/systems/Lanes';
-import { clamp } from '../src/game/utils/math';
+import { clamp, easeTowards } from '../src/game/utils/math';
 
 describe('laneCenterX', () => {
 
@@ -56,6 +63,72 @@ describe('clamp', () => {
         expect(clamp(5, 0, 10)).toBe(5);
         expect(clamp(-5, 0, 10)).toBe(0);
         expect(clamp(50, 0, 10)).toBe(10);
+
+    });
+
+});
+
+describe('easeTowards', () => {
+
+    const RATE = LANE_CHANGE_SPEED;
+
+    it('moves towards the target without reaching or passing it', () => {
+
+        const next = easeTowards(0, 100, RATE, 1 / 60);
+
+        expect(next).toBeGreaterThan(0);
+        expect(next).toBeLessThan(100);
+
+    });
+
+    it('never overshoots, however large the step', () => {
+
+        expect(easeTowards(0, 100, RATE, 10)).toBeLessThanOrEqual(100);
+        expect(easeTowards(100, 0, RATE, 10)).toBeGreaterThanOrEqual(0);
+
+    });
+
+    it('works the same in either direction', () => {
+
+        const up = easeTowards(0, 100, RATE, 0.1);
+        const down = easeTowards(100, 0, RATE, 0.1);
+
+        expect(up).toBeCloseTo(100 - down, 10);
+
+    });
+
+    //  The property the whole lane feel rests on: a slow device and a fast one
+    //  must put the drop in the same place after the same amount of time.
+    it('is frame-rate independent', () => {
+
+        const target = 100;
+        const seconds = 0.25;
+
+        const oneBigStep = easeTowards(0, target, RATE, seconds);
+
+        let many = 0;
+
+        for (let i = 0; i < 240; i++)
+        {
+            many = easeTowards(many, target, RATE, seconds / 240);
+        }
+
+        expect(many).toBeCloseTo(oneBigStep, 9);
+
+    });
+
+    it('does not move on a zero or negative step', () => {
+
+        //  A zero delta is reachable on the first frame; without this the
+        //  caller's velocity calculation divides by zero.
+        expect(easeTowards(25, 100, RATE, 0)).toBe(25);
+        expect(easeTowards(25, 100, RATE, -1)).toBe(25);
+
+    });
+
+    it('stays put when already at the target', () => {
+
+        expect(easeTowards(50, 50, RATE, 0.1)).toBe(50);
 
     });
 
