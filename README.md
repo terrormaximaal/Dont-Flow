@@ -38,6 +38,8 @@ npm scripts.
 | `npm run dev` | Development server on `http://localhost:8080` |
 | `npm run build` | Production build into `dist` |
 | `npm run dev-nolog` / `npm run build-nolog` | Same, without the template's anonymous ping (see below) |
+| `npm test` | Run the test suite |
+| `npm run test:watch` | Run it in watch mode |
 | `npx tsc --noEmit` | Type-check |
 
 ## Controls
@@ -204,7 +206,30 @@ Energy trusts the device clock, so winding it forward grants energy. That is
 inherent to storing progress locally; a server-checked clock is the only real
 fix, and there is no server.
 
-## Notes
+## Tests
+
+`npm test` runs the suite in `test/`. It covers the game's pure logic, which is
+where the bugs that are hard to see live:
+
+- `level.test.ts` - compiling authored levels into a course, plus checks over the
+  shipped levels themselves: no row may be completely full, every row is one
+  character per lane, and every section offers both colours so either gate is
+  playable
+- `save.test.ts` - reading back what was written, and every way a stored value
+  can be hostile
+- `energy.test.ts` - refill arithmetic, spending, and a clock that has moved
+  backwards
+- `lanes.test.ts` - lane geometry and clamping
+
+Nothing here drives Phaser. These modules deliberately have no Phaser imports,
+so they can be tested without a canvas or a DOM; the browser globals the save
+needs are stubbed per test. Anything that does touch Phaser - scenes, entities,
+rendering - is verified by running the game instead.
+
+One of these is a regression guard for a bug that had already shipped into an
+otherwise working build, and was only caught by looking at real behaviour:
+energy wrote to `localStorage` on every frame. The level checks guard rules that
+were until now only kept by hand while authoring.
 
 - **No image assets.** Everything is drawn with Phaser shapes and graphics,
   including the particle bursts - Phaser's particle emitter needs a texture, so
