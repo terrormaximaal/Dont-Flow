@@ -200,7 +200,8 @@ export const LEVEL_ROW_TEXT_INSET = 22;
 //  Pause
 // ---------------------------------------------------------------------------
 
-export const PAUSE_BUTTON_SIZE = 38;
+/** Kept at a comfortable touch size rather than the size of the icon. */
+export const PAUSE_BUTTON_SIZE = 44;
 export const PAUSE_BUTTON_MARGIN = 14;
 export const PAUSE_BAR_WIDTH = 5;
 export const PAUSE_BAR_HEIGHT = 16;

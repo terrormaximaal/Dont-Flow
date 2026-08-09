@@ -22,6 +22,8 @@ import { ScoreSystem } from '../systems/ScoreSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Hud } from '../ui/Hud';
 import { LevelComplete } from '../ui/LevelComplete';
+import { PauseButton } from '../ui/PauseButton';
+import { PauseOverlay } from '../ui/PauseOverlay';
 
 /**
  * The one and only scene for now. It owns the single piece of shared state -
@@ -37,6 +39,14 @@ export class Play extends Scene
     private scoring: ScoreSystem;
     private save: SaveSystem;
     private hud: Hud;
+    private pauseButton: PauseButton;
+    private pauseOverlay: PauseOverlay | null = null;
+
+    /** Gates the update loop. The scene keeps running so the overlay stays tappable. */
+    private paused = false;
+
+    /** True once the finish is crossed, after which pausing is meaningless. */
+    private finished = false;
 
     /** Which level of LEVELS is being played. Carried across restarts as scene data. */
     private levelIndex = 0;
@@ -80,6 +90,9 @@ export class Play extends Scene
         //  so field initialisers do not run again.
         this.distance = 0;
         this.speed.scale = 1;
+        this.paused = false;
+        this.finished = false;
+        this.pauseOverlay = null;
 
         const level = LEVELS[this.levelIndex];
 
@@ -103,8 +116,13 @@ export class Play extends Scene
 
         this.input_ = new InputSystem(this, (direction) => this.drop.moveLane(direction));
 
+        this.pauseButton = new PauseButton(this, () => this.setPaused(true));
+
+        this.input.keyboard?.on('keydown-ESC', () => this.setPaused(!this.paused));
+
         //  Freezes the run while the phone is held sideways, so turning it back
-        //  does not cost the player any distance.
+        //  does not cost the player any distance. Independent of the manual
+        //  pause: that gates the update loop, this pauses the whole scene.
         new OrientationGuard(this);
 
         this.events.once('shutdown', () => this.input_.destroy());
@@ -141,8 +159,45 @@ export class Play extends Scene
      * Crossing the finish line: hand back control of the run, coast to a stop,
      * then show the result.
      */
+    /**
+     * Pausing gates the update loop rather than calling scene.pause(), because a
+     * paused scene stops processing input too - which would leave the overlay's
+     * own buttons dead.
+     */
+    private setPaused (paused: boolean): void
+    {
+        if (this.finished || paused === this.paused)
+        {
+            return;
+        }
+
+        this.paused = paused;
+
+        this.input_.setEnabled(!paused);
+        this.pauseButton.setVisible(!paused);
+
+        if (paused)
+        {
+            this.pauseOverlay = new PauseOverlay(this, {
+                onResume: () => this.setPaused(false),
+                onRetry: () => this.startLevel(this.levelIndex),
+                onMenu: () => this.scene.start('Title')
+            });
+
+            return;
+        }
+
+        //  Rebuilt on each pause rather than hidden, so no stale overlay can be
+        //  left sitting invisible over a live run.
+        this.pauseOverlay?.destroy();
+        this.pauseOverlay = null;
+    }
+
     private onFinish (): void
     {
+        this.finished = true;
+
+        this.pauseButton.setVisible(false);
         this.input_.setEnabled(false);
 
         this.tweens.add({
@@ -185,6 +240,11 @@ export class Play extends Scene
 
     update (_time: number, delta: number)
     {
+        if (this.paused)
+        {
+            return;
+        }
+
         //  Clamp so a stalled frame cannot jump the drop across the track.
         const dt = Math.min(delta / 1000, MAX_DELTA);
 

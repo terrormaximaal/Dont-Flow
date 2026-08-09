@@ -48,6 +48,7 @@ npm scripts.
 | Arrow keys, or A / D | Move one lane |
 | Tap **NEXT LEVEL** / **START OVER**, or space / enter | Continue from the completion screen |
 | Tap **RETRY** | Replay the level you just finished |
+| Tap the pause button, or press escape | Pause, with resume / retry / menu |
 
 Vertical drags are ignored, so a scroll-like gesture does not steer.
 
@@ -92,6 +93,8 @@ others.
 | `src/game/systems/OrientationGuard.ts` | Pauses the run while the device is sideways |
 | `src/game/ui/Hud.ts` | Score and combo readout |
 | `src/game/ui/LevelComplete.ts` | End-of-run panel |
+| `src/game/ui/PauseButton.ts` | The pause control shown during play |
+| `src/game/ui/PauseOverlay.ts` | The paused panel |
 | `src/game/ui/Button.ts` | The tappable label every screen uses |
 | `src/game/ui/shapes.ts` | The teardrop, shared by the player and the logo |
 
