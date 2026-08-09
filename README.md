@@ -1,158 +1,141 @@
-# Phaser Vite TypeScript Template
+# DON'T FLOW
 
-This is a Phaser project template that uses Vite for bundling. It supports hot-reloading for quick development workflow, includes TypeScript support and scripts to generate production-ready builds.
+A mobile web game built with [Phaser 4](https://phaser.io) and TypeScript.
 
-**[This Template is also available as a JavaScript version.](https://github.com/phaserjs/template-vite)**
-
-### Versions
-
-This template has been updated for:
-
-- [Phaser 4](https://github.com/phaserjs/phaser)
-- [Vite 6.3.1](https://github.com/vitejs/vite)
-- [TypeScript 5.7.2](https://github.com/microsoft/TypeScript)
+You are a drop flowing down a three-lane track. Colour gates repaint you; after
+each gate, collect the orbs that match your colour and avoid the ones that do
+not. Reach the finish with the best score you can.
 
 ![screenshot](screenshot.png)
 
+## Status: first playable
+
+What is in:
+
+- Automatic forward motion with a scrolling track
+- Swipe / arrow-key lane changes that slide rather than snap
+- Colour gates spanning the track
+- Matching orbs (score + combo + burst + haptic) and wrong-coloured orbs
+  (combo reset + red flash)
+- A finish gate, a **LEVEL COMPLETE** panel and a restart button
+
+Deliberately **not** in yet: menus, a level system, energy, and saving.
+
 ## Requirements
 
-[Node.js](https://nodejs.org) is required to install dependencies and run scripts via `npm`.
-
-## Available Commands
+[Node.js](https://nodejs.org) is required to install dependencies and run the
+npm scripts.
 
 | Command | Description |
-|---------|-------------|
-| `npm install` | Install project dependencies |
-| `npm run dev` | Launch a development web server |
-| `npm run build` | Create a production build in the `dist` folder |
-| `npm run dev-nolog` | Launch a development web server without sending anonymous data (see "About log.js" below) |
-| `npm run build-nolog` | Create a production build in the `dist` folder without sending anonymous data (see "About log.js" below) |
+|---|---|
+| `npm install` | Install dependencies |
+| `npm run dev` | Development server on `http://localhost:8080` |
+| `npm run build` | Production build into `dist` |
+| `npm run dev-nolog` / `npm run build-nolog` | Same, without the template's anonymous ping (see below) |
+| `npx tsc --noEmit` | Type-check |
 
-## Writing Code
+## Controls
 
-After cloning the repo, run `npm install` from your project directory. Then, you can start the local development server by running `npm run dev`.
+| Input | Action |
+|---|---|
+| Swipe left / right | Move one lane. A single drag can cross two lanes without lifting your finger. |
+| Arrow keys, or A / D | Move one lane |
+| Tap **RESTART**, or space / enter | Play again from the completion screen |
 
-The local development server runs on `http://localhost:8080` by default. Please see the Vite documentation if you wish to change this, or add SSL support.
+Vertical drags are ignored, so a scroll-like gesture does not steer.
 
-Once the server is running you can edit any of the files in the `src` folder. Vite will automatically recompile your code and then reload the browser.
+## Project structure
 
-## Template Project Structure
+Each system lives in its own file and knows as little as possible about the
+others.
 
-We have provided a default project structure to get you started. This is as follows:
+| Path | Responsibility |
+|---|---|
+| `src/game/config/constants.ts` | Every tunable value in the game |
+| `src/game/config/level.ts` | The course layout, as data |
+| `src/game/scenes/Play.ts` | Wires the systems together and owns forward distance |
+| `src/game/entities/Drop.ts` | The player: lane easing, lean, colour, hit flash |
+| `src/game/entities/GatePair.ts` | Two colour gates spanning the track |
+| `src/game/entities/Orb.ts` | A lane-anchored collectible |
+| `src/game/entities/FinishGate.ts` | The chequered finish band |
+| `src/game/systems/InputSystem.ts` | Swipe and keyboard, to lane-change intents |
+| `src/game/systems/Course.ts` | Owns placed objects and reports what the drop passed |
+| `src/game/systems/TrackScroller.ts` | The scrolling track visuals |
+| `src/game/systems/Lanes.ts` | Lane index to screen x |
+| `src/game/systems/World.ts` | Track distance to screen y |
+| `src/game/systems/ScoreSystem.ts` | Score and combo bookkeeping |
+| `src/game/systems/Effects.ts` | Particle bursts and haptics |
+| `src/game/ui/Hud.ts` | Score and combo readout |
+| `src/game/ui/LevelComplete.ts` | End-of-run panel |
 
-## Template Project Structure
+### How position works
 
-We have provided a default project structure to get you started:
+Nothing on the course stores a screen position. Every gate and orb sits at a
+**distance along the track**, and `World.screenYFor()` converts that to a screen
+y using how far the drop has travelled. The drop itself never moves vertically -
+the track scrolls past it.
 
-| Path                         | Description                                                |
-|------------------------------|------------------------------------------------------------|
-| `index.html`                 | A basic HTML page to contain the game.                     |
-| `public/assets`              | Game sprites, audio, etc. Served directly at runtime.      |
-| `public/style.css`           | Global layout styles.                                      |
-| `src/main.ts`                | Application bootstrap.                                     |
-| `src/game`                   | Folder containing the game code.                           |
-| `src/game/main.ts`           | Game entry point: configures and starts the game.          |
-| `src/game/scenes`            | Folder with all Phaser game scenes.                        | 
+This is also what makes hit detection simple: an object is reached the moment
+travelled distance passes its distance, which cannot tunnel at any speed.
 
+## Tuning the feel
 
-## Handling Assets
+All tunable values live in `src/game/config/constants.ts`. The two that matter
+most:
 
-Vite supports loading assets via JavaScript module `import` statements.
+| Constant | Effect |
+|---|---|
+| `FORWARD_SPEED` | How fast the track flows past, in pixels per second |
+| `LANE_CHANGE_SPEED` | Lane-slide smoothing rate. Higher is snappier, lower is floatier. It is an exponential rate constant, not a duration. |
 
-This template provides support for both embedding assets and also loading them from a static folder. To embed an asset, you can import it at the top of the JavaScript file you are using it in:
+## Authoring a level
 
-```js
-import logoImg from './assets/logo.png'
-```
+`src/game/config/level.ts` describes the course as a list of sections. Each
+section is one gate pair followed by rows of orbs, written as text - one
+character per lane, `B` for a blue orb, `R` for red, `.` for empty:
 
-To load static files such as audio files, videos, etc place them into the `public/assets` folder. Then you can use this path in the Loader calls within Phaser:
-
-```js
-preload ()
+```ts
 {
-    //  This is an example of an imported bundled image.
-    //  Remember to import it at the top of this file
-    this.load.image('logo', logoImg);
-
-    //  This is an example of loading a static image
-    //  from the public/assets folder:
-    this.load.image('background', 'assets/bg.png');
+    splitAfterLane: 0,
+    colors: [ 'blue', 'red' ],
+    rows: [
+        'B.R',
+        '.BR',
+        'RB.'
+    ]
 }
 ```
 
-When you issue the `npm run build` command, all static assets are automatically copied to the `dist/assets` folder.
+`buildLevel()` expands the sections into absolute distances, so spacing is
+controlled by the constants at the top of that file rather than by hand.
 
-## Deploying to Production
+Two rules worth keeping:
 
-After you run the `npm run build` command, your code will be built into a single bundle and saved to the `dist` folder, along with any other assets your project imported, or stored in the public assets folder.
+- **At most two orbs per row.** Three leaves no empty lane, forcing the drop
+  through an orb it may not match. A combo should only break through the
+  player's own mistake.
+- **Gates split on a lane boundary.** The track has three lanes and a pair has
+  two gates, so a centred split would leave the middle lane straddling both.
+  `splitAfterLane` puts the join on a lane edge instead; alternating it between
+  sections keeps the layout varied.
 
-In order to deploy your game, you will need to upload *all* of the contents of the `dist` folder to a public facing web server.
+## Notes
 
-## Customizing the Template
+- **No image assets.** Everything is drawn with Phaser shapes and graphics,
+  including the particle bursts - Phaser's particle emitter needs a texture, so
+  bursts are plain circles and tweens instead.
+- **The `Phaser` global is types only.** Under the ESM build, `Phaser.Math.*`
+  and friends type-check and then throw `Phaser is not defined` in the browser.
+  Anything used at runtime must be imported. See `src/game/utils/math.ts`.
+- **Haptics** go through `navigator.vibrate`, which is a silent no-op on iOS
+  Safari and desktop.
 
-### Vite
+## About `log.js`
 
-If you want to customize your build, such as adding plugin (i.e. for loading CSS or fonts), you can modify the `vite/config.*.mjs` file for cross-project changes, or you can modify and/or create new configuration files and target them in specific npm tasks inside of `package.json`. Please see the [Vite documentation](https://vitejs.dev/) for more information.
-
-## About log.js
-
-If you inspect our node scripts you will see there is a file called `log.js`. This file makes a single silent API call to a domain called `gryzor.co`. This domain is owned by Phaser Studio Inc. The domain name is a homage to one of our favorite retro games.
-
-We send the following 3 pieces of data to this API: The name of the template being used (vue, react, etc). If the build was 'dev' or 'prod' and finally the version of Phaser being used.
-
-At no point is any personal data collected or sent. We don't know about your project files, device, browser or anything else. Feel free to inspect the `log.js` file to confirm this.
-
-Why do we do this? Because being open source means we have no visible metrics about which of our templates are being used. We work hard to maintain a large and diverse set of templates for Phaser developers and this is our small anonymous way to determine if that work is actually paying off, or not. In short, it helps us ensure we're building the tools for you.
-
-However, if you don't want to send any data, you can use these commands instead:
-
-Dev:
-
-```bash
-npm run dev-nolog
-```
-
-Build:
-
-```bash
-npm run build-nolog
-```
-
-Or, to disable the log entirely, simply delete the file `log.js` and remove the call to it in the `scripts` section of `package.json`:
-
-Before:
-
-```json
-"scripts": {
-    "dev": "node log.js dev & dev-template-script",
-    "build": "node log.js build & build-template-script"
-},
-```
-
-After:
-
-```json
-"scripts": {
-    "dev": "dev-template-script",
-    "build": "build-template-script"
-},
-```
-
-Either of these will stop `log.js` from running. If you do decide to do this, please could you at least join our Discord and tell us which template you're using! Or send us a quick email. Either will be super-helpful, thank you.
-
-## Join the Phaser Community!
-
-We love to see what developers like you create with Phaser! It really motivates us to keep improving. So please join our community and show-off your work 😄
-
-**Visit:** The [Phaser website](https://phaser.io) and follow on [Phaser Twitter](https://twitter.com/phaser_)<br />
-**Play:** Some of the amazing games [#madewithphaser](https://twitter.com/search?q=%23madewithphaser&src=typed_query&f=live)<br />
-**Learn:** [API Docs](https://newdocs.phaser.io), [Support Forum](https://phaser.discourse.group/) and [StackOverflow](https://stackoverflow.com/questions/tagged/phaser-framework)<br />
-**Discord:** Join us on [Discord](https://discord.gg/phaser)<br />
-**Code:** 2000+ [Examples](https://labs.phaser.io)<br />
-**Read:** The [Phaser World](https://phaser.io/community/newsletter) Newsletter<br />
-
-Created by [Phaser Studio](mailto:support@phaser.io). Powered by coffee, anime, pixels and love.
-
-The Phaser logo and characters are &copy; 2011 - 2025 Phaser Studio Inc.
-
-All rights reserved.
+This project started from the official
+[Phaser Vite TypeScript template](https://github.com/phaserjs/template-vite-ts),
+which includes a `log.js` that makes a single anonymous call to `gryzor.co` on
+`dev` and `build`, reporting the template name, build type and Phaser version.
+No personal data is sent. Use `npm run dev-nolog` / `npm run build-nolog` to
+skip it, or delete `log.js` and drop the call from the `scripts` section of
+`package.json`.
