@@ -26,3 +26,67 @@ body {
     justify-content: center;
     align-items: center;
 }
+
+/*
+ * Rotate prompt.
+ *
+ * Hidden unless the viewport is landscape AND short - a desktop window is
+ * landscape too, and the game stays keyboard-playable there. The query must
+ * stay identical to BLOCK_LANDSCAPE_QUERY in src/game/config/constants.ts,
+ * which pauses the run from the same condition.
+ */
+#rotate-notice {
+    display: none;
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+
+    #rotate-notice {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        padding: 16px;
+        background-color: #0b1020;
+        text-align: center;
+        font-family: Arial Black, Arial, Helvetica, sans-serif;
+    }
+
+    .rotate-icon {
+        width: 34px;
+        height: 54px;
+        margin-bottom: 14px;
+        border: 3px solid #3fa9f5;
+        border-radius: 6px;
+        transform: rotate(90deg);
+        animation: rotate-hint 2.2s ease-in-out infinite;
+    }
+
+    .rotate-title {
+        margin: 0;
+        font-size: 20px;
+        color: #e8f1ff;
+    }
+
+    .rotate-sub {
+        margin: 0;
+        font-size: 13px;
+        color: #7f8db0;
+    }
+}
+
+@keyframes rotate-hint {
+    0%, 45%   { transform: rotate(90deg); }
+    70%, 100% { transform: rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .rotate-icon {
+        animation: none;
+    }
+}

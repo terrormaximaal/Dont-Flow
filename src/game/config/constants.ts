@@ -22,6 +22,19 @@ export const START_LANE = 1;
 //  The drop never moves up or down the screen - the track scrolls past it.
 export const DROP_SCREEN_Y = GAME_HEIGHT * 0.72;
 
+/**
+ * When this matches, the game is unplayable and asks to be rotated.
+ *
+ * Orientation alone is not enough: a desktop window is landscape too, and the
+ * game must stay keyboard-playable there. Gating on height as well means only
+ * short landscape viewports - phones on their side - are blocked, while desktop
+ * and landscape tablets play on.
+ *
+ * `public/style.css` shows the notice from the identical media query. The two
+ * have to be changed together.
+ */
+export const BLOCK_LANDSCAPE_QUERY = '(orientation: landscape) and (max-height: 520px)';
+
 // ---------------------------------------------------------------------------
 //  Motion
 // ---------------------------------------------------------------------------

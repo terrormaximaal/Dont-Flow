@@ -44,6 +44,19 @@ npm scripts.
 
 Vertical drags are ignored, so a scroll-like gesture does not steer.
 
+### Orientation
+
+The game is portrait only. On a phone held sideways the playfield would collapse
+to a sliver, so a "rotate your device" notice covers the screen and the run
+pauses until it is turned back - no distance is lost.
+
+The trigger is landscape **and** a short viewport, not landscape alone, because a
+desktop window is landscape too and stays keyboard-playable. It is defined twice
+and the two must be kept in step:
+
+- `BLOCK_LANDSCAPE_QUERY` in `src/game/config/constants.ts` (pauses the run)
+- the matching `@media` block in `public/style.css` (shows the notice)
+
 ## Project structure
 
 Each system lives in its own file and knows as little as possible about the
@@ -65,6 +78,7 @@ others.
 | `src/game/systems/World.ts` | Track distance to screen y |
 | `src/game/systems/ScoreSystem.ts` | Score and combo bookkeeping |
 | `src/game/systems/Effects.ts` | Particle bursts and haptics |
+| `src/game/systems/OrientationGuard.ts` | Pauses the run while the device is sideways |
 | `src/game/ui/Hud.ts` | Score and combo readout |
 | `src/game/ui/LevelComplete.ts` | End-of-run panel |
 

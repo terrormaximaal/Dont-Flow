@@ -14,6 +14,7 @@ import { Drop } from '../entities/Drop';
 import { Course } from '../systems/Course';
 import { Effects } from '../systems/Effects';
 import { InputSystem } from '../systems/InputSystem';
+import { OrientationGuard } from '../systems/OrientationGuard';
 import { ScoreSystem } from '../systems/ScoreSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Hud } from '../ui/Hud';
@@ -68,6 +69,10 @@ export class Play extends Scene
         });
 
         this.input_ = new InputSystem(this, (direction) => this.drop.moveLane(direction));
+
+        //  Freezes the run while the phone is held sideways, so turning it back
+        //  does not cost the player any distance.
+        new OrientationGuard(this);
 
         this.events.once('shutdown', () => this.input_.destroy());
     }
