@@ -41,10 +41,17 @@ export class Drop
     private colorId: ColorId | null = null;
 
     private color: number = COLOR_DROP_NEUTRAL;
+
+    /** Overrides `color` while a hit flash is playing. */
+    private flashColor: number | null = null;
+    private flashTimer: Phaser.Time.TimerEvent | null = null;
+
+    private readonly scene: Scene;
     private readonly gfx: Phaser.GameObjects.Graphics;
 
     constructor (scene: Scene)
     {
+        this.scene = scene;
         this.gfx = scene.add.graphics();
         this.gfx.setDepth(DEPTH_DROP);
         this.gfx.setPosition(this.x, DROP_SCREEN_Y);
@@ -75,6 +82,27 @@ export class Drop
     getColorId (): ColorId | null
     {
         return this.colorId;
+    }
+
+    /**
+     * Briefly repaint the drop, to sell a wrong-colour hit.
+     */
+    flash (color: number, duration: number): void
+    {
+        //  Cancel any flash still running, so back-to-back hits do not let the
+        //  first one's timer clear the second one early.
+        this.flashTimer?.remove();
+
+        this.flashColor = color;
+        this.redraw();
+
+        this.flashTimer = this.scene.time.delayedCall(duration, () => {
+
+            this.flashColor = null;
+            this.flashTimer = null;
+            this.redraw();
+
+        });
     }
 
     getLane (): number
@@ -132,7 +160,7 @@ export class Drop
 
         this.gfx.clear();
 
-        this.gfx.fillStyle(this.color, 1);
+        this.gfx.fillStyle(this.flashColor ?? this.color, 1);
         this.gfx.fillTriangle(-r * 0.62, -r * 0.62, 0, -r * 2.05, r * 0.62, -r * 0.62);
         this.gfx.fillCircle(0, 0, r);
 

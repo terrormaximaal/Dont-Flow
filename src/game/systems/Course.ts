@@ -1,12 +1,16 @@
 import { Scene } from 'phaser';
-import { ColorId, CULL_MARGIN, GAME_HEIGHT } from '../config/constants';
+import { ColorId, CULL_MARGIN, GAME_HEIGHT, ORB_CATCH_RADIUS } from '../config/constants';
 import { Level } from '../config/level';
 import { GatePair } from '../entities/GatePair';
+import { Orb } from '../entities/Orb';
 
 export interface CourseEvents
 {
     /** The drop has passed through one of a pair's gates. */
     onGate: (color: ColorId) => void;
+
+    /** The drop has touched an orb. `matched` is whether the colours agreed. */
+    onOrb: (orb: Orb, matched: boolean, y: number) => void;
 }
 
 /**
@@ -20,6 +24,7 @@ export interface CourseEvents
 export class Course
 {
     private gates: GatePair[] = [];
+    private orbs: Orb[] = [];
 
     private readonly events: CourseEvents;
 
@@ -33,17 +38,28 @@ export class Course
         {
             this.gates.push(new GatePair(scene, spec));
         }
+
+        for (const spec of level.orbs)
+        {
+            this.orbs.push(new Orb(scene, spec));
+        }
     }
 
     /**
      * @param travelled Distance the drop has covered.
-     * @param dropX     Current screen x of the drop, for deciding which gate it
-     *                  went through.
+     * @param dropX     Current screen x of the drop.
+     * @param dropColor The drop's colour, or null before its first gate.
      */
-    update (travelled: number, dropX: number): void
+    update (travelled: number, dropX: number, dropColor: ColorId | null): void
     {
         const cullY = GAME_HEIGHT + CULL_MARGIN;
 
+        this.updateGates(travelled, dropX, cullY);
+        this.updateOrbs(travelled, dropX, dropColor, cullY);
+    }
+
+    private updateGates (travelled: number, dropX: number, cullY: number): void
+    {
         for (let i = this.gates.length - 1; i >= 0; i--)
         {
             const gate = this.gates[i];
@@ -60,6 +76,39 @@ export class Course
             {
                 gate.destroy();
                 this.gates.splice(i, 1);
+            }
+        }
+    }
+
+    private updateOrbs (travelled: number, dropX: number, dropColor: ColorId | null, cullY: number): void
+    {
+        for (let i = this.orbs.length - 1; i >= 0; i--)
+        {
+            const orb = this.orbs[i];
+            const y = orb.update(travelled);
+
+            //  Reaching an orb's distance is only half of it - the drop also has
+            //  to be in the right place across the track. Orbs it steers around
+            //  are simply left behind.
+            if (!orb.consumed && travelled >= orb.distance)
+            {
+                orb.consumed = true;
+
+                if (Math.abs(dropX - orb.x) < ORB_CATCH_RADIUS)
+                {
+                    this.events.onOrb(orb, orb.color === dropColor, y);
+
+                    orb.destroy();
+                    this.orbs.splice(i, 1);
+
+                    continue;
+                }
+            }
+
+            if (y > cullY)
+            {
+                orb.destroy();
+                this.orbs.splice(i, 1);
             }
         }
     }

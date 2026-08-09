@@ -108,6 +108,53 @@ export const GATE_POST_WIDTH = 4;
 export const GATE_POST_ALPHA = 0.55;
 
 // ---------------------------------------------------------------------------
+//  Orbs & scoring
+// ---------------------------------------------------------------------------
+
+export const ORB_RADIUS = 13;
+export const ORB_CORE_ALPHA = 0.3;
+
+//  How close the drop's centre must be to an orb's lane, horizontally, to touch
+//  it. Derived from the two radii, with a little slack so a near miss that
+//  looks like a hit counts as one.
+export const ORB_CATCH_SLACK = 4;
+export const ORB_CATCH_RADIUS = DROP_RADIUS + ORB_RADIUS + ORB_CATCH_SLACK;
+
+export const SCORE_PER_ORB = 10;
+
+// ---------------------------------------------------------------------------
+//  Feedback
+// ---------------------------------------------------------------------------
+
+export const BURST_PARTICLES = 12;
+export const BURST_PARTICLE_RADIUS = 4;
+export const BURST_SPEED_MIN = 70;
+export const BURST_SPEED_MAX = 150;
+export const BURST_DURATION = 420;
+
+/** How long the drop stays red after touching a wrong-coloured orb. */
+export const FLASH_DURATION = 160;
+export const COLOR_FLASH = 0xff2b3d;
+
+/** Haptic pulse lengths in ms. Silently ignored where unsupported. */
+export const HAPTIC_COLLECT_MS = 12;
+export const HAPTIC_MISS_MS = 45;
+
+// ---------------------------------------------------------------------------
+//  HUD
+// ---------------------------------------------------------------------------
+
+export const HUD_MARGIN_TOP = 34;
+export const HUD_SCORE_SIZE = 44;
+export const HUD_COMBO_SIZE = 22;
+export const HUD_FONT = 'Arial Black, Arial, Helvetica, sans-serif';
+export const COLOR_HUD_TEXT = '#e8f1ff';
+export const COLOR_HUD_DIM = '#7f8db0';
+
+/** Combo is only worth showing once it is actually a streak. */
+export const COMBO_VISIBLE_FROM = 2;
+
+// ---------------------------------------------------------------------------
 //  Course
 // ---------------------------------------------------------------------------
 
@@ -135,4 +182,7 @@ export const COLOR_DROP_HIGHLIGHT = 0xffffff;
 export const DEPTH_TRACK = 0;
 export const DEPTH_RUNGS = 1;
 export const DEPTH_GATES = 5;
+export const DEPTH_ORBS = 6;
 export const DEPTH_DROP = 20;
+export const DEPTH_FX = 25;
+export const DEPTH_HUD = 40;
