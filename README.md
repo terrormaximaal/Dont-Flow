@@ -23,9 +23,9 @@ What is in:
 - Saved progress: best score per level, and a reload resumes the level you were
   on
 - A title screen and a level select, unlocked as far as you have reached
+- Energy: starting a level costs one, and it refills with real time
 
-Deliberately **not** in yet: energy. Score resets at the start of each level -
-only the per-level best is kept.
+Score resets at the start of each level - only the per-level best is kept.
 
 ## Requirements
 
@@ -89,6 +89,7 @@ others.
 | `src/game/systems/World.ts` | Track distance to screen y |
 | `src/game/systems/ScoreSystem.ts` | Score and combo bookkeeping |
 | `src/game/systems/SaveSystem.ts` | Progress in localStorage |
+| `src/game/systems/EnergySystem.ts` | Energy in hand, and refilling it over time |
 | `src/game/systems/Effects.ts` | Particle bursts and haptics |
 | `src/game/systems/OrientationGuard.ts` | Pauses the run while the device is sideways |
 | `src/game/ui/Hud.ts` | Score and combo readout |
@@ -178,8 +179,30 @@ Every one of those falls back to an empty save held in memory, so the game alway
 starts and only persistence is lost. Bumping `SAVE_VERSION` discards saves from
 an incompatible format rather than guessing at a migration.
 
-`furthestLevel` is recorded but unused - a level-select menu will want it, and
-storing it now means the history exists by the time that is built.
+## Energy
+
+Starting a level costs one energy, retries included. Energy refills with real
+time, up to `MAX_ENERGY`. Both that and `ENERGY_REFILL_MS` are in
+`constants.ts` - set the cost to `0` to take energy out of the way while working
+on something else.
+
+This is a limit on how much can be played in a sitting, not health: it is
+charged once as a level begins and never affects a run in progress.
+
+Refills are worked out lazily from a single stored timestamp rather than ticked,
+so time passes while the game is closed and there is no timer to keep alive.
+`energyAt` marks the start of the interval currently being waited out, which is
+why partial progress survives - 25 minutes at a 10 minute refill grants two
+energy and keeps the remaining five minutes.
+
+At the cap, nothing is stored and no timestamp is kept: spending starts a fresh
+interval the moment energy drops below max, so time spent full cannot bank up.
+That also keeps the menus from writing to `localStorage` on every frame, since
+the meter polls this once per frame.
+
+Energy trusts the device clock, so winding it forward grants energy. That is
+inherent to storing progress locally; a server-checked clock is the only real
+fix, and there is no server.
 
 ## Notes
 

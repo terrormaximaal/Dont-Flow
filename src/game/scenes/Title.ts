@@ -11,15 +11,18 @@ import {
     MENU_SCROLL_SPEED,
     RESUME_AT_LAST_LEVEL,
     TITLE_BUTTONS_Y,
+    TITLE_ENERGY_Y,
     TITLE_DROP_RADIUS,
     TITLE_LOGO_Y,
     TITLE_SIZE,
     TITLE_TAGLINE_SIZE
 } from '../config/constants';
 import { LEVELS } from '../config/levels';
+import { EnergySystem } from '../systems/EnergySystem';
 import { SaveSystem } from '../systems/SaveSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Button } from '../ui/Button';
+import { EnergyMeter } from '../ui/EnergyMeter';
 import { drawTeardrop } from '../ui/shapes';
 
 /**
@@ -29,6 +32,7 @@ import { drawTeardrop } from '../ui/shapes';
 export class Title extends Scene
 {
     private track: TrackScroller;
+    private meter: EnergyMeter;
     private distance = 0;
 
     constructor ()
@@ -43,10 +47,12 @@ export class Title extends Scene
         this.track = new TrackScroller(this);
 
         const save = new SaveSystem();
+        const energy = new EnergySystem(save);
         const resumeLevel = save.getResumeLevel();
 
         //  "Continue" only means something if there is somewhere to continue to.
         const canContinue = RESUME_AT_LAST_LEVEL && resumeLevel > 0;
+        const canPlay = energy.canPlay();
 
         const logo = this.add.graphics();
 
@@ -73,10 +79,15 @@ export class Title extends Scene
         tagline.setOrigin(0.5);
         tagline.setDepth(DEPTH_HUD);
 
+        const playLabel = canContinue ? `CONTINUE ${LEVELS[resumeLevel].name}` : 'PLAY';
+
+        //  Out of energy, the button is built inert rather than live and
+        //  refusing - the meter below it explains the wait.
         const play = new Button(this, {
             x: GAME_WIDTH / 2,
             y: TITLE_BUTTONS_Y,
-            label: canContinue ? `CONTINUE ${LEVELS[resumeLevel].name}` : 'PLAY',
+            label: canPlay ? playLabel : 'NO ENERGY',
+            variant: canPlay ? 'primary' : 'locked',
             onPress: () => this.startLevel(canContinue ? resumeLevel : 0)
         });
 
@@ -92,8 +103,15 @@ export class Title extends Scene
 
         levels.container.setDepth(DEPTH_HUD);
 
-        this.input.keyboard?.once('keydown-SPACE', () => this.startLevel(canContinue ? resumeLevel : 0));
-        this.input.keyboard?.once('keydown-ENTER', () => this.startLevel(canContinue ? resumeLevel : 0));
+        this.meter = new EnergyMeter(this, TITLE_ENERGY_Y, energy);
+
+        if (canPlay)
+        {
+            const start = () => this.startLevel(canContinue ? resumeLevel : 0);
+
+            this.input.keyboard?.once('keydown-SPACE', start);
+            this.input.keyboard?.once('keydown-ENTER', start);
+        }
     }
 
     private startLevel (levelIndex: number): void
@@ -106,5 +124,6 @@ export class Title extends Scene
         this.distance += MENU_SCROLL_SPEED * (delta / 1000);
 
         this.track.update(this.distance);
+        this.meter.update();
     }
 }

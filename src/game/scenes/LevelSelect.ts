@@ -13,14 +13,17 @@ import {
     LEVEL_ROW_NAME_SIZE,
     LEVEL_ROW_TEXT_INSET,
     LEVEL_ROW_WIDTH,
+    MENU_ENERGY_Y,
     MENU_HEADING_SIZE,
     MENU_HEADING_Y,
     MENU_SCROLL_SPEED
 } from '../config/constants';
 import { LEVELS } from '../config/levels';
+import { EnergySystem } from '../systems/EnergySystem';
 import { SaveSystem } from '../systems/SaveSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Button } from '../ui/Button';
+import { EnergyMeter } from '../ui/EnergyMeter';
 
 /**
  * One row per level, unlocked up to the furthest the player has reached.
@@ -31,6 +34,7 @@ import { Button } from '../ui/Button';
 export class LevelSelect extends Scene
 {
     private track: TrackScroller;
+    private meter: EnergyMeter;
     private distance = 0;
 
     constructor ()
@@ -45,7 +49,9 @@ export class LevelSelect extends Scene
         this.track = new TrackScroller(this);
 
         const save = new SaveSystem();
+        const energy = new EnergySystem(save);
         const furthest = save.getFurthestLevel();
+        const canPlay = energy.canPlay();
 
         const heading = this.add.text(GAME_WIDTH / 2, MENU_HEADING_Y, 'SELECT LEVEL', {
             fontFamily: HUD_FONT,
@@ -56,9 +62,15 @@ export class LevelSelect extends Scene
         heading.setOrigin(0.5);
         heading.setDepth(DEPTH_HUD);
 
+        this.meter = new EnergyMeter(this, MENU_ENERGY_Y, energy);
+
         LEVELS.forEach((level, index) => {
 
             const unlocked = index <= furthest;
+
+            //  Two separate reasons a row cannot be started: not reached yet, or
+            //  nothing left to spend. Both render inert; only the wording differs.
+            const startable = unlocked && canPlay;
             const y = LEVEL_ROW_FIRST_Y + (index * (LEVEL_ROW_HEIGHT + LEVEL_ROW_GAP));
 
             //  The row's own label is empty: the name and the score are laid out
@@ -69,7 +81,7 @@ export class LevelSelect extends Scene
                 width: LEVEL_ROW_WIDTH,
                 height: LEVEL_ROW_HEIGHT,
                 label: '',
-                variant: unlocked ? 'secondary' : 'locked',
+                variant: startable ? 'secondary' : 'locked',
                 onPress: () => this.scene.start('Play', { levelIndex: index })
             });
 
@@ -78,7 +90,7 @@ export class LevelSelect extends Scene
             const name = this.add.text(-(LEVEL_ROW_WIDTH / 2) + LEVEL_ROW_TEXT_INSET, 0, `LEVEL ${level.name}`, {
                 fontFamily: HUD_FONT,
                 fontSize: LEVEL_ROW_NAME_SIZE,
-                color: unlocked ? COLOR_HUD_TEXT : COLOR_HUD_DIM
+                color: startable ? COLOR_HUD_TEXT : COLOR_HUD_DIM
             });
 
             name.setOrigin(0, 0.5);
@@ -118,5 +130,6 @@ export class LevelSelect extends Scene
         this.distance += MENU_SCROLL_SPEED * (delta / 1000);
 
         this.track.update(this.distance);
+        this.meter.update();
     }
 }

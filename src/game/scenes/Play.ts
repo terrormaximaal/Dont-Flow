@@ -15,6 +15,7 @@ import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { Course } from '../systems/Course';
 import { Effects } from '../systems/Effects';
+import { EnergySystem } from '../systems/EnergySystem';
 import { InputSystem } from '../systems/InputSystem';
 import { OrientationGuard } from '../systems/OrientationGuard';
 import { SaveSystem } from '../systems/SaveSystem';
@@ -93,6 +94,16 @@ export class Play extends Scene
         this.paused = false;
         this.finished = false;
         this.pauseOverlay = null;
+
+        //  Charged per level start, retries included. The menus already gate
+        //  this, so failing here means Play was reached some other way - fall
+        //  back to the title rather than handing out a free run.
+        if (!new EnergySystem(this.save).spend())
+        {
+            this.scene.start('Title');
+
+            return;
+        }
 
         const level = LEVELS[this.levelIndex];
 

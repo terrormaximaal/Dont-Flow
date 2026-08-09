@@ -1,5 +1,6 @@
-import { SAVE_VERSION, STORAGE_KEY } from '../config/constants';
+import { MAX_ENERGY, SAVE_VERSION, STORAGE_KEY } from '../config/constants';
 import { clampLevelIndex, LEVEL_COUNT } from '../config/levels';
+import { clamp } from '../utils/math';
 
 interface SaveData
 {
@@ -16,6 +17,12 @@ interface SaveData
 
     /** Best score per level, index-aligned to LEVELS. */
     bestScores: number[];
+
+    /** Energy in hand. */
+    energy: number;
+
+    /** When the current refill interval started, as epoch ms. */
+    energyAt: number;
 }
 
 function emptySave (): SaveData
@@ -24,7 +31,9 @@ function emptySave (): SaveData
         version: SAVE_VERSION,
         currentLevel: 0,
         furthestLevel: 0,
-        bestScores: new Array(LEVEL_COUNT).fill(0)
+        bestScores: new Array(LEVEL_COUNT).fill(0),
+        energy: MAX_ENERGY,
+        energyAt: Date.now()
     };
 }
 
@@ -119,6 +128,20 @@ export class SaveSystem
             }
         }
 
+        //  Energy was added after the first saves were written. Missing fields
+        //  keep the defaults above - full energy, refilling from now - so an
+        //  earlier save stays valid instead of needing a version bump that
+        //  would throw away the player's progress.
+        if (typeof candidate.energy === 'number' && Number.isFinite(candidate.energy))
+        {
+            save.energy = clamp(Math.floor(candidate.energy), 0, MAX_ENERGY);
+        }
+
+        if (typeof candidate.energyAt === 'number' && Number.isFinite(candidate.energyAt) && candidate.energyAt > 0)
+        {
+            save.energyAt = Math.floor(candidate.energyAt);
+        }
+
         return save;
     }
 
@@ -160,6 +183,30 @@ export class SaveSystem
     getBestScore (levelIndex: number): number
     {
         return this.data.bestScores[clampLevelIndex(levelIndex)] ?? 0;
+    }
+
+    getEnergy (): number
+    {
+        return this.data.energy;
+    }
+
+    getEnergyAt (): number
+    {
+        return this.data.energyAt;
+    }
+
+    /** Writes only on an actual change, so idle polling does not touch storage. */
+    setEnergy (energy: number, energyAt: number): void
+    {
+        if (this.data.energy === energy && this.data.energyAt === energyAt)
+        {
+            return;
+        }
+
+        this.data.energy = energy;
+        this.data.energyAt = energyAt;
+
+        this.persist();
     }
 
     /** Called as a level begins, so a reload comes back to the same place. */

@@ -147,6 +147,32 @@ export const SAVE_VERSION = 1;
 export const RESUME_AT_LAST_LEVEL = true;
 
 // ---------------------------------------------------------------------------
+//  Energy
+//
+//  Starting a level costs energy, which refills with real time. This gates how
+//  much can be played in a sitting; it is not health, and it never affects a
+//  run once started.
+// ---------------------------------------------------------------------------
+
+export const MAX_ENERGY = 5;
+
+/** Real time to regain one energy. */
+export const ENERGY_REFILL_MS = 10 * 60 * 1000;
+
+/** Charged once per level start, including retries. */
+export const ENERGY_COST_PER_LEVEL = 1;
+
+export const ENERGY_PIP_RADIUS = 7;
+export const ENERGY_PIP_GAP = 9;
+export const ENERGY_TIMER_SIZE = 13;
+export const ENERGY_TIMER_OFFSET = 20;
+export const COLOR_ENERGY_FULL = 0x3fa9f5;
+export const COLOR_ENERGY_EMPTY = 0x243352;
+
+export const TITLE_ENERGY_Y = GAME_HEIGHT * 0.775;
+export const MENU_ENERGY_Y = 134;
+
+// ---------------------------------------------------------------------------
 //  Level complete overlay
 // ---------------------------------------------------------------------------
 
@@ -191,7 +217,8 @@ export const MENU_HEADING_Y = 92;
 export const LEVEL_ROW_WIDTH = 300;
 export const LEVEL_ROW_HEIGHT = 68;
 export const LEVEL_ROW_GAP = 12;
-export const LEVEL_ROW_FIRST_Y = 200;
+//  Leaves room for the energy meter and its countdown above the first row.
+export const LEVEL_ROW_FIRST_Y = 214;
 export const LEVEL_ROW_NAME_SIZE = 22;
 export const LEVEL_ROW_DETAIL_SIZE = 14;
 export const LEVEL_ROW_TEXT_INSET = 22;
