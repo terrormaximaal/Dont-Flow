@@ -172,6 +172,96 @@ export const LEVELS: LevelSpec[] = [
                 ]
             }
         ]
+    },
+    {
+        name: '4',
+        forwardSpeed: 560,
+        rowSpacing: 135,
+        //  The colour that pays out changes lane almost every row.
+        sections: [
+            {
+                splitAfterLane: 0,
+                colors: [ 'blue', 'red' ],
+                rows: [ 'B.R', '.BR', 'R.B', 'B.R', 'BR.', '.RB', 'B.R', 'RB.' ]
+            },
+            {
+                splitAfterLane: 1,
+                colors: [ 'red', 'blue' ],
+                rows: [ 'R.B', 'RB.', '.BR', 'R.B', 'B.R', '.RB', 'RB.', 'R.B' ]
+            },
+            {
+                splitAfterLane: 0,
+                colors: [ 'red', 'blue' ],
+                rows: [ '.RB', 'R.B', 'B.R', 'RB.', '.BR', 'R.B', 'BR.', '.RB' ]
+            },
+            {
+                splitAfterLane: 1,
+                colors: [ 'blue', 'red' ],
+                rows: [ 'B.R', '.BR', 'RB.', 'B.R', 'R.B', '.RB', 'BR.', 'B.R' ]
+            }
+        ]
+    },
+    {
+        name: '5',
+        forwardSpeed: 600,
+        rowSpacing: 128,
+        //  Rows close enough together that a lane change has to be committed to
+        //  before the previous one has finished.
+        sections: [
+            {
+                splitAfterLane: 1,
+                colors: [ 'red', 'blue' ],
+                rows: [ 'R.B', '.RB', 'RB.', 'B.R', '.BR', 'BR.', 'R.B', '.RB' ]
+            },
+            {
+                splitAfterLane: 0,
+                colors: [ 'blue', 'red' ],
+                rows: [ 'B.R', 'BR.', '.BR', 'R.B', 'RB.', '.RB', 'B.R', 'BR.' ]
+            },
+            {
+                splitAfterLane: 1,
+                colors: [ 'blue', 'red' ],
+                rows: [ '.BR', 'B.R', 'BR.', '.RB', 'R.B', 'RB.', 'B.R', '.BR' ]
+            },
+            {
+                splitAfterLane: 0,
+                colors: [ 'red', 'blue' ],
+                rows: [ 'R.B', '.RB', 'RB.', 'B.R', '.BR', 'BR.', 'R.B', 'RB.' ]
+            }
+        ]
+    },
+    {
+        name: '6',
+        forwardSpeed: 640,
+        rowSpacing: 120,
+        //  Everything at once, and a section longer than anything before it.
+        sections: [
+            {
+                splitAfterLane: 0,
+                colors: [ 'blue', 'red' ],
+                rows: [ 'B.R', '.BR', 'BR.', 'R.B', '.RB', 'RB.', 'B.R', '.BR' ]
+            },
+            {
+                splitAfterLane: 1,
+                colors: [ 'red', 'blue' ],
+                rows: [ 'R.B', 'RB.', '.RB', 'B.R', 'BR.', '.BR', 'R.B', 'RB.' ]
+            },
+            {
+                splitAfterLane: 0,
+                colors: [ 'red', 'blue' ],
+                rows: [ '.RB', 'R.B', 'RB.', 'B.R', '.BR', 'BR.', 'R.B', '.RB' ]
+            },
+            {
+                splitAfterLane: 1,
+                colors: [ 'blue', 'red' ],
+                rows: [ 'B.R', 'BR.', '.BR', 'R.B', 'RB.', '.RB', 'B.R', 'BR.' ]
+            },
+            {
+                splitAfterLane: 0,
+                colors: [ 'blue', 'red' ],
+                rows: [ '.BR', 'B.R', 'BR.', '.RB', 'R.B', 'RB.', 'B.R', '.BR' ]
+            }
+        ]
     }
 ];
 
