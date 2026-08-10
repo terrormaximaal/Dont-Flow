@@ -15,11 +15,12 @@ What is in:
 - Automatic forward motion with a scrolling track
 - Swipe / arrow-key lane changes that slide rather than snap
 - Colour gates spanning the track
-- Matching orbs (score + combo + burst + haptic) and wrong-coloured orbs
-  (combo reset + red flash)
+- Matching colours score and build a combo; a wrong colour costs double, breaks
+  the combo, flashes the drop and kicks the screen
 - A finish gate and a level-complete panel
-- Six levels, each with its own layout, speed and row spacing, played in
-  sequence
+- Ten levels, each with its own world, palette, layout, speed and row spacing
+- Coloured barriers that are only safe to pass while carrying their colour,
+  in three kinds introduced one at a time: static, sliding and pulsing
 - Saved progress: best score per level, and a reload resumes the level you were
   on
 - A title screen and a level select, unlocked as far as you have reached
@@ -77,18 +78,23 @@ others.
 | `src/game/config/constants.ts` | Every tunable value in the game |
 | `src/game/config/level.ts` | The level format, and compiling one into a course |
 | `src/game/config/levels.ts` | The levels themselves |
+| `src/game/config/worlds.ts` | The environment format, and the ten worlds |
 | `src/game/scenes/Title.ts` | Title screen, and where the game boots |
 | `src/game/scenes/LevelSelect.ts` | Level rows, unlocked from saved progress |
 | `src/game/scenes/Play.ts` | Wires the systems together and owns forward distance |
 | `src/game/entities/Drop.ts` | The player: lane easing, lean, colour, hit flash |
 | `src/game/entities/GatePair.ts` | Two colour gates spanning the track |
 | `src/game/entities/Orb.ts` | A lane-anchored collectible |
+| `src/game/entities/Obstacle.ts` | A coloured barrier: static, sliding or pulsing |
 | `src/game/entities/FinishGate.ts` | The chequered finish band |
 | `src/game/systems/InputSystem.ts` | Swipe and keyboard, to lane-change intents |
 | `src/game/systems/Course.ts` | Owns placed objects and reports what the drop passed |
 | `src/game/systems/TrackScroller.ts` | The scrolling track visuals |
 | `src/game/systems/Lanes.ts` | Lane index to screen x |
 | `src/game/systems/World.ts` | Track distance to screen y |
+| `src/game/systems/Projection.ts` | Track space to the diagonal corridor, at draw time only |
+| `src/game/systems/contact.ts` | Which gate, and what the drop is touching |
+| `src/game/systems/swipe.ts` | The gesture rules, as pure functions |
 | `src/game/systems/ScoreSystem.ts` | Score and combo bookkeeping |
 | `src/game/systems/SaveSystem.ts` | Progress in localStorage |
 | `src/game/systems/EnergySystem.ts` | Energy in hand, and refilling it over time |
@@ -99,6 +105,7 @@ others.
 | `src/game/ui/PauseButton.ts` | The pause control shown during play |
 | `src/game/ui/PauseOverlay.ts` | The paused panel |
 | `src/game/ui/Button.ts` | The tappable label every screen uses |
+| `src/game/ui/FloatingScore.ts` | Points won or lost, rising from the hit |
 | `src/game/ui/shapes.ts` | The teardrop, shared by the player and the logo |
 
 ### How position works
@@ -110,6 +117,41 @@ the track scrolls past it.
 
 This is also what makes hit detection simple: an object is reached the moment
 travelled distance passes its distance, which cannot tunnel at any speed.
+
+### How the perspective works
+
+The world is drawn as a road running away to a horizon, but it is still
+**authored flat**: a lane gives an x, a distance gives a depth.
+`systems/Projection.ts` is the only file that knows the world is seen in
+perspective.
+
+Two rules do all of it:
+
+- `World.screenYFor()` turns a distance into a screen y as `k / (ahead + k)`,
+  so far things barely move, near things rush past, and nothing crosses the
+  horizon;
+- `Projection.projectX()` pulls every point towards the vanishing point in
+  proportion to its depth, which gives convergence, the narrowing of the road
+  and its diagonal run all at once.
+
+Collision never calls either. Hits are decided on track coordinates, so the
+camera can be raised, lowered or straightened with no gameplay consequence -
+there is no second copy of the geometry to keep in step.
+
+The projection is the identity at the drop's own line, so the lane the player
+is steering in never slides under them and what is drawn provably agrees with
+what is collided.
+
+Two properties the rendering depends on, both tested:
+
+- it is **linear in screen y**, so straight lines stay straight and every line
+  on the road can be drawn from just its two projected endpoints;
+- the road **stays on screen for its whole visible length**, because a road
+  that ran off the edge would hide oncoming objects.
+
+Moving barriers take their position from a single function of distance
+travelled, called by both the renderer and the collision check, so a barrier
+cannot be drawn in one place and collided in another.
 
 ## Tuning the feel
 
@@ -127,23 +169,35 @@ Levels live in `src/game/config/levels.ts` as entries in `LEVELS`, and are playe
 in array order. `level.ts` holds the format and the compiler; `levels.ts` holds
 only content, so adding a level never means touching game code.
 
-A level is a list of sections. Each section is one gate pair followed by rows of
-orbs, written as text - one character per lane, `B` for a blue orb, `R` for red,
-`.` for empty:
+A level names a `world` (its environment) and a `palette`. Everything else refers
+to colours by **position in that palette**, so a level can be re-tinted in one
+place without touching its layout.
+
+A level is a list of sections. Each section is one gate pair followed by rows,
+written as text - one character per lane:
+
+| Character | Meaning |
+|---|---|
+| `.` | empty |
+| `1`-`5` | an orb of that palette colour |
+| `a`-`e` | a barrier of that palette colour |
 
 ```ts
 {
-    name: '4',
+    name: '11',
+    world: 'canyon',
+    palette: [ 'orange', 'purple', 'cyan' ],
     forwardSpeed: 560,   // optional, defaults to FORWARD_SPEED
     rowSpacing: 140,     // optional, defaults to ORB_ROW_SPACING
     sections: [
         {
             splitAfterLane: 0,
-            colors: [ 'blue', 'red' ],
+            gate: [ 0, 1 ],        // orange gate | purple gate
+            obstacles: 'slider',   // static | slider | pulse, defaults to static
             rows: [
-                'B.R',
-                '.BR',
-                'RB.'
+                '1.a',             // orange orb, gap, orange barrier
+                '.1c',
+                'c1.'
             ]
         }
     ]
@@ -153,19 +207,22 @@ orbs, written as text - one character per lane, `B` for a blue orb, `R` for red,
 `buildLevel()` expands the sections into absolute distances, so spacing comes
 from the constants at the top of `level.ts` rather than being positioned by hand.
 
-Difficulty has three dials: `forwardSpeed`, `rowSpacing`, and how much the orbs
-of one colour zig-zag between lanes. The third is what forces steering - a colour
-that stays in one lane can be followed without moving at all.
+Difficulty runs on five dials, and leaning only on speed makes a level faster
+rather than harder: `forwardSpeed`, `rowSpacing`, how many colours the palette
+holds, how much a colour zig-zags between lanes, and which barrier kinds are
+present.
 
-Two rules worth keeping:
+Rules the tests enforce, so a level cannot ship breaking them:
 
-- **At most two orbs per row.** Three leaves no empty lane, forcing the drop
-  through an orb it may not match. A combo should only break through the
-  player's own mistake.
-- **Gates split on a lane boundary.** The track has three lanes and a pair has
-  two gates, so a centred split would leave the middle lane straddling both.
-  `splitAfterLane` puts the join on a lane edge instead; alternating it between
-  sections keeps the layout varied.
+- **At most two things per row.** Three leaves no empty lane to dodge into.
+- **Every row leaves a lane that is safe to be in** - empty, or holding an orb.
+  An orb at worst costs points; a barrier can block the route outright, so a row
+  of nothing but barriers has no way through.
+- **A gate pair's two halves are different colours**, or the choice means nothing.
+- **Gates split on a lane boundary.** Three lanes and two gates cannot split down
+  the middle without leaving the centre lane straddling both.
+- **Each barrier kind appears before it is combined**, and level 1 has none at
+  all.
 
 ## Saved progress
 

@@ -19,8 +19,9 @@ export const TRACK_LEFT = (GAME_WIDTH - TRACK_WIDTH) / 2;
 //  Which lane the drop starts in (0 = left, 1 = middle, 2 = right).
 export const START_LANE = 1;
 
-//  The drop never moves up or down the screen - the track scrolls past it.
-export const DROP_SCREEN_Y = GAME_HEIGHT * 0.72;
+//  The drop never moves up or down the screen - the world comes towards it.
+//  Sat low, so most of the screen is the road ahead rather than behind.
+export const DROP_SCREEN_Y = GAME_HEIGHT * 0.78;
 
 /**
  * When this matches, the game is unplayable and asks to be rotated.
@@ -43,27 +44,29 @@ export const BLOCK_LANDSCAPE_QUERY = '(orientation: landscape) and (max-height: 
 //  which is what keeps the tilt free to change without touching gameplay.
 // ---------------------------------------------------------------------------
 
-/**
- * Horizontal shift per pixel of depth. Positive leans the corridor so the far
- * end sits to the left and the near end to the right, giving a bottom-right to
- * top-left run.
- */
-//  Capped by readability rather than taste: at 0.19 the far end of the corridor
-//  reaches the left screen edge, and any more would push oncoming orbs off it
-//  before the player could read them.
-export const PROJECTION_SHEAR = 0.18;
+/** Where the road converges. Everything ahead runs towards this point. */
+export const HORIZON_Y = GAME_HEIGHT * 0.30;
 
-/** The depth the shear pivots around: the drop's own line stays put. */
+/**
+ * The vanishing point's distance left of centre.
+ *
+ * This is what makes the road diagonal: the near end stays under the player
+ * while the far end pulls away to one side, so the world reads as turning past
+ * the camera rather than sliding down a chute.
+ */
+export const VANISH_OFFSET = 104;
+
+/** The depth the projection pivots around: the drop's own line stays put. */
 export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
 
 /**
- * How much narrower the corridor gets with distance. 0 is a flat shear, 1 would
- * taper to nothing at the top of the screen.
+ * World distance at which something sits halfway between the horizon and the
+ * player. Smaller bunches the far field harder into the distance.
  */
-export const PROJECTION_TAPER = 0.34;
+export const PERSPECTIVE_DEPTH = 1150;
 
-/** Depth at which the taper is fully applied. */
-export const PROJECTION_DEPTH = GAME_HEIGHT;
+/** How fast something already passed drops away below the screen. */
+export const BEHIND_RATE = 0.55;
 
 // ---------------------------------------------------------------------------
 //  Motion
@@ -93,6 +96,15 @@ export const DROP_LEAN_REFERENCE_SPEED = 620;
 export const DROP_LEAN_MAX = 0.34;
 //  How much the drop stretches into the direction of travel at full tilt.
 export const DROP_STRETCH = 0.16;
+
+//  A shadow on the road under the drop, which is what actually places it in the
+//  world rather than on the glass.
+export const DROP_SHADOW_ALPHA = 0.3;
+export const DROP_SHADOW_DROP = 26;
+export const DROP_SHADOW_SQUASH = 0.34;
+export const DROP_GLOW_LAYERS = 4;
+export const DROP_GLOW_SPREAD = 9;
+export const DROP_GLOW_ALPHA = 0.11;
 
 // ---------------------------------------------------------------------------
 //  Input
@@ -149,7 +161,7 @@ export type ColorId =
     | 'pink'
     | 'magenta';
 
-export const COLOR_BLUE = 0x3fa9f5;
+export const COLOR_BLUE = 0x2b6ef5;
 export const COLOR_RED = 0xff4d5a;
 
 //  Chosen to stay separable at a glance on a phone: no two sit close in hue,
@@ -159,23 +171,42 @@ export const COLOR_VALUES: Record<ColorId, number> = {
     red: COLOR_RED,
     blue: COLOR_BLUE,
     yellow: 0xffd23f,
-    orange: 0xff8c42,
-    purple: 0xa964ff,
-    cyan: 0x2fe3d0,
-    green: 0x5ddf6a,
+    orange: 0xff6a1f,
+    purple: 0xc9a3ff,
+    cyan: 0x1ef0c4,
+    green: 0x3fb84f,
     pink: 0xff7ab8,
-    magenta: 0xff4fd8
+    magenta: 0xf01fa8
 };
 
 // ---------------------------------------------------------------------------
 //  Gates
 // ---------------------------------------------------------------------------
 
-export const GATE_HEIGHT = 104;
-export const GATE_BAR_THICKNESS = 7;
-export const GATE_PANEL_ALPHA = 0.22;
-export const GATE_POST_WIDTH = 4;
-export const GATE_POST_ALPHA = 0.55;
+//  Portals stand *up* from the road rather than lying flat across it, so the
+//  colour is read as a doorway to travel through.
+export const PORTAL_HEIGHT = 150;
+export const PORTAL_ARCH_RISE = 0.34;
+export const PORTAL_ARCH_STEPS = 12;
+export const PORTAL_FRAME_THICKNESS = 7;
+export const PORTAL_INNER_ALPHA = 0.16;
+export const PORTAL_GLOW_LAYERS = 3;
+export const PORTAL_GLOW_SPREAD = 13;
+export const PORTAL_GLOW_ALPHA = 0.07;
+
+/** Light thrown onto the road in front of a portal. */
+export const PORTAL_SPILL_DEPTH = 240;
+export const PORTAL_SPILL_ALPHA = 0.16;
+export const PORTAL_SPILL_STEPS = 9;
+
+/** Motes drifting around the doorway. */
+export const PORTAL_MOTES = 9;
+export const PORTAL_MOTE_RADIUS = 3;
+export const PORTAL_MOTE_ALPHA = 0.75;
+export const PORTAL_MOTE_RISE = 90;
+
+//  Kept for the level-complete banner's colours.
+export const GATE_HEIGHT = PORTAL_HEIGHT;
 
 // ---------------------------------------------------------------------------
 //  Finish
@@ -274,15 +305,21 @@ export const TITLE_BUTTONS_Y = GAME_HEIGHT * 0.60;
 export const MENU_HEADING_SIZE = 26;
 export const MENU_HEADING_Y = 92;
 
-/** Level select rows. */
-export const LEVEL_ROW_WIDTH = 300;
-export const LEVEL_ROW_HEIGHT = 68;
-export const LEVEL_ROW_GAP = 12;
+/**
+ * Level select is a grid, not a list: ten rows in one column ran off the bottom
+ * of the screen and took the BACK button with them, which on a touch device
+ * left no way out at all.
+ */
+export const LEVEL_COLUMNS = 2;
+export const LEVEL_ROW_WIDTH = 150;
+export const LEVEL_ROW_HEIGHT = 66;
+export const LEVEL_ROW_GAP = 14;
 //  Leaves room for the energy meter and its countdown above the first row.
-export const LEVEL_ROW_FIRST_Y = 214;
-export const LEVEL_ROW_NAME_SIZE = 22;
-export const LEVEL_ROW_DETAIL_SIZE = 14;
-export const LEVEL_ROW_TEXT_INSET = 22;
+export const LEVEL_ROW_FIRST_Y = 248;
+export const LEVEL_ROW_NAME_SIZE = 24;
+export const LEVEL_ROW_DETAIL_SIZE = 12;
+export const LEVEL_ROW_NAME_OFFSET = -11;
+export const LEVEL_ROW_DETAIL_OFFSET = 15;
 
 // ---------------------------------------------------------------------------
 //  Pause
@@ -320,6 +357,47 @@ export const SCORE_PER_ORB = 10;
  */
 export const WRONG_COLOR_MULTIPLIER = 2;
 export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
+
+// ---------------------------------------------------------------------------
+//  Obstacles
+// ---------------------------------------------------------------------------
+
+/** Half the width of a barrier, in track pixels. */
+export const OBSTACLE_HALF_WIDTH = 44;
+
+/** How far a barrier reaches along the track. */
+export const OBSTACLE_DEPTH = 52;
+
+/**
+ * How tall a barrier stands off the road.
+ *
+ * Lying flat they read as panels painted on the floor - decoration to drive
+ * over. Standing up, they read as something in the way, which is what they are.
+ */
+export const OBSTACLE_STAND_HEIGHT = 78;
+export const OBSTACLE_FOOT_ALPHA = 0.22;
+
+/**
+ * How close the drop's centre must be to count as hitting a barrier.
+ *
+ * Held below half a lane so a barrier only ever blocks its own lane - being in
+ * the lane beside one must always be safe, or a level could take points for a
+ * mistake the player did not make.
+ */
+export const DROP_CONTACT_RADIUS = DROP_RADIUS;
+
+export const OBSTACLE_FILL_ALPHA = 0.34;
+export const OBSTACLE_EDGE_THICKNESS = 4;
+export const OBSTACLE_HATCH_COUNT = 3;
+export const OBSTACLE_HATCH_ALPHA = 0.5;
+
+/** Sliding barriers: how far they travel, and over what stretch of track. */
+export const SLIDER_AMPLITUDE = LANE_WIDTH;
+export const SLIDER_PERIOD = 620;
+
+/** Pulsing barriers: how much they breathe, and how often. */
+export const PULSE_AMOUNT = 0.42;
+export const PULSE_PERIOD = 300;
 
 // ---------------------------------------------------------------------------
 //  Feedback
@@ -381,6 +459,18 @@ export const COMBO_VISIBLE_FROM = 2;
 //  How far past the drop an object travels before it is destroyed.
 export const CULL_MARGIN = 200;
 
+/**
+ * How far ahead objects are drawn at all.
+ *
+ * Perspective piles everything beyond this into a few pixels at the horizon, so
+ * drawing it turns the far distance into an unreadable stack of portals rather
+ * than a road running away.
+ */
+export const DRAW_DISTANCE = 3400;
+
+/** The last stretch of the draw distance, over which something fades in. */
+export const FADE_IN_DISTANCE = 900;
+
 // ---------------------------------------------------------------------------
 //  Palette
 // ---------------------------------------------------------------------------
@@ -399,6 +489,9 @@ export const COLOR_DROP_HIGHLIGHT = 0xffffff;
 //  Render order
 // ---------------------------------------------------------------------------
 
+//  The ground sits below the road so roadside scenery can stand between them.
+export const DEPTH_GROUND = -8;
+export const DEPTH_ROADSIDE = -4;
 export const DEPTH_TRACK = 0;
 export const DEPTH_RUNGS = 1;
 export const DEPTH_GATES = 5;

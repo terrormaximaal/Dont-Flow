@@ -1,4 +1,4 @@
-import { LANE_WIDTH, ORB_CATCH_RADIUS, TRACK_LEFT } from '../config/constants';
+import { DROP_CONTACT_RADIUS, LANE_WIDTH, ORB_CATCH_RADIUS, TRACK_LEFT } from '../config/constants';
 
 //  What the drop is touching, as pure geometry.
 //
@@ -34,4 +34,17 @@ export function gateSideAt (x: number, splitAfterLane: number): 0 | 1
 export function isWithinCatchRange (dropX: number, orbX: number): boolean
 {
     return Math.abs(dropX - orbX) < ORB_CATCH_RADIUS;
+}
+
+/**
+ * Whether the drop is inside a barrier.
+ *
+ * Takes the barrier's current centre and half-width rather than reading them
+ * itself, because a moving barrier's position is a function of distance
+ * travelled - the caller has that, and passing it keeps the drawn barrier and
+ * the collided barrier the same barrier.
+ */
+export function isBlockedBy (dropX: number, obstacleX: number, obstacleHalfWidth: number): boolean
+{
+    return Math.abs(dropX - obstacleX) < obstacleHalfWidth + DROP_CONTACT_RADIUS;
 }

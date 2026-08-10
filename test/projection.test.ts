@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
     GAME_WIDTH,
+    HORIZON_Y,
     PROJECTION_PIVOT_Y,
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../src/game/config/constants';
 import { laneCenterX } from '../src/game/systems/Lanes';
-import { depthScale, project, projectX } from '../src/game/systems/Projection';
+import { depthScale, project, projectX, VANISH_X } from '../src/game/systems/Projection';
 
 describe('the projection', () => {
 
@@ -27,10 +28,12 @@ describe('the projection', () => {
 
     });
 
-    it('leans the far end one way and the near end the other', () => {
+    it('pulls the far end towards the vanishing point and the near end away', () => {
 
         const x = GAME_WIDTH / 2;
 
+        //  Further off is closer to the vanishing point, which sits left of
+        //  centre; nearer is further from it.
         expect(projectX(x, PROJECTION_PIVOT_Y - 200)).toBeLessThan(x);
         expect(projectX(x, PROJECTION_PIVOT_Y + 200)).toBeGreaterThan(x);
 
@@ -86,15 +89,34 @@ describe('the projection', () => {
 
     });
 
-    //  A corridor that left the screen would hide oncoming orbs, which is the
-    //  one thing the tilt must not cost.
-    it('keeps the whole corridor on screen at the top of the view', () => {
+    it('collapses the road to the vanishing point at the horizon', () => {
 
-        const left = projectX(TRACK_LEFT, 0);
-        const right = projectX(TRACK_LEFT + TRACK_WIDTH, 0);
+        expect(depthScale(HORIZON_Y)).toBeCloseTo(0, 10);
+        expect(projectX(TRACK_LEFT, HORIZON_Y)).toBeCloseTo(VANISH_X, 10);
+        expect(projectX(TRACK_LEFT + TRACK_WIDTH, HORIZON_Y)).toBeCloseTo(VANISH_X, 10);
 
-        expect(left).toBeGreaterThanOrEqual(0);
-        expect(right).toBeLessThanOrEqual(GAME_WIDTH);
+    });
+
+    //  A road that left the screen would hide oncoming objects, which is the
+    //  one thing the perspective must not cost. Everything between the horizon
+    //  and the player has to stay in view.
+    it('keeps the road on screen for its whole visible length', () => {
+
+        for (let y = HORIZON_Y; y <= PROJECTION_PIVOT_Y; y += 10)
+        {
+            const left = projectX(TRACK_LEFT, y);
+            const right = projectX(TRACK_LEFT + TRACK_WIDTH, y);
+
+            expect(left, `left edge at y=${Math.round(y)}`).toBeGreaterThanOrEqual(0);
+            expect(right, `right edge at y=${Math.round(y)}`).toBeLessThanOrEqual(GAME_WIDTH);
+        }
+
+    });
+
+    it('puts the vanishing point off centre, so the road runs diagonally', () => {
+
+        expect(VANISH_X).toBeLessThan(GAME_WIDTH / 2);
+        expect(VANISH_X).toBeGreaterThan(0);
 
     });
 

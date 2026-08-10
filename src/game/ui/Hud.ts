@@ -15,6 +15,7 @@ import {
     HUD_STROKE_THICKNESS,
     HUD_STROKE_THICKNESS_SMALL
 } from '../config/constants';
+import { WorldSpec } from '../config/worlds';
 
 /**
  * Score and combo readout. Pure display - it is handed values, it never
@@ -28,13 +29,19 @@ export class Hud
 
     private shownCombo = -1;
 
-    constructor (scene: Scene, levelName: string)
+    constructor (scene: Scene, levelName: string, world?: WorldSpec)
     {
+        //  Light worlds need dark text and dark worlds need light; one fixed
+        //  colour would be unreadable on half of them.
+        const text = world?.hudText ?? COLOR_HUD_TEXT;
+        const dim = world?.hudDim ?? COLOR_HUD_DIM;
+        const stroke = world?.hudStroke ?? COLOR_HUD_STROKE;
+
         this.levelText = scene.add.text(GAME_WIDTH / 2, HUD_LEVEL_MARGIN_TOP, `LEVEL ${levelName}`, {
             fontFamily: HUD_FONT,
             fontSize: HUD_LEVEL_SIZE,
-            color: COLOR_HUD_DIM,
-            stroke: COLOR_HUD_STROKE,
+            color: dim,
+            stroke: stroke,
             strokeThickness: HUD_STROKE_THICKNESS_SMALL
         });
 
@@ -44,8 +51,8 @@ export class Hud
         this.scoreText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP, '0', {
             fontFamily: HUD_FONT,
             fontSize: HUD_SCORE_SIZE,
-            color: COLOR_HUD_TEXT,
-            stroke: COLOR_HUD_STROKE,
+            color: text,
+            stroke: stroke,
             strokeThickness: HUD_STROKE_THICKNESS
         });
 
@@ -55,8 +62,8 @@ export class Hud
         this.comboText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP + HUD_SCORE_SIZE + 8, '', {
             fontFamily: HUD_FONT,
             fontSize: HUD_COMBO_SIZE,
-            color: COLOR_HUD_DIM,
-            stroke: COLOR_HUD_STROKE,
+            color: dim,
+            stroke: stroke,
             strokeThickness: HUD_STROKE_THICKNESS_SMALL
         });
 

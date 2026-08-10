@@ -1,145 +1,173 @@
 import { Scene } from 'phaser';
 import {
-    COLOR_LANE_LINE,
-    COLOR_RUNG,
-    COLOR_SIDE_TICK,
-    COLOR_TRACK,
-    COLOR_TRACK_EDGE,
+    DEPTH_GROUND,
     DEPTH_TRACK,
     GAME_HEIGHT,
+    GAME_WIDTH,
+    HORIZON_Y,
     LANE_COUNT,
     LANE_LINE_THICKNESS,
     LANE_WIDTH,
     RUNG_SPACING,
     RUNG_THICKNESS,
-    SIDE_TICK_GAP,
-    SIDE_TICK_PARALLAX,
-    SIDE_TICK_SPACING,
-    SIDE_TICK_THICKNESS,
-    SIDE_TICK_WIDTH,
     TRACK_EDGE_THICKNESS,
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../config/constants';
-import { depthScale, fillProjectedQuad, projectX } from './Projection';
+import { WorldSpec } from '../config/worlds';
+import { depthScale, fillProjectedQuad, projectX, VANISH_X } from './Projection';
+import { screenYFor } from './World';
 
-/** How far beyond the screen the corridor is drawn, so its ends are never seen. */
-const OVERDRAW = 140;
+/** The corridor's own colours, which each world re-tints. */
+export interface TrackPalette
+{
+    track: number;
+    laneLine: number;
+    trackEdge: number;
+    rung: number;
+}
 
-const TOP = -OVERDRAW;
-const BOTTOM = GAME_HEIGHT + OVERDRAW;
+/** Drawn past the bottom of the screen so the road's near end is never seen. */
+const OVERDRAW = 260;
+
+/** How far ahead the road is drawn, in world distance. */
+const VIEW_DISTANCE = 26000;
+
+/** Ground beyond the road's edges, so the path floats on something. */
+const GROUND_SPREAD = 3.4;
+
+/** Rungs closer together than this on screen are skipped as unreadable mush. */
+const MIN_RUNG_GAP = 3;
 
 /**
- * The corridor the drop travels down, drawn as a diagonal run through the world.
+ * The road the drop travels along, drawn in perspective towards the horizon.
  *
- * Redrawn every frame into a single Graphics rather than moving a pool of
- * rectangles. The projection shifts every point by its own depth, so a lane
- * divider is a slanted line and a cross-bar is a shifted, narrowed one - shapes
- * that cannot be expressed by moving an axis-aligned rectangle. It is a few
- * dozen line segments a frame, which costs nothing.
+ * Redrawn every frame into one Graphics. Perspective moves every point by its
+ * own depth, so a lane divider is a converging line and a cross-bar is a
+ * shorter, narrower one the further off it is - shapes no axis-aligned
+ * rectangle can express.
  *
- * The projection is affine, so straight lines stay straight and only the two
- * ends of each need projecting.
+ * The projection is linear in screen y, so straight things stay straight and
+ * only the two ends of each line need projecting.
  */
 export class TrackScroller
 {
     private readonly gfx: Phaser.GameObjects.Graphics;
 
-    /** Wrap length, kept an exact multiple of the spacing. */
-    private readonly rungSpan: number;
-    private readonly sideSpan: number;
-    private readonly rungCount: number;
-    private readonly sideCount: number;
+    /**
+     * The ground is a separate layer below the road, so anything standing on it
+     * - roadside scenery - can be drawn between the two. Painted into the same
+     * Graphics it would simply cover them.
+     */
+    private readonly groundGfx: Phaser.GameObjects.Graphics;
 
-    constructor (scene: Scene)
+    private readonly palette: TrackPalette;
+    private readonly ground: number;
+
+    constructor (scene: Scene, world: WorldSpec)
     {
+        this.palette = world;
+
+        //  The ground reads as the road's own surface pushed out to either side
+        //  and dimmed, which keeps the path sitting *in* the world.
+        this.ground = world.groundColor ?? world.track;
+
+        this.groundGfx = scene.add.graphics();
+        this.groundGfx.setDepth(DEPTH_GROUND);
+
         this.gfx = scene.add.graphics();
         this.gfx.setDepth(DEPTH_TRACK);
-
-        const span = BOTTOM - TOP;
-
-        this.rungCount = Math.ceil(span / RUNG_SPACING);
-        this.rungSpan = this.rungCount * RUNG_SPACING;
-
-        this.sideCount = Math.ceil(span / SIDE_TICK_SPACING);
-        this.sideSpan = this.sideCount * SIDE_TICK_SPACING;
     }
 
-    /**
-     * @param distance How far the drop has travelled, in track pixels.
-     */
     update (distance: number): void
     {
         const gfx = this.gfx;
+        const near = GAME_HEIGHT + OVERDRAW;
+        const far = screenYFor(distance + VIEW_DISTANCE, distance);
 
         gfx.clear();
+        this.groundGfx.clear();
 
-        this.fillSlab(gfx);
-        this.strokeRails(gfx);
-        this.strokeRungs(gfx, distance);
-        this.strokeSideTicks(gfx, distance);
+        this.fillGround(this.groundGfx, near, far);
+        this.fillRoad(gfx, near, far);
+        this.strokeRungs(gfx, distance, near);
+        this.strokeRails(gfx, near, far);
     }
 
-    /** The corridor floor: a quad, since the two ends are different widths. */
-    private fillSlab (gfx: Phaser.GameObjects.Graphics): void
+    /** The plane the road sits on, running back to the horizon. */
+    private fillGround (gfx: Phaser.GameObjects.Graphics, near: number, far: number): void
     {
-        gfx.fillStyle(COLOR_TRACK, 1);
+        const spread = TRACK_WIDTH * GROUND_SPREAD;
+        const left = (GAME_WIDTH / 2) - spread;
+        const right = (GAME_WIDTH / 2) + spread;
 
-        fillProjectedQuad(gfx, TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH, TOP, BOTTOM);
+        gfx.fillStyle(this.ground, 1);
+        gfx.fillTriangle(0, GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT, GAME_WIDTH, HORIZON_Y);
+        gfx.fillTriangle(0, GAME_HEIGHT, GAME_WIDTH, HORIZON_Y, 0, HORIZON_Y);
+
+        //  A slightly lighter apron either side of the path, so the road is a
+        //  surface rather than a stripe painted on nothing.
+        gfx.fillStyle(this.palette.track, 0.45);
+        fillProjectedQuad(gfx, left, right, far, near);
     }
 
-    /** Lane dividers and the two outer edges, running away down the corridor. */
-    private strokeRails (gfx: Phaser.GameObjects.Graphics): void
+    private fillRoad (gfx: Phaser.GameObjects.Graphics, near: number, far: number): void
     {
-        gfx.lineStyle(LANE_LINE_THICKNESS, COLOR_LANE_LINE, 1);
+        gfx.fillStyle(this.palette.track, 1);
+
+        fillProjectedQuad(gfx, TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH, far, near);
+    }
+
+    /** Lane dividers and edges, converging on the vanishing point. */
+    private strokeRails (gfx: Phaser.GameObjects.Graphics, near: number, far: number): void
+    {
+        gfx.lineStyle(LANE_LINE_THICKNESS, this.palette.laneLine, 0.9);
 
         for (let i = 1; i < LANE_COUNT; i++)
         {
             const x = TRACK_LEFT + (i * LANE_WIDTH);
 
-            gfx.lineBetween(projectX(x, TOP), TOP, projectX(x, BOTTOM), BOTTOM);
+            gfx.lineBetween(projectX(x, far), far, projectX(x, near), near);
         }
 
-        gfx.lineStyle(TRACK_EDGE_THICKNESS, COLOR_TRACK_EDGE, 1);
+        gfx.lineStyle(TRACK_EDGE_THICKNESS, this.palette.trackEdge, 1);
 
         for (const x of [ TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH ])
         {
-            gfx.lineBetween(projectX(x, TOP), TOP, projectX(x, BOTTOM), BOTTOM);
+            gfx.lineBetween(projectX(x, far), far, projectX(x, near), near);
         }
     }
 
-    /** Cross-bars flowing towards the player, which is what reads as speed. */
-    private strokeRungs (gfx: Phaser.GameObjects.Graphics, distance: number): void
+    /**
+     * Cross-bars laid at fixed distances along the road, not at fixed gaps on
+     * screen. Perspective then bunches them towards the horizon by itself,
+     * which is most of what reads as speed and depth.
+     */
+    private strokeRungs (gfx: Phaser.GameObjects.Graphics, distance: number, near: number): void
     {
         const right = TRACK_LEFT + TRACK_WIDTH;
 
-        for (let i = 0; i < this.rungCount; i++)
-        {
-            const y = TOP + ((((i * RUNG_SPACING) + distance) % this.rungSpan));
+        //  Start at the last bar already behind the player and walk away.
+        let index = Math.floor(distance / RUNG_SPACING);
+        let previousY = Number.POSITIVE_INFINITY;
 
-            //  Thinner with distance, along with everything else at that depth.
-            gfx.lineStyle(RUNG_THICKNESS * depthScale(y), COLOR_RUNG, 1);
+        for (let i = 0; i < 240; i++, index++)
+        {
+            const y = screenYFor(index * RUNG_SPACING, distance);
+
+            if (y > near) { continue; }
+
+            //  Once they are within a few pixels of each other they are no
+            //  longer bars, just noise on the horizon.
+            if (previousY - y < MIN_RUNG_GAP) { break; }
+
+            previousY = y;
+
+            gfx.lineStyle(Math.max(1, RUNG_THICKNESS * depthScale(y)), this.palette.rung, 0.85);
             gfx.lineBetween(projectX(TRACK_LEFT, y), y, projectX(right, y), y);
         }
     }
-
-    /** Marks outside the corridor, scrolling slower to give the world depth. */
-    private strokeSideTicks (gfx: Phaser.GameObjects.Graphics, distance: number): void
-    {
-        const sideDistance = distance * SIDE_TICK_PARALLAX;
-
-        const leftOuter = TRACK_LEFT - SIDE_TICK_GAP - SIDE_TICK_WIDTH;
-        const leftInner = TRACK_LEFT - SIDE_TICK_GAP;
-        const rightInner = TRACK_LEFT + TRACK_WIDTH + SIDE_TICK_GAP;
-        const rightOuter = rightInner + SIDE_TICK_WIDTH;
-
-        for (let i = 0; i < this.sideCount; i++)
-        {
-            const y = TOP + ((((i * SIDE_TICK_SPACING) + sideDistance) % this.sideSpan));
-
-            gfx.lineStyle(SIDE_TICK_THICKNESS * depthScale(y), COLOR_SIDE_TICK, 1);
-            gfx.lineBetween(projectX(leftOuter, y), y, projectX(leftInner, y), y);
-            gfx.lineBetween(projectX(rightInner, y), y, projectX(rightOuter, y), y);
-        }
-    }
 }
+
+/** The vanishing point, for anything that needs to line up with the road. */
+export { VANISH_X };
