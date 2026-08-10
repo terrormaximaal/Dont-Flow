@@ -1,9 +1,10 @@
 import { Scene } from 'phaser';
-import { ColorId, CULL_MARGIN, GAME_HEIGHT, ORB_CATCH_RADIUS } from '../config/constants';
+import { ColorId, CULL_MARGIN, GAME_HEIGHT } from '../config/constants';
 import { Level } from '../config/level';
 import { FinishGate } from '../entities/FinishGate';
 import { GatePair } from '../entities/GatePair';
 import { Orb } from '../entities/Orb';
+import { isWithinCatchRange } from './contact';
 
 export interface CourseEvents
 {
@@ -109,7 +110,7 @@ export class Course
             {
                 orb.consumed = true;
 
-                if (Math.abs(dropX - orb.x) < ORB_CATCH_RADIUS)
+                if (isWithinCatchRange(dropX, orb.x))
                 {
                     this.events.onOrb(orb, orb.color === dropColor, y);
 

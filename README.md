@@ -18,7 +18,7 @@ What is in:
 - Matching orbs (score + combo + burst + haptic) and wrong-coloured orbs
   (combo reset + red flash)
 - A finish gate and a level-complete panel
-- Three levels, each with its own layout, speed and row spacing, played in
+- Six levels, each with its own layout, speed and row spacing, played in
   sequence
 - Saved progress: best score per level, and a reload resumes the level you were
   on

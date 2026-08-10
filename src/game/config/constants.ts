@@ -36,6 +36,36 @@ export const DROP_SCREEN_Y = GAME_HEIGHT * 0.72;
 export const BLOCK_LANDSCAPE_QUERY = '(orientation: landscape) and (max-height: 520px)';
 
 // ---------------------------------------------------------------------------
+//  Diagonal projection
+//
+//  The world is authored straight - lanes and distances - and sheared into a
+//  diagonal corridor only when it is drawn. Collision never sees any of this,
+//  which is what keeps the tilt free to change without touching gameplay.
+// ---------------------------------------------------------------------------
+
+/**
+ * Horizontal shift per pixel of depth. Positive leans the corridor so the far
+ * end sits to the left and the near end to the right, giving a bottom-right to
+ * top-left run.
+ */
+//  Capped by readability rather than taste: at 0.19 the far end of the corridor
+//  reaches the left screen edge, and any more would push oncoming orbs off it
+//  before the player could read them.
+export const PROJECTION_SHEAR = 0.18;
+
+/** The depth the shear pivots around: the drop's own line stays put. */
+export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
+
+/**
+ * How much narrower the corridor gets with distance. 0 is a flat shear, 1 would
+ * taper to nothing at the top of the screen.
+ */
+export const PROJECTION_TAPER = 0.34;
+
+/** Depth at which the taper is fully applied. */
+export const PROJECTION_DEPTH = GAME_HEIGHT;
+
+// ---------------------------------------------------------------------------
 //  Motion
 // ---------------------------------------------------------------------------
 
@@ -74,6 +104,14 @@ export const SWIPE_THRESHOLD = 26;
 //  so vertical drags do not steer the drop.
 export const SWIPE_DOMINANCE = 1.2;
 
+//  How far a drag may wander vertically before it is measured afresh.
+//
+//  Without this, vertical distance accumulates from the point the finger first
+//  landed and never resets, so a drag that starts downwards can never steer
+//  again however far sideways it later goes - the input simply dies. Thumbs
+//  move in arcs, so that is a normal way to hold the phone, not an edge case.
+export const SWIPE_REANCHOR_DISTANCE = 40;
+
 // ---------------------------------------------------------------------------
 //  Track visuals
 // ---------------------------------------------------------------------------
@@ -100,14 +138,33 @@ export const TRACK_EDGE_THICKNESS = 3;
 //  restyled here without touching any logic.
 // ---------------------------------------------------------------------------
 
-export type ColorId = 'blue' | 'red';
+export type ColorId =
+    | 'red'
+    | 'blue'
+    | 'yellow'
+    | 'orange'
+    | 'purple'
+    | 'cyan'
+    | 'green'
+    | 'pink'
+    | 'magenta';
 
 export const COLOR_BLUE = 0x3fa9f5;
 export const COLOR_RED = 0xff4d5a;
 
+//  Chosen to stay separable at a glance on a phone: no two sit close in hue,
+//  and all are bright enough to read against both the light and dark worlds.
+//  A level should still only use colours from opposite ends of this set.
 export const COLOR_VALUES: Record<ColorId, number> = {
+    red: COLOR_RED,
     blue: COLOR_BLUE,
-    red: COLOR_RED
+    yellow: 0xffd23f,
+    orange: 0xff8c42,
+    purple: 0xa964ff,
+    cyan: 0x2fe3d0,
+    green: 0x5ddf6a,
+    pink: 0xff7ab8,
+    magenta: 0xff4fd8
 };
 
 // ---------------------------------------------------------------------------
@@ -254,6 +311,16 @@ export const ORB_CATCH_RADIUS = DROP_RADIUS + ORB_RADIUS + ORB_CATCH_SLACK;
 
 export const SCORE_PER_ORB = 10;
 
+/**
+ * A wrong colour costs double what a right one pays.
+ *
+ * The score is allowed to go negative rather than being floored at zero: the
+ * penalty has to be felt, and hiding it would make a bad run read the same as a
+ * cautious one.
+ */
+export const WRONG_COLOR_MULTIPLIER = 2;
+export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
+
 // ---------------------------------------------------------------------------
 //  Feedback
 // ---------------------------------------------------------------------------
@@ -271,6 +338,18 @@ export const COLOR_FLASH = 0xff2b3d;
 /** Haptic pulse lengths in ms. Silently ignored where unsupported. */
 export const HAPTIC_COLLECT_MS = 12;
 export const HAPTIC_MISS_MS = 45;
+
+/** Screen kick on a wrong colour. Short and small - a nudge, not a jolt. */
+export const SHAKE_DURATION = 190;
+export const SHAKE_INTENSITY = 0.007;
+
+/** The points won or lost, floating up from where it happened. */
+export const FLOAT_SCORE_RISE = 52;
+export const FLOAT_SCORE_DURATION = 720;
+export const FLOAT_SCORE_SIZE = 22;
+export const FLOAT_SCORE_PENALTY_SIZE = 27;
+export const COLOR_SCORE_GAIN = '#9df5c4';
+export const COLOR_SCORE_LOSS = '#ff6b78';
 
 // ---------------------------------------------------------------------------
 //  HUD

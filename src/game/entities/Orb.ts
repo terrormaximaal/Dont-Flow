@@ -8,6 +8,7 @@ import {
 } from '../config/constants';
 import { OrbSpec } from '../config/level';
 import { laneCenterX } from '../systems/Lanes';
+import { project } from '../systems/Projection';
 import { screenYFor } from '../systems/World';
 
 /**
@@ -50,9 +51,15 @@ export class Orb
     update (travelled: number): number
     {
         const y = screenYFor(this.distance, travelled);
+        const projected = project(this.x, y);
 
-        this.body.y = y;
-        this.core.y = y;
+        //  Position and size come from the projection; the orb's own `x` stays
+        //  in track space, which is what collision compares against.
+        this.body.setPosition(projected.x, y);
+        this.body.setScale(projected.scale);
+
+        this.core.setPosition(projected.x, y);
+        this.core.setScale(projected.scale);
 
         return y;
     }

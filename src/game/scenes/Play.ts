@@ -8,7 +8,9 @@ import {
     HAPTIC_COLLECT_MS,
     HAPTIC_MISS_MS,
     MAX_DELTA,
-    RESUME_AT_LAST_LEVEL
+    RESUME_AT_LAST_LEVEL,
+    SHAKE_DURATION,
+    SHAKE_INTENSITY
 } from '../config/constants';
 import { buildLevel } from '../config/level';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
@@ -21,6 +23,7 @@ import { OrientationGuard } from '../systems/OrientationGuard';
 import { SaveSystem } from '../systems/SaveSystem';
 import { ScoreSystem } from '../systems/ScoreSystem';
 import { TrackScroller } from '../systems/TrackScroller';
+import { showFloatingScore } from '../ui/FloatingScore';
 import { Hud } from '../ui/Hud';
 import { LevelComplete } from '../ui/LevelComplete';
 import { PauseButton } from '../ui/PauseButton';
@@ -147,19 +150,26 @@ export class Play extends Scene
     {
         if (matched)
         {
-            this.scoring.collect();
+            const gained = this.scoring.collect();
 
             const colorId = this.drop.getColorId();
 
             this.effects.burst(x, y, colorId ? COLOR_VALUES[colorId] : COLOR_FLASH);
             this.effects.haptic(HAPTIC_COLLECT_MS);
+
+            showFloatingScore(this, x, y, gained);
         }
         else
         {
-            this.scoring.breakCombo();
+            const lost = this.scoring.penalise();
 
+            //  Three signals at once, because a penalty has to land: the drop
+            //  flashes, the screen kicks, and the points lost float off the hit.
             this.drop.flash(COLOR_FLASH, FLASH_DURATION);
+            this.cameras.main.shake(SHAKE_DURATION, SHAKE_INTENSITY);
             this.effects.haptic(HAPTIC_MISS_MS);
+
+            showFloatingScore(this, x, y, lost);
         }
 
         this.hud.setScore(this.scoring.getScore());
