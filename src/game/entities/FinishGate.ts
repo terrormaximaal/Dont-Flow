@@ -10,7 +10,7 @@ import {
     TRACK_WIDTH
 } from '../config/constants';
 import { fillProjectedQuad } from '../systems/Projection';
-import { screenYFor } from '../systems/World';
+import { drawStrength, screenYFor } from '../systems/World';
 
 /**
  * The end of the course: a chequered band across the full track, projected into
@@ -44,6 +44,7 @@ export class FinishGate
         const gfx = this.gfx;
 
         gfx.clear();
+        gfx.setAlpha(drawStrength(this.distance, travelled));
 
         for (let row = 0; row < FINISH_ROWS; row++)
         {

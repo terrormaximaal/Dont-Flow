@@ -118,27 +118,36 @@ the track scrolls past it.
 This is also what makes hit detection simple: an object is reached the moment
 travelled distance passes its distance, which cannot tunnel at any speed.
 
-### How the diagonal works
+### How the perspective works
 
-The world is drawn as a corridor running diagonally into the distance, but it is
-still **authored straight**: a lane gives an x, a distance gives a y.
-`systems/Projection.ts` shears and tapers those coordinates when they are drawn,
-and it is the only file that knows the world is tilted.
+The world is drawn as a road running away to a horizon, but it is still
+**authored flat**: a lane gives an x, a distance gives a depth.
+`systems/Projection.ts` is the only file that knows the world is seen in
+perspective.
 
-Collision never calls it. Hits are decided on track coordinates, so the tilt can
-be steepened, softened or removed without any gameplay consequence - there is no
-second copy of the geometry to keep in step.
+Two rules do all of it:
 
-The shear pivots on the drop's own line, which makes the projection the identity
-exactly where the player is steering: the lane never slides under them, and what
-is drawn provably agrees with what is collided.
+- `World.screenYFor()` turns a distance into a screen y as `k / (ahead + k)`,
+  so far things barely move, near things rush past, and nothing crosses the
+  horizon;
+- `Projection.projectX()` pulls every point towards the vanishing point in
+  proportion to its depth, which gives convergence, the narrowing of the road
+  and its diagonal run all at once.
+
+Collision never calls either. Hits are decided on track coordinates, so the
+camera can be raised, lowered or straightened with no gameplay consequence -
+there is no second copy of the geometry to keep in step.
+
+The projection is the identity at the drop's own line, so the lane the player
+is steering in never slides under them and what is drawn provably agrees with
+what is collided.
 
 Two properties the rendering depends on, both tested:
 
-- it is **affine**, so straight lines stay straight and every line in the
-  corridor can be drawn from just its two projected endpoints;
-- the whole corridor **stays on screen**, because a track that ran off the edge
-  would hide oncoming objects. That caps `PROJECTION_SHEAR` at about 0.19.
+- it is **linear in screen y**, so straight lines stay straight and every line
+  on the road can be drawn from just its two projected endpoints;
+- the road **stays on screen for its whole visible length**, because a road
+  that ran off the edge would hide oncoming objects.
 
 Moving barriers take their position from a single function of distance
 travelled, called by both the renderer and the collision check, so a barrier

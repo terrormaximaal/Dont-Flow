@@ -9,7 +9,7 @@ import {
 import { OrbSpec } from '../config/level';
 import { laneCenterX } from '../systems/Lanes';
 import { project } from '../systems/Projection';
-import { screenYFor } from '../systems/World';
+import { drawStrength, screenYFor } from '../systems/World';
 
 /**
  * A coloured collectible sitting in one lane. Matching the drop's colour scores;
@@ -52,6 +52,10 @@ export class Orb
     {
         const y = screenYFor(this.distance, travelled);
         const projected = project(this.x, y);
+        const strength = drawStrength(this.distance, travelled);
+
+        this.body.setAlpha(strength);
+        this.core.setAlpha(strength * ORB_CORE_ALPHA);
 
         //  Position and size come from the projection; the orb's own `x` stays
         //  in track space, which is what collision compares against.

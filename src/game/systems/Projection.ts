@@ -1,24 +1,27 @@
 import {
     GAME_WIDTH,
-    PROJECTION_DEPTH,
+    HORIZON_Y,
     PROJECTION_PIVOT_Y,
-    PROJECTION_SHEAR,
-    PROJECTION_TAPER
+    VANISH_OFFSET
 } from '../config/constants';
 
 //  Track space to screen space.
 //
-//  Everything in the game is authored on a straight vertical track: a lane
-//  gives an x, a distance gives a y. This is the only place that turns those
-//  into where something is actually drawn, and it is the only thing that knows
-//  the world looks diagonal.
+//  Everything in the game is authored on a straight, flat road: a lane gives an
+//  x, a distance gives a depth. This is the only place that turns those into
+//  where something is actually drawn, and the only thing that knows the world
+//  is seen in perspective.
 //
 //  Collision detection never calls any of this. Hits are decided on track
 //  coordinates - `travelled >= distance`, and lane-space x against a catch
-//  radius - so the corridor can be leaned, tapered or straightened again
-//  without a single gameplay consequence. That separation is the whole point:
-//  a projection that fed back into collision would have to be kept in sync by
-//  hand, and would drift.
+//  radius - so the camera can be raised, lowered or straightened without a
+//  single gameplay consequence. A projection that fed back into collision would
+//  have to be kept in sync by hand, and would drift.
+
+/** Where the road converges: everything ahead runs towards this point. */
+export const VANISH_X = (GAME_WIDTH / 2) - VANISH_OFFSET;
+
+const SPAN = PROJECTION_PIVOT_Y - HORIZON_Y;
 
 export interface Projected
 {
@@ -30,37 +33,38 @@ export interface Projected
 }
 
 /**
- * How much narrower the corridor is at a given screen y.
+ * How large the world is at a given screen depth.
  *
- * 1 at the drop's own line, falling towards the horizon and growing slightly
- * past it, so objects swell as they arrive rather than popping.
+ * 1 at the player's own line, falling to 0 at the horizon and growing past 1
+ * below, so things swell as they arrive rather than popping into place.
  */
 export function depthScale (screenY: number): number
 {
-    const depth = (PROJECTION_PIVOT_Y - screenY) / PROJECTION_DEPTH;
-
-    return 1 - (depth * PROJECTION_TAPER);
+    return (screenY - HORIZON_Y) / SPAN;
 }
 
 /**
- * Projects a point on the straight track onto the diagonal corridor.
+ * Projects a point on the flat road into the view.
+ *
+ * Everything is simply pulled towards the vanishing point in proportion to its
+ * depth. That single rule gives convergence, the narrowing of the road and the
+ * diagonal run all at once - and because it is linear in screen y, straight
+ * lines in the world stay straight on screen.
  *
  * @param trackX  Lane-space x, as laneCenterX gives it.
  * @param screenY Depth down the screen, as screenYFor gives it.
  */
+export function projectX (trackX: number, screenY: number): number
+{
+    return VANISH_X + ((trackX - VANISH_X) * depthScale(screenY));
+}
+
 export function project (trackX: number, screenY: number): Projected
 {
     const scale = depthScale(screenY);
 
-    //  Shear about the drop's line, so the lane the player is in never shifts
-    //  under them as the world tilts.
-    const lean = (PROJECTION_PIVOT_Y - screenY) * PROJECTION_SHEAR;
-
-    //  Taper about the centre of the track, so both edges close in together.
-    const centred = (trackX - (GAME_WIDTH / 2)) * scale;
-
     return {
-        x: (GAME_WIDTH / 2) + centred - lean,
+        x: VANISH_X + ((trackX - VANISH_X) * scale),
         y: screenY,
         scale
     };
@@ -68,7 +72,7 @@ export function project (trackX: number, screenY: number): Projected
 
 /**
  * Fills the projected quad spanning two track-space x values between two
- * depths - the shape every flat surface in the corridor turns into.
+ * depths - the shape every flat surface on the road turns into.
  *
  * Drawn as two triangles rather than fillPoints, which wants Phaser Vector2
  * instances; the Phaser global is types-only under the ESM build, so building
@@ -91,15 +95,4 @@ export function fillProjectedQuad (
 
     gfx.fillTriangle(leftFar, farY, rightFar, farY, rightNear, nearY);
     gfx.fillTriangle(leftFar, farY, rightNear, nearY, leftNear, nearY);
-}
-
-/**
- * The projected x of a point, when the y is already known and the scale is not
- * needed. Same maths, without building an object per call.
- */
-export function projectX (trackX: number, screenY: number): number
-{
-    return (GAME_WIDTH / 2)
-        + ((trackX - (GAME_WIDTH / 2)) * depthScale(screenY))
-        - ((PROJECTION_PIVOT_Y - screenY) * PROJECTION_SHEAR);
 }

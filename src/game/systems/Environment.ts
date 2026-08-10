@@ -1,5 +1,5 @@
 import { Scene } from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH } from '../config/constants';
+import { GAME_HEIGHT, GAME_WIDTH, HORIZON_Y } from '../config/constants';
 import { LayerShape, LayerSpec, SpeckSpec, WorldSpec } from '../config/worlds';
 
 const SKY_BANDS = 40;
@@ -129,15 +129,18 @@ export class Environment
 
         gfx.setDepth(HAZE_DEPTH);
 
-        const bands = 14;
-        const height = GAME_HEIGHT * 0.42;
-        const top = GAME_HEIGHT * 0.18;
+        //  Centred on the horizon and fading both ways, so the ground meets the
+        //  sky in air rather than on a hard line.
+        const bands = 22;
+        const height = GAME_HEIGHT * 0.30;
+        const top = HORIZON_Y - (height / 2);
 
         for (let i = 0; i < bands; i++)
         {
             const t = i / (bands - 1);
+            const fade = 1 - Math.abs((t * 2) - 1);
 
-            gfx.fillStyle(this.world.hazeColor, this.world.hazeAlpha * (1 - t));
+            gfx.fillStyle(this.world.hazeColor, this.world.hazeAlpha * fade);
             gfx.fillRect(0, top + (t * height), GAME_WIDTH, (height / bands) + 1);
         }
     }

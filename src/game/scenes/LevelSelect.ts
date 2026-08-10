@@ -21,6 +21,7 @@ import {
     MENU_SCROLL_SPEED
 } from '../config/constants';
 import { LEVELS } from '../config/levels';
+import { WORLDS } from '../config/worldData';
 import { EnergySystem } from '../systems/EnergySystem';
 import { SaveSystem } from '../systems/SaveSystem';
 import { TrackScroller } from '../systems/TrackScroller';
@@ -48,7 +49,8 @@ export class LevelSelect extends Scene
     {
         this.distance = 0;
 
-        this.track = new TrackScroller(this);
+        //  The menus look down the same road the game is played on.
+        this.track = new TrackScroller(this, WORLDS.space);
 
         const save = new SaveSystem();
         const energy = new EnergySystem(save);

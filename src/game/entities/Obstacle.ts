@@ -19,7 +19,7 @@ import {
 import { ObstacleKind, ObstacleSpec } from '../config/level';
 import { laneCenterX } from '../systems/Lanes';
 import { depthScale, fillProjectedQuad, projectX } from '../systems/Projection';
-import { screenYFor } from '../systems/World';
+import { drawStrength, screenYFor } from '../systems/World';
 import { clamp } from '../utils/math';
 
 const TAU = Math.PI * 2;
@@ -119,6 +119,7 @@ export class Obstacle
         const gfx = this.gfx;
 
         gfx.clear();
+        gfx.setAlpha(drawStrength(this.distance, travelled));
 
         gfx.fillStyle(value, OBSTACLE_FILL_ALPHA);
         fillProjectedQuad(gfx, left, right, far, near);

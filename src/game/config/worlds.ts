@@ -79,6 +79,9 @@ export interface WorldSpec
 
     /** The corridor's own colours, so the track sits in its environment. */
     track: number;
+
+    /** The plane the road sits on. Falls back to the road's own colour. */
+    groundColor?: number;
     laneLine: number;
     trackEdge: number;
     rung: number;

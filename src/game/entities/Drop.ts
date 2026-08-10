@@ -162,7 +162,7 @@ export class Drop
 
     private redraw (): void
     {
-        drawTeardrop(this.gfx, DROP_RADIUS, this.flashColor ?? this.color);
+        drawTeardrop(this.gfx, DROP_RADIUS, this.flashColor ?? this.color, true);
     }
 
     destroy (): void
