@@ -218,7 +218,7 @@ export class Play extends Scene
                 onResume: () => this.setPaused(false),
                 onRetry: () => this.startLevel(this.levelIndex),
                 onMenu: () => this.scene.start('Title')
-            });
+            }, new EnergySystem(this.save));
 
             return;
         }
