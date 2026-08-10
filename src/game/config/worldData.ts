@@ -52,7 +52,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'blobs', color: 0xffffff, alpha: 0.28, parallax: 0.03, baseline: -85, height: 34, period: 200, wrap: 560, seed: 31 }
         ],
         roadside: { shape: 'peaks', color: 0x0f1e33, alpha: 0.75, height: 120, spacing: 520, offset: 120, seed: 3 },
-        palette: [ 'red', 'blue', 'yellow' ]
+        palette: [ 'red', 'blue' ]
     },
 
     //  3 - low sun, long shadows, hard mesa edges.
@@ -69,7 +69,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'mesa', color: 0x3a1733, alpha: 0.9, parallax: 0.13, baseline: 16, height: 165, period: 240, wrap: 660, seed: 23 }
         ],
         roadside: { shape: 'mesa', color: 0x260b1c, alpha: 0.85, height: 150, spacing: 470, offset: 110, seed: 4 },
-        palette: [ 'orange', 'purple', 'cyan' ]
+        palette: [ 'orange', 'purple' ]
     },
 
     //  4 - close, layered, and misty enough to hide what is coming.
@@ -119,7 +119,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'dunes', color: 0xa8633a, alpha: 0.85, parallax: 0.13, baseline: 16, height: 120, period: 360, wrap: 620, seed: 29 }
         ],
         roadside: { shape: 'dunes', color: 0xb06f3e, alpha: 0.8, height: 95, spacing: 560, offset: 130, seed: 7 },
-        palette: [ 'yellow', 'orange', 'blue', 'purple' ]
+        palette: [ 'yellow', 'orange', 'blue' ]
     },
 
     //  7 - the sky closes in; rain, and the occasional flash.
@@ -173,7 +173,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         ],
         specks: { count: 70, color: 0xffffff, alpha: 0.7, radius: 1.6, fall: 18, drift: 0 },
         roadside: { shape: 'shards', color: 0x2a3266, alpha: 0.8, height: 120, spacing: 600, offset: 135, seed: 10 },
-        palette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ]
+        palette: [ 'magenta', 'cyan', 'orange', 'green' ]
     },
 
     //  10 - fragments of everywhere else, and nothing whole.

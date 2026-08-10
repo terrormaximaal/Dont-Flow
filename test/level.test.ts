@@ -34,6 +34,7 @@ describe('a level and its lanes', () => {
                 for (const row of section.rows)
                 {
                     expect(row.length, `level ${spec.name}: "${row}"`).toBe(lanes);
+                    expect(row, `level ${spec.name}`).toMatch(/^[1-5a-e.]+$/);
                 }
             }
         }
@@ -209,22 +210,6 @@ describe('the shipped levels', () => {
 
     });
 
-    it('describe every row with one character per lane', () => {
-
-        for (const level of LEVELS)
-        {
-            for (const section of level.sections)
-            {
-                for (const row of section.rows)
-                {
-                    expect(row, `level ${level.name}`).toHaveLength(3);
-                    expect(row, `level ${level.name}`).toMatch(/^[1-5a-e.]{3}$/);
-                }
-            }
-        }
-
-    });
-
     it('never fill a row completely', () => {
 
         for (const level of LEVELS)
@@ -235,7 +220,10 @@ describe('the shipped levels', () => {
                 {
                     const filled = [ ...row ].filter((character) => character !== '.').length;
 
-                    expect(filled, `level ${level.name} row "${row}"`).toBeLessThanOrEqual(2);
+                    //  One short of the lane count, whatever that is, so there
+                    //  is always somewhere to go.
+                    expect(filled, `level ${level.name} row "${row}"`)
+                        .toBeLessThanOrEqual((level.lanes ?? 3) - 1);
                 }
             }
         }
