@@ -147,7 +147,10 @@ export const DROP_SLOSH = 0.34;
 
 //  Score at which the drop reaches full size. Past this it stops growing, so a
 //  long combo cannot fill the screen.
-export const DROP_GROWTH_FULL_SCORE = 400;
+//  Sized against what a level can actually pay now that the combo multiplies:
+//  a near-perfect run is worth somewhere under a thousand, so only a run like
+//  that fills the drop right up.
+export const DROP_GROWTH_FULL_SCORE = 900;
 //  Size multiplier at that score. 1 would mean no growth at all.
 export const DROP_GROWTH_MAX_SCALE = 1.4;
 //  How quickly the drop eases towards its new size, as an exponential rate.
@@ -438,6 +441,27 @@ export const SCORE_PER_ORB = 10;
 export const WRONG_COLOR_MULTIPLIER = 2;
 export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
 
+/**
+ * The combo multiplier: what a streak is actually worth.
+ *
+ * Every COMBO_STEP orbs in a row, each orb starts paying one step more, up to
+ * the cap. This is what makes a streak worth protecting - the flat rate it
+ * replaced meant the twentieth orb of a clean run paid exactly what the first
+ * one did, and "keep the combo" was a promise the scoring never kept.
+ *
+ * Sized against the levels rather than picked round: they hold between sixteen
+ * and twenty-four orbs of any one colour, so a step of three puts the cap
+ * around two thirds of the way through a level - reachable on a clean run,
+ * never on a scrappy one.
+ *
+ * Note what a mistake costs now. The flat penalty below is the small half of
+ * it; the real cost is dropping from the cap back to nothing, which is worth
+ * far more than the points. That is deliberate, and why the penalty itself does
+ * not also scale - being knocked from x5 to x1 is punishment enough.
+ */
+export const COMBO_STEP = 3;
+export const COMBO_MAX_MULTIPLIER = 5;
+
 // ---------------------------------------------------------------------------
 //  Obstacles
 // ---------------------------------------------------------------------------
@@ -529,8 +553,13 @@ export const COLOR_HUD_STROKE = '#0b1020';
 export const HUD_STROKE_THICKNESS = 5;
 export const HUD_STROKE_THICKNESS_SMALL = 3;
 
-/** Combo is only worth showing once it is actually a streak. */
-export const COMBO_VISIBLE_FROM = 2;
+/** The multiplier is only worth showing once it is actually paying extra. */
+export const MULTIPLIER_VISIBLE_FROM = 2;
+
+//  The readout kicks when the multiplier steps up: a number quietly changing at
+//  the top of the screen is easy to miss with your eyes on the road.
+export const MULTIPLIER_POP_SCALE = 1.7;
+export const MULTIPLIER_POP_MS = 280;
 
 // ---------------------------------------------------------------------------
 //  Course

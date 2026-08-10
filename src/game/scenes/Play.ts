@@ -184,7 +184,7 @@ export class Play extends Scene
         }
 
         this.hud.setScore(this.scoring.getScore());
-        this.hud.setCombo(this.scoring.getCombo());
+        this.hud.setMultiplier(this.scoring.getMultiplier());
 
         //  The drop's size is the score, so the player can read how the run is
         //  going without looking away from the road.
