@@ -15,7 +15,9 @@ import {
 import { buildLevel } from '../config/level';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
+import { WORLDS } from '../config/worldData';
 import { Course } from '../systems/Course';
+import { Environment } from '../systems/Environment';
 import { Effects } from '../systems/Effects';
 import { EnergySystem } from '../systems/EnergySystem';
 import { InputSystem } from '../systems/InputSystem';
@@ -37,6 +39,7 @@ export class Play extends Scene
 {
     private drop: Drop;
     private track: TrackScroller;
+    private environment: Environment;
     private course: Course;
     private input_: InputSystem;
     private effects: Effects;
@@ -116,11 +119,14 @@ export class Play extends Scene
         //  still comes back to the right place.
         this.save.setCurrentLevel(this.levelIndex);
 
-        this.track = new TrackScroller(this);
+        const world = WORLDS[level.world];
+
+        this.environment = new Environment(this, world);
+        this.track = new TrackScroller(this, world);
         this.drop = new Drop(this);
         this.effects = new Effects(this);
         this.scoring = new ScoreSystem();
-        this.hud = new Hud(this, level.name);
+        this.hud = new Hud(this, level.name, world);
 
         this.course = new Course(this, buildLevel(level), {
             onGate: (color) => this.drop.setColorId(color),
@@ -272,6 +278,7 @@ export class Play extends Scene
 
         this.distance += this.forwardSpeed * this.speed.scale * dt;
 
+        this.environment.update(this.distance, delta);
         this.track.update(this.distance);
         this.drop.update(dt);
         this.course.update(this.distance, this.drop.getX(), this.drop.getColorId());

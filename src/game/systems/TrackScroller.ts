@@ -2,7 +2,6 @@ import { Scene } from 'phaser';
 import {
     COLOR_LANE_LINE,
     COLOR_RUNG,
-    COLOR_SIDE_TICK,
     COLOR_TRACK,
     COLOR_TRACK_EDGE,
     DEPTH_TRACK,
@@ -21,7 +20,24 @@ import {
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../config/constants';
+import { WorldSpec } from '../config/worlds';
 import { depthScale, fillProjectedQuad, projectX } from './Projection';
+
+/** The corridor's own colours, which each world re-tints. */
+export interface TrackPalette
+{
+    track: number;
+    laneLine: number;
+    trackEdge: number;
+    rung: number;
+}
+
+const DEFAULT_PALETTE: TrackPalette = {
+    track: COLOR_TRACK,
+    laneLine: COLOR_LANE_LINE,
+    trackEdge: COLOR_TRACK_EDGE,
+    rung: COLOR_RUNG
+};
 
 /** How far beyond the screen the corridor is drawn, so its ends are never seen. */
 const OVERDRAW = 140;
@@ -50,9 +66,14 @@ export class TrackScroller
     private readonly sideSpan: number;
     private readonly rungCount: number;
     private readonly sideCount: number;
+    private readonly palette: TrackPalette;
 
-    constructor (scene: Scene)
+    constructor (scene: Scene, world?: WorldSpec)
     {
+        //  A corridor drawn in fixed colours would vanish into a light world and
+        //  glare out of a dark one.
+        this.palette = world ?? DEFAULT_PALETTE;
+
         this.gfx = scene.add.graphics();
         this.gfx.setDepth(DEPTH_TRACK);
 
@@ -83,7 +104,7 @@ export class TrackScroller
     /** The corridor floor: a quad, since the two ends are different widths. */
     private fillSlab (gfx: Phaser.GameObjects.Graphics): void
     {
-        gfx.fillStyle(COLOR_TRACK, 1);
+        gfx.fillStyle(this.palette.track, 1);
 
         fillProjectedQuad(gfx, TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH, TOP, BOTTOM);
     }
@@ -91,7 +112,7 @@ export class TrackScroller
     /** Lane dividers and the two outer edges, running away down the corridor. */
     private strokeRails (gfx: Phaser.GameObjects.Graphics): void
     {
-        gfx.lineStyle(LANE_LINE_THICKNESS, COLOR_LANE_LINE, 1);
+        gfx.lineStyle(LANE_LINE_THICKNESS, this.palette.laneLine, 1);
 
         for (let i = 1; i < LANE_COUNT; i++)
         {
@@ -100,7 +121,7 @@ export class TrackScroller
             gfx.lineBetween(projectX(x, TOP), TOP, projectX(x, BOTTOM), BOTTOM);
         }
 
-        gfx.lineStyle(TRACK_EDGE_THICKNESS, COLOR_TRACK_EDGE, 1);
+        gfx.lineStyle(TRACK_EDGE_THICKNESS, this.palette.trackEdge, 1);
 
         for (const x of [ TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH ])
         {
@@ -118,7 +139,7 @@ export class TrackScroller
             const y = TOP + ((((i * RUNG_SPACING) + distance) % this.rungSpan));
 
             //  Thinner with distance, along with everything else at that depth.
-            gfx.lineStyle(RUNG_THICKNESS * depthScale(y), COLOR_RUNG, 1);
+            gfx.lineStyle(RUNG_THICKNESS * depthScale(y), this.palette.rung, 1);
             gfx.lineBetween(projectX(TRACK_LEFT, y), y, projectX(right, y), y);
         }
     }
@@ -137,7 +158,7 @@ export class TrackScroller
         {
             const y = TOP + ((((i * SIDE_TICK_SPACING) + sideDistance) % this.sideSpan));
 
-            gfx.lineStyle(SIDE_TICK_THICKNESS * depthScale(y), COLOR_SIDE_TICK, 1);
+            gfx.lineStyle(SIDE_TICK_THICKNESS * depthScale(y), this.palette.laneLine, 0.8);
             gfx.lineBetween(projectX(leftOuter, y), y, projectX(leftInner, y), y);
             gfx.lineBetween(projectX(rightInner, y), y, projectX(rightOuter, y), y);
         }

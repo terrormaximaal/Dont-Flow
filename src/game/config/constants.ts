@@ -149,7 +149,7 @@ export type ColorId =
     | 'pink'
     | 'magenta';
 
-export const COLOR_BLUE = 0x3fa9f5;
+export const COLOR_BLUE = 0x2b6ef5;
 export const COLOR_RED = 0xff4d5a;
 
 //  Chosen to stay separable at a glance on a phone: no two sit close in hue,
@@ -159,12 +159,12 @@ export const COLOR_VALUES: Record<ColorId, number> = {
     red: COLOR_RED,
     blue: COLOR_BLUE,
     yellow: 0xffd23f,
-    orange: 0xff8c42,
-    purple: 0xa964ff,
-    cyan: 0x2fe3d0,
-    green: 0x5ddf6a,
+    orange: 0xff6a1f,
+    purple: 0xc9a3ff,
+    cyan: 0x1ef0c4,
+    green: 0x3fb84f,
     pink: 0xff7ab8,
-    magenta: 0xff4fd8
+    magenta: 0xf01fa8
 };
 
 // ---------------------------------------------------------------------------
@@ -274,15 +274,21 @@ export const TITLE_BUTTONS_Y = GAME_HEIGHT * 0.60;
 export const MENU_HEADING_SIZE = 26;
 export const MENU_HEADING_Y = 92;
 
-/** Level select rows. */
-export const LEVEL_ROW_WIDTH = 300;
-export const LEVEL_ROW_HEIGHT = 68;
-export const LEVEL_ROW_GAP = 12;
+/**
+ * Level select is a grid, not a list: ten rows in one column ran off the bottom
+ * of the screen and took the BACK button with them, which on a touch device
+ * left no way out at all.
+ */
+export const LEVEL_COLUMNS = 2;
+export const LEVEL_ROW_WIDTH = 150;
+export const LEVEL_ROW_HEIGHT = 66;
+export const LEVEL_ROW_GAP = 14;
 //  Leaves room for the energy meter and its countdown above the first row.
-export const LEVEL_ROW_FIRST_Y = 214;
-export const LEVEL_ROW_NAME_SIZE = 22;
-export const LEVEL_ROW_DETAIL_SIZE = 14;
-export const LEVEL_ROW_TEXT_INSET = 22;
+export const LEVEL_ROW_FIRST_Y = 248;
+export const LEVEL_ROW_NAME_SIZE = 24;
+export const LEVEL_ROW_DETAIL_SIZE = 12;
+export const LEVEL_ROW_NAME_OFFSET = -11;
+export const LEVEL_ROW_DETAIL_OFFSET = 15;
 
 // ---------------------------------------------------------------------------
 //  Pause

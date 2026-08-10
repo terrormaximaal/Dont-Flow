@@ -44,6 +44,9 @@ export interface LayerSpec
     /** Horizontal period of the shape, in pixels. */
     period: number;
 
+    /** Vertical distance between repeats, as the layer scrolls past. */
+    repeat: number;
+
     /** Deterministic variation between otherwise identical layers. */
     seed: number;
 }
