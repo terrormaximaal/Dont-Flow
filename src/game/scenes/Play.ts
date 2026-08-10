@@ -1,6 +1,5 @@
 import { Scene } from 'phaser';
 import {
-    COLOR_DROP_NEUTRAL,
     DEFAULT_LANES,
     COLOR_FLASH,
     COLOR_VALUES,
@@ -10,11 +9,12 @@ import {
     HAPTIC_COLLECT_MS,
     HAPTIC_MISS_MS,
     MAX_DELTA,
+    RAINBOW_ROWS,
     RESUME_AT_LAST_LEVEL,
     SHAKE_DURATION,
     SHAKE_INTENSITY
 } from '../config/constants';
-import { buildLevel } from '../config/level';
+import { buildLevel, ORB_ROW_SPACING } from '../config/level';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { WORLDS } from '../config/worldData';
@@ -26,10 +26,12 @@ import { EnergySystem } from '../systems/EnergySystem';
 import { InputSystem } from '../systems/InputSystem';
 import { useLanes } from '../systems/Lanes';
 import { OrientationGuard } from '../systems/OrientationGuard';
+import { PowerUps } from '../systems/PowerUps';
 import { SaveSystem } from '../systems/SaveSystem';
 import { ScoreSystem } from '../systems/ScoreSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Trail } from '../systems/Trail';
+import { rainbowAt } from '../utils/color';
 import { showFloatingScore } from '../ui/FloatingScore';
 import { Hud } from '../ui/Hud';
 import { LevelComplete } from '../ui/LevelComplete';
@@ -48,6 +50,7 @@ export class Play extends Scene
     private roadside: Roadside | null = null;
     private trail: Trail;
     private course: Course;
+    private powerUps: PowerUps;
     private input_: InputSystem;
     private effects: Effects;
     private scoring: ScoreSystem;
@@ -70,6 +73,14 @@ export class Play extends Scene
 
     /** Distance travelled in track pixels. Everything else is placed from this. */
     private distance = 0;
+
+    /**
+     * How far a rainbow drop lasts here, and the point on the course it runs out
+     * at. Both distances, because a power-up measured in seconds would be worth
+     * less on a level whose rows arrive quickly.
+     */
+    private rainbowSpan = 0;
+    private rainbowUntil = 0;
 
     /**
      * Multiplier on the forward speed. Tweened to zero at the finish line so
@@ -107,6 +118,7 @@ export class Play extends Scene
         this.paused = false;
         this.finished = false;
         this.pauseOverlay = null;
+        this.rainbowUntil = 0;
 
         //  Charged per level start, retries included. The menus already gate
         //  this, so failing here means Play was reached some other way - fall
@@ -141,12 +153,19 @@ export class Play extends Scene
         this.scoring = new ScoreSystem();
         this.hud = new Hud(this, level.name, world);
 
-        this.course = new Course(this, buildLevel(level), {
+        const course = buildLevel(level);
+
+        //  Nine rows' worth, whatever this level's rows are spaced at.
+        this.rainbowSpan = RAINBOW_ROWS * (level.rowSpacing ?? ORB_ROW_SPACING);
+
+        this.course = new Course(this, course, {
             onGate: (color) => this.drop.setColorId(color),
             onOrb: (orb, matched, y) => this.onOrb(orb.x, y, matched),
             onBlocked: (x, y) => this.onOrb(x, y, false),
             onFinish: () => this.onFinish()
         });
+
+        this.powerUps = new PowerUps(this, course.powerUps, (x, y) => this.onRainbow(x, y));
 
         this.input_ = new InputSystem(this, (direction) => this.drop.moveLane(direction));
 
@@ -199,6 +218,21 @@ export class Play extends Scene
         //  The drop's size is the score, so the player can read how the run is
         //  going without looking away from the road.
         this.drop.setScore(this.scoring.getScore());
+    }
+
+    /**
+     * A rainbow drop taken: everything matches until it runs out.
+     */
+    private onRainbow (x: number, y: number): void
+    {
+        //  Taking a second one while the first is still going extends it from
+        //  now rather than stacking, so it can never be banked into a long run
+        //  that skips a whole level.
+        this.rainbowUntil = this.distance + this.rainbowSpan;
+
+        this.effects.swallow(x, y, rainbowAt(this.distance * 0.01));
+        this.effects.haptic(HAPTIC_COLLECT_MS);
+        this.drop.pulse();
     }
 
     /**
@@ -299,12 +333,18 @@ export class Play extends Scene
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);
         this.roadside?.update(this.distance);
+
+        //  How much of a rainbow drop is left, 1 down to 0.
+        const left = this.rainbowSpan > 0
+            ? Math.max(0, (this.rainbowUntil - this.distance) / this.rainbowSpan)
+            : 0;
+
+        this.drop.setWild(left > 0, left);
         this.drop.update(dt);
 
-        const carried = this.drop.getColorId();
+        this.trail.update(this.distance, this.drop.getX(), this.drop.getPaintColor());
 
-        this.trail.update(this.distance, this.drop.getX(), carried ? COLOR_VALUES[carried] : COLOR_DROP_NEUTRAL);
-
-        this.course.update(this.distance, this.drop.getX(), this.drop.getColorId());
+        this.powerUps.update(this.distance, this.drop.getX());
+        this.course.update(this.distance, this.drop.getX(), this.drop.getColorId(), left > 0);
     }
 }

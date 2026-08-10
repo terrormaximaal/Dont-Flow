@@ -208,6 +208,34 @@ export const TRAIL_TAPER = 0.6;
 export const TRAIL_ALPHA = 0.3;
 
 // ---------------------------------------------------------------------------
+//  The rainbow drop
+//
+//  A pickup that makes the drop match everything for a stretch: every orb
+//  scores, every barrier is passed straight through. The only thing in the game
+//  that changes the rules rather than the numbers, so it is rare, brief, and
+//  always announces itself on the way out.
+// ---------------------------------------------------------------------------
+
+//  Measured in rows rather than seconds or pixels. A level's rows are its
+//  opportunities, so counting them is what makes the power-up worth the same on
+//  a slow early level as on a fast late one - seconds would be worth less where
+//  rows come quickly, and pixels more.
+export const RAINBOW_ROWS = 9;
+
+//  The last share of it, over which the colours race and the drop pulses. It
+//  must never simply stop: hitting a barrier because the power-up quietly
+//  lapsed is the definition of unfair.
+export const RAINBOW_WARNING = 0.32;
+
+//  Colours per second while it runs, and while it is running out.
+export const RAINBOW_CYCLE_SPEED = 2.4;
+export const RAINBOW_WARNING_SPEED = 7;
+
+//  The pickup itself, a little larger than an orb so it reads as a prize.
+export const RAINBOW_RADIUS = 17;
+export const RAINBOW_CORE_ALPHA = 0.75;
+
+// ---------------------------------------------------------------------------
 //  Swallowing an orb
 //
 //  The mirror of a burst: strands of the orb's colour collapse inwards instead

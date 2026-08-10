@@ -34,7 +34,7 @@ describe('a level and its lanes', () => {
                 for (const row of section.rows)
                 {
                     expect(row.length, `level ${spec.name}: "${row}"`).toBe(lanes);
-                    expect(row, `level ${spec.name}`).toMatch(/^[1-5a-e.]+$/);
+                    expect(row, `level ${spec.name}`).toMatch(/^[1-5a-e.*]+$/);
                 }
             }
         }
@@ -164,6 +164,37 @@ describe('buildLevel', () => {
 
         expect(level.gates[0].colors).toEqual([ 'red', 'red' ]);
         expect(level.orbs[0].color).toBe('red');
+
+    });
+
+});
+
+describe('the rainbow drop', () => {
+
+    it('is read out of a row as a power-up with no colour', () => {
+
+        const level = buildLevel(base([ { splitAfterLane: 0, gate: [ 0, 1 ], rows: [ '.*.' ] } ]));
+
+        expect(level.orbs).toHaveLength(0);
+        expect(level.obstacles).toHaveLength(0);
+        expect(level.powerUps).toEqual([ { distance: LEAD_IN + GATE_TO_ORBS, lane: 1 } ]);
+
+    });
+
+    it('counts as somewhere safe to be', () => {
+
+        expect(rowHasSafeLane('a*a')).toBe(true);
+
+    });
+
+    it('shows up from level four, once the basics are taught', () => {
+
+        const withPowerUps = LEVELS
+            .map((level, index) => ({ index, count: buildLevel(level).powerUps.length }))
+            .filter((entry) => entry.count > 0);
+
+        expect(withPowerUps.length).toBeGreaterThan(0);
+        expect(Math.min(...withPowerUps.map((entry) => entry.index))).toBeGreaterThanOrEqual(3);
 
     });
 

@@ -11,10 +11,14 @@ import {
     DROP_SCREEN_Y,
     DROP_STRETCH,
     DROP_TILT_SMOOTHING,
-    LANE_CHANGE_SPEED
+    LANE_CHANGE_SPEED,
+    RAINBOW_CYCLE_SPEED,
+    RAINBOW_WARNING,
+    RAINBOW_WARNING_SPEED
 } from '../config/constants';
 import { clampLane, laneCenterX, startLane } from '../systems/Lanes';
 import { drawWaterDrop } from '../ui/shapes';
+import { rainbowAt } from '../utils/color';
 import { clamp, easeTowards } from '../utils/math';
 import { DropJuice } from './drop-juice';
 import { waterOutline } from './drop-surface';
@@ -51,6 +55,15 @@ export class Drop
     /** The colour being left behind, and how far the new one has flooded down. */
     private previousColor: number = COLOR_DROP_NEUTRAL;
     private flood = 1;
+
+    /**
+     * A rainbow drop in hand: how much of it is left, 1 down to 0, and where the
+     * colours have run to. The phase is carried rather than worked out from the
+     * clock, so speeding it up at the end does not jump the colour.
+     */
+    private wild = false;
+    private wildLeft = 1;
+    private wildPhase = 0;
 
     /** Overrides `color` while a hit flash is playing. */
     private flashColor: number | null = null;
@@ -103,12 +116,31 @@ export class Drop
     }
 
     /**
+     * The colour the drop is actually painted right now, which is the rainbow
+     * while one is in hand. Anything that should match what the player sees -
+     * the trail it lays down - asks for this rather than the colour it carries.
+     */
+    getPaintColor (): number
+    {
+        return this.wild ? rainbowAt(this.wildPhase) : this.color;
+    }
+
+    /**
      * The running score, which is what the drop's size is made of. A penalty
      * lowers it, so the drop shrinks back without being told separately.
      */
     setScore (score: number): void
     {
         this.juice.setScore(score);
+    }
+
+    /**
+     * Carrying a rainbow drop, and how much of it is left.
+     */
+    setWild (active: boolean, remaining: number): void
+    {
+        this.wild = active;
+        this.wildLeft = remaining;
     }
 
     /**
@@ -185,6 +217,16 @@ export class Drop
         this.juice.update(dt);
         this.flood = easeTowards(this.flood, 1, DROP_FLOOD_SPEED, dt);
 
+        if (this.wild)
+        {
+            //  The colours race as it runs out. That is the warning, and the
+            //  only one there is - a power-up that simply lapsed would leave the
+            //  player in a barrier through no fault of their own.
+            const speed = this.wildLeft < RAINBOW_WARNING ? RAINBOW_WARNING_SPEED : RAINBOW_CYCLE_SPEED;
+
+            this.wildPhase += speed * dt;
+        }
+
         //  The shape itself is rebuilt every frame - that is the whole point of
         //  it being liquid - so this is a redraw, not just a transform.
         this.redraw();
@@ -216,13 +258,17 @@ export class Drop
         //  rather than fighting with it.
         const flashing = this.flashColor !== null;
 
+        //  A rainbow overrides the colour it is carrying, and any flood still
+        //  running - there is nothing to flood into while it matches everything.
+        const body = this.wild ? rainbowAt(this.wildPhase) : this.color;
+
         drawWaterDrop(this.gfx, {
             outline: waterOutline(DROP_RADIUS, this.juice.getElapsed(), this.tilt, this.juice.getAgitation()),
             radius: DROP_RADIUS,
-            color: this.flashColor ?? this.color,
+            color: this.flashColor ?? body,
             lean: this.tilt,
             grounded: true,
-            from: flashing ? undefined : this.previousColor,
+            from: flashing || this.wild ? undefined : this.previousColor,
             flood: this.flood
         });
     }

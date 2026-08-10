@@ -71,6 +71,7 @@ export interface SectionSpec
      *   '.'      empty
      *   '1'-'5'  an orb of that palette colour
      *   'a'-'e'  an obstacle of that palette colour
+     *   '*'      a rainbow drop: matches everything for a while
      *
      * Every row must leave at least one lane that is safe to be in: empty, or
      * holding an orb the drop can already match. A row with no way through
@@ -139,16 +140,25 @@ export interface ObstacleSpec
     kind: ObstacleKind;
 }
 
+/** A rainbow drop waiting to be picked up. It has no colour: that is the point. */
+export interface PowerUpSpec
+{
+    distance: number;
+    lane: number;
+}
+
 export interface Level
 {
     gates: GatePairSpec[];
     orbs: OrbSpec[];
     obstacles: ObstacleSpec[];
+    powerUps: PowerUpSpec[];
     finishDistance: number;
 }
 
 const ORB_CHARS = '12345';
 const OBSTACLE_CHARS = 'abcde';
+export const RAINBOW_CHAR = '*';
 
 /**
  * Expands an authored level into flat lists with absolute distances.
@@ -161,6 +171,7 @@ export function buildLevel (spec: LevelSpec): Level
     const gates: GatePairSpec[] = [];
     const orbs: OrbSpec[] = [];
     const obstacles: ObstacleSpec[] = [];
+    const powerUps: PowerUpSpec[] = [];
 
     const colorAt = (index: number): ColorId => spec.palette[index] ?? spec.palette[0];
 
@@ -185,6 +196,13 @@ export function buildLevel (spec: LevelSpec): Level
 
                 if (character === undefined || character === '.')
                 {
+                    continue;
+                }
+
+                if (character === RAINBOW_CHAR)
+                {
+                    powerUps.push({ distance: rowDistance, lane });
+
                     continue;
                 }
 
@@ -221,6 +239,7 @@ export function buildLevel (spec: LevelSpec): Level
         gates,
         orbs,
         obstacles,
+        powerUps,
         finishDistance: lastRowDistance + FINISH_GAP
     };
 }
@@ -240,7 +259,12 @@ export function rowHasSafeLane (row: string): boolean
     {
         const character = row[lane];
 
-        if (character === undefined || character === '.' || ORB_CHARS.includes(character))
+        //  A rainbow drop is safe for the same reason an orb is: at worst it
+        //  costs nothing, and it is never a blocked route.
+        if (character === undefined
+            || character === '.'
+            || character === RAINBOW_CHAR
+            || ORB_CHARS.includes(character))
         {
             return true;
         }
