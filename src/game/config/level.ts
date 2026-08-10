@@ -1,4 +1,5 @@
 import { ColorId, LANE_COUNT } from './constants';
+import { WorldId } from './worlds';
 
 //  The shape of a course, and how an authored level is expanded into one.
 //  The levels themselves live in `levels.ts` - this file is the format, not the
@@ -10,25 +11,38 @@ import { ColorId, LANE_COUNT } from './constants';
 
 // ---------------------------------------------------------------------------
 //  Default spacing
-//
-//  A level may override the row spacing to tighten or loosen its rhythm; the
-//  rest is shared by every level.
 // ---------------------------------------------------------------------------
 
 /** Quiet run before the first gate, so the player can find the controls. */
 export const LEAD_IN = 900;
 
-/** Gap between a gate and the first orb row that follows it. */
+/** Gap between a gate and the first row that follows it. */
 export const GATE_TO_ORBS = 260;
 
-/** Default gap between orb rows. */
+/** Default gap between rows. */
 export const ORB_ROW_SPACING = 175;
 
-/** Gap between the last orb of a section and the next gate. */
+/** Gap between the last row of a section and the next gate. */
 export const SECTION_GAP = 420;
 
-/** Gap between the last orb of the course and the finish gate. */
+/** Gap between the last row of the course and the finish gate. */
 export const FINISH_GAP = 520;
+
+// ---------------------------------------------------------------------------
+//  Obstacles
+// ---------------------------------------------------------------------------
+
+/**
+ * How an obstacle behaves. Introduced a kind at a time as the levels progress,
+ * so no single level asks the player to read something they have not met.
+ */
+export type ObstacleKind =
+    /** Sits in its lane. */
+    | 'static'
+    /** Slides across the track, forcing the lane change to be timed. */
+    | 'slider'
+    /** Holds its lane but breathes in and out, narrowing the safe gap. */
+    | 'pulse';
 
 // ---------------------------------------------------------------------------
 //  Authored level format
@@ -41,21 +55,26 @@ export interface SectionSpec
      * 1 after the second.
      *
      * Three lanes and two gates cannot split down the middle without leaving
-     * the centre lane straddling both, so the split sits on a lane boundary and
-     * is worth alternating between sections.
+     * the centre lane straddling both, so the split sits on a lane boundary.
      */
     splitAfterLane: 0 | 1;
 
-    /** Colours of the left and right gate. */
-    colors: [ ColorId, ColorId ];
+    /** Gate colours, as indices into the level's palette. */
+    gate: [ number, number ];
+
+    /** How obstacles in this section behave. Defaults to static. */
+    obstacles?: ObstacleKind;
 
     /**
-     * One string per orb row, one character per lane:
-     * 'B' blue orb, 'R' red orb, '.' empty.
+     * One string per row, one character per lane:
      *
-     * Keep at most two orbs per row. Three would leave no empty lane, forcing
-     * the drop through an orb it may not match, and a combo should only ever
-     * break through a player's own mistake.
+     *   '.'      empty
+     *   '1'-'5'  an orb of that palette colour
+     *   'a'-'e'  an obstacle of that palette colour
+     *
+     * Every row must leave at least one lane that is safe to be in: empty, or
+     * holding an orb the drop can already match. A row with no way through
+     * would take points for a mistake the player could not avoid.
      */
     rows: string[];
 }
@@ -65,10 +84,19 @@ export interface LevelSpec
     /** Shown in the HUD and on the completion panel. */
     name: string;
 
-    /** Overrides FORWARD_SPEED for this level. Faster reads as harder. */
+    /** Which environment this level is played in. */
+    world: WorldId;
+
+    /**
+     * The colours in play, most important first. Gates and rows refer to these
+     * by position, so a level's identity can be re-tinted in one place.
+     */
+    palette: ColorId[];
+
+    /** Overrides FORWARD_SPEED for this level. */
     forwardSpeed?: number;
 
-    /** Overrides ORB_ROW_SPACING for this level. Tighter reads as busier. */
+    /** Overrides ORB_ROW_SPACING for this level. */
     rowSpacing?: number;
 
     sections: SectionSpec[];
@@ -92,21 +120,27 @@ export interface OrbSpec
     color: ColorId;
 }
 
+export interface ObstacleSpec
+{
+    distance: number;
+    lane: number;
+    color: ColorId;
+    kind: ObstacleKind;
+}
+
 export interface Level
 {
     gates: GatePairSpec[];
     orbs: OrbSpec[];
+    obstacles: ObstacleSpec[];
     finishDistance: number;
 }
 
-const ORB_CHARS: Record<string, ColorId> = {
-    B: 'blue',
-    R: 'red'
-};
+const ORB_CHARS = '12345';
+const OBSTACLE_CHARS = 'abcde';
 
 /**
- * Expands an authored level into a flat list of gates and orbs with absolute
- * distances.
+ * Expands an authored level into flat lists with absolute distances.
  */
 export function buildLevel (spec: LevelSpec): Level
 {
@@ -114,16 +148,19 @@ export function buildLevel (spec: LevelSpec): Level
 
     const gates: GatePairSpec[] = [];
     const orbs: OrbSpec[] = [];
+    const obstacles: ObstacleSpec[] = [];
+
+    const colorAt = (index: number): ColorId => spec.palette[index] ?? spec.palette[0];
 
     let cursor = LEAD_IN;
-    let lastOrbDistance = cursor;
+    let lastRowDistance = cursor;
 
     for (const section of spec.sections)
     {
         gates.push({
             distance: cursor,
             splitAfterLane: section.splitAfterLane,
-            colors: section.colors
+            colors: [ colorAt(section.gate[0]), colorAt(section.gate[1]) ]
         });
 
         let rowDistance = cursor + GATE_TO_ORBS;
@@ -132,24 +169,68 @@ export function buildLevel (spec: LevelSpec): Level
         {
             for (let lane = 0; lane < LANE_COUNT; lane++)
             {
-                const color = ORB_CHARS[row[lane]];
+                const character = row[lane];
 
-                if (color)
+                if (character === undefined || character === '.')
                 {
-                    orbs.push({ distance: rowDistance, lane, color });
+                    continue;
+                }
+
+                const orbIndex = ORB_CHARS.indexOf(character);
+
+                if (orbIndex >= 0)
+                {
+                    orbs.push({ distance: rowDistance, lane, color: colorAt(orbIndex) });
+
+                    continue;
+                }
+
+                const obstacleIndex = OBSTACLE_CHARS.indexOf(character);
+
+                if (obstacleIndex >= 0)
+                {
+                    obstacles.push({
+                        distance: rowDistance,
+                        lane,
+                        color: colorAt(obstacleIndex),
+                        kind: section.obstacles ?? 'static'
+                    });
                 }
             }
 
-            lastOrbDistance = rowDistance;
+            lastRowDistance = rowDistance;
             rowDistance += rowSpacing;
         }
 
-        cursor = lastOrbDistance + SECTION_GAP;
+        cursor = lastRowDistance + SECTION_GAP;
     }
 
     return {
         gates,
         orbs,
-        finishDistance: lastOrbDistance + FINISH_GAP
+        obstacles,
+        finishDistance: lastRowDistance + FINISH_GAP
     };
+}
+
+/**
+ * Whether a row leaves somewhere safe to be.
+ *
+ * A lane is safe if it is empty or holds an orb; an obstacle is only safe if
+ * the drop happens to match it, which cannot be known while authoring. So a row
+ * of nothing but obstacles is unfair by construction.
+ */
+export function rowHasSafeLane (row: string): boolean
+{
+    for (let lane = 0; lane < LANE_COUNT; lane++)
+    {
+        const character = row[lane];
+
+        if (character === undefined || character === '.' || ORB_CHARS.includes(character))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }

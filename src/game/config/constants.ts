@@ -322,6 +322,38 @@ export const WRONG_COLOR_MULTIPLIER = 2;
 export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
 
 // ---------------------------------------------------------------------------
+//  Obstacles
+// ---------------------------------------------------------------------------
+
+/** Half the width of a barrier, in track pixels. */
+export const OBSTACLE_HALF_WIDTH = 44;
+
+/** How far a barrier reaches along the track. */
+export const OBSTACLE_DEPTH = 52;
+
+/**
+ * How close the drop's centre must be to count as hitting a barrier.
+ *
+ * Held below half a lane so a barrier only ever blocks its own lane - being in
+ * the lane beside one must always be safe, or a level could take points for a
+ * mistake the player did not make.
+ */
+export const DROP_CONTACT_RADIUS = DROP_RADIUS;
+
+export const OBSTACLE_FILL_ALPHA = 0.34;
+export const OBSTACLE_EDGE_THICKNESS = 4;
+export const OBSTACLE_HATCH_COUNT = 3;
+export const OBSTACLE_HATCH_ALPHA = 0.5;
+
+/** Sliding barriers: how far they travel, and over what stretch of track. */
+export const SLIDER_AMPLITUDE = LANE_WIDTH;
+export const SLIDER_PERIOD = 620;
+
+/** Pulsing barriers: how much they breathe, and how often. */
+export const PULSE_AMOUNT = 0.42;
+export const PULSE_PERIOD = 300;
+
+// ---------------------------------------------------------------------------
 //  Feedback
 // ---------------------------------------------------------------------------
 

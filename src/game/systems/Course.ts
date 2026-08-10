@@ -3,8 +3,9 @@ import { ColorId, CULL_MARGIN, GAME_HEIGHT } from '../config/constants';
 import { Level } from '../config/level';
 import { FinishGate } from '../entities/FinishGate';
 import { GatePair } from '../entities/GatePair';
+import { Obstacle } from '../entities/Obstacle';
 import { Orb } from '../entities/Orb';
-import { isWithinCatchRange } from './contact';
+import { isBlockedBy, isWithinCatchRange } from './contact';
 
 export interface CourseEvents
 {
@@ -13,6 +14,12 @@ export interface CourseEvents
 
     /** The drop has touched an orb. `matched` is whether the colours agreed. */
     onOrb: (orb: Orb, matched: boolean, y: number) => void;
+
+    /**
+     * The drop has hit a barrier of the wrong colour. A matching barrier is
+     * passed straight through and never reported.
+     */
+    onBlocked: (x: number, y: number) => void;
 
     /** The drop has crossed the finish line. */
     onFinish: () => void;
@@ -30,6 +37,7 @@ export class Course
 {
     private gates: GatePair[] = [];
     private orbs: Orb[] = [];
+    private obstacles: Obstacle[] = [];
 
     private readonly finish: FinishGate;
     private readonly events: CourseEvents;
@@ -50,6 +58,11 @@ export class Course
         {
             this.orbs.push(new Orb(scene, spec));
         }
+
+        for (const spec of level.obstacles)
+        {
+            this.obstacles.push(new Obstacle(scene, spec));
+        }
     }
 
     /**
@@ -62,6 +75,7 @@ export class Course
         const cullY = GAME_HEIGHT + CULL_MARGIN;
 
         this.updateGates(travelled, dropX, cullY);
+        this.updateObstacles(travelled, dropX, dropColor, cullY);
         this.updateOrbs(travelled, dropX, dropColor, cullY);
 
         this.finish.update(travelled);
@@ -92,6 +106,35 @@ export class Course
             {
                 gate.destroy();
                 this.gates.splice(i, 1);
+            }
+        }
+    }
+
+    private updateObstacles (travelled: number, dropX: number, dropColor: ColorId | null, cullY: number): void
+    {
+        for (let i = this.obstacles.length - 1; i >= 0; i--)
+        {
+            const obstacle = this.obstacles[i];
+            const y = obstacle.update(travelled);
+
+            if (!obstacle.consumed && travelled >= obstacle.distance)
+            {
+                obstacle.consumed = true;
+
+                //  Position comes from the same functions the barrier just drew
+                //  itself with, so what is hit is what was on screen.
+                const centre = obstacle.trackXAt(travelled);
+
+                if (obstacle.color !== dropColor && isBlockedBy(dropX, centre, obstacle.halfWidthAt(travelled)))
+                {
+                    this.events.onBlocked(centre, y);
+                }
+            }
+
+            if (y > cullY)
+            {
+                obstacle.destroy();
+                this.obstacles.splice(i, 1);
             }
         }
     }

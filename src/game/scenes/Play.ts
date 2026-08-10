@@ -125,6 +125,7 @@ export class Play extends Scene
         this.course = new Course(this, buildLevel(level), {
             onGate: (color) => this.drop.setColorId(color),
             onOrb: (orb, matched, y) => this.onOrb(orb.x, y, matched),
+            onBlocked: (x, y) => this.onOrb(x, y, false),
             onFinish: () => this.onFinish()
         });
 
