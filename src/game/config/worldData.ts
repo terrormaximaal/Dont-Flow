@@ -41,6 +41,8 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  2 - the first sense of distance: ridges behind ridges.
     mountains: {
         skyTop: 0x1d3557, skyBottom: 0x7fb4dc,
+        //  a cold valley floor the road is cut into
+        groundColor: 0x27405c,
         track: 0x18293f, laneLine: 0x2b4463, trackEdge: 0x4f7aa6, rung: 0x22374f,
         ...LIGHT_HUD,
         hazeColor: 0xbcd9f2, hazeAlpha: 0.3,
@@ -49,13 +51,15 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'peaks', color: 0x24425f, alpha: 0.8, parallax: 0.12, baseline: 15, height: 170, period: 260, wrap: 700, seed: 19 },
             { shape: 'blobs', color: 0xffffff, alpha: 0.28, parallax: 0.03, baseline: -85, height: 34, period: 200, wrap: 560, seed: 31 }
         ],
-        roadside: { shape: 'peaks', color: 0x2b4a68, alpha: 0.75, height: 120, spacing: 520, offset: 120, seed: 3 },
+        roadside: { shape: 'peaks', color: 0x0f1e33, alpha: 0.75, height: 120, spacing: 520, offset: 120, seed: 3 },
         palette: [ 'red', 'blue', 'yellow' ]
     },
 
     //  3 - low sun, long shadows, hard mesa edges.
     canyon: {
         skyTop: 0x35135a, skyBottom: 0xff8a4a,
+        //  sunlit rock either side of a road in shadow
+        groundColor: 0x5a2338,
         track: 0x2a1330, laneLine: 0x4a2450, trackEdge: 0x8a4472, rung: 0x361a3c,
         ...LIGHT_HUD,
         hazeColor: 0xff9d5c, hazeAlpha: 0.34,
@@ -64,13 +68,15 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'mesa', color: 0x6b2f52, alpha: 0.6, parallax: 0.05, baseline: 8, height: 120, period: 190, wrap: 560, seed: 7 },
             { shape: 'mesa', color: 0x3a1733, alpha: 0.9, parallax: 0.13, baseline: 16, height: 165, period: 240, wrap: 660, seed: 23 }
         ],
-        roadside: { shape: 'mesa', color: 0x4a1d3e, alpha: 0.85, height: 150, spacing: 470, offset: 110, seed: 4 },
+        roadside: { shape: 'mesa', color: 0x260b1c, alpha: 0.85, height: 150, spacing: 470, offset: 110, seed: 4 },
         palette: [ 'orange', 'purple', 'cyan' ]
     },
 
     //  4 - close, layered, and misty enough to hide what is coming.
     forest: {
         skyTop: 0x07171a, skyBottom: 0x17403a,
+        //  undergrowth, lighter than the path worn through it
+        groundColor: 0x16332c,
         track: 0x0a1c1e, laneLine: 0x16332f, trackEdge: 0x2f6355, rung: 0x123028,
         ...LIGHT_HUD,
         hazeColor: 0x9fd8c0, hazeAlpha: 0.16,
@@ -78,13 +84,15 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'trees', color: 0x1c4038, alpha: 0.7, parallax: 0.07, baseline: 10, height: 150, period: 96, wrap: 560, seed: 13 },
             { shape: 'trees', color: 0x0e2723, alpha: 0.95, parallax: 0.16, baseline: 18, height: 200, period: 122, wrap: 560, seed: 41 }
         ],
-        roadside: { shape: 'trees', color: 0x123029, alpha: 0.95, height: 175, spacing: 300, offset: 100, seed: 5 },
+        roadside: { shape: 'trees', color: 0x06170f, alpha: 0.95, height: 175, spacing: 300, offset: 100, seed: 5 },
         palette: [ 'green', 'yellow', 'purple' ]
     },
 
     //  5 - bright, cold and quiet, with snow crossing the screen.
     ice: {
         skyTop: 0x7fc4e0, skyBottom: 0xe8f8ff,
+        //  a snowfield with the road cleared across it
+        groundColor: 0xdcf0fa,
         track: 0x1d3a52, laneLine: 0x31597a, trackEdge: 0x6ba0c4, rung: 0x27485f,
         ...DARK_HUD,
         hazeColor: 0xffffff, hazeAlpha: 0.45,
@@ -100,6 +108,8 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  6 - heat, haze and soft dunes.
     desert: {
         skyTop: 0xe8913f, skyBottom: 0xffdfa4,
+        //  open sand, with the road dark against it
+        groundColor: 0xd9a45f,
         track: 0x40261c, laneLine: 0x5d382a, trackEdge: 0x93603f, rung: 0x4b2d20,
         ...DARK_HUD,
         hazeColor: 0xffd28a, hazeAlpha: 0.4,
@@ -115,6 +125,8 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  7 - the sky closes in; rain, and the occasional flash.
     storm: {
         skyTop: 0x080c16, skyBottom: 0x243448,
+        //  sodden ground, barely lighter than the road
+        groundColor: 0x18263a,
         track: 0x0c1420, laneLine: 0x1b2a3d, trackEdge: 0x3d5a7e, rung: 0x152130,
         ...LIGHT_HUD,
         hazeColor: 0x8fa8c4, hazeAlpha: 0.18,
@@ -124,13 +136,15 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         ],
         specks: { count: 60, color: 0xa8c4e0, alpha: 0.5, radius: 1.4, fall: 620, drift: 90, streak: 16 },
         lightning: true,
-        roadside: { shape: 'hills', color: 0x121d31, alpha: 0.9, height: 130, spacing: 480, offset: 115, seed: 8 },
+        roadside: { shape: 'hills', color: 0x05090f, alpha: 0.9, height: 130, spacing: 480, offset: 115, seed: 8 },
         palette: [ 'blue', 'red', 'green', 'yellow' ]
     },
 
     //  8 - hard verticals and window light.
     city: {
         skyTop: 0x0e0724, skyBottom: 0x4a1f7a,
+        //  the lit plane the towers stand on
+        groundColor: 0x22123f,
         track: 0x120a26, laneLine: 0x241541, trackEdge: 0x50307e, rung: 0x1b1033,
         ...LIGHT_HUD,
         hazeColor: 0x7a4bd0, hazeAlpha: 0.22,
@@ -138,13 +152,17 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'buildings', color: 0x241443, alpha: 0.85, parallax: 0.06, baseline: 9, height: 200, period: 74, wrap: 700, seed: 6 },
             { shape: 'buildings', color: 0x140a29, alpha: 0.95, parallax: 0.15, baseline: 18, height: 250, period: 96, wrap: 820, seed: 22 }
         ],
-        roadside: { shape: 'buildings', color: 0x1b0f36, alpha: 0.95, height: 260, spacing: 360, offset: 105, seed: 9 },
+        //  Lighter than the floor rather than darker: near towers catching the
+        //  city's own glow read better here than black silhouettes.
+        roadside: { shape: 'buildings', color: 0x402573, alpha: 0.95, height: 260, spacing: 360, offset: 105, seed: 9 },
         palette: [ 'cyan', 'magenta', 'yellow', 'green' ]
     },
 
     //  9 - nothing near, everything far.
     space: {
         skyTop: 0x03050d, skyBottom: 0x0c1030,
+        //  nothing: the road floats in it
+        groundColor: 0x04060e,
         track: 0x252f56, laneLine: 0x3a4880, trackEdge: 0x6274c0, rung: 0x2c3866,
         ...LIGHT_HUD,
         hazeColor: 0x5560c0, hazeAlpha: 0.14,
@@ -161,6 +179,8 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  10 - fragments of everywhere else, and nothing whole.
     void: {
         skyTop: 0x04030b, skyBottom: 0x1d0a33,
+        //  nothing again, but bruised rather than empty
+        groundColor: 0x160a2a,
         track: 0x36255e, laneLine: 0x4c3580, trackEdge: 0x9a6ae0, rung: 0x3d2a68,
         ...LIGHT_HUD,
         hazeColor: 0xa050ff, hazeAlpha: 0.2,

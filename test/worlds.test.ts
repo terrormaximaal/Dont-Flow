@@ -113,6 +113,48 @@ describe('the ten worlds', () => {
 
     });
 
+    //  Falling back to the road's own colour makes the whole lower half of the
+    //  screen one flat shape, and the road stops reading as a surface running
+    //  through somewhere: it reads as a hole cut in the sky.
+    it('give the road a floor to run over', () => {
+
+        for (const id of IDS)
+        {
+            const world = WORLDS[id];
+
+            expect(world.groundColor, `${id} ground`).toBeDefined();
+
+            expect(Math.abs(luminance(world.groundColor!) - luminance(world.track)), `${id} road on ground`)
+                .toBeGreaterThan(0.04);
+        }
+
+    });
+
+    //  The roadside props were coloured to stand out against the road itself,
+    //  back when the ground fell back to the road's colour. Giving each world a
+    //  floor of its own quietly buried five of them in it.
+    it('stand their roadside scenery out from the floor it stands on', () => {
+
+        for (const id of IDS)
+        {
+            const world = WORLDS[id];
+
+            if (!world.roadside)
+            {
+                continue;
+            }
+
+            const ground = luminance(world.groundColor ?? world.track);
+
+            //  Props are drawn semi-transparent, so what the eye actually gets
+            //  is the difference scaled by the alpha they are painted at.
+            const seen = world.roadside.alpha * Math.abs(luminance(world.roadside.color) - ground);
+
+            expect(seen, `${id} roadside on ground`).toBeGreaterThan(0.06);
+        }
+
+    });
+
     it('keep their haze subtle enough to see through', () => {
 
         for (const id of IDS)

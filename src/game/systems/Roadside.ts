@@ -92,7 +92,6 @@ export class Roadside
     ): void
     {
         const x = projectX(trackX, y);
-        const scale = depthScale(y);
         const width = height * 0.42;
 
         if (height < 1.5) { return; }
@@ -144,10 +143,49 @@ export class Roadside
             return;
         }
 
-        //  'peaks', 'hills' and 'dunes' all stand as a simple mound.
-        gfx.fillTriangle(x - width, y, x, y - height, x + width, y);
+        if (shape === 'hills' || shape === 'dunes')
+        {
+            this.mound(gfx, x, y, width * 1.5, height);
 
-        void scale;
+            return;
+        }
+
+        //  'peaks' stand as a sharp cone: rock, not landscape.
+        gfx.fillTriangle(x - width, y, x, y - height, x + width, y);
+    }
+
+    /**
+     * A rounded hump, for the shapes that are landscape rather than rock. Drawn
+     * as a fan of triangles from the middle of its own base, because a filled
+     * polygon here would have to be closed below the ground line.
+     */
+    private mound (
+        gfx: Phaser.GameObjects.Graphics,
+        x: number,
+        y: number,
+        width: number,
+        height: number
+    ): void
+    {
+        const steps = 12;
+
+        let previousX = x - width;
+        let previousY = y;
+
+        for (let i = 1; i <= steps; i++)
+        {
+            const t = i / steps;
+            const nextX = x - width + (2 * width * t);
+
+            //  A sine hump, flattened slightly so the sides fall away rather
+            //  than rising straight out of the ground.
+            const nextY = y - (height * Math.pow(Math.sin(Math.PI * t), 0.7));
+
+            gfx.fillTriangle(x, y, previousX, previousY, nextX, nextY);
+
+            previousX = nextX;
+            previousY = nextY;
+        }
     }
 }
 
