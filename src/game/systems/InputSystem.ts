@@ -1,5 +1,5 @@
 import { Scene } from 'phaser';
-import { DragAnchor, evaluateDrag, LaneIntent } from './swipe';
+import { DragAnchor, evaluateDrag, isRepeatTooSoon, LaneIntent } from './swipe';
 
 export type { LaneIntent };
 
@@ -20,6 +20,9 @@ export class InputSystem
 
     /** Steering is switched off once the run is over. */
     private enabled = true;
+
+    /** Scene clock reading of the last swipe-driven lane change. */
+    private lastSwipeTime = 0;
 
     constructor (scene: Scene, onIntent: (direction: LaneIntent) => void)
     {
@@ -88,6 +91,10 @@ export class InputSystem
 
         this.dragging = true;
         this.anchor = { x: pointer.x, y: pointer.y };
+
+        //  A fresh touch is always allowed to steer straight away - the delay
+        //  only paces one continuous drag.
+        this.lastSwipeTime = 0;
     }
 
     private onPointerMove (pointer: Phaser.Input.Pointer): void
@@ -99,12 +106,26 @@ export class InputSystem
 
         const result = evaluateDrag(this.anchor, pointer.x, pointer.y);
 
-        this.anchor = result.anchor;
-
-        if (result.intent !== 0)
+        if (result.intent === 0)
         {
-            this.onIntent(result.intent);
+            this.anchor = result.anchor;
+
+            return;
         }
+
+        //  Too soon after the last lane change: leave the anchor where it was so
+        //  the gesture stays pending and fires the moment the delay is up. A
+        //  deliberate long drag still gets its second lane; a flick does not get
+        //  three at once.
+        if (isRepeatTooSoon(this.scene.time.now, this.lastSwipeTime))
+        {
+            return;
+        }
+
+        this.anchor = result.anchor;
+        this.lastSwipeTime = this.scene.time.now;
+
+        this.onIntent(result.intent);
     }
 
     private onPointerUp (): void

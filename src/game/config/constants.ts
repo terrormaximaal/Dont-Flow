@@ -99,6 +99,34 @@ export const DROP_STRETCH = 0.16;
 
 //  A shadow on the road under the drop, which is what actually places it in the
 //  world rather than on the glass.
+//  Growth. Collecting orbs swells the drop, which is the run's reward made
+//  visible without reading a number. Purely cosmetic: collision uses
+//  DROP_CONTACT_RADIUS, which never changes, so a fat drop is never harder to
+//  squeeze past a barrier than a small one.
+
+//  Score at which the drop reaches full size. Past this it stops growing, so a
+//  long combo cannot fill the screen.
+export const DROP_GROWTH_FULL_SCORE = 400;
+//  Size multiplier at that score. 1 would mean no growth at all.
+export const DROP_GROWTH_MAX_SCALE = 1.4;
+//  How quickly the drop eases towards its new size, as an exponential rate.
+//  Low enough that the swell is a visible motion, not a jump.
+export const DROP_GROWTH_SPEED = 5;
+
+//  The squash the drop pops with each time it swallows an orb, on top of its
+//  current size, and how fast that settles back.
+export const DROP_POP_AMOUNT = 0.24;
+export const DROP_POP_SPEED = 9;
+
+//  Idle life. A drop of liquid is never quite still, and a player who is not
+//  steering should still have something moving to look at.
+export const DROP_IDLE_SPEED = 2.6;
+//  How far it breathes: added to the width and taken off the height.
+export const DROP_IDLE_SQUASH = 0.05;
+//  Radians of lazy sway, on a slower cycle than the breathing so the two never
+//  line up into an obvious loop.
+export const DROP_IDLE_SWAY = 0.06;
+
 export const DROP_SHADOW_ALPHA = 0.3;
 export const DROP_SHADOW_DROP = 26;
 export const DROP_SHADOW_SQUASH = 0.34;
@@ -110,11 +138,15 @@ export const DROP_GLOW_ALPHA = 0.11;
 //  Input
 // ---------------------------------------------------------------------------
 
-//  Horizontal drag distance (px) that counts as one lane change.
-export const SWIPE_THRESHOLD = 26;
+//  Horizontal drag distance (px) that counts as one lane change. Higher means
+//  the player has to commit to the swipe; lower gets twitchy.
+export const SWIPE_THRESHOLD = 44;
 //  A swipe must be this many times more horizontal than vertical to register,
 //  so vertical drags do not steer the drop.
-export const SWIPE_DOMINANCE = 1.2;
+export const SWIPE_DOMINANCE = 1.5;
+//  Shortest gap (ms) between two lane changes inside one unbroken drag. Without
+//  this a single fast flick skids across the whole track before you can react.
+export const SWIPE_REPEAT_DELAY = 170;
 
 //  How far a drag may wander vertically before it is measured afresh.
 //

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { SWIPE_DOMINANCE, SWIPE_REANCHOR_DISTANCE, SWIPE_THRESHOLD } from '../src/game/config/constants';
-import { DragAnchor, evaluateDrag } from '../src/game/systems/swipe';
+import {
+    SWIPE_DOMINANCE,
+    SWIPE_REANCHOR_DISTANCE,
+    SWIPE_REPEAT_DELAY,
+    SWIPE_THRESHOLD
+} from '../src/game/config/constants';
+import { DragAnchor, evaluateDrag, isRepeatTooSoon } from '../src/game/systems/swipe';
 
 const from = (x = 100, y = 400): DragAnchor => ({ x, y });
 
@@ -23,16 +28,42 @@ describe('a horizontal drag', () => {
 
     it('re-anchors where it fired, so one drag can cross two lanes', () => {
 
-        const first = evaluateDrag(from(), 140, 400);
+        const firedAt = 100 + SWIPE_THRESHOLD;
+        const first = evaluateDrag(from(), firedAt, 400);
 
         expect(first.intent).toBe(1);
-        expect(first.anchor).toEqual({ x: 140, y: 400 });
+        expect(first.anchor).toEqual({ x: firedAt, y: 400 });
 
         //  The second lane comes from moving another threshold's worth, not
         //  from the total distance since the finger landed.
-        const second = evaluateDrag(first.anchor, 140 + SWIPE_THRESHOLD, 400);
+        const second = evaluateDrag(first.anchor, firedAt + SWIPE_THRESHOLD, 400);
 
         expect(second.intent).toBe(1);
+
+    });
+
+});
+
+describe('back-to-back lane changes', () => {
+
+    it('are held off while the delay is still running', () => {
+
+        expect(isRepeatTooSoon(1000, 1000)).toBe(true);
+        expect(isRepeatTooSoon(1000 + SWIPE_REPEAT_DELAY - 1, 1000)).toBe(true);
+
+    });
+
+    it('are allowed once it has elapsed', () => {
+
+        expect(isRepeatTooSoon(1000 + SWIPE_REPEAT_DELAY, 1000)).toBe(false);
+
+    });
+
+    it('never hold off the first change of a fresh touch', () => {
+
+        //  A new press clears the last-fired time, so however long the clock has
+        //  been running the first swipe of a gesture steers immediately.
+        expect(isRepeatTooSoon(999999, 0)).toBe(false);
 
     });
 

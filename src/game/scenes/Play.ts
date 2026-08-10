@@ -166,6 +166,7 @@ export class Play extends Scene
 
             this.effects.burst(x, y, colorId ? COLOR_VALUES[colorId] : COLOR_FLASH);
             this.effects.haptic(HAPTIC_COLLECT_MS);
+            this.drop.pulse();
 
             showFloatingScore(this, x, y, gained);
         }
@@ -184,6 +185,10 @@ export class Play extends Scene
 
         this.hud.setScore(this.scoring.getScore());
         this.hud.setCombo(this.scoring.getCombo());
+
+        //  The drop's size is the score, so the player can read how the run is
+        //  going without looking away from the road.
+        this.drop.setScore(this.scoring.getScore());
     }
 
     /**
@@ -213,7 +218,7 @@ export class Play extends Scene
                 onResume: () => this.setPaused(false),
                 onRetry: () => this.startLevel(this.levelIndex),
                 onMenu: () => this.scene.start('Title')
-            });
+            }, new EnergySystem(this.save));
 
             return;
         }
