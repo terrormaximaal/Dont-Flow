@@ -11,13 +11,17 @@
 export const GAME_WIDTH = 480;
 export const GAME_HEIGHT = 854;
 
-export const LANE_COUNT = 3;
-export const TRACK_WIDTH = 330;
-export const LANE_WIDTH = TRACK_WIDTH / LANE_COUNT;
-export const TRACK_LEFT = (GAME_WIDTH - TRACK_WIDTH) / 2;
+//  Lanes a level carries unless it says otherwise. A level may ask for two
+//  instead, which the early ones do: the road stays the same width, so two
+//  lanes are wide ones and there is only ever one way to go.
+//
+//  Where the lanes actually are is worked out in `systems/Lanes`, from whatever
+//  the level being played asked for - not from here.
+export const DEFAULT_LANES = 3;
+export const MIN_LANES = 2;
 
-//  Which lane the drop starts in (0 = left, 1 = middle, 2 = right).
-export const START_LANE = 1;
+export const TRACK_WIDTH = 330;
+export const TRACK_LEFT = (GAME_WIDTH - TRACK_WIDTH) / 2;
 
 //  The drop never moves up or down the screen - the world comes towards it.
 //  Sat low, so most of the screen is the road ahead rather than behind.
@@ -148,6 +152,16 @@ export const DROP_TIP_TRAIL = 0.55;
 export const DROP_TIP_SWAY = 0.12;
 export const DROP_TIP_SWAY_SPEED = 0.9;
 
+//  Passing a gate floods the new colour down through the drop instead of
+//  swapping it in one frame. An exponential rate, fast enough that the drop has
+//  finished changing well before the section's first orb arrives - even on the
+//  quickest level, where that is about a third of a second away.
+export const DROP_FLOOD_SPEED = 9;
+//  Where the flood line starts and finishes, as multiples of the radius: above
+//  the tip and below the belly, so it sweeps the whole body.
+export const DROP_FLOOD_FROM = -2.2;
+export const DROP_FLOOD_TO = 1.3;
+
 //  How much heavier the bottom of the drop hangs than the top. One smooth
 //  swelling rather than a ripple, so it adds fullness without adding a bump.
 export const DROP_BELLY = 0.14;
@@ -170,6 +184,96 @@ export const DROP_SHADE_STEP = 0.17;
 //  move, as a fraction of the radius: the inside of the drop lagging behind the
 //  outside, the way liquid does in a glass.
 export const DROP_SLOSH = 0.34;
+
+// ---------------------------------------------------------------------------
+//  Wet trail
+//
+//  The drop leaves the road wet behind it. Marks are stamped at a fixed spacing
+//  along the course rather than every frame, so the trail is the same length
+//  however fast the level runs and however the frame rate wanders.
+// ---------------------------------------------------------------------------
+
+//  Track pixels between one mark and the next. Marks have to overlap or the
+//  streak reads as a row of beads: at this spacing they sit about 4 screen
+//  pixels apart against a mark half that tall again.
+export const TRAIL_STAMP_SPACING = 7;
+//  How far behind the drop a mark survives. Kept under the distance it takes to
+//  fall off the bottom of the screen, so the trail fades rather than vanishing.
+export const TRAIL_FADE_DISTANCE = 250;
+//  Width of the streak at the drop's own depth, and how far it narrows over its
+//  length - it should thin away behind rather than stop on a line.
+export const TRAIL_WIDTH = 34;
+export const TRAIL_TAPER = 0.6;
+//  Strongest a mark ever is, right under the drop.
+export const TRAIL_ALPHA = 0.3;
+
+// ---------------------------------------------------------------------------
+//  The rainbow drop
+//
+//  A pickup that makes the drop match everything for a stretch: every orb
+//  scores, every barrier is passed straight through. The only thing in the game
+//  that changes the rules rather than the numbers, so it is rare, brief, and
+//  always announces itself on the way out.
+// ---------------------------------------------------------------------------
+
+//  Measured in rows rather than seconds or pixels. A level's rows are its
+//  opportunities, so counting them is what makes the power-up worth the same on
+//  a slow early level as on a fast late one - seconds would be worth less where
+//  rows come quickly, and pixels more.
+export const RAINBOW_ROWS = 9;
+
+//  The last share of it, over which the colours race and the drop pulses. It
+//  must never simply stop: hitting a barrier because the power-up quietly
+//  lapsed is the definition of unfair.
+export const RAINBOW_WARNING = 0.32;
+
+//  Colours per second while it runs, and while it is running out.
+export const RAINBOW_CYCLE_SPEED = 2.4;
+export const RAINBOW_WARNING_SPEED = 7;
+
+//  The pickup itself, a little larger than an orb so it reads as a prize.
+export const RAINBOW_RADIUS = 17;
+export const RAINBOW_CORE_ALPHA = 0.75;
+
+// ---------------------------------------------------------------------------
+//  Swallowing an orb
+//
+//  The mirror of a burst: strands of the orb's colour collapse inwards instead
+//  of being thrown out. An explosion says the orb was destroyed; this says it
+//  was absorbed, which is the word the game is built on.
+//
+//  Contact happens when the orb has reached the drop, not before, so there is
+//  no distance to travel in from - the strands are placed in a ring around the
+//  meeting point and pulled to its centre.
+// ---------------------------------------------------------------------------
+
+export const SWALLOW_STRANDS = 6;
+//  How far out the ring starts. Wider than the drop looks like something
+//  bursting off it rather than being taken into it.
+export const SWALLOW_SPREAD = 25;
+//  A strand is long and thin, drawn pointing at the centre, so it reads as
+//  liquid being drawn in rather than as a dot moving.
+export const SWALLOW_LENGTH = 15;
+export const SWALLOW_THICKNESS = 6;
+export const SWALLOW_DURATION = 230;
+//  Extra milliseconds spread across the strands, so they do not all land at
+//  once and the drop looks fed rather than switched.
+export const SWALLOW_STAGGER = 90;
+
+//  Blobs: the same liquid the drop is made of, at small sizes. Orbs use these,
+//  and so does anything else that wants a wobbling lump rather than a circle.
+//
+//  A blob is much smaller than the drop, so its ripples have to be a bigger
+//  share of its radius to read at all, and fewer points around it are enough -
+//  which matters, because there can be a dozen on screen at once.
+export const BLOB_SURFACE_POINTS = 22;
+export const BLOB_RIPPLE_LOBES = [ 2, 3 ];
+export const BLOB_RIPPLE_SPEEDS = [ 1.4, -2.2 ];
+export const BLOB_RIPPLE_AMOUNTS = [ 0.075, 0.045 ];
+//  Blobs ripple with distance travelled rather than with the clock, like
+//  everything else in the world: they hold still when the game is paused, and a
+//  level looks the same on every run.
+export const BLOB_RIPPLE_PER_PIXEL = 0.01;
 
 //  Growth. Collecting orbs swells the drop, which is the run's reward made
 //  visible without reading a number. Purely cosmetic: collision uses
@@ -536,8 +640,14 @@ export const OBSTACLE_EDGE_THICKNESS = 4;
 export const OBSTACLE_HATCH_COUNT = 3;
 export const OBSTACLE_HATCH_ALPHA = 0.5;
 
-/** Sliding barriers: how far they travel, and over what stretch of track. */
-export const SLIDER_AMPLITUDE = LANE_WIDTH;
+/**
+ * Sliding barriers: how far they travel, and over what stretch of track.
+ *
+ * A plain distance rather than "one lane". Lane width now depends on how many
+ * lanes the level asked for, and a barrier that swung further on the easier
+ * levels would be exactly the wrong way round.
+ */
+export const SLIDER_AMPLITUDE = 110;
 export const SLIDER_PERIOD = 620;
 
 /** Pulsing barriers: how much they breathe, and how often. */
@@ -547,12 +657,6 @@ export const PULSE_PERIOD = 300;
 // ---------------------------------------------------------------------------
 //  Feedback
 // ---------------------------------------------------------------------------
-
-export const BURST_PARTICLES = 12;
-export const BURST_PARTICLE_RADIUS = 4;
-export const BURST_SPEED_MIN = 70;
-export const BURST_SPEED_MAX = 150;
-export const BURST_DURATION = 420;
 
 /** How long the drop stays red after touching a wrong-coloured orb. */
 export const FLASH_DURATION = 160;
@@ -644,6 +748,8 @@ export const DEPTH_GROUND = -8;
 export const DEPTH_ROADSIDE = -4;
 export const DEPTH_TRACK = 0;
 export const DEPTH_RUNGS = 1;
+//  Above the road it is laid on, below the things it must never hide.
+export const DEPTH_TRAIL = 2;
 export const DEPTH_GATES = 5;
 export const DEPTH_ORBS = 6;
 export const DEPTH_DROP = 20;

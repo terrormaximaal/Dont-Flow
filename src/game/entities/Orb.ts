@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import {
+    BLOB_RIPPLE_PER_PIXEL,
     COLOR_VALUES,
     ColorId,
     DEPTH_ORBS,
@@ -10,10 +11,16 @@ import { OrbSpec } from '../config/level';
 import { laneCenterX } from '../systems/Lanes';
 import { project } from '../systems/Projection';
 import { drawStrength, screenYFor } from '../systems/World';
+import { fillOutline } from '../ui/shapes';
+import { blobOutline } from './drop-surface';
 
 /**
  * A coloured collectible sitting in one lane. Matching the drop's colour scores;
  * touching one of the wrong colour breaks the combo.
+ *
+ * Drawn as a wobbling blob rather than a circle, so an orb reads as the same
+ * substance the drop is made of - something to be absorbed rather than a token
+ * to be picked up.
  */
 export class Orb
 {
@@ -26,23 +33,25 @@ export class Orb
     /** True once collected or hit, so it can only count once. */
     consumed = false;
 
-    private readonly body: Phaser.GameObjects.Arc;
-    private readonly core: Phaser.GameObjects.Arc;
+    /**
+     * Where this orb is in its own ripple, so a lane of them does not breathe in
+     * step. Taken from where it sits, so it is the same on every run.
+     */
+    private readonly phase: number;
+
+    private readonly value: number;
+    private readonly gfx: Phaser.GameObjects.Graphics;
 
     constructor (scene: Scene, spec: OrbSpec)
     {
         this.distance = spec.distance;
         this.color = spec.color;
         this.x = laneCenterX(spec.lane);
+        this.value = COLOR_VALUES[spec.color];
+        this.phase = (spec.distance * 0.017) + (spec.lane * 1.9);
 
-        const value = COLOR_VALUES[spec.color];
-
-        this.body = scene.add.circle(this.x, 0, ORB_RADIUS, value);
-        this.body.setDepth(DEPTH_ORBS);
-
-        //  A lighter core keeps the orb readable against the dark track.
-        this.core = scene.add.circle(this.x, 0, ORB_RADIUS * 0.45, 0xffffff, ORB_CORE_ALPHA);
-        this.core.setDepth(DEPTH_ORBS);
+        this.gfx = scene.add.graphics();
+        this.gfx.setDepth(DEPTH_ORBS);
     }
 
     /**
@@ -52,25 +61,27 @@ export class Orb
     {
         const y = screenYFor(this.distance, travelled);
         const projected = project(this.x, y);
-        const strength = drawStrength(this.distance, travelled);
-
-        this.body.setAlpha(strength);
-        this.core.setAlpha(strength * ORB_CORE_ALPHA);
 
         //  Position and size come from the projection; the orb's own `x` stays
         //  in track space, which is what collision compares against.
-        this.body.setPosition(projected.x, y);
-        this.body.setScale(projected.scale);
+        this.gfx.setPosition(projected.x, y);
+        this.gfx.setScale(projected.scale);
+        this.gfx.setAlpha(drawStrength(this.distance, travelled));
 
-        this.core.setPosition(projected.x, y);
-        this.core.setScale(projected.scale);
+        this.gfx.clear();
+
+        this.gfx.fillStyle(this.value, 1);
+        fillOutline(this.gfx, blobOutline(ORB_RADIUS, travelled * BLOB_RIPPLE_PER_PIXEL, this.phase));
+
+        //  A lighter core keeps the orb readable against the dark track.
+        this.gfx.fillStyle(0xffffff, ORB_CORE_ALPHA);
+        this.gfx.fillCircle(0, 0, ORB_RADIUS * 0.45);
 
         return y;
     }
 
     destroy (): void
     {
-        this.body.destroy();
-        this.core.destroy();
+        this.gfx.destroy();
     }
 }

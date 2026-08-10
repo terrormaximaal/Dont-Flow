@@ -19,6 +19,43 @@ const base = (sections: LevelSpec['sections'], extra: Partial<LevelSpec> = {}): 
     ...extra
 });
 
+describe('a level and its lanes', () => {
+
+    it('gives every row exactly one character per lane', () => {
+
+        //  A short row silently drops a lane; a long one puts an orb where there
+        //  is no road. Both build without complaint, so this is the guard.
+        for (const spec of LEVELS)
+        {
+            const lanes = spec.lanes ?? 3;
+
+            for (const section of spec.sections)
+            {
+                for (const row of section.rows)
+                {
+                    expect(row.length, `level ${spec.name}: "${row}"`).toBe(lanes);
+                    expect(row, `level ${spec.name}`).toMatch(/^[1-5a-e.*]+$/);
+                }
+            }
+        }
+
+    });
+
+    it('only splits a two-lane level down the middle', () => {
+
+        //  With two lanes there is one boundary, so a gate can only meet on it.
+        for (const spec of LEVELS.filter((level) => level.lanes === 2))
+        {
+            for (const section of spec.sections)
+            {
+                expect(section.splitAfterLane, `level ${spec.name}`).toBe(0);
+            }
+        }
+
+    });
+
+});
+
 describe('buildLevel', () => {
 
     it('places the first gate after the lead-in, in palette colours', () => {
@@ -132,6 +169,37 @@ describe('buildLevel', () => {
 
 });
 
+describe('the rainbow drop', () => {
+
+    it('is read out of a row as a power-up with no colour', () => {
+
+        const level = buildLevel(base([ { splitAfterLane: 0, gate: [ 0, 1 ], rows: [ '.*.' ] } ]));
+
+        expect(level.orbs).toHaveLength(0);
+        expect(level.obstacles).toHaveLength(0);
+        expect(level.powerUps).toEqual([ { distance: LEAD_IN + GATE_TO_ORBS, lane: 1 } ]);
+
+    });
+
+    it('counts as somewhere safe to be', () => {
+
+        expect(rowHasSafeLane('a*a')).toBe(true);
+
+    });
+
+    it('shows up from level four, once the basics are taught', () => {
+
+        const withPowerUps = LEVELS
+            .map((level, index) => ({ index, count: buildLevel(level).powerUps.length }))
+            .filter((entry) => entry.count > 0);
+
+        expect(withPowerUps.length).toBeGreaterThan(0);
+        expect(Math.min(...withPowerUps.map((entry) => entry.index))).toBeGreaterThanOrEqual(3);
+
+    });
+
+});
+
 describe('rowHasSafeLane', () => {
 
     it('accepts a row with an empty lane', () => {
@@ -173,22 +241,6 @@ describe('the shipped levels', () => {
 
     });
 
-    it('describe every row with one character per lane', () => {
-
-        for (const level of LEVELS)
-        {
-            for (const section of level.sections)
-            {
-                for (const row of section.rows)
-                {
-                    expect(row, `level ${level.name}`).toHaveLength(3);
-                    expect(row, `level ${level.name}`).toMatch(/^[1-5a-e.]{3}$/);
-                }
-            }
-        }
-
-    });
-
     it('never fill a row completely', () => {
 
         for (const level of LEVELS)
@@ -199,7 +251,10 @@ describe('the shipped levels', () => {
                 {
                     const filled = [ ...row ].filter((character) => character !== '.').length;
 
-                    expect(filled, `level ${level.name} row "${row}"`).toBeLessThanOrEqual(2);
+                    //  One short of the lane count, whatever that is, so there
+                    //  is always somewhere to go.
+                    expect(filled, `level ${level.name} row "${row}"`)
+                        .toBeLessThanOrEqual((level.lanes ?? 3) - 1);
                 }
             }
         }

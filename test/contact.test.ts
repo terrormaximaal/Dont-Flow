@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
     DROP_RADIUS,
-    LANE_COUNT,
-    LANE_WIDTH,
     ORB_CATCH_RADIUS,
     ORB_RADIUS,
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../src/game/config/constants';
 import { gateSideAt, gateSplitX, isWithinCatchRange } from '../src/game/systems/contact';
-import { laneCenterX } from '../src/game/systems/Lanes';
+import { laneCenterX, laneCount, laneWidth, useLanes } from '../src/game/systems/Lanes';
+
+//  Gate splits sit on a lane boundary, so these all assume the standard road.
+useLanes(3);
 
 describe('gate sides', () => {
 
@@ -22,7 +23,7 @@ describe('gate sides', () => {
             const x = gateSplitX(split);
             const offsetIntoTrack = x - TRACK_LEFT;
 
-            expect(offsetIntoTrack % LANE_WIDTH).toBe(0);
+            expect(offsetIntoTrack % laneWidth()).toBe(0);
         }
 
     });
@@ -69,7 +70,7 @@ describe('catching an orb', () => {
 
     it('counts when the drop is in the orb\'s lane', () => {
 
-        for (let lane = 0; lane < LANE_COUNT; lane++)
+        for (let lane = 0; lane < laneCount(); lane++)
         {
             expect(isWithinCatchRange(laneCenterX(lane), laneCenterX(lane))).toBe(true);
         }
@@ -92,7 +93,7 @@ describe('catching an orb', () => {
     //  the one it was steering around.
     it('cannot reach two lanes at once, whatever the tuning', () => {
 
-        expect(ORB_CATCH_RADIUS * 2).toBeLessThan(LANE_WIDTH);
+        expect(ORB_CATCH_RADIUS * 2).toBeLessThan(laneWidth());
 
     });
 

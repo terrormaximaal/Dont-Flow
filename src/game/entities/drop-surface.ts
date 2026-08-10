@@ -1,4 +1,8 @@
 import {
+    BLOB_RIPPLE_AMOUNTS,
+    BLOB_RIPPLE_LOBES,
+    BLOB_RIPPLE_SPEEDS,
+    BLOB_SURFACE_POINTS,
     DROP_BELLY,
     DROP_AGITATION_RIPPLE,
     DROP_RIPPLE_AMOUNTS,
@@ -90,6 +94,97 @@ export function waterOutline (radius: number, time: number, lean: number, agitat
     }
 
     return buffer;
+}
+
+/**
+ * Its own buffer, because a blob is walked with far fewer points than a drop.
+ * Same contract: valid until the next call.
+ */
+const blobBuffer: Point[] = Array.from({ length: BLOB_SURFACE_POINTS }, () => ({ x: 0, y: 0 }));
+
+/**
+ * A wobbling lump with no tip - the drop's substance at small sizes.
+ *
+ * Orbs use this. They are round things that float rather than fall, so they get
+ * the ripples without the point, and they are small enough that the ripples
+ * have to be a bigger share of the radius to be seen at all.
+ *
+ * @param phase Set this per blob - from where it sits, say - or a screenful of
+ *              them all breathe in step and read as one pulsing object.
+ */
+export function blobOutline (radius: number, time: number, phase: number): Point[]
+{
+    for (let i = 0; i < BLOB_SURFACE_POINTS; i++)
+    {
+        const theta = (i / BLOB_SURFACE_POINTS) * Math.PI * 2;
+
+        let ripple = 0;
+
+        for (let mode = 0; mode < BLOB_RIPPLE_LOBES.length; mode++)
+        {
+            ripple += Math.sin((theta * BLOB_RIPPLE_LOBES[mode]) + (time * BLOB_RIPPLE_SPEEDS[mode]) + phase)
+                * BLOB_RIPPLE_AMOUNTS[mode];
+        }
+
+        const r = radius * (1 + ripple);
+
+        blobBuffer[i].x = Math.cos(theta) * r;
+        blobBuffer[i].y = Math.sin(theta) * r;
+    }
+
+    return blobBuffer;
+}
+
+/** Room for every point plus a crossing for each. */
+const clipBuffer: Point[] = Array.from({ length: DROP_SURFACE_POINTS * 2 }, () => ({ x: 0, y: 0 }));
+
+/**
+ * The part of an outline lying above a horizontal line, as a closed shape.
+ *
+ * Used to paint a new colour into the drop from the tip down, so a gate reads
+ * as the colour flooding through it rather than the drop being swapped.
+ *
+ * Clips edge by edge, keeping the points already above the line and adding one
+ * where an edge crosses it. A ripple can carry the outline back and forth
+ * across the line more than twice, which this handles - each crossing simply
+ * adds its own point.
+ *
+ * @returns the shared buffer and how many of its points are in use.
+ */
+export function clipAbove (outline: Point[], cut: number): { points: Point[]; count: number }
+{
+    let count = 0;
+
+    const add = (x: number, y: number) => {
+
+        clipBuffer[count].x = x;
+        clipBuffer[count].y = y;
+        count++;
+
+    };
+
+    for (let i = 0; i < outline.length; i++)
+    {
+        const from = outline[i];
+        const to = outline[(i + 1) % outline.length];
+
+        const fromAbove = from.y <= cut;
+        const toAbove = to.y <= cut;
+
+        if (fromAbove)
+        {
+            add(from.x, from.y);
+        }
+
+        if (fromAbove !== toAbove)
+        {
+            const t = (cut - from.y) / (to.y - from.y);
+
+            add(from.x + ((to.x - from.x) * t), cut);
+        }
+    }
+
+    return { points: clipBuffer, count };
 }
 
 /**

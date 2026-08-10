@@ -1,4 +1,4 @@
-import { ColorId, LANE_COUNT } from './constants';
+import { ColorId, DEFAULT_LANES } from './constants';
 import { WorldId } from './worlds';
 
 //  The shape of a course, and how an authored level is expanded into one.
@@ -71,6 +71,7 @@ export interface SectionSpec
      *   '.'      empty
      *   '1'-'5'  an orb of that palette colour
      *   'a'-'e'  an obstacle of that palette colour
+     *   '*'      a rainbow drop: matches everything for a while
      *
      * Every row must leave at least one lane that is safe to be in: empty, or
      * holding an orb the drop can already match. A row with no way through
@@ -86,6 +87,17 @@ export interface LevelSpec
 
     /** Which environment this level is played in. */
     world: WorldId;
+
+    /**
+     * How many lanes the road carries, and so how many characters each of this
+     * level's rows must have. Defaults to three.
+     *
+     * Two makes a level markedly gentler without slowing anything down: the
+     * road stays the same width, so the lanes are half again as wide, and there
+     * is only ever one direction to go. The early levels use it to teach the
+     * colour rule before asking the player to choose a lane as well.
+     */
+    lanes?: 2 | 3;
 
     /**
      * The colours in play, most important first. Gates and rows refer to these
@@ -128,16 +140,25 @@ export interface ObstacleSpec
     kind: ObstacleKind;
 }
 
+/** A rainbow drop waiting to be picked up. It has no colour: that is the point. */
+export interface PowerUpSpec
+{
+    distance: number;
+    lane: number;
+}
+
 export interface Level
 {
     gates: GatePairSpec[];
     orbs: OrbSpec[];
     obstacles: ObstacleSpec[];
+    powerUps: PowerUpSpec[];
     finishDistance: number;
 }
 
 const ORB_CHARS = '12345';
 const OBSTACLE_CHARS = 'abcde';
+export const RAINBOW_CHAR = '*';
 
 /**
  * Expands an authored level into flat lists with absolute distances.
@@ -145,10 +166,12 @@ const OBSTACLE_CHARS = 'abcde';
 export function buildLevel (spec: LevelSpec): Level
 {
     const rowSpacing = spec.rowSpacing ?? ORB_ROW_SPACING;
+    const lanes = spec.lanes ?? DEFAULT_LANES;
 
     const gates: GatePairSpec[] = [];
     const orbs: OrbSpec[] = [];
     const obstacles: ObstacleSpec[] = [];
+    const powerUps: PowerUpSpec[] = [];
 
     const colorAt = (index: number): ColorId => spec.palette[index] ?? spec.palette[0];
 
@@ -167,12 +190,19 @@ export function buildLevel (spec: LevelSpec): Level
 
         for (const row of section.rows)
         {
-            for (let lane = 0; lane < LANE_COUNT; lane++)
+            for (let lane = 0; lane < lanes; lane++)
             {
                 const character = row[lane];
 
                 if (character === undefined || character === '.')
                 {
+                    continue;
+                }
+
+                if (character === RAINBOW_CHAR)
+                {
+                    powerUps.push({ distance: rowDistance, lane });
+
                     continue;
                 }
 
@@ -209,6 +239,7 @@ export function buildLevel (spec: LevelSpec): Level
         gates,
         orbs,
         obstacles,
+        powerUps,
         finishDistance: lastRowDistance + FINISH_GAP
     };
 }
@@ -222,11 +253,18 @@ export function buildLevel (spec: LevelSpec): Level
  */
 export function rowHasSafeLane (row: string): boolean
 {
-    for (let lane = 0; lane < LANE_COUNT; lane++)
+    //  Walked over the row's own length rather than a fixed lane count: a row
+    //  has one character per lane, so it already knows how wide its level is.
+    for (let lane = 0; lane < row.length; lane++)
     {
         const character = row[lane];
 
-        if (character === undefined || character === '.' || ORB_CHARS.includes(character))
+        //  A rainbow drop is safe for the same reason an orb is: at worst it
+        //  costs nothing, and it is never a blocked route.
+        if (character === undefined
+            || character === '.'
+            || character === RAINBOW_CHAR
+            || ORB_CHARS.includes(character))
         {
             return true;
         }

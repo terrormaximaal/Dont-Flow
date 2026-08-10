@@ -1,10 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
     DROP_CONTACT_RADIUS,
     FORWARD_SPEED,
     LANE_CHANGE_SPEED,
-    LANE_COUNT,
-    LANE_WIDTH,
     OBSTACLE_HALF_WIDTH,
     ORB_CATCH_RADIUS,
     SWIPE_REPEAT_DELAY,
@@ -12,11 +10,14 @@ import {
     TRACK_WIDTH
 } from '../src/game/config/constants';
 import { buildLevel, ORB_ROW_SPACING } from '../src/game/config/level';
+import { DEFAULT_LANES } from '../src/game/config/constants';
 import { LEVELS } from '../src/game/config/levels';
 import { barrierCentre, barrierHalfWidth } from '../src/game/systems/barrier';
-import { laneCenterX } from '../src/game/systems/Lanes';
+import { laneCenterX, laneCount, laneWidth, useLanes } from '../src/game/systems/Lanes';
 
 describe('a moving barrier', () => {
+
+    beforeEach(() => useLanes(DEFAULT_LANES));
 
     it('is somewhere different when it is reached, depending on where it sits', () => {
 
@@ -31,7 +32,7 @@ describe('a moving barrier', () => {
             homes.push(barrierCentre('slider', 1, distance) - laneCenterX(1));
         }
 
-        expect(Math.max(...homes.map(Math.abs))).toBeGreaterThan(LANE_WIDTH / 2);
+        expect(Math.max(...homes.map(Math.abs))).toBeGreaterThan(laneWidth() / 2);
 
     });
 
@@ -39,7 +40,7 @@ describe('a moving barrier', () => {
 
         for (let distance = 0; distance < 4000; distance += 53)
         {
-            for (let lane = 0; lane < LANE_COUNT; lane++)
+            for (let lane = 0; lane < laneCount(); lane++)
             {
                 const half = barrierHalfWidth('slider', distance);
                 const centre = barrierCentre('slider', lane, distance);
@@ -83,6 +84,9 @@ describe('every level', () => {
 
         for (const spec of LEVELS)
         {
+            //  Lane positions depend on how many the level asked for.
+            useLanes(spec.lanes ?? DEFAULT_LANES);
+
             const level = buildLevel(spec);
 
             //  Barriers grouped by the row they stand in, since it is the row
@@ -100,7 +104,7 @@ describe('every level', () => {
                 //  of them can be passed through.
                 const free = [];
 
-                for (let lane = 0; lane < LANE_COUNT; lane++)
+                for (let lane = 0; lane < laneCount(); lane++)
                 {
                     if (obstacles.every((o) => isClear(lane, o.kind, o.lane, distance)))
                     {
@@ -119,11 +123,13 @@ describe('every level', () => {
         //  A free lane is only fair if the player can get to it. Worst case is
         //  crossing the whole track, asked for in one drag - which the repeat
         //  delay paces before the drop has a lane's width left to cover.
-        const crossing = (Math.log(((LANE_COUNT - 1) * LANE_WIDTH) / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000;
-        const dragged = SWIPE_REPEAT_DELAY + ((Math.log(LANE_WIDTH / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000);
-
         for (const spec of LEVELS)
         {
+            useLanes(spec.lanes ?? DEFAULT_LANES);
+
+            const crossing = (Math.log(((laneCount() - 1) * laneWidth()) / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000;
+            const dragged = SWIPE_REPEAT_DELAY + ((Math.log(laneWidth() / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000);
+
             const available = ((spec.rowSpacing ?? ORB_ROW_SPACING) / (spec.forwardSpeed ?? FORWARD_SPEED)) * 1000;
 
             expect(available, `level ${spec.name}, separate swipes`).toBeGreaterThan(crossing);

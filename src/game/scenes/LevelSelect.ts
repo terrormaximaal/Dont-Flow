@@ -3,6 +3,7 @@ import {
     BUTTON_HEIGHT,
     COLOR_HUD_DIM,
     COLOR_HUD_TEXT,
+    DEFAULT_LANES,
     DEPTH_HUD,
     GAME_WIDTH,
     HUD_FONT,
@@ -24,6 +25,7 @@ import { LEVELS } from '../config/levels';
 import { WORLDS } from '../config/worldData';
 import { EnergySystem } from '../systems/EnergySystem';
 import { Environment } from '../systems/Environment';
+import { useLanes } from '../systems/Lanes';
 import { SaveSystem } from '../systems/SaveSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Button } from '../ui/Button';
@@ -53,7 +55,9 @@ export class LevelSelect extends Scene
 
         //  The menus look down the same road the game is played on, sky and all.
         //  See Title: without the environment everything above the horizon is
-        //  left unpainted.
+        //  left unpainted. Always the standard road, whatever was played last.
+        useLanes(DEFAULT_LANES);
+
         this.environment = new Environment(this, WORLDS.space);
         this.track = new TrackScroller(this, WORLDS.space);
 

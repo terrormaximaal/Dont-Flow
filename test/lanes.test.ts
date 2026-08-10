@@ -1,18 +1,17 @@
-import { describe, expect, it } from 'vitest';
-import {
-    GAME_WIDTH,
-    LANE_CHANGE_SPEED,
-    LANE_COUNT,
-    LANE_WIDTH,
-    TRACK_LEFT,
-    TRACK_WIDTH
-} from '../src/game/config/constants';
-import { clampLane, laneCenterX } from '../src/game/systems/Lanes';
+import { afterEach, describe, expect, it } from 'vitest';
+import { DEFAULT_LANES, GAME_WIDTH, LANE_CHANGE_SPEED, TRACK_LEFT, TRACK_WIDTH } from '../src/game/config/constants';
+import { clampLane, laneCenterX, laneCount, laneWidth, startLane, useLanes } from '../src/game/systems/Lanes';
 import { clamp, easeTowards } from '../src/game/utils/math';
 
-describe('laneCenterX', () => {
+//  The layout is shared state, set once as a level is built, so anything that
+//  changes it has to put it back.
+afterEach(() => useLanes(DEFAULT_LANES));
+
+describe('the track laid out in three lanes', () => {
 
     it('centres the middle lane on the track', () => {
+
+        useLanes(3);
 
         expect(laneCenterX(1)).toBe(GAME_WIDTH / 2);
 
@@ -20,7 +19,9 @@ describe('laneCenterX', () => {
 
     it('spaces lanes evenly and keeps them inside the track', () => {
 
-        for (let lane = 0; lane < LANE_COUNT; lane++)
+        useLanes(3);
+
+        for (let lane = 0; lane < laneCount(); lane++)
         {
             const x = laneCenterX(lane);
 
@@ -28,8 +29,47 @@ describe('laneCenterX', () => {
             expect(x).toBeLessThan(TRACK_LEFT + TRACK_WIDTH);
         }
 
-        expect(laneCenterX(1) - laneCenterX(0)).toBe(LANE_WIDTH);
-        expect(laneCenterX(2) - laneCenterX(1)).toBe(LANE_WIDTH);
+        expect(laneCenterX(1) - laneCenterX(0)).toBe(laneWidth());
+        expect(laneCenterX(2) - laneCenterX(1)).toBe(laneWidth());
+
+    });
+
+    it('starts the drop in the middle', () => {
+
+        useLanes(3);
+
+        expect(startLane()).toBe(1);
+
+    });
+
+});
+
+describe('the track laid out in two lanes', () => {
+
+    it('uses the same road, in wider lanes', () => {
+
+        useLanes(2);
+
+        expect(laneWidth()).toBe(TRACK_WIDTH / 2);
+        expect(laneCenterX(0)).toBe(TRACK_LEFT + (TRACK_WIDTH / 4));
+        expect(laneCenterX(1)).toBe(TRACK_LEFT + ((TRACK_WIDTH / 4) * 3));
+
+    });
+
+    it('has no lane past the second', () => {
+
+        useLanes(2);
+
+        expect(laneCount()).toBe(2);
+        expect(clampLane(2)).toBe(1);
+
+    });
+
+    it('starts the drop on the left, there being no middle', () => {
+
+        useLanes(2);
+
+        expect(startLane()).toBe(0);
 
     });
 
@@ -49,8 +89,8 @@ describe('clampLane', () => {
 
         expect(clampLane(-1)).toBe(0);
         expect(clampLane(-99)).toBe(0);
-        expect(clampLane(LANE_COUNT)).toBe(LANE_COUNT - 1);
-        expect(clampLane(99)).toBe(LANE_COUNT - 1);
+        expect(clampLane(laneCount())).toBe(laneCount() - 1);
+        expect(clampLane(99)).toBe(laneCount() - 1);
 
     });
 

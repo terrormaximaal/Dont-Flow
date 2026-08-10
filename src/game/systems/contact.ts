@@ -1,4 +1,5 @@
-import { DROP_CONTACT_RADIUS, LANE_WIDTH, ORB_CATCH_RADIUS, TRACK_LEFT } from '../config/constants';
+import { DROP_CONTACT_RADIUS, ORB_CATCH_RADIUS, TRACK_LEFT } from '../config/constants';
+import { laneWidth } from './Lanes';
 
 //  What the drop is touching, as pure geometry.
 //
@@ -11,7 +12,7 @@ import { DROP_CONTACT_RADIUS, LANE_WIDTH, ORB_CATCH_RADIUS, TRACK_LEFT } from '.
  */
 export function gateSplitX (splitAfterLane: number): number
 {
-    return TRACK_LEFT + ((splitAfterLane + 1) * LANE_WIDTH);
+    return TRACK_LEFT + ((splitAfterLane + 1) * laneWidth());
 }
 
 /**

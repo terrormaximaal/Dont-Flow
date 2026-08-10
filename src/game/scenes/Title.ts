@@ -5,6 +5,7 @@ import {
     COLOR_DROP_NEUTRAL,
     COLOR_HUD_DIM,
     COLOR_HUD_TEXT,
+    DEFAULT_LANES,
     DEPTH_HUD,
     GAME_WIDTH,
     HUD_FONT,
@@ -21,6 +22,7 @@ import { LEVELS } from '../config/levels';
 import { WORLDS } from '../config/worldData';
 import { EnergySystem } from '../systems/EnergySystem';
 import { Environment } from '../systems/Environment';
+import { useLanes } from '../systems/Lanes';
 import { SaveSystem } from '../systems/SaveSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Button } from '../ui/Button';
@@ -56,6 +58,9 @@ export class Title extends Scene
         //  Without the environment the road is only painted from the horizon
         //  down, and everything above it stays bare background - which reads as
         //  the game being letterboxed into a band rather than filling the screen.
+        //  Always the standard road, whatever level was played last.
+        useLanes(DEFAULT_LANES);
+
         this.environment = new Environment(this, WORLDS.space);
         this.track = new TrackScroller(this, WORLDS.space);
 
@@ -140,12 +145,11 @@ export class Title extends Scene
         this.distance += MENU_SCROLL_SPEED * (delta / 1000);
         this.elapsed += delta / 1000;
 
-        drawWaterDrop(
-            this.logo,
-            waterOutline(TITLE_DROP_RADIUS, this.elapsed, 0, 0),
-            TITLE_DROP_RADIUS,
-            COLOR_DROP_NEUTRAL
-        );
+        drawWaterDrop(this.logo, {
+            outline: waterOutline(TITLE_DROP_RADIUS, this.elapsed, 0, 0),
+            radius: TITLE_DROP_RADIUS,
+            color: COLOR_DROP_NEUTRAL
+        });
 
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);
