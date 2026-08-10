@@ -110,11 +110,15 @@ export const DROP_GLOW_ALPHA = 0.11;
 //  Input
 // ---------------------------------------------------------------------------
 
-//  Horizontal drag distance (px) that counts as one lane change.
-export const SWIPE_THRESHOLD = 26;
+//  Horizontal drag distance (px) that counts as one lane change. Higher means
+//  the player has to commit to the swipe; lower gets twitchy.
+export const SWIPE_THRESHOLD = 44;
 //  A swipe must be this many times more horizontal than vertical to register,
 //  so vertical drags do not steer the drop.
-export const SWIPE_DOMINANCE = 1.2;
+export const SWIPE_DOMINANCE = 1.5;
+//  Shortest gap (ms) between two lane changes inside one unbroken drag. Without
+//  this a single fast flick skids across the whole track before you can react.
+export const SWIPE_REPEAT_DELAY = 170;
 
 //  How far a drag may wander vertically before it is measured afresh.
 //
