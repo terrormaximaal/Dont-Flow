@@ -6,25 +6,15 @@ import {
     OBSTACLE_DEPTH,
     OBSTACLE_EDGE_THICKNESS,
     OBSTACLE_FILL_ALPHA,
-    OBSTACLE_HALF_WIDTH,
     OBSTACLE_HATCH_ALPHA,
     OBSTACLE_HATCH_COUNT,
     OBSTACLE_FOOT_ALPHA,
-    OBSTACLE_STAND_HEIGHT,
-    PULSE_AMOUNT,
-    PULSE_PERIOD,
-    SLIDER_AMPLITUDE,
-    SLIDER_PERIOD,
-    TRACK_LEFT,
-    TRACK_WIDTH
+    OBSTACLE_STAND_HEIGHT
 } from '../config/constants';
 import { ObstacleKind, ObstacleSpec } from '../config/level';
-import { laneCenterX } from '../systems/Lanes';
+import { barrierCentre, barrierHalfWidth } from '../systems/barrier';
 import { depthScale, fillProjectedQuad, projectX } from '../systems/Projection';
 import { drawStrength, screenYFor } from '../systems/World';
-import { clamp } from '../utils/math';
-
-const TAU = Math.PI * 2;
 
 /**
  * A coloured barrier across part of the track.
@@ -68,23 +58,7 @@ export class Obstacle
      */
     trackXAt (travelled: number): number
     {
-        const home = laneCenterX(this.lane);
-
-        if (this.kind !== 'slider')
-        {
-            return home;
-        }
-
-        const phase = ((travelled - this.distance) / SLIDER_PERIOD) * TAU;
-        const half = this.halfWidthAt(travelled);
-
-        //  Kept inside the track, so a slider never leaves the playable width
-        //  and can always be gone round.
-        return clamp(
-            home + (Math.sin(phase) * SLIDER_AMPLITUDE),
-            TRACK_LEFT + half,
-            TRACK_LEFT + TRACK_WIDTH - half
-        );
+        return barrierCentre(this.kind, this.lane, travelled);
     }
 
     /**
@@ -92,14 +66,7 @@ export class Obstacle
      */
     halfWidthAt (travelled: number): number
     {
-        if (this.kind !== 'pulse')
-        {
-            return OBSTACLE_HALF_WIDTH;
-        }
-
-        const phase = ((travelled - this.distance) / PULSE_PERIOD) * TAU;
-
-        return OBSTACLE_HALF_WIDTH * (1 + (Math.sin(phase) * PULSE_AMOUNT));
+        return barrierHalfWidth(this.kind, travelled);
     }
 
     /**
