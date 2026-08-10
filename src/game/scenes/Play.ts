@@ -106,7 +106,7 @@ export class Play extends Scene
         //  Charged per level start, retries included. The menus already gate
         //  this, so failing here means Play was reached some other way - fall
         //  back to the title rather than handing out a free run.
-        if (!new EnergySystem(this.save).spend())
+        if (!new EnergySystem(this.save).charge())
         {
             this.scene.start('Title');
 

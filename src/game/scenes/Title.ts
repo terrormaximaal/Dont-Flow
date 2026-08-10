@@ -20,11 +20,13 @@ import {
 import { LEVELS } from '../config/levels';
 import { WORLDS } from '../config/worldData';
 import { EnergySystem } from '../systems/EnergySystem';
+import { Environment } from '../systems/Environment';
 import { SaveSystem } from '../systems/SaveSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Button } from '../ui/Button';
 import { EnergyMeter } from '../ui/EnergyMeter';
-import { drawTeardrop } from '../ui/shapes';
+import { waterOutline } from '../entities/drop-surface';
+import { drawWaterDrop } from '../ui/shapes';
 
 /**
  * The screen the game opens on. The track scrolls behind it, so the menu and
@@ -32,9 +34,14 @@ import { drawTeardrop } from '../ui/shapes';
  */
 export class Title extends Scene
 {
+    private environment: Environment;
     private track: TrackScroller;
     private meter: EnergyMeter;
+    private logo: Phaser.GameObjects.Graphics;
     private distance = 0;
+
+    /** Seconds on screen, so the logo ripples on its own clock. */
+    private elapsed = 0;
 
     constructor ()
     {
@@ -45,7 +52,11 @@ export class Title extends Scene
     {
         this.distance = 0;
 
-        //  The menus look down the same road the game is played on.
+        //  The menus look down the same road the game is played on, sky and all.
+        //  Without the environment the road is only painted from the horizon
+        //  down, and everything above it stays bare background - which reads as
+        //  the game being letterboxed into a band rather than filling the screen.
+        this.environment = new Environment(this, WORLDS.space);
         this.track = new TrackScroller(this, WORLDS.space);
 
         const save = new SaveSystem();
@@ -54,14 +65,17 @@ export class Title extends Scene
 
         //  "Continue" only means something if there is somewhere to continue to.
         const canContinue = RESUME_AT_LAST_LEVEL && resumeLevel > 0;
-        const canPlay = energy.canPlay();
+        const canPlay = energy.mayStart();
 
-        const logo = this.add.graphics();
+        this.distance = 0;
+        this.elapsed = 0;
 
-        logo.setPosition(GAME_WIDTH / 2, TITLE_LOGO_Y);
-        logo.setDepth(DEPTH_HUD);
+        //  The same drop the player steers, rippling on the spot - a still one
+        //  next to a living one would look like a different drop.
+        this.logo = this.add.graphics();
 
-        drawTeardrop(logo, TITLE_DROP_RADIUS, COLOR_DROP_NEUTRAL);
+        this.logo.setPosition(GAME_WIDTH / 2, TITLE_LOGO_Y);
+        this.logo.setDepth(DEPTH_HUD);
 
         const title = this.add.text(GAME_WIDTH / 2, TITLE_LOGO_Y + 78, "DON'T FLOW", {
             fontFamily: HUD_FONT,
@@ -124,7 +138,16 @@ export class Title extends Scene
     update (_time: number, delta: number)
     {
         this.distance += MENU_SCROLL_SPEED * (delta / 1000);
+        this.elapsed += delta / 1000;
 
+        drawWaterDrop(
+            this.logo,
+            waterOutline(TITLE_DROP_RADIUS, this.elapsed, 0, 0),
+            TITLE_DROP_RADIUS,
+            COLOR_DROP_NEUTRAL
+        );
+
+        this.environment.update(this.distance, delta);
         this.track.update(this.distance);
         this.meter.update();
     }

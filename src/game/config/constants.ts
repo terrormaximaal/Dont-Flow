@@ -99,6 +99,47 @@ export const DROP_STRETCH = 0.16;
 
 //  A shadow on the road under the drop, which is what actually places it in the
 //  world rather than on the glass.
+//  Surface. The drop is not a fixed shape that gets scaled - its outline is
+//  rebuilt every frame from a set of overlapping ripples, which is what makes it
+//  read as liquid rather than as a sprite being squashed.
+
+//  Points around the outline. Below about 40 the ripples start to show as
+//  straight edges; above 60 costs more for nothing.
+export const DROP_SURFACE_POINTS = 56;
+
+//  The three ripples the surface is made of, as matched entries: how many lobes
+//  each one has around the outline, how fast it travels (negative runs the other
+//  way), and how far it pushes the edge in and out as a fraction of the radius.
+//  Deliberately unrelated numbers, so the three never line up into a loop the
+//  eye can catch.
+export const DROP_RIPPLE_LOBES = [ 3, 5, 2 ];
+export const DROP_RIPPLE_SPEEDS = [ 2.1, -3.3, 1.3 ];
+export const DROP_RIPPLE_AMOUNTS = [ 0.05, 0.032, 0.038 ];
+
+//  How much a pop - swallowing an orb - multiplies those ripples on top of
+//  their resting size. This is the splash.
+export const DROP_AGITATION_RIPPLE = 2.2;
+
+//  The tip, which is what makes it a drop rather than a blob. Length is how far
+//  it is pulled out past the radius; spread is how wide that pull is in radians,
+//  where small is a sharp point.
+export const DROP_TIP_LENGTH = 1.05;
+export const DROP_TIP_SPREAD = 0.34;
+//  Radians the tip trails behind a sideways move, so it whips along after the
+//  body instead of turning with it.
+export const DROP_TIP_TRAIL = 0.55;
+//  The tip's own slow drift, and how fast it drifts.
+export const DROP_TIP_SWAY = 0.12;
+export const DROP_TIP_SWAY_SPEED = 0.9;
+
+//  How much heavier the bottom of the drop hangs than the top.
+export const DROP_BELLY = 0.1;
+
+//  How far the highlight and the shaded underside slide against a sideways
+//  move, as a fraction of the radius: the inside of the drop lagging behind the
+//  outside, the way liquid does in a glass.
+export const DROP_SLOSH = 0.34;
+
 //  Growth. Collecting orbs swells the drop, which is the run's reward made
 //  visible without reading a number. Purely cosmetic: collision uses
 //  DROP_CONTACT_RADIUS, which never changes, so a fat drop is never harder to
@@ -273,6 +314,13 @@ export const RESUME_AT_LAST_LEVEL = true;
 //  much can be played in a sitting; it is not health, and it never affects a
 //  run once started.
 // ---------------------------------------------------------------------------
+
+//  Master switch. Off means levels are free and unlimited and the meter is
+//  hidden, which is where this wants to be while the game is still being tuned:
+//  waiting ten minutes to try a change again is no way to judge how something
+//  feels. Everything below still works and is still tested - turning this back
+//  on restores the costs, the waiting and the meter with nothing else to change.
+export const ENERGY_ENABLED = false;
 
 export const MAX_ENERGY = 5;
 

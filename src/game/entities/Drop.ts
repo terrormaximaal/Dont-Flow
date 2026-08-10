@@ -13,9 +13,10 @@ import {
     START_LANE
 } from '../config/constants';
 import { clampLane, laneCenterX } from '../systems/Lanes';
-import { drawTeardrop } from '../ui/shapes';
+import { drawWaterDrop } from '../ui/shapes';
 import { clamp, easeTowards } from '../utils/math';
 import { DropJuice } from './drop-juice';
+import { waterOutline } from './drop-surface';
 
 /**
  * The player. It holds a *target* lane and eases towards it every frame - the
@@ -34,6 +35,9 @@ export class Drop
 
     /** Sideways speed in px/s, derived from the slide. Drives lean & stretch. */
     private lateralVelocity: number = 0;
+
+    /** That speed as -1..1, which is what the lean, the tip and the slosh use. */
+    private tilt: number = 0;
 
     /**
      * The colour the drop currently carries, or null before it has passed its
@@ -161,9 +165,13 @@ export class Drop
         //  the same millisecond - would make this 0/0. The NaN goes straight
         //  into the rotation and scale below and the drop vanishes for a frame.
         this.lateralVelocity = dt > 0 ? (this.x - previousX) / dt : 0;
+        this.tilt = clamp(this.lateralVelocity / DROP_LEAN_REFERENCE_SPEED, -1, 1);
 
         this.juice.update(dt);
 
+        //  The shape itself is rebuilt every frame - that is the whole point of
+        //  it being liquid - so this is a redraw, not just a transform.
+        this.redraw();
         this.applyTransform();
     }
 
@@ -173,24 +181,24 @@ export class Drop
      */
     private applyTransform (): void
     {
-        const tilt = clamp(this.lateralVelocity / DROP_LEAN_REFERENCE_SPEED, -1, 1);
-
         //  Lean into the slide, with the slow idle sway underneath it.
         this.gfx.setPosition(this.x, DROP_SCREEN_Y);
-        this.gfx.setRotation((tilt * DROP_LEAN_MAX) + this.juice.getSway());
+        this.gfx.setRotation((this.tilt * DROP_LEAN_MAX) + this.juice.getSway());
 
         //  Size comes from the score; the wobbles ride on top of it. Height
         //  gives back less than the width takes, so the drop reads as squashing
         //  rather than simply changing shape.
         const size = this.juice.getSize();
-        const squash = (Math.abs(tilt) * DROP_STRETCH) + this.juice.getSquash();
+        const squash = (Math.abs(this.tilt) * DROP_STRETCH) + this.juice.getSquash();
 
         this.gfx.setScale(size * (1 + squash), size * (1 - (squash * 0.6)));
     }
 
     private redraw (): void
     {
-        drawTeardrop(this.gfx, DROP_RADIUS, this.flashColor ?? this.color, true);
+        const outline = waterOutline(DROP_RADIUS, this.juice.getElapsed(), this.tilt, this.juice.getAgitation());
+
+        drawWaterDrop(this.gfx, outline, DROP_RADIUS, this.flashColor ?? this.color, this.tilt, true);
     }
 
     destroy (): void

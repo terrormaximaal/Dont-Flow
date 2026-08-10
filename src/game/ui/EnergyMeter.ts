@@ -4,6 +4,7 @@ import {
     COLOR_ENERGY_FULL,
     COLOR_HUD_DIM,
     DEPTH_HUD,
+    ENERGY_ENABLED,
     ENERGY_PIP_GAP,
     ENERGY_PIP_RADIUS,
     ENERGY_TIMER_OFFSET,
@@ -73,11 +74,27 @@ export class EnergyMeter
 
         place(this.timerText);
 
+        //  With the energy system switched off there is nothing to report and
+        //  nothing to wait for, so the whole meter stays out of the way. Built
+        //  and hidden rather than skipped, so every caller can still hold one.
+        if (!ENERGY_ENABLED)
+        {
+            this.pips.forEach((pip) => pip.setVisible(false));
+            this.timerText.setVisible(false);
+
+            return;
+        }
+
         this.update();
     }
 
     update (): void
     {
+        if (!ENERGY_ENABLED)
+        {
+            return;
+        }
+
         const current = this.energy.getEnergy();
 
         if (current !== this.shownEnergy)

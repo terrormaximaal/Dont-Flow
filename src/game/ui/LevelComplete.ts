@@ -61,7 +61,7 @@ export class LevelComplete
     {
         //  The run just played has already been paid for, so this is what is
         //  left for another one.
-        const canPlayAgain = energy.canPlay();
+        const canPlayAgain = energy.mayStart();
 
         const layer = scene.add.container(0, 0);
 

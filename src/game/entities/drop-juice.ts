@@ -60,6 +60,22 @@ export class DropJuice
         this.pop = easeTowards(this.pop, 0, DROP_POP_SPEED, dt);
     }
 
+    /** Seconds since the run began, for anything on the drop's own clock. */
+    getElapsed (): number
+    {
+        return this.elapsed;
+    }
+
+    /**
+     * How churned up the surface should be, 0 to 1: full right after an orb,
+     * settling back to nothing. Normalised so the pop's size can be tuned
+     * without also changing how hard the drop ripples.
+     */
+    getAgitation (): number
+    {
+        return this.pop / DROP_POP_AMOUNT;
+    }
+
     /** Overall size multiplier, from the score. */
     getSize (): number
     {

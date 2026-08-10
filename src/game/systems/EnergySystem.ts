@@ -1,4 +1,4 @@
-import { ENERGY_COST_PER_LEVEL, ENERGY_REFILL_MS, MAX_ENERGY } from '../config/constants';
+import { ENERGY_COST_PER_LEVEL, ENERGY_ENABLED, ENERGY_REFILL_MS, MAX_ENERGY } from '../config/constants';
 import { SaveSystem } from './SaveSystem';
 
 /**
@@ -76,6 +76,30 @@ export class EnergySystem
     canPlay (): boolean
     {
         return this.getEnergy() >= ENERGY_COST_PER_LEVEL;
+    }
+
+    /**
+     * Whether the game should let a level start.
+     *
+     * This is what the scenes and menus ask, rather than `canPlay` - with the
+     * system switched off every level is free, while `canPlay` stays the honest
+     * answer about the energy itself, which is what the meter and the tests are
+     * about.
+     */
+    mayStart (): boolean
+    {
+        return !ENERGY_ENABLED || this.canPlay();
+    }
+
+    /**
+     * Charges for a level start, or waves it through when the system is off.
+     *
+     * @returns false only when there was genuinely not enough, in which case
+     *          nothing was spent.
+     */
+    charge (): boolean
+    {
+        return !ENERGY_ENABLED || this.spend();
     }
 
     /**

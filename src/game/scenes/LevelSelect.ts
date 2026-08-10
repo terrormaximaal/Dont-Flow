@@ -23,6 +23,7 @@ import {
 import { LEVELS } from '../config/levels';
 import { WORLDS } from '../config/worldData';
 import { EnergySystem } from '../systems/EnergySystem';
+import { Environment } from '../systems/Environment';
 import { SaveSystem } from '../systems/SaveSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Button } from '../ui/Button';
@@ -36,6 +37,7 @@ import { EnergyMeter } from '../ui/EnergyMeter';
  */
 export class LevelSelect extends Scene
 {
+    private environment: Environment;
     private track: TrackScroller;
     private meter: EnergyMeter;
     private distance = 0;
@@ -49,13 +51,16 @@ export class LevelSelect extends Scene
     {
         this.distance = 0;
 
-        //  The menus look down the same road the game is played on.
+        //  The menus look down the same road the game is played on, sky and all.
+        //  See Title: without the environment everything above the horizon is
+        //  left unpainted.
+        this.environment = new Environment(this, WORLDS.space);
         this.track = new TrackScroller(this, WORLDS.space);
 
         const save = new SaveSystem();
         const energy = new EnergySystem(save);
         const furthest = save.getFurthestLevel();
-        const canPlay = energy.canPlay();
+        const canPlay = energy.mayStart();
 
         const heading = this.add.text(GAME_WIDTH / 2, MENU_HEADING_Y, 'SELECT LEVEL', {
             fontFamily: HUD_FONT,
@@ -143,6 +148,7 @@ export class LevelSelect extends Scene
     {
         this.distance += MENU_SCROLL_SPEED * (delta / 1000);
 
+        this.environment.update(this.distance, delta);
         this.track.update(this.distance);
         this.meter.update();
     }
