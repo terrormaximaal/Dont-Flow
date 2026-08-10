@@ -171,6 +171,28 @@ export const DROP_SHADE_STEP = 0.17;
 //  outside, the way liquid does in a glass.
 export const DROP_SLOSH = 0.34;
 
+// ---------------------------------------------------------------------------
+//  Wet trail
+//
+//  The drop leaves the road wet behind it. Marks are stamped at a fixed spacing
+//  along the course rather than every frame, so the trail is the same length
+//  however fast the level runs and however the frame rate wanders.
+// ---------------------------------------------------------------------------
+
+//  Track pixels between one mark and the next. Marks have to overlap or the
+//  streak reads as a row of beads: at this spacing they sit about 4 screen
+//  pixels apart against a mark half that tall again.
+export const TRAIL_STAMP_SPACING = 7;
+//  How far behind the drop a mark survives. Kept under the distance it takes to
+//  fall off the bottom of the screen, so the trail fades rather than vanishing.
+export const TRAIL_FADE_DISTANCE = 250;
+//  Width of the streak at the drop's own depth, and how far it narrows over its
+//  length - it should thin away behind rather than stop on a line.
+export const TRAIL_WIDTH = 34;
+export const TRAIL_TAPER = 0.6;
+//  Strongest a mark ever is, right under the drop.
+export const TRAIL_ALPHA = 0.3;
+
 //  Blobs: the same liquid the drop is made of, at small sizes. Orbs use these,
 //  and so does anything else that wants a wobbling lump rather than a circle.
 //
@@ -659,6 +681,8 @@ export const DEPTH_GROUND = -8;
 export const DEPTH_ROADSIDE = -4;
 export const DEPTH_TRACK = 0;
 export const DEPTH_RUNGS = 1;
+//  Above the road it is laid on, below the things it must never hide.
+export const DEPTH_TRAIL = 2;
 export const DEPTH_GATES = 5;
 export const DEPTH_ORBS = 6;
 export const DEPTH_DROP = 20;

@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import {
+    COLOR_DROP_NEUTRAL,
     COLOR_FLASH,
     COLOR_VALUES,
     FINISH_SLOWDOWN_MS,
@@ -26,6 +27,7 @@ import { OrientationGuard } from '../systems/OrientationGuard';
 import { SaveSystem } from '../systems/SaveSystem';
 import { ScoreSystem } from '../systems/ScoreSystem';
 import { TrackScroller } from '../systems/TrackScroller';
+import { Trail } from '../systems/Trail';
 import { showFloatingScore } from '../ui/FloatingScore';
 import { Hud } from '../ui/Hud';
 import { LevelComplete } from '../ui/LevelComplete';
@@ -42,6 +44,7 @@ export class Play extends Scene
     private track: TrackScroller;
     private environment: Environment;
     private roadside: Roadside | null = null;
+    private trail: Trail;
     private course: Course;
     private input_: InputSystem;
     private effects: Effects;
@@ -126,6 +129,7 @@ export class Play extends Scene
         this.environment = new Environment(this, world);
         this.track = new TrackScroller(this, world);
         this.roadside = world.roadside ? new Roadside(this, world.roadside) : null;
+        this.trail = new Trail(this);
         this.drop = new Drop(this);
         this.effects = new Effects(this);
         this.scoring = new ScoreSystem();
@@ -290,6 +294,11 @@ export class Play extends Scene
         this.track.update(this.distance);
         this.roadside?.update(this.distance);
         this.drop.update(dt);
+
+        const carried = this.drop.getColorId();
+
+        this.trail.update(this.distance, this.drop.getX(), carried ? COLOR_VALUES[carried] : COLOR_DROP_NEUTRAL);
+
         this.course.update(this.distance, this.drop.getX(), this.drop.getColorId());
     }
 }
