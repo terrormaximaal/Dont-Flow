@@ -489,6 +489,9 @@ export const COLOR_DROP_HIGHLIGHT = 0xffffff;
 //  Render order
 // ---------------------------------------------------------------------------
 
+//  The ground sits below the road so roadside scenery can stand between them.
+export const DEPTH_GROUND = -8;
+export const DEPTH_ROADSIDE = -4;
 export const DEPTH_TRACK = 0;
 export const DEPTH_RUNGS = 1;
 export const DEPTH_GATES = 5;

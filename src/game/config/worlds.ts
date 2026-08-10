@@ -64,6 +64,24 @@ export interface LayerSpec
     seed: number;
 }
 
+export interface RoadsideSpec
+{
+    shape: LayerShape;
+    color: number;
+    alpha: number;
+
+    /** Height of a prop at the player's own line. */
+    height: number;
+
+    /** Distance along the road between props on one side. */
+    spacing: number;
+
+    /** How far out from the centre of the road they stand. */
+    offset: number;
+
+    seed: number;
+}
+
 export interface SpeckSpec
 {
     /** Small drifting particles: snow, stars, embers, rain. */
@@ -109,6 +127,17 @@ export interface WorldSpec
     hazeAlpha: number;
 
     layers: LayerSpec[];
+
+    /**
+     * Objects standing beside the road itself.
+     *
+     * Unlike the background layers these are placed at distances along the
+     * road, so they rush past at the speed the player is travelling. That is
+     * what actually reads as moving through somewhere, rather than looking at
+     * a backdrop that happens to slide.
+     */
+    roadside?: RoadsideSpec;
+
     specks?: SpeckSpec;
 
     /** Optional disc low in the sky: a sun, a moon, a planet. */

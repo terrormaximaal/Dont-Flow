@@ -18,6 +18,7 @@ import { Drop } from '../entities/Drop';
 import { WORLDS } from '../config/worldData';
 import { Course } from '../systems/Course';
 import { Environment } from '../systems/Environment';
+import { Roadside } from '../systems/Roadside';
 import { Effects } from '../systems/Effects';
 import { EnergySystem } from '../systems/EnergySystem';
 import { InputSystem } from '../systems/InputSystem';
@@ -40,6 +41,7 @@ export class Play extends Scene
     private drop: Drop;
     private track: TrackScroller;
     private environment: Environment;
+    private roadside: Roadside | null = null;
     private course: Course;
     private input_: InputSystem;
     private effects: Effects;
@@ -123,6 +125,7 @@ export class Play extends Scene
 
         this.environment = new Environment(this, world);
         this.track = new TrackScroller(this, world);
+        this.roadside = world.roadside ? new Roadside(this, world.roadside) : null;
         this.drop = new Drop(this);
         this.effects = new Effects(this);
         this.scoring = new ScoreSystem();
@@ -280,6 +283,7 @@ export class Play extends Scene
 
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);
+        this.roadside?.update(this.distance);
         this.drop.update(dt);
         this.course.update(this.distance, this.drop.getX(), this.drop.getColorId());
     }

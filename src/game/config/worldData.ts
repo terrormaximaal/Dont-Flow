@@ -41,6 +41,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'peaks', color: 0x24425f, alpha: 0.8, parallax: 0.12, baseline: 15, height: 170, period: 260, wrap: 700, seed: 19 },
             { shape: 'blobs', color: 0xffffff, alpha: 0.28, parallax: 0.03, baseline: -85, height: 34, period: 200, wrap: 560, seed: 31 }
         ],
+        roadside: { shape: 'peaks', color: 0x2b4a68, alpha: 0.75, height: 120, spacing: 520, offset: 120, seed: 3 },
         palette: [ 'red', 'blue', 'yellow' ]
     },
 
@@ -55,6 +56,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'mesa', color: 0x6b2f52, alpha: 0.6, parallax: 0.05, baseline: 8, height: 120, period: 190, wrap: 560, seed: 7 },
             { shape: 'mesa', color: 0x3a1733, alpha: 0.9, parallax: 0.13, baseline: 16, height: 165, period: 240, wrap: 660, seed: 23 }
         ],
+        roadside: { shape: 'mesa', color: 0x4a1d3e, alpha: 0.85, height: 150, spacing: 470, offset: 110, seed: 4 },
         palette: [ 'orange', 'purple', 'cyan' ]
     },
 
@@ -68,6 +70,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'trees', color: 0x1c4038, alpha: 0.7, parallax: 0.07, baseline: 10, height: 150, period: 96, wrap: 560, seed: 13 },
             { shape: 'trees', color: 0x0e2723, alpha: 0.95, parallax: 0.16, baseline: 18, height: 200, period: 122, wrap: 560, seed: 41 }
         ],
+        roadside: { shape: 'trees', color: 0x123029, alpha: 0.95, height: 175, spacing: 300, offset: 100, seed: 5 },
         palette: [ 'green', 'yellow', 'purple' ]
     },
 
@@ -82,6 +85,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'peaks', color: 0x7bb2d0, alpha: 0.9, parallax: 0.13, baseline: 16, height: 190, period: 250, wrap: 720, seed: 17 }
         ],
         specks: { count: 46, color: 0xffffff, alpha: 0.85, radius: 2.4, fall: 42, drift: 26 },
+        roadside: { shape: 'peaks', color: 0x8cc2dc, alpha: 0.85, height: 130, spacing: 520, offset: 120, seed: 6 },
         palette: [ 'cyan', 'blue', 'pink' ]
     },
 
@@ -96,6 +100,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'dunes', color: 0xd98f4e, alpha: 0.6, parallax: 0.05, baseline: 8, height: 90, period: 300, wrap: 560, seed: 9 },
             { shape: 'dunes', color: 0xa8633a, alpha: 0.85, parallax: 0.13, baseline: 16, height: 120, period: 360, wrap: 620, seed: 29 }
         ],
+        roadside: { shape: 'dunes', color: 0xb06f3e, alpha: 0.8, height: 95, spacing: 560, offset: 130, seed: 7 },
         palette: [ 'yellow', 'orange', 'blue', 'purple' ]
     },
 
@@ -111,6 +116,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         ],
         specks: { count: 60, color: 0xa8c4e0, alpha: 0.5, radius: 1.4, fall: 620, drift: 90, streak: 16 },
         lightning: true,
+        roadside: { shape: 'hills', color: 0x121d31, alpha: 0.9, height: 130, spacing: 480, offset: 115, seed: 8 },
         palette: [ 'blue', 'red', 'green', 'yellow' ]
     },
 
@@ -124,6 +130,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'buildings', color: 0x241443, alpha: 0.85, parallax: 0.06, baseline: 9, height: 200, period: 74, wrap: 700, seed: 6 },
             { shape: 'buildings', color: 0x140a29, alpha: 0.95, parallax: 0.15, baseline: 18, height: 250, period: 96, wrap: 820, seed: 22 }
         ],
+        roadside: { shape: 'buildings', color: 0x1b0f36, alpha: 0.95, height: 260, spacing: 360, offset: 105, seed: 9 },
         palette: [ 'cyan', 'magenta', 'yellow', 'green' ]
     },
 
@@ -139,6 +146,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'shards', color: 0x1a1f42, alpha: 0.85, parallax: 0.12, baseline: 15, height: 90, period: 190, wrap: 700, seed: 44 }
         ],
         specks: { count: 70, color: 0xffffff, alpha: 0.7, radius: 1.6, fall: 18, drift: 0 },
+        roadside: { shape: 'shards', color: 0x2a3266, alpha: 0.8, height: 120, spacing: 600, offset: 135, seed: 10 },
         palette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ]
     },
 
@@ -155,6 +163,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'buildings', color: 0x120722, alpha: 0.9, parallax: 0.17, baseline: 19, height: 190, period: 88, wrap: 760, seed: 55 }
         ],
         specks: { count: 54, color: 0xd8a8ff, alpha: 0.6, radius: 2, fall: 60, drift: 40 },
+        roadside: { shape: 'shards', color: 0x3a1c68, alpha: 0.85, height: 165, spacing: 380, offset: 110, seed: 11 },
         palette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ]
     }
 };

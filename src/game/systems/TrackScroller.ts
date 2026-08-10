@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import {
+    DEPTH_GROUND,
     DEPTH_TRACK,
     GAME_HEIGHT,
     GAME_WIDTH,
@@ -52,6 +53,14 @@ const MIN_RUNG_GAP = 3;
 export class TrackScroller
 {
     private readonly gfx: Phaser.GameObjects.Graphics;
+
+    /**
+     * The ground is a separate layer below the road, so anything standing on it
+     * - roadside scenery - can be drawn between the two. Painted into the same
+     * Graphics it would simply cover them.
+     */
+    private readonly groundGfx: Phaser.GameObjects.Graphics;
+
     private readonly palette: TrackPalette;
     private readonly ground: number;
 
@@ -62,6 +71,9 @@ export class TrackScroller
         //  The ground reads as the road's own surface pushed out to either side
         //  and dimmed, which keeps the path sitting *in* the world.
         this.ground = world.groundColor ?? world.track;
+
+        this.groundGfx = scene.add.graphics();
+        this.groundGfx.setDepth(DEPTH_GROUND);
 
         this.gfx = scene.add.graphics();
         this.gfx.setDepth(DEPTH_TRACK);
@@ -74,8 +86,9 @@ export class TrackScroller
         const far = screenYFor(distance + VIEW_DISTANCE, distance);
 
         gfx.clear();
+        this.groundGfx.clear();
 
-        this.fillGround(gfx, near, far);
+        this.fillGround(this.groundGfx, near, far);
         this.fillRoad(gfx, near, far);
         this.strokeRungs(gfx, distance, near);
         this.strokeRails(gfx, near, far);
