@@ -19,10 +19,18 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  1 - a clean, bright introduction with nothing to read but the colours.
     sky: {
         skyTop: 0x8ec9f0, skyBottom: 0xdff0fb,
-        track: 0x24405e, laneLine: 0x3d5f82, trackEdge: 0x6d95bb, rung: 0x2e4f70,
+        //  A pale cloud plane below the horizon, with the road riding over it.
+        //  A dark slab under a bright sky reads as a hole cut in the world; the
+        //  road has to look like it is floating through the place, not
+        //  replacing it.
+        groundColor: 0xc3e0f4,
+        track: 0x2a4a6b, laneLine: 0x486d92, trackEdge: 0x86aecc, rung: 0x35577a,
         ...DARK_HUD,
-        hazeColor: 0xffffff, hazeAlpha: 0.4,
+        hazeColor: 0xffffff, hazeAlpha: 0.42,
         orbColor: 0xfff6d8, orbAlpha: 0.5, orbRadius: 66, orbX: 372, orbY: 148,
+        //  Cloud banks either side, in a blue that reads against the pale
+        //  ground rather than vanishing into it.
+        roadside: { shape: 'blobs', color: 0x8fbede, alpha: 0.85, height: 74, spacing: 540, offset: 120, seed: 2 },
         layers: [
             { shape: 'blobs', color: 0xffffff, alpha: 0.5, parallax: 0.05, baseline: -95, height: 46, period: 190, wrap: 560, seed: 11 },
             { shape: 'blobs', color: 0xffffff, alpha: 0.75, parallax: 0.11, baseline: -125, height: 60, period: 250, wrap: 560, seed: 27 }
