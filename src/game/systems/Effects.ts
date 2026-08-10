@@ -1,21 +1,21 @@
 import { Scene } from 'phaser';
 import {
-    BURST_DURATION,
-    BURST_PARTICLES,
-    BURST_PARTICLE_RADIUS,
-    BURST_SPEED_MAX,
-    BURST_SPEED_MIN,
-    DEPTH_FX
+    DEPTH_FX,
+    SWALLOW_DURATION,
+    SWALLOW_LENGTH,
+    SWALLOW_SPREAD,
+    SWALLOW_STAGGER,
+    SWALLOW_STRANDS,
+    SWALLOW_THICKNESS
 } from '../config/constants';
 
 const TAU = Math.PI * 2;
 
 /**
- * Short-lived feedback: particle bursts and haptics.
+ * Short-lived feedback: the swallow and haptics.
  *
- * The burst is built from plain circles and tweens rather than Phaser's
- * particle emitter, which would need a texture - and this game ships no image
- * assets.
+ * Built from plain shapes and tweens rather than Phaser's particle emitter,
+ * which would need a texture - and this game ships no image assets.
  */
 export class Effects
 {
@@ -27,29 +27,46 @@ export class Effects
     }
 
     /**
-     * A ring of particles thrown outwards from a point, fading as they go.
+     * An orb being absorbed: strands of its colour collapse into the point where
+     * it met the drop.
+     *
+     * Inwards rather than outwards on purpose. The drop does not break an orb,
+     * it takes it in, and a burst says the opposite. Contact happens once the
+     * orb has arrived, so there is no approach to animate - the strands start in
+     * a ring around the meeting point instead.
      */
-    burst (x: number, y: number, color: number): void
+    swallow (x: number, y: number, color: number): void
     {
-        for (let i = 0; i < BURST_PARTICLES; i++)
+        for (let i = 0; i < SWALLOW_STRANDS; i++)
         {
-            const particle = this.scene.add.circle(x, y, BURST_PARTICLE_RADIUS, color);
+            //  Even spread with a little jitter, so it does not look stamped.
+            const angle = ((i / SWALLOW_STRANDS) * TAU) + ((Math.random() - 0.5) * 0.5);
 
-            particle.setDepth(DEPTH_FX);
+            const startX = x + (Math.cos(angle) * SWALLOW_SPREAD);
+            const startY = y + (Math.sin(angle) * SWALLOW_SPREAD);
 
-            //  Even spread with a little jitter, so bursts do not look stamped.
-            const angle = ((i / BURST_PARTICLES) * TAU) + (Math.random() - 0.5) * 0.4;
-            const speed = BURST_SPEED_MIN + (Math.random() * (BURST_SPEED_MAX - BURST_SPEED_MIN));
+            const strand = this.scene.add.ellipse(startX, startY, SWALLOW_LENGTH, SWALLOW_THICKNESS, color);
+
+            strand.setDepth(DEPTH_FX);
+
+            //  Lying along the way in, so each strand is a streak rather than a
+            //  dot sliding sideways.
+            strand.setRotation(angle);
 
             this.scene.tweens.add({
-                targets: particle,
-                x: x + (Math.cos(angle) * speed),
-                y: y + (Math.sin(angle) * speed),
+                targets: strand,
+                x,
+                y,
+                scaleX: 0.25,
+                scaleY: 0.25,
                 alpha: 0,
-                scale: 0.2,
-                duration: BURST_DURATION,
-                ease: 'Cubic.Out',
-                onComplete: () => particle.destroy()
+                //  Away from the ring at once and easing as it merges. Holding
+                //  the strands out there first - which is what accelerating in
+                //  does - just reads as a spiky crown around the drop, because
+                //  that is where they spend most of the frames.
+                ease: 'Quad.Out',
+                duration: SWALLOW_DURATION + (Math.random() * SWALLOW_STAGGER),
+                onComplete: () => strand.destroy()
             });
         }
     }

@@ -168,7 +168,7 @@ export class Play extends Scene
 
             const colorId = this.drop.getColorId();
 
-            this.effects.burst(x, y, colorId ? COLOR_VALUES[colorId] : COLOR_FLASH);
+            this.effects.swallow(x, y, colorId ? COLOR_VALUES[colorId] : COLOR_FLASH);
             this.effects.haptic(HAPTIC_COLLECT_MS);
             this.drop.pulse();
 

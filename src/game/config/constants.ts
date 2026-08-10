@@ -193,6 +193,31 @@ export const TRAIL_TAPER = 0.6;
 //  Strongest a mark ever is, right under the drop.
 export const TRAIL_ALPHA = 0.3;
 
+// ---------------------------------------------------------------------------
+//  Swallowing an orb
+//
+//  The mirror of a burst: strands of the orb's colour collapse inwards instead
+//  of being thrown out. An explosion says the orb was destroyed; this says it
+//  was absorbed, which is the word the game is built on.
+//
+//  Contact happens when the orb has reached the drop, not before, so there is
+//  no distance to travel in from - the strands are placed in a ring around the
+//  meeting point and pulled to its centre.
+// ---------------------------------------------------------------------------
+
+export const SWALLOW_STRANDS = 6;
+//  How far out the ring starts. Wider than the drop looks like something
+//  bursting off it rather than being taken into it.
+export const SWALLOW_SPREAD = 25;
+//  A strand is long and thin, drawn pointing at the centre, so it reads as
+//  liquid being drawn in rather than as a dot moving.
+export const SWALLOW_LENGTH = 15;
+export const SWALLOW_THICKNESS = 6;
+export const SWALLOW_DURATION = 230;
+//  Extra milliseconds spread across the strands, so they do not all land at
+//  once and the drop looks fed rather than switched.
+export const SWALLOW_STAGGER = 90;
+
 //  Blobs: the same liquid the drop is made of, at small sizes. Orbs use these,
 //  and so does anything else that wants a wobbling lump rather than a circle.
 //
@@ -584,12 +609,6 @@ export const PULSE_PERIOD = 300;
 // ---------------------------------------------------------------------------
 //  Feedback
 // ---------------------------------------------------------------------------
-
-export const BURST_PARTICLES = 12;
-export const BURST_PARTICLE_RADIUS = 4;
-export const BURST_SPEED_MIN = 70;
-export const BURST_SPEED_MAX = 150;
-export const BURST_DURATION = 420;
 
 /** How long the drop stays red after touching a wrong-coloured orb. */
 export const FLASH_DURATION = 160;
