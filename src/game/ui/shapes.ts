@@ -3,6 +3,12 @@ import {
     DROP_GLOW_ALPHA,
     DROP_GLOW_LAYERS,
     DROP_GLOW_SPREAD,
+    DROP_SHADE_ALPHA,
+    DROP_SHADE_DROP,
+    DROP_SHADE_HEIGHT,
+    DROP_SHADE_LAYERS,
+    DROP_SHADE_STEP,
+    DROP_SHADE_WIDTH,
     DROP_SHADOW_ALPHA,
     DROP_SHADOW_DROP,
     DROP_SHADOW_SQUASH,
@@ -76,9 +82,21 @@ export function drawWaterDrop (
     //  is most of what sells it as full of something rather than solid.
     const slosh = -lean * radius * DROP_SLOSH;
 
-    //  A darker underside, which turns a flat disc into something rounded.
-    gfx.fillStyle(0x000000, 0.16);
-    gfx.fillEllipse(slosh * 0.6, radius * 0.42, radius * 1.5, radius * 0.85);
+    //  A darker underside, which turns a flat disc into something rounded. Each
+    //  pass sits inside the last, so it fades out towards its edge rather than
+    //  stopping at one.
+    for (let layer = 0; layer < DROP_SHADE_LAYERS; layer++)
+    {
+        const inset = 1 - ((layer / DROP_SHADE_LAYERS) * DROP_SHADE_STEP * DROP_SHADE_LAYERS);
+
+        gfx.fillStyle(0x000000, DROP_SHADE_ALPHA / DROP_SHADE_LAYERS);
+        gfx.fillEllipse(
+            slosh * 0.6,
+            radius * DROP_SHADE_DROP,
+            radius * DROP_SHADE_WIDTH * inset,
+            radius * DROP_SHADE_HEIGHT * inset
+        );
+    }
 
     //  Offset highlight, so the drop reads as a volume and its rotation is
     //  actually visible.

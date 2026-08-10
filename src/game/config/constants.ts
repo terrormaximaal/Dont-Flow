@@ -117,14 +117,20 @@ export const DROP_STRETCH = 0.16;
 //  straight edges; above 60 costs more for nothing.
 export const DROP_SURFACE_POINTS = 56;
 
-//  The three ripples the surface is made of, as matched entries: how many lobes
-//  each one has around the outline, how fast it travels (negative runs the other
+//  The ripples the surface is made of, as matched entries: how many lobes each
+//  one has around the outline, how fast it travels (negative runs the other
 //  way), and how far it pushes the edge in and out as a fraction of the radius.
-//  Deliberately unrelated numbers, so the three never line up into a loop the
-//  eye can catch.
-export const DROP_RIPPLE_LOBES = [ 3, 5, 2 ];
-export const DROP_RIPPLE_SPEEDS = [ 2.1, -3.3, 1.3 ];
-export const DROP_RIPPLE_AMOUNTS = [ 0.05, 0.032, 0.038 ];
+//  Deliberately unrelated numbers, so the two never line up into a loop the eye
+//  can catch.
+//
+//  Two low, slow ripples rather than three faster ones, one of them five-lobed.
+//  Lobes are bumps: five of them around a drop this small, moving that quickly,
+//  read as the edge shivering rather than as liquid. Keeping the counts low and
+//  the amounts small leaves a long, soft swell that stays close to round, which
+//  is what makes it look full instead of lumpy.
+export const DROP_RIPPLE_LOBES = [ 2, 3 ];
+export const DROP_RIPPLE_SPEEDS = [ 1.0, -1.6 ];
+export const DROP_RIPPLE_AMOUNTS = [ 0.032, 0.018 ];
 
 //  How much a pop - swallowing an orb - multiplies those ripples on top of
 //  their resting size. This is the splash.
@@ -142,8 +148,23 @@ export const DROP_TIP_TRAIL = 0.55;
 export const DROP_TIP_SWAY = 0.12;
 export const DROP_TIP_SWAY_SPEED = 0.9;
 
-//  How much heavier the bottom of the drop hangs than the top.
-export const DROP_BELLY = 0.1;
+//  How much heavier the bottom of the drop hangs than the top. One smooth
+//  swelling rather than a ripple, so it adds fullness without adding a bump.
+export const DROP_BELLY = 0.14;
+
+//  The shaded underside that turns a flat disc into something rounded.
+//
+//  Painted as several ellipses inside one another rather than one, because a
+//  single flat oval on a drop this size reads as a grey shape laid on top, with
+//  a rim you can pick out. Sharing the alpha between passes fades it out at the
+//  edge instead.
+export const DROP_SHADE_ALPHA = 0.17;
+export const DROP_SHADE_LAYERS = 4;
+export const DROP_SHADE_WIDTH = 1.5;
+export const DROP_SHADE_HEIGHT = 0.85;
+export const DROP_SHADE_DROP = 0.42;
+//  How much smaller each pass is than the one before it.
+export const DROP_SHADE_STEP = 0.17;
 
 //  How far the highlight and the shaded underside slide against a sideways
 //  move, as a fraction of the radius: the inside of the drop lagging behind the
