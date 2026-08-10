@@ -369,6 +369,15 @@ export const OBSTACLE_HALF_WIDTH = 44;
 export const OBSTACLE_DEPTH = 52;
 
 /**
+ * How tall a barrier stands off the road.
+ *
+ * Lying flat they read as panels painted on the floor - decoration to drive
+ * over. Standing up, they read as something in the way, which is what they are.
+ */
+export const OBSTACLE_STAND_HEIGHT = 78;
+export const OBSTACLE_FOOT_ALPHA = 0.22;
+
+/**
  * How close the drop's centre must be to count as hitting a barrier.
  *
  * Held below half a lane so a barrier only ever blocks its own lane - being in

@@ -62,7 +62,8 @@ describe('the ten worlds', () => {
                 //  Well under the track's own speed: scenery that kept up with
                 //  the corridor would read as part of it.
                 expect(layer.parallax, id).toBeLessThan(0.5);
-                expect(layer.repeat, id).toBeGreaterThan(layer.height);
+                //  A tile narrower than the screen would show its own seam.
+                expect(layer.wrap, id).toBeGreaterThanOrEqual(GAME_WIDTH);
             }
         }
 

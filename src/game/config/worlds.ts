@@ -35,7 +35,13 @@ export interface LayerSpec
     /** Fraction of the scroll speed. Smaller is further away. */
     parallax: number;
 
-    /** Screen y the layer's baseline sits on. */
+    /**
+     * How far below the horizon the silhouettes are rooted.
+     *
+     * Scenery stands *on* the horizon, so this is a small number: a few pixels
+     * of overlap keeps the bases hidden behind the ground rather than floating
+     * above it.
+     */
     baseline: number;
 
     /** Height of the silhouettes above the baseline. */
@@ -44,8 +50,15 @@ export interface LayerSpec
     /** Horizontal period of the shape, in pixels. */
     period: number;
 
-    /** Vertical distance between repeats, as the layer scrolls past. */
-    repeat: number;
+    /**
+     * Width of one tile of the layer, which is also how far it scrolls before
+     * wrapping.
+     *
+     * Layers drift sideways rather than falling: on a road, distant scenery
+     * passes across the view as you travel: it does not slide down the sky.
+     * Must be at least a screen wide or the seam becomes visible.
+     */
+    wrap: number;
 
     /** Deterministic variation between otherwise identical layers. */
     seed: number;

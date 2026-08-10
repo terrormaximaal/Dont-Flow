@@ -9,6 +9,8 @@ import {
     OBSTACLE_HALF_WIDTH,
     OBSTACLE_HATCH_ALPHA,
     OBSTACLE_HATCH_COUNT,
+    OBSTACLE_FOOT_ALPHA,
+    OBSTACLE_STAND_HEIGHT,
     PULSE_AMOUNT,
     PULSE_PERIOD,
     SLIDER_AMPLITUDE,
@@ -112,36 +114,46 @@ export class Obstacle
         const left = centre - half;
         const right = centre + half;
 
-        const near = y + (OBSTACLE_DEPTH / 2);
-        const far = y - (OBSTACLE_DEPTH / 2);
-
+        const scale = depthScale(y);
         const value = COLOR_VALUES[this.color];
         const gfx = this.gfx;
 
         gfx.clear();
         gfx.setAlpha(drawStrength(this.distance, travelled));
 
+        //  Its footprint on the road, which is what grounds it.
+        gfx.fillStyle(value, OBSTACLE_FOOT_ALPHA);
+        fillProjectedQuad(gfx, left, right, y - (OBSTACLE_DEPTH / 2), y + (OBSTACLE_DEPTH / 2));
+
+        const baseLeft = projectX(left, y);
+        const baseRight = projectX(right, y);
+
+        if (baseRight - baseLeft < 2) { return y; }
+
+        //  The face standing up from it. Flat and facing the camera, so its top
+        //  corners sit directly above the base ones.
+        const top = y - (OBSTACLE_STAND_HEIGHT * scale);
+
         gfx.fillStyle(value, OBSTACLE_FILL_ALPHA);
-        fillProjectedQuad(gfx, left, right, far, near);
+        gfx.fillRect(baseLeft, top, baseRight - baseLeft, y - top);
 
         //  A solid rim and diagonal hatching, so a barrier never reads as a
         //  large orb - the two mean opposite things on contact.
-        gfx.lineStyle(OBSTACLE_EDGE_THICKNESS * depthScale(y), value, 1);
-        gfx.lineBetween(projectX(left, far), far, projectX(right, far), far);
-        gfx.lineBetween(projectX(left, near), near, projectX(right, near), near);
-        gfx.lineBetween(projectX(left, far), far, projectX(left, near), near);
-        gfx.lineBetween(projectX(right, far), far, projectX(right, near), near);
+        gfx.lineStyle(Math.max(1, OBSTACLE_EDGE_THICKNESS * scale), value, 1);
+        gfx.strokeRect(baseLeft, top, baseRight - baseLeft, y - top);
 
-        gfx.lineStyle(2 * depthScale(y), value, OBSTACLE_HATCH_ALPHA);
+        gfx.lineStyle(Math.max(1, 2 * scale), value, OBSTACLE_HATCH_ALPHA);
 
-        for (let i = 1; i <= OBSTACLE_HATCH_COUNT; i++) {
-
+        for (let i = 1; i <= OBSTACLE_HATCH_COUNT; i++)
+        {
             const t = i / (OBSTACLE_HATCH_COUNT + 1);
-            const from = left + ((right - left) * t);
+            const from = baseLeft + ((baseRight - baseLeft) * t);
+            const lean = (baseRight - baseLeft) * 0.22;
 
-            gfx.lineBetween(projectX(from, far), far, projectX(from - (half * 0.5), near), near);
-
+            gfx.lineBetween(from, y, from - lean, top);
         }
+
+        void half;
 
         return y;
     }

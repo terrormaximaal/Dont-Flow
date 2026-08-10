@@ -155,14 +155,14 @@ export class Environment
 
         gfx.setDepth(LAYER_DEPTH + layer.parallax);
 
-        const copies = Math.ceil((GAME_HEIGHT + layer.repeat) / layer.repeat) + 1;
-
-        for (let copy = 0; copy < copies; copy++)
+        //  Three tiles side by side: one on screen, one either side, so the
+        //  layer can scroll a full tile before wrapping without a seam showing.
+        for (let tile = -1; tile <= 1; tile++)
         {
-            drawSilhouette(gfx, layer, copy * layer.repeat);
+            drawSilhouette(gfx, layer, tile * layer.wrap);
         }
 
-        gfx.setData('repeat', layer.repeat);
+        gfx.setData('wrap', layer.wrap);
         gfx.setData('parallax', layer.parallax);
 
         return gfx;
@@ -190,11 +190,12 @@ export class Environment
     {
         for (const layer of this.layers)
         {
-            const repeat = layer.getData('repeat') as number;
+            const wrap = layer.getData('wrap') as number;
             const parallax = layer.getData('parallax') as number;
 
-            //  Positive so the scenery falls past as the drop travels forward.
-            layer.y = ((distance * parallax) % repeat) - repeat;
+            //  Sideways, in the direction the road leans, so the world turns
+            //  past the camera as the drop travels along it.
+            layer.x = -((distance * parallax) % wrap);
         }
 
         if (this.specks && this.world.specks)
@@ -284,8 +285,10 @@ function blend (from: number, to: number, t: number): number
  */
 function drawSilhouette (gfx: Phaser.GameObjects.Graphics, layer: LayerSpec, offset: number): void
 {
-    const random = seeded(layer.seed + offset);
-    const base = layer.baseline + offset;
+    //  The same seed for every tile, so the three copies are identical and the
+    //  wrap is invisible.
+    const random = seeded(layer.seed);
+    const base = HORIZON_Y + layer.baseline;
 
     gfx.fillStyle(layer.color, layer.alpha);
 
@@ -293,7 +296,7 @@ function drawSilhouette (gfx: Phaser.GameObjects.Graphics, layer: LayerSpec, off
 
     if (shape === 'blobs')
     {
-        for (let x = -BLEED; x < GAME_WIDTH + BLEED; x += layer.period * (0.5 + random() * 0.5))
+        for (let x = offset; x < offset + layer.wrap; x += layer.period * (0.5 + random() * 0.5))
         {
             const r = layer.height * (0.45 + random() * 0.65);
             const y = base - (random() * layer.height * 0.6);
@@ -308,7 +311,7 @@ function drawSilhouette (gfx: Phaser.GameObjects.Graphics, layer: LayerSpec, off
 
     if (shape === 'buildings')
     {
-        for (let x = -BLEED; x < GAME_WIDTH + BLEED; x += layer.period)
+        for (let x = offset; x < offset + layer.wrap; x += layer.period)
         {
             const w = layer.period * (0.55 + random() * 0.35);
             const h = layer.height * (0.35 + random() * 0.75);
@@ -321,7 +324,7 @@ function drawSilhouette (gfx: Phaser.GameObjects.Graphics, layer: LayerSpec, off
 
     if (shape === 'trees')
     {
-        for (let x = -BLEED; x < GAME_WIDTH + BLEED; x += layer.period * (0.6 + random() * 0.6))
+        for (let x = offset; x < offset + layer.wrap; x += layer.period * (0.6 + random() * 0.6))
         {
             const h = layer.height * (0.6 + random() * 0.6);
             const w = layer.period * (0.5 + random() * 0.3);
@@ -335,7 +338,7 @@ function drawSilhouette (gfx: Phaser.GameObjects.Graphics, layer: LayerSpec, off
 
     if (shape === 'mesa')
     {
-        for (let x = -BLEED; x < GAME_WIDTH + BLEED; x += layer.period)
+        for (let x = offset; x < offset + layer.wrap; x += layer.period)
         {
             const w = layer.period * (0.6 + random() * 0.5);
             const h = layer.height * (0.4 + random() * 0.7);
@@ -350,7 +353,7 @@ function drawSilhouette (gfx: Phaser.GameObjects.Graphics, layer: LayerSpec, off
 
     if (shape === 'shards')
     {
-        for (let x = -BLEED; x < GAME_WIDTH + BLEED; x += layer.period * (0.6 + random() * 0.7))
+        for (let x = offset; x < offset + layer.wrap; x += layer.period * (0.6 + random() * 0.7))
         {
             const w = layer.period * (0.3 + random() * 0.4);
             const h = layer.height * (0.5 + random() * 0.9);
@@ -366,7 +369,7 @@ function drawSilhouette (gfx: Phaser.GameObjects.Graphics, layer: LayerSpec, off
     //  differs.
     const sharpness = shape === 'peaks' ? 1 : shape === 'hills' ? 0.55 : 0.3;
 
-    for (let x = -BLEED; x < GAME_WIDTH + BLEED; x += layer.period)
+    for (let x = offset; x < offset + layer.wrap; x += layer.period)
     {
         const w = layer.period * (0.85 + random() * 0.5);
         const h = layer.height * (0.45 + random() * 0.8);
