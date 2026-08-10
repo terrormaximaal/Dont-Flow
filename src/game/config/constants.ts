@@ -220,8 +220,18 @@ export const SWIPE_THRESHOLD = 44;
 //  so vertical drags do not steer the drop.
 export const SWIPE_DOMINANCE = 1.5;
 //  Shortest gap (ms) between two lane changes inside one unbroken drag. Without
-//  this a single fast flick skids across the whole track before you can react.
-export const SWIPE_REPEAT_DELAY = 170;
+//  any pacing a single fast flick fires both changes in consecutive frames and
+//  the drop appears at the far edge rather than travelling there.
+//
+//  The ceiling on this is the game itself, not taste. Level 10 puts a row every
+//  161ms and crossing two lanes takes 76ms of sliding on top of this wait, so
+//  anything above about 85 makes a two-lane move between consecutive rows
+//  impossible to ask for without lifting a finger - which cost real points on
+//  the late levels while a first pass at 170 was in.
+//
+//  Note the pacing only applies within one drag. Two separate flicks, and the
+//  keyboard, are never held up.
+export const SWIPE_REPEAT_DELAY = 70;
 
 //  How far a drag may wander vertically before it is measured afresh.
 //
