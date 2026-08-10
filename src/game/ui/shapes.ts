@@ -1,5 +1,7 @@
 import {
     COLOR_DROP_HIGHLIGHT,
+    DROP_FLOOD_FROM,
+    DROP_FLOOD_TO,
     DROP_GLOW_ALPHA,
     DROP_GLOW_LAYERS,
     DROP_GLOW_SPREAD,
@@ -14,7 +16,7 @@ import {
     DROP_SHADOW_SQUASH,
     DROP_SLOSH
 } from '../config/constants';
-import { Point } from '../entities/drop-surface';
+import { clipAbove, Point } from '../entities/drop-surface';
 
 /**
  * Fills a closed shape from a set of points, in whatever style is already set.
@@ -23,12 +25,17 @@ import { Point } from '../entities/drop-surface';
  * Vector2 - building those every frame would mean allocating the whole outline
  * again just to satisfy a type.
  */
-export function fillOutline (gfx: Phaser.GameObjects.Graphics, outline: Point[]): void
+export function fillOutline (gfx: Phaser.GameObjects.Graphics, outline: Point[], count = outline.length): void
 {
+    if (count < 3)
+    {
+        return;
+    }
+
     gfx.beginPath();
     gfx.moveTo(outline[0].x, outline[0].y);
 
-    for (let i = 1; i < outline.length; i++)
+    for (let i = 1; i < count; i++)
     {
         gfx.lineTo(outline[i].x, outline[i].y);
     }
@@ -48,23 +55,51 @@ export function fillOutline (gfx: Phaser.GameObjects.Graphics, outline: Point[])
  * Shared so the title screen's logo is the same drop as the player, rather than
  * a second drawing that has to be kept in step by hand.
  *
- * @param outline  Points around the edge, from `waterOutline`.
- * @param radius   The resting radius those points were built from, which the
- *                 shading and the shadow are sized against.
- * @param lean     Sideways tilt, -1 to 1. Slides the inside against the move.
- * @param grounded Whether to lay a shadow and a halo down as well, which the
- *                 player needs to sit on the road and the logo does not.
  */
-export function drawWaterDrop (
-    gfx: Phaser.GameObjects.Graphics,
-    outline: Point[],
-    radius: number,
-    color: number,
-    lean = 0,
-    grounded = false
-): void
+export interface DropPaint
 {
+    /** Points around the edge, from `waterOutline`. */
+    outline: Point[];
+
+    /**
+     * The resting radius those points were built from, which the shading, the
+     * shadow and the flood line are all sized against.
+     */
+    radius: number;
+
+    color: number;
+
+    /** Sideways tilt, -1 to 1. Slides the inside against the move. */
+    lean?: number;
+
+    /**
+     * Whether to lay a shadow and a halo down as well, which the player needs to
+     * sit on the road and the logo does not.
+     */
+    grounded?: boolean;
+
+    /**
+     * The colour being replaced, and how far down the new one has reached, 0 to
+     * 1. Together these paint a gate as the colour flooding through the drop
+     * rather than the drop being swapped. Leave them out for a settled drop.
+     */
+    from?: number;
+    flood?: number;
+}
+
+export function drawWaterDrop (gfx: Phaser.GameObjects.Graphics, paint: DropPaint): void
+{
+    const { outline, radius, color } = paint;
+    const lean = paint.lean ?? 0;
+    const grounded = paint.grounded ?? false;
+    const flood = paint.flood ?? 1;
+
     gfx.clear();
+
+    //  Mid-change the halo follows whichever colour has most of the body, so it
+    //  cannot sit there in the new colour around a drop that is still the old
+    //  one - which reads as a light around it rather than a light from it.
+    const halo = paint.from !== undefined && flood < 0.5 ? paint.from : color;
 
     if (grounded)
     {
@@ -79,13 +114,27 @@ export function drawWaterDrop (
         //  a glow this soft is not rippling with the edge it sits behind.
         for (let layer = DROP_GLOW_LAYERS; layer > 0; layer--)
         {
-            gfx.fillStyle(color, DROP_GLOW_ALPHA);
+            gfx.fillStyle(halo, DROP_GLOW_ALPHA);
             gfx.fillCircle(0, 0, radius + (DROP_GLOW_SPREAD * (layer / DROP_GLOW_LAYERS)));
         }
     }
 
-    gfx.fillStyle(color, 1);
+    //  Mid-change, the body is painted twice: the colour being left behind
+    //  everywhere, then the new one over everything above a line that sweeps
+    //  down from above the tip to below the belly.
+    const flooding = paint.from !== undefined && flood < 1;
+
+    gfx.fillStyle(flooding ? paint.from! : color, 1);
     fillOutline(gfx, outline);
+
+    if (flooding)
+    {
+        const cut = radius * (DROP_FLOOD_FROM + ((DROP_FLOOD_TO - DROP_FLOOD_FROM) * flood));
+        const top = clipAbove(outline, cut);
+
+        gfx.fillStyle(color, 1);
+        fillOutline(gfx, top.points, top.count);
+    }
 
     //  The inside of the drop lags behind the outside on a sideways move, which
     //  is most of what sells it as full of something rather than solid.

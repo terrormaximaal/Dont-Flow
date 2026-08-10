@@ -135,6 +135,58 @@ export function blobOutline (radius: number, time: number, phase: number): Point
     return blobBuffer;
 }
 
+/** Room for every point plus a crossing for each. */
+const clipBuffer: Point[] = Array.from({ length: DROP_SURFACE_POINTS * 2 }, () => ({ x: 0, y: 0 }));
+
+/**
+ * The part of an outline lying above a horizontal line, as a closed shape.
+ *
+ * Used to paint a new colour into the drop from the tip down, so a gate reads
+ * as the colour flooding through it rather than the drop being swapped.
+ *
+ * Clips edge by edge, keeping the points already above the line and adding one
+ * where an edge crosses it. A ripple can carry the outline back and forth
+ * across the line more than twice, which this handles - each crossing simply
+ * adds its own point.
+ *
+ * @returns the shared buffer and how many of its points are in use.
+ */
+export function clipAbove (outline: Point[], cut: number): { points: Point[]; count: number }
+{
+    let count = 0;
+
+    const add = (x: number, y: number) => {
+
+        clipBuffer[count].x = x;
+        clipBuffer[count].y = y;
+        count++;
+
+    };
+
+    for (let i = 0; i < outline.length; i++)
+    {
+        const from = outline[i];
+        const to = outline[(i + 1) % outline.length];
+
+        const fromAbove = from.y <= cut;
+        const toAbove = to.y <= cut;
+
+        if (fromAbove)
+        {
+            add(from.x, from.y);
+        }
+
+        if (fromAbove !== toAbove)
+        {
+            const t = (cut - from.y) / (to.y - from.y);
+
+            add(from.x + ((to.x - from.x) * t), cut);
+        }
+    }
+
+    return { points: clipBuffer, count };
+}
+
 /**
  * The shortest way round between two angles, in radians.
  *

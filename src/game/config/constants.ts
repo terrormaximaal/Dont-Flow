@@ -148,6 +148,16 @@ export const DROP_TIP_TRAIL = 0.55;
 export const DROP_TIP_SWAY = 0.12;
 export const DROP_TIP_SWAY_SPEED = 0.9;
 
+//  Passing a gate floods the new colour down through the drop instead of
+//  swapping it in one frame. An exponential rate, fast enough that the drop has
+//  finished changing well before the section's first orb arrives - even on the
+//  quickest level, where that is about a third of a second away.
+export const DROP_FLOOD_SPEED = 9;
+//  Where the flood line starts and finishes, as multiples of the radius: above
+//  the tip and below the belly, so it sweeps the whole body.
+export const DROP_FLOOD_FROM = -2.2;
+export const DROP_FLOOD_TO = 1.3;
+
 //  How much heavier the bottom of the drop hangs than the top. One smooth
 //  swelling rather than a ripple, so it adds fullness without adding a bump.
 export const DROP_BELLY = 0.14;

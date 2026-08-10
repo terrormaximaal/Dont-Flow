@@ -4,6 +4,7 @@ import {
     COLOR_VALUES,
     ColorId,
     DEPTH_DROP,
+    DROP_FLOOD_SPEED,
     DROP_LEAN_MAX,
     DROP_LEAN_REFERENCE_SPEED,
     DROP_RADIUS,
@@ -48,6 +49,10 @@ export class Drop
 
     private color: number = COLOR_DROP_NEUTRAL;
 
+    /** The colour being left behind, and how far the new one has flooded down. */
+    private previousColor: number = COLOR_DROP_NEUTRAL;
+    private flood = 1;
+
     /** Overrides `color` while a hit flash is playing. */
     private flashColor: number | null = null;
     private flashTimer: Phaser.Time.TimerEvent | null = null;
@@ -82,6 +87,11 @@ export class Drop
      */
     setColorId (id: ColorId): void
     {
+        //  The colour it was runs down out of the drop while the new one fills
+        //  in from the tip, rather than the whole thing changing in one frame.
+        this.previousColor = this.color;
+        this.flood = 0;
+
         this.colorId = id;
         this.color = COLOR_VALUES[id];
 
@@ -174,6 +184,7 @@ export class Drop
         this.tilt = easeTowards(this.tilt, measured, DROP_TILT_SMOOTHING, dt);
 
         this.juice.update(dt);
+        this.flood = easeTowards(this.flood, 1, DROP_FLOOD_SPEED, dt);
 
         //  The shape itself is rebuilt every frame - that is the whole point of
         //  it being liquid - so this is a redraw, not just a transform.
@@ -202,9 +213,19 @@ export class Drop
 
     private redraw (): void
     {
-        const outline = waterOutline(DROP_RADIUS, this.juice.getElapsed(), this.tilt, this.juice.getAgitation());
+        //  A flash paints the whole drop, so it overrides a flood in progress
+        //  rather than fighting with it.
+        const flashing = this.flashColor !== null;
 
-        drawWaterDrop(this.gfx, outline, DROP_RADIUS, this.flashColor ?? this.color, this.tilt, true);
+        drawWaterDrop(this.gfx, {
+            outline: waterOutline(DROP_RADIUS, this.juice.getElapsed(), this.tilt, this.juice.getAgitation()),
+            radius: DROP_RADIUS,
+            color: this.flashColor ?? this.color,
+            lean: this.tilt,
+            grounded: true,
+            from: flashing ? undefined : this.previousColor,
+            flood: this.flood
+        });
     }
 
     destroy (): void

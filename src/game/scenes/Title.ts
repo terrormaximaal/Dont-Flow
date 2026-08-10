@@ -140,12 +140,11 @@ export class Title extends Scene
         this.distance += MENU_SCROLL_SPEED * (delta / 1000);
         this.elapsed += delta / 1000;
 
-        drawWaterDrop(
-            this.logo,
-            waterOutline(TITLE_DROP_RADIUS, this.elapsed, 0, 0),
-            TITLE_DROP_RADIUS,
-            COLOR_DROP_NEUTRAL
-        );
+        drawWaterDrop(this.logo, {
+            outline: waterOutline(TITLE_DROP_RADIUS, this.elapsed, 0, 0),
+            radius: TITLE_DROP_RADIUS,
+            color: COLOR_DROP_NEUTRAL
+        });
 
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);
