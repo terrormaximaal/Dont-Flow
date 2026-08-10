@@ -15,6 +15,7 @@ import {
 import { clampLane, laneCenterX } from '../systems/Lanes';
 import { drawTeardrop } from '../ui/shapes';
 import { clamp, easeTowards } from '../utils/math';
+import { DropJuice } from './drop-juice';
 
 /**
  * The player. It holds a *target* lane and eases towards it every frame - the
@@ -45,6 +46,9 @@ export class Drop
     /** Overrides `color` while a hit flash is playing. */
     private flashColor: number | null = null;
     private flashTimer: Phaser.Time.TimerEvent | null = null;
+
+    /** Size, pop and idle wobble. Cosmetic only - collision never reads it. */
+    private readonly juice = new DropJuice();
 
     private readonly scene: Scene;
     private readonly gfx: Phaser.GameObjects.Graphics;
@@ -82,6 +86,23 @@ export class Drop
     getColorId (): ColorId | null
     {
         return this.colorId;
+    }
+
+    /**
+     * The running score, which is what the drop's size is made of. A penalty
+     * lowers it, so the drop shrinks back without being told separately.
+     */
+    setScore (score: number): void
+    {
+        this.juice.setScore(score);
+    }
+
+    /**
+     * A visible gulp, for the moment an orb is swallowed.
+     */
+    pulse (): void
+    {
+        this.juice.pulse();
     }
 
     /**
@@ -141,6 +162,8 @@ export class Drop
         //  into the rotation and scale below and the drop vanishes for a frame.
         this.lateralVelocity = dt > 0 ? (this.x - previousX) / dt : 0;
 
+        this.juice.update(dt);
+
         this.applyTransform();
     }
 
@@ -152,12 +175,17 @@ export class Drop
     {
         const tilt = clamp(this.lateralVelocity / DROP_LEAN_REFERENCE_SPEED, -1, 1);
 
+        //  Lean into the slide, with the slow idle sway underneath it.
         this.gfx.setPosition(this.x, DROP_SCREEN_Y);
-        this.gfx.setRotation(tilt * DROP_LEAN_MAX);
+        this.gfx.setRotation((tilt * DROP_LEAN_MAX) + this.juice.getSway());
 
-        const stretch = Math.abs(tilt) * DROP_STRETCH;
+        //  Size comes from the score; the wobbles ride on top of it. Height
+        //  gives back less than the width takes, so the drop reads as squashing
+        //  rather than simply changing shape.
+        const size = this.juice.getSize();
+        const squash = (Math.abs(tilt) * DROP_STRETCH) + this.juice.getSquash();
 
-        this.gfx.setScale(1 + stretch, 1 - (stretch * 0.6));
+        this.gfx.setScale(size * (1 + squash), size * (1 - (squash * 0.6)));
     }
 
     private redraw (): void

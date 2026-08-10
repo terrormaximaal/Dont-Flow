@@ -1,4 +1,9 @@
-import { SWIPE_DOMINANCE, SWIPE_REANCHOR_DISTANCE, SWIPE_THRESHOLD } from '../config/constants';
+import {
+    SWIPE_DOMINANCE,
+    SWIPE_REANCHOR_DISTANCE,
+    SWIPE_REPEAT_DELAY,
+    SWIPE_THRESHOLD
+} from '../config/constants';
 
 /** -1 = one lane left, +1 = one lane right. */
 export type LaneIntent = -1 | 1;
@@ -50,4 +55,17 @@ export function evaluateDrag (anchor: DragAnchor, x: number, y: number): DragRes
     }
 
     return { intent: 0, anchor };
+}
+
+/**
+ * Whether a lane change is following too soon after the last one.
+ *
+ * Distance alone does not pace a gesture: a fast flick clears several
+ * thresholds' worth of screen inside a few frames, and the drop would cross the
+ * whole track before the player has seen the first lane change land. Held apart
+ * from `evaluateDrag` because this is the only rule that needs a clock.
+ */
+export function isRepeatTooSoon (now: number, lastFireTime: number): boolean
+{
+    return now - lastFireTime < SWIPE_REPEAT_DELAY;
 }

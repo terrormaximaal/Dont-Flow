@@ -1,6 +1,5 @@
 import { Scene } from 'phaser';
-import { SWIPE_REPEAT_DELAY } from '../config/constants';
-import { DragAnchor, evaluateDrag, LaneIntent } from './swipe';
+import { DragAnchor, evaluateDrag, isRepeatTooSoon, LaneIntent } from './swipe';
 
 export type { LaneIntent };
 
@@ -118,7 +117,7 @@ export class InputSystem
         //  the gesture stays pending and fires the moment the delay is up. A
         //  deliberate long drag still gets its second lane; a flick does not get
         //  three at once.
-        if (this.scene.time.now - this.lastSwipeTime < SWIPE_REPEAT_DELAY)
+        if (isRepeatTooSoon(this.scene.time.now, this.lastSwipeTime))
         {
             return;
         }
