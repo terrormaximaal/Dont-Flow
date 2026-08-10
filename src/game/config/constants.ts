@@ -182,36 +182,6 @@ export const DROP_SHADE_STEP = 0.17;
 export const DROP_SLOSH = 0.34;
 
 // ---------------------------------------------------------------------------
-//  The current
-//
-//  Lines running along the road and waving as they come, so the surface the
-//  drop travels reads as moving water rather than tarmac.
-//
-//  Deliberately faint. A world's job is to give a level its character and never
-//  to make an orb or a barrier harder to pick out, and this sits directly under
-//  both of them.
-// ---------------------------------------------------------------------------
-
-export const CURRENT_LINES = 5;
-export const CURRENT_ALPHA = 0.17;
-export const CURRENT_THICKNESS = 2;
-
-//  How far a line wanders sideways, and the distance one full wave runs over.
-export const CURRENT_WAVE_AMPLITUDE = 19;
-export const CURRENT_WAVE_LENGTH = 400;
-
-//  How much faster the pattern travels than the road it is on. At 1 the waves
-//  would be painted on the surface and slide by with it; above 1 the water
-//  moves under the drop, which is what makes it a current rather than a carpet.
-export const CURRENT_FLOW = 1.4;
-
-//  How far ahead to bother drawing, and how the sampling opens out with
-//  distance - close up needs a point every few metres, the far field does not.
-export const CURRENT_VIEW = 4500;
-export const CURRENT_STEP_MIN = 26;
-export const CURRENT_STEP_GROWTH = 0.11;
-
-// ---------------------------------------------------------------------------
 //  Wet trail
 //
 //  The drop leaves the road wet behind it. Marks are stamped at a fixed spacing
@@ -739,11 +709,9 @@ export const COLOR_DROP_HIGHLIGHT = 0xffffff;
 export const DEPTH_GROUND = -8;
 export const DEPTH_ROADSIDE = -4;
 export const DEPTH_TRACK = 0;
-//  On the road's surface, under the bars that measure it out.
-export const DEPTH_CURRENT = 1;
-export const DEPTH_RUNGS = 2;
+export const DEPTH_RUNGS = 1;
 //  Above the road it is laid on, below the things it must never hide.
-export const DEPTH_TRAIL = 3;
+export const DEPTH_TRAIL = 2;
 export const DEPTH_GATES = 5;
 export const DEPTH_ORBS = 6;
 export const DEPTH_DROP = 20;

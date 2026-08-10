@@ -18,7 +18,6 @@ import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { WORLDS } from '../config/worldData';
 import { Course } from '../systems/Course';
-import { Current } from '../systems/Current';
 import { Environment } from '../systems/Environment';
 import { Roadside } from '../systems/Roadside';
 import { Effects } from '../systems/Effects';
@@ -44,7 +43,6 @@ export class Play extends Scene
     private drop: Drop;
     private track: TrackScroller;
     private environment: Environment;
-    private current: Current;
     private roadside: Roadside | null = null;
     private trail: Trail;
     private course: Course;
@@ -130,7 +128,6 @@ export class Play extends Scene
 
         this.environment = new Environment(this, world);
         this.track = new TrackScroller(this, world);
-        this.current = new Current(this, world);
         this.roadside = world.roadside ? new Roadside(this, world.roadside) : null;
         this.trail = new Trail(this);
         this.drop = new Drop(this);
@@ -295,7 +292,6 @@ export class Play extends Scene
 
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);
-        this.current.update(this.distance);
         this.roadside?.update(this.distance);
         this.drop.update(dt);
 
