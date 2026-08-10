@@ -274,6 +274,13 @@ export const RESUME_AT_LAST_LEVEL = true;
 //  run once started.
 // ---------------------------------------------------------------------------
 
+//  Master switch. Off means levels are free and unlimited and the meter is
+//  hidden, which is where this wants to be while the game is still being tuned:
+//  waiting ten minutes to try a change again is no way to judge how something
+//  feels. Everything below still works and is still tested - turning this back
+//  on restores the costs, the waiting and the meter with nothing else to change.
+export const ENERGY_ENABLED = false;
+
 export const MAX_ENERGY = 5;
 
 /** Real time to regain one energy. */

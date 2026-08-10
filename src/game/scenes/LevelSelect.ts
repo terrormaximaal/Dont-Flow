@@ -60,7 +60,7 @@ export class LevelSelect extends Scene
         const save = new SaveSystem();
         const energy = new EnergySystem(save);
         const furthest = save.getFurthestLevel();
-        const canPlay = energy.canPlay();
+        const canPlay = energy.mayStart();
 
         const heading = this.add.text(GAME_WIDTH / 2, MENU_HEADING_Y, 'SELECT LEVEL', {
             fontFamily: HUD_FONT,

@@ -39,7 +39,7 @@ export class PauseOverlay
     {
         //  The run in progress has already been paid for. Starting it again is a
         //  second charge, which there may be nothing left to cover.
-        const canRetry = energy.canPlay();
+        const canRetry = energy.mayStart();
 
         this.layer = scene.add.container(0, 0);
         this.layer.setDepth(DEPTH_OVERLAY);

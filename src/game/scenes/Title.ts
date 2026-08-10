@@ -60,7 +60,7 @@ export class Title extends Scene
 
         //  "Continue" only means something if there is somewhere to continue to.
         const canContinue = RESUME_AT_LAST_LEVEL && resumeLevel > 0;
-        const canPlay = energy.canPlay();
+        const canPlay = energy.mayStart();
 
         const logo = this.add.graphics();
 
