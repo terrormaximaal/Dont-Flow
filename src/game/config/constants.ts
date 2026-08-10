@@ -92,6 +92,16 @@ export const DROP_RADIUS = 21;
 
 //  Sideways speed (px/s) that counts as "full tilt" for lean and stretch.
 export const DROP_LEAN_REFERENCE_SPEED = 620;
+
+//  How quickly the lean catches up with the drop's actual sideways speed.
+//
+//  That speed is worked out as "how far it moved since the last frame, divided
+//  by how long the frame took", which is a noisy way to ask: an uneven frame
+//  changes the answer by a tenth even when the drop is sliding perfectly
+//  smoothly. Easing towards it filters that out, so the lean, the trailing tip
+//  and the slosh are all driven by something steady. Low enough to smooth,
+//  high enough that the lean still arrives with the slide rather than after it.
+export const DROP_TILT_SMOOTHING = 26;
 //  Radians of lean at full tilt.
 export const DROP_LEAN_MAX = 0.34;
 //  How much the drop stretches into the direction of travel at full tilt.
