@@ -17,6 +17,27 @@ import {
 import { Point } from '../entities/drop-surface';
 
 /**
+ * Fills a closed shape from a set of points, in whatever style is already set.
+ *
+ * Walked by hand rather than handed to fillPoints, which wants Phaser's own
+ * Vector2 - building those every frame would mean allocating the whole outline
+ * again just to satisfy a type.
+ */
+export function fillOutline (gfx: Phaser.GameObjects.Graphics, outline: Point[]): void
+{
+    gfx.beginPath();
+    gfx.moveTo(outline[0].x, outline[0].y);
+
+    for (let i = 1; i < outline.length; i++)
+    {
+        gfx.lineTo(outline[i].x, outline[i].y);
+    }
+
+    gfx.closePath();
+    gfx.fillPath();
+}
+
+/**
  * Draws the drop into a Graphics object, around a local origin at the centre of
  * the bulb.
  *
@@ -63,20 +84,8 @@ export function drawWaterDrop (
         }
     }
 
-    //  Walked by hand rather than handed to fillPoints, which wants Phaser's own
-    //  Vector2 - building those every frame would mean allocating the whole
-    //  outline again just to satisfy a type.
     gfx.fillStyle(color, 1);
-    gfx.beginPath();
-    gfx.moveTo(outline[0].x, outline[0].y);
-
-    for (let i = 1; i < outline.length; i++)
-    {
-        gfx.lineTo(outline[i].x, outline[i].y);
-    }
-
-    gfx.closePath();
-    gfx.fillPath();
+    fillOutline(gfx, outline);
 
     //  The inside of the drop lags behind the outside on a sideways move, which
     //  is most of what sells it as full of something rather than solid.

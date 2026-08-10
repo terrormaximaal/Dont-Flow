@@ -171,6 +171,21 @@ export const DROP_SHADE_STEP = 0.17;
 //  outside, the way liquid does in a glass.
 export const DROP_SLOSH = 0.34;
 
+//  Blobs: the same liquid the drop is made of, at small sizes. Orbs use these,
+//  and so does anything else that wants a wobbling lump rather than a circle.
+//
+//  A blob is much smaller than the drop, so its ripples have to be a bigger
+//  share of its radius to read at all, and fewer points around it are enough -
+//  which matters, because there can be a dozen on screen at once.
+export const BLOB_SURFACE_POINTS = 22;
+export const BLOB_RIPPLE_LOBES = [ 2, 3 ];
+export const BLOB_RIPPLE_SPEEDS = [ 1.4, -2.2 ];
+export const BLOB_RIPPLE_AMOUNTS = [ 0.075, 0.045 ];
+//  Blobs ripple with distance travelled rather than with the clock, like
+//  everything else in the world: they hold still when the game is paused, and a
+//  level looks the same on every run.
+export const BLOB_RIPPLE_PER_PIXEL = 0.01;
+
 //  Growth. Collecting orbs swells the drop, which is the run's reward made
 //  visible without reading a number. Purely cosmetic: collision uses
 //  DROP_CONTACT_RADIUS, which never changes, so a fat drop is never harder to

@@ -1,4 +1,8 @@
 import {
+    BLOB_RIPPLE_AMOUNTS,
+    BLOB_RIPPLE_LOBES,
+    BLOB_RIPPLE_SPEEDS,
+    BLOB_SURFACE_POINTS,
     DROP_BELLY,
     DROP_AGITATION_RIPPLE,
     DROP_RIPPLE_AMOUNTS,
@@ -90,6 +94,45 @@ export function waterOutline (radius: number, time: number, lean: number, agitat
     }
 
     return buffer;
+}
+
+/**
+ * Its own buffer, because a blob is walked with far fewer points than a drop.
+ * Same contract: valid until the next call.
+ */
+const blobBuffer: Point[] = Array.from({ length: BLOB_SURFACE_POINTS }, () => ({ x: 0, y: 0 }));
+
+/**
+ * A wobbling lump with no tip - the drop's substance at small sizes.
+ *
+ * Orbs use this. They are round things that float rather than fall, so they get
+ * the ripples without the point, and they are small enough that the ripples
+ * have to be a bigger share of the radius to be seen at all.
+ *
+ * @param phase Set this per blob - from where it sits, say - or a screenful of
+ *              them all breathe in step and read as one pulsing object.
+ */
+export function blobOutline (radius: number, time: number, phase: number): Point[]
+{
+    for (let i = 0; i < BLOB_SURFACE_POINTS; i++)
+    {
+        const theta = (i / BLOB_SURFACE_POINTS) * Math.PI * 2;
+
+        let ripple = 0;
+
+        for (let mode = 0; mode < BLOB_RIPPLE_LOBES.length; mode++)
+        {
+            ripple += Math.sin((theta * BLOB_RIPPLE_LOBES[mode]) + (time * BLOB_RIPPLE_SPEEDS[mode]) + phase)
+                * BLOB_RIPPLE_AMOUNTS[mode];
+        }
+
+        const r = radius * (1 + ripple);
+
+        blobBuffer[i].x = Math.cos(theta) * r;
+        blobBuffer[i].y = Math.sin(theta) * r;
+    }
+
+    return blobBuffer;
 }
 
 /**
