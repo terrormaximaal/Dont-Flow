@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 import {
     COLOR_DROP_NEUTRAL,
+    DEFAULT_LANES,
     COLOR_FLASH,
     COLOR_VALUES,
     FINISH_SLOWDOWN_MS,
@@ -23,6 +24,7 @@ import { Roadside } from '../systems/Roadside';
 import { Effects } from '../systems/Effects';
 import { EnergySystem } from '../systems/EnergySystem';
 import { InputSystem } from '../systems/InputSystem';
+import { useLanes } from '../systems/Lanes';
 import { OrientationGuard } from '../systems/OrientationGuard';
 import { SaveSystem } from '../systems/SaveSystem';
 import { ScoreSystem } from '../systems/ScoreSystem';
@@ -123,6 +125,10 @@ export class Play extends Scene
         //  Recorded as the level begins, not when it ends, so quitting midway
         //  still comes back to the right place.
         this.save.setCurrentLevel(this.levelIndex);
+
+        //  Laid out before anything that draws or collides exists, since all of
+        //  them ask where a lane is.
+        useLanes(level.lanes ?? DEFAULT_LANES);
 
         const world = WORLDS[level.world];
 

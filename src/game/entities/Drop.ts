@@ -11,10 +11,9 @@ import {
     DROP_SCREEN_Y,
     DROP_STRETCH,
     DROP_TILT_SMOOTHING,
-    LANE_CHANGE_SPEED,
-    START_LANE
+    LANE_CHANGE_SPEED
 } from '../config/constants';
-import { clampLane, laneCenterX } from '../systems/Lanes';
+import { clampLane, laneCenterX, startLane } from '../systems/Lanes';
 import { drawWaterDrop } from '../ui/shapes';
 import { clamp, easeTowards } from '../utils/math';
 import { DropJuice } from './drop-juice';
@@ -30,10 +29,10 @@ import { waterOutline } from './drop-surface';
 export class Drop
 {
     /** Lane the drop is heading for. Integer. */
-    private targetLane: number = START_LANE;
+    private targetLane: number = startLane();
 
     /** Current x, which lags behind the target lane while sliding. */
-    private x: number = laneCenterX(START_LANE);
+    private x: number = laneCenterX(startLane());
 
     /** Sideways speed in px/s, derived from the slide. Drives lean & stretch. */
     private lateralVelocity: number = 0;

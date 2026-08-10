@@ -11,13 +11,17 @@
 export const GAME_WIDTH = 480;
 export const GAME_HEIGHT = 854;
 
-export const LANE_COUNT = 3;
-export const TRACK_WIDTH = 330;
-export const LANE_WIDTH = TRACK_WIDTH / LANE_COUNT;
-export const TRACK_LEFT = (GAME_WIDTH - TRACK_WIDTH) / 2;
+//  Lanes a level carries unless it says otherwise. A level may ask for two
+//  instead, which the early ones do: the road stays the same width, so two
+//  lanes are wide ones and there is only ever one way to go.
+//
+//  Where the lanes actually are is worked out in `systems/Lanes`, from whatever
+//  the level being played asked for - not from here.
+export const DEFAULT_LANES = 3;
+export const MIN_LANES = 2;
 
-//  Which lane the drop starts in (0 = left, 1 = middle, 2 = right).
-export const START_LANE = 1;
+export const TRACK_WIDTH = 330;
+export const TRACK_LEFT = (GAME_WIDTH - TRACK_WIDTH) / 2;
 
 //  The drop never moves up or down the screen - the world comes towards it.
 //  Sat low, so most of the screen is the road ahead rather than behind.
@@ -608,8 +612,14 @@ export const OBSTACLE_EDGE_THICKNESS = 4;
 export const OBSTACLE_HATCH_COUNT = 3;
 export const OBSTACLE_HATCH_ALPHA = 0.5;
 
-/** Sliding barriers: how far they travel, and over what stretch of track. */
-export const SLIDER_AMPLITUDE = LANE_WIDTH;
+/**
+ * Sliding barriers: how far they travel, and over what stretch of track.
+ *
+ * A plain distance rather than "one lane". Lane width now depends on how many
+ * lanes the level asked for, and a barrier that swung further on the easier
+ * levels would be exactly the wrong way round.
+ */
+export const SLIDER_AMPLITUDE = 110;
 export const SLIDER_PERIOD = 620;
 
 /** Pulsing barriers: how much they breathe, and how often. */

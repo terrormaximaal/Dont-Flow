@@ -1,4 +1,4 @@
-import { ColorId, LANE_COUNT } from './constants';
+import { ColorId, DEFAULT_LANES } from './constants';
 import { WorldId } from './worlds';
 
 //  The shape of a course, and how an authored level is expanded into one.
@@ -88,6 +88,17 @@ export interface LevelSpec
     world: WorldId;
 
     /**
+     * How many lanes the road carries, and so how many characters each of this
+     * level's rows must have. Defaults to three.
+     *
+     * Two makes a level markedly gentler without slowing anything down: the
+     * road stays the same width, so the lanes are half again as wide, and there
+     * is only ever one direction to go. The early levels use it to teach the
+     * colour rule before asking the player to choose a lane as well.
+     */
+    lanes?: 2 | 3;
+
+    /**
      * The colours in play, most important first. Gates and rows refer to these
      * by position, so a level's identity can be re-tinted in one place.
      */
@@ -145,6 +156,7 @@ const OBSTACLE_CHARS = 'abcde';
 export function buildLevel (spec: LevelSpec): Level
 {
     const rowSpacing = spec.rowSpacing ?? ORB_ROW_SPACING;
+    const lanes = spec.lanes ?? DEFAULT_LANES;
 
     const gates: GatePairSpec[] = [];
     const orbs: OrbSpec[] = [];
@@ -167,7 +179,7 @@ export function buildLevel (spec: LevelSpec): Level
 
         for (const row of section.rows)
         {
-            for (let lane = 0; lane < LANE_COUNT; lane++)
+            for (let lane = 0; lane < lanes; lane++)
             {
                 const character = row[lane];
 
@@ -222,7 +234,9 @@ export function buildLevel (spec: LevelSpec): Level
  */
 export function rowHasSafeLane (row: string): boolean
 {
-    for (let lane = 0; lane < LANE_COUNT; lane++)
+    //  Walked over the row's own length rather than a fixed lane count: a row
+    //  has one character per lane, so it already knows how wide its level is.
+    for (let lane = 0; lane < row.length; lane++)
     {
         const character = row[lane];
 

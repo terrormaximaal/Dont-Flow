@@ -5,9 +5,7 @@ import {
     GAME_HEIGHT,
     GAME_WIDTH,
     HORIZON_Y,
-    LANE_COUNT,
     LANE_LINE_THICKNESS,
-    LANE_WIDTH,
     RUNG_SPACING,
     RUNG_THICKNESS,
     TRACK_EDGE_THICKNESS,
@@ -16,6 +14,7 @@ import {
 } from '../config/constants';
 import { WorldSpec } from '../config/worlds';
 import { depthScale, fillProjectedQuad, projectX, VANISH_X } from './Projection';
+import { laneCount, laneWidth } from './Lanes';
 import { screenYFor } from './World';
 
 /** The corridor's own colours, which each world re-tints. */
@@ -123,9 +122,9 @@ export class TrackScroller
     {
         gfx.lineStyle(LANE_LINE_THICKNESS, this.palette.laneLine, 0.9);
 
-        for (let i = 1; i < LANE_COUNT; i++)
+        for (let i = 1; i < laneCount(); i++)
         {
-            const x = TRACK_LEFT + (i * LANE_WIDTH);
+            const x = TRACK_LEFT + (i * laneWidth());
 
             gfx.lineBetween(projectX(x, far), far, projectX(x, near), near);
         }

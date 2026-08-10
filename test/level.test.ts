@@ -19,6 +19,42 @@ const base = (sections: LevelSpec['sections'], extra: Partial<LevelSpec> = {}): 
     ...extra
 });
 
+describe('a level and its lanes', () => {
+
+    it('gives every row exactly one character per lane', () => {
+
+        //  A short row silently drops a lane; a long one puts an orb where there
+        //  is no road. Both build without complaint, so this is the guard.
+        for (const spec of LEVELS)
+        {
+            const lanes = spec.lanes ?? 3;
+
+            for (const section of spec.sections)
+            {
+                for (const row of section.rows)
+                {
+                    expect(row.length, `level ${spec.name}: "${row}"`).toBe(lanes);
+                }
+            }
+        }
+
+    });
+
+    it('only splits a two-lane level down the middle', () => {
+
+        //  With two lanes there is one boundary, so a gate can only meet on it.
+        for (const spec of LEVELS.filter((level) => level.lanes === 2))
+        {
+            for (const section of spec.sections)
+            {
+                expect(section.splitAfterLane, `level ${spec.name}`).toBe(0);
+            }
+        }
+
+    });
+
+});
+
 describe('buildLevel', () => {
 
     it('places the first gate after the lead-in, in palette colours', () => {
