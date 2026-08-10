@@ -102,9 +102,10 @@ export class LevelComplete
         score.setOrigin(0.5);
         layer.add(score);
 
-        //  "COMBO" is this run's longest streak; "BEST" is the stored score for
-        //  the level. Naming both "best" read as a contradiction.
-        const detail = scene.add.text(GAME_WIDTH / 2, centerY + 38, `COMBO x${result.bestCombo}`, {
+        //  "STREAK" is how many this run took in a row; "BEST" below is the
+        //  stored score for the level. Deliberately not written with an x - that
+        //  now means the multiplier, and a streak of twelve is an x5, not an x12.
+        const detail = scene.add.text(GAME_WIDTH / 2, centerY + 38, `STREAK ${result.bestCombo}`, {
             fontFamily: HUD_FONT,
             fontSize: OVERLAY_DETAIL_SIZE,
             color: COLOR_HUD_DIM

@@ -9,6 +9,7 @@ import {
     DROP_RADIUS,
     DROP_SCREEN_Y,
     DROP_STRETCH,
+    DROP_TILT_SMOOTHING,
     LANE_CHANGE_SPEED,
     START_LANE
 } from '../config/constants';
@@ -165,7 +166,12 @@ export class Drop
         //  the same millisecond - would make this 0/0. The NaN goes straight
         //  into the rotation and scale below and the drop vanishes for a frame.
         this.lateralVelocity = dt > 0 ? (this.x - previousX) / dt : 0;
-        this.tilt = clamp(this.lateralVelocity / DROP_LEAN_REFERENCE_SPEED, -1, 1);
+
+        //  Eased rather than taken straight, because the frame-to-frame measure
+        //  above jitters with the frame time even when the slide is smooth.
+        const measured = clamp(this.lateralVelocity / DROP_LEAN_REFERENCE_SPEED, -1, 1);
+
+        this.tilt = easeTowards(this.tilt, measured, DROP_TILT_SMOOTHING, dt);
 
         this.juice.update(dt);
 

@@ -92,6 +92,16 @@ export const DROP_RADIUS = 21;
 
 //  Sideways speed (px/s) that counts as "full tilt" for lean and stretch.
 export const DROP_LEAN_REFERENCE_SPEED = 620;
+
+//  How quickly the lean catches up with the drop's actual sideways speed.
+//
+//  That speed is worked out as "how far it moved since the last frame, divided
+//  by how long the frame took", which is a noisy way to ask: an uneven frame
+//  changes the answer by a tenth even when the drop is sliding perfectly
+//  smoothly. Easing towards it filters that out, so the lean, the trailing tip
+//  and the slosh are all driven by something steady. Low enough to smooth,
+//  high enough that the lean still arrives with the slide rather than after it.
+export const DROP_TILT_SMOOTHING = 26;
 //  Radians of lean at full tilt.
 export const DROP_LEAN_MAX = 0.34;
 //  How much the drop stretches into the direction of travel at full tilt.
@@ -107,14 +117,20 @@ export const DROP_STRETCH = 0.16;
 //  straight edges; above 60 costs more for nothing.
 export const DROP_SURFACE_POINTS = 56;
 
-//  The three ripples the surface is made of, as matched entries: how many lobes
-//  each one has around the outline, how fast it travels (negative runs the other
+//  The ripples the surface is made of, as matched entries: how many lobes each
+//  one has around the outline, how fast it travels (negative runs the other
 //  way), and how far it pushes the edge in and out as a fraction of the radius.
-//  Deliberately unrelated numbers, so the three never line up into a loop the
-//  eye can catch.
-export const DROP_RIPPLE_LOBES = [ 3, 5, 2 ];
-export const DROP_RIPPLE_SPEEDS = [ 2.1, -3.3, 1.3 ];
-export const DROP_RIPPLE_AMOUNTS = [ 0.05, 0.032, 0.038 ];
+//  Deliberately unrelated numbers, so the two never line up into a loop the eye
+//  can catch.
+//
+//  Two low, slow ripples rather than three faster ones, one of them five-lobed.
+//  Lobes are bumps: five of them around a drop this small, moving that quickly,
+//  read as the edge shivering rather than as liquid. Keeping the counts low and
+//  the amounts small leaves a long, soft swell that stays close to round, which
+//  is what makes it look full instead of lumpy.
+export const DROP_RIPPLE_LOBES = [ 2, 3 ];
+export const DROP_RIPPLE_SPEEDS = [ 1.0, -1.6 ];
+export const DROP_RIPPLE_AMOUNTS = [ 0.032, 0.018 ];
 
 //  How much a pop - swallowing an orb - multiplies those ripples on top of
 //  their resting size. This is the splash.
@@ -132,8 +148,23 @@ export const DROP_TIP_TRAIL = 0.55;
 export const DROP_TIP_SWAY = 0.12;
 export const DROP_TIP_SWAY_SPEED = 0.9;
 
-//  How much heavier the bottom of the drop hangs than the top.
-export const DROP_BELLY = 0.1;
+//  How much heavier the bottom of the drop hangs than the top. One smooth
+//  swelling rather than a ripple, so it adds fullness without adding a bump.
+export const DROP_BELLY = 0.14;
+
+//  The shaded underside that turns a flat disc into something rounded.
+//
+//  Painted as several ellipses inside one another rather than one, because a
+//  single flat oval on a drop this size reads as a grey shape laid on top, with
+//  a rim you can pick out. Sharing the alpha between passes fades it out at the
+//  edge instead.
+export const DROP_SHADE_ALPHA = 0.17;
+export const DROP_SHADE_LAYERS = 4;
+export const DROP_SHADE_WIDTH = 1.5;
+export const DROP_SHADE_HEIGHT = 0.85;
+export const DROP_SHADE_DROP = 0.42;
+//  How much smaller each pass is than the one before it.
+export const DROP_SHADE_STEP = 0.17;
 
 //  How far the highlight and the shaded underside slide against a sideways
 //  move, as a fraction of the radius: the inside of the drop lagging behind the
@@ -147,7 +178,10 @@ export const DROP_SLOSH = 0.34;
 
 //  Score at which the drop reaches full size. Past this it stops growing, so a
 //  long combo cannot fill the screen.
-export const DROP_GROWTH_FULL_SCORE = 400;
+//  Sized against what a level can actually pay now that the combo multiplies:
+//  a near-perfect run is worth somewhere under a thousand, so only a run like
+//  that fills the drop right up.
+export const DROP_GROWTH_FULL_SCORE = 900;
 //  Size multiplier at that score. 1 would mean no growth at all.
 export const DROP_GROWTH_MAX_SCALE = 1.4;
 //  How quickly the drop eases towards its new size, as an exponential rate.
@@ -438,6 +472,27 @@ export const SCORE_PER_ORB = 10;
 export const WRONG_COLOR_MULTIPLIER = 2;
 export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
 
+/**
+ * The combo multiplier: what a streak is actually worth.
+ *
+ * Every COMBO_STEP orbs in a row, each orb starts paying one step more, up to
+ * the cap. This is what makes a streak worth protecting - the flat rate it
+ * replaced meant the twentieth orb of a clean run paid exactly what the first
+ * one did, and "keep the combo" was a promise the scoring never kept.
+ *
+ * Sized against the levels rather than picked round: they hold between sixteen
+ * and twenty-four orbs of any one colour, so a step of three puts the cap
+ * around two thirds of the way through a level - reachable on a clean run,
+ * never on a scrappy one.
+ *
+ * Note what a mistake costs now. The flat penalty below is the small half of
+ * it; the real cost is dropping from the cap back to nothing, which is worth
+ * far more than the points. That is deliberate, and why the penalty itself does
+ * not also scale - being knocked from x5 to x1 is punishment enough.
+ */
+export const COMBO_STEP = 3;
+export const COMBO_MAX_MULTIPLIER = 5;
+
 // ---------------------------------------------------------------------------
 //  Obstacles
 // ---------------------------------------------------------------------------
@@ -529,8 +584,13 @@ export const COLOR_HUD_STROKE = '#0b1020';
 export const HUD_STROKE_THICKNESS = 5;
 export const HUD_STROKE_THICKNESS_SMALL = 3;
 
-/** Combo is only worth showing once it is actually a streak. */
-export const COMBO_VISIBLE_FROM = 2;
+/** The multiplier is only worth showing once it is actually paying extra. */
+export const MULTIPLIER_VISIBLE_FROM = 2;
+
+//  The readout kicks when the multiplier steps up: a number quietly changing at
+//  the top of the screen is easy to miss with your eyes on the road.
+export const MULTIPLIER_POP_SCALE = 1.7;
+export const MULTIPLIER_POP_MS = 280;
 
 // ---------------------------------------------------------------------------
 //  Course

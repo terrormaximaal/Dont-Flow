@@ -3,7 +3,6 @@ import {
     COLOR_HUD_DIM,
     COLOR_HUD_STROKE,
     COLOR_HUD_TEXT,
-    COMBO_VISIBLE_FROM,
     DEPTH_HUD,
     GAME_WIDTH,
     HUD_COMBO_SIZE,
@@ -13,24 +12,30 @@ import {
     HUD_MARGIN_TOP,
     HUD_SCORE_SIZE,
     HUD_STROKE_THICKNESS,
-    HUD_STROKE_THICKNESS_SMALL
+    HUD_STROKE_THICKNESS_SMALL,
+    MULTIPLIER_POP_MS,
+    MULTIPLIER_POP_SCALE,
+    MULTIPLIER_VISIBLE_FROM
 } from '../config/constants';
 import { WorldSpec } from '../config/worlds';
 
 /**
- * Score and combo readout. Pure display - it is handed values, it never
+ * Score and multiplier readout. Pure display - it is handed values, it never
  * calculates them.
  */
 export class Hud
 {
+    private readonly scene: Scene;
     private readonly levelText: Phaser.GameObjects.Text;
     private readonly scoreText: Phaser.GameObjects.Text;
     private readonly comboText: Phaser.GameObjects.Text;
 
-    private shownCombo = -1;
+    private shownMultiplier = -1;
 
     constructor (scene: Scene, levelName: string, world?: WorldSpec)
     {
+        this.scene = scene;
+
         //  Light worlds need dark text and dark worlds need light; one fixed
         //  colour would be unreadable on half of them.
         const text = world?.hudText ?? COLOR_HUD_TEXT;
@@ -87,16 +92,39 @@ export class Hud
         this.comboText.setVisible(visible);
     }
 
-    setCombo (combo: number): void
+    setMultiplier (multiplier: number): void
     {
-        if (combo === this.shownCombo)
+        if (multiplier === this.shownMultiplier)
         {
             return;
         }
 
-        this.shownCombo = combo;
+        const previous = this.shownMultiplier;
 
-        //  A combo of one is just "a hit" - only show it once it is a streak.
-        this.comboText.setText(combo >= COMBO_VISIBLE_FROM ? `COMBO x${combo}` : '');
+        this.shownMultiplier = multiplier;
+
+        //  x1 is just "playing" - only worth the space once it pays extra.
+        this.comboText.setText(multiplier >= MULTIPLIER_VISIBLE_FROM ? `x${multiplier}` : '');
+
+        //  Going up is the moment worth selling. Losing it is already loud
+        //  enough elsewhere - the drop flashes and the screen kicks - and a kick
+        //  here too would read as a reward.
+        if (previous < 0 || multiplier <= previous)
+        {
+            return;
+        }
+
+        //  Any kick still running is dropped, so two steps in quick succession
+        //  cannot stack into a readout that never settles back.
+        this.scene.tweens.killTweensOf(this.comboText);
+
+        this.comboText.setScale(MULTIPLIER_POP_SCALE);
+
+        this.scene.tweens.add({
+            targets: this.comboText,
+            scale: 1,
+            duration: MULTIPLIER_POP_MS,
+            ease: 'Back.Out'
+        });
     }
 }

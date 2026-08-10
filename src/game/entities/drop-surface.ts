@@ -56,7 +56,17 @@ export function waterOutline (radius: number, time: number, lean: number, agitat
 
     for (let i = 0; i < DROP_SURFACE_POINTS; i++)
     {
-        const theta = (i / DROP_SURFACE_POINTS) * Math.PI * 2;
+        //  Measured round *from the tip* rather than from a fixed compass point.
+        //
+        //  This looks cosmetic and is not. The tip is a sharp peak, far sharper
+        //  than the gap between two points, so on a fixed grid it lands on a
+        //  point one frame and between two the next - and the tip visibly
+        //  flicks shorter and longer as it sways. Starting the ring at the tip
+        //  puts a point exactly on the peak every frame, whatever it is doing.
+        //
+        //  Nothing else shifts: these are still true angles, so the ripples and
+        //  the belly below are read at the same places on the drop as before.
+        const theta = tipAngle + ((i / DROP_SURFACE_POINTS) * Math.PI * 2);
 
         let ripple = 0;
 
