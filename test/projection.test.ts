@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+    DEFAULT_LANES,
     GAME_WIDTH,
     HORIZON_Y,
     PROJECTION_PIVOT_Y,
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../src/game/config/constants';
-import { laneCenterX } from '../src/game/systems/Lanes';
+import { laneCenterX, useLanes } from '../src/game/systems/Lanes';
 import { depthScale, project, projectX, VANISH_X } from '../src/game/systems/Projection';
 
 describe('the projection', () => {
@@ -30,12 +31,13 @@ describe('the projection', () => {
 
     it('pulls the far end towards the vanishing point and the near end away', () => {
 
-        const x = GAME_WIDTH / 2;
+        //  Taken off the centreline, since a point already on the vanishing
+        //  point's own column has nowhere to converge to.
+        const x = TRACK_LEFT;
 
-        //  Further off is closer to the vanishing point, which sits left of
-        //  centre; nearer is further from it.
-        expect(projectX(x, PROJECTION_PIVOT_Y - 200)).toBeLessThan(x);
-        expect(projectX(x, PROJECTION_PIVOT_Y + 200)).toBeGreaterThan(x);
+        //  Further off is closer to the middle; nearer is further out.
+        expect(projectX(x, PROJECTION_PIVOT_Y - 200)).toBeGreaterThan(x);
+        expect(projectX(x, PROJECTION_PIVOT_Y + 200)).toBeLessThan(x);
 
     });
 
@@ -113,10 +115,60 @@ describe('the projection', () => {
 
     });
 
-    it('puts the vanishing point off centre, so the road runs diagonally', () => {
+    //  The road used to converge left of centre, which swung its far end to one
+    //  side while the near end stayed under the player: the whole world read as
+    //  skewed across the screen rather than running away from the camera. These
+    //  four hold it straight. They are about yaw only - HORIZON_Y still sets the
+    //  pitch, and none of them constrains how deep the view is.
+    it('puts the vanishing point dead centre', () => {
 
-        expect(VANISH_X).toBeLessThan(GAME_WIDTH / 2);
-        expect(VANISH_X).toBeGreaterThan(0);
+        expect(VANISH_X).toBeCloseTo(GAME_WIDTH / 2, 10);
+
+    });
+
+    it('runs the road\'s centreline straight up the middle', () => {
+
+        const centre = TRACK_LEFT + (TRACK_WIDTH / 2);
+
+        for (let y = HORIZON_Y; y <= PROJECTION_PIVOT_Y; y += 10)
+        {
+            expect(projectX(centre, y), `centreline at y=${Math.round(y)}`)
+                .toBeCloseTo(GAME_WIDTH / 2, 10);
+        }
+
+    });
+
+    it('balances the road\'s two edges about the centre at every depth', () => {
+
+        const right = TRACK_LEFT + TRACK_WIDTH;
+
+        for (let y = HORIZON_Y; y <= PROJECTION_PIVOT_Y; y += 10)
+        {
+            const fromLeft = (GAME_WIDTH / 2) - projectX(TRACK_LEFT, y);
+            const fromRight = projectX(right, y) - (GAME_WIDTH / 2);
+
+            expect(fromLeft, `edges at y=${Math.round(y)}`).toBeCloseTo(fromRight, 10);
+        }
+
+    });
+
+    it('mirrors the outer lanes about the centre', () => {
+
+        for (const count of [ 2, 3 ])
+        {
+            useLanes(count);
+
+            for (let y = HORIZON_Y; y <= PROJECTION_PIVOT_Y; y += 20)
+            {
+                const first = projectX(laneCenterX(0), y);
+                const last = projectX(laneCenterX(count - 1), y);
+
+                expect((first + last) / 2, `${count} lanes at y=${Math.round(y)}`)
+                    .toBeCloseTo(GAME_WIDTH / 2, 10);
+            }
+        }
+
+        useLanes(DEFAULT_LANES);
 
     });
 

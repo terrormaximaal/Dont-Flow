@@ -41,24 +41,29 @@ export const DROP_SCREEN_Y = GAME_HEIGHT * 0.78;
 export const BLOCK_LANDSCAPE_QUERY = '(orientation: landscape) and (max-height: 520px)';
 
 // ---------------------------------------------------------------------------
-//  Diagonal projection
+//  Perspective projection
 //
-//  The world is authored straight - lanes and distances - and sheared into a
-//  diagonal corridor only when it is drawn. Collision never sees any of this,
-//  which is what keeps the tilt free to change without touching gameplay.
+//  The world is authored straight - lanes and distances - and put into
+//  perspective only when it is drawn. Collision never sees any of this, which
+//  is what keeps the camera free to change without touching gameplay.
 // ---------------------------------------------------------------------------
 
-/** Where the road converges. Everything ahead runs towards this point. */
+/** How high up the screen the horizon sits: the camera's pitch. */
 export const HORIZON_Y = GAME_HEIGHT * 0.24;
 
 /**
- * The vanishing point's distance left of centre.
+ * The vanishing point's distance left of centre: the camera's yaw.
  *
- * This is what makes the road diagonal: the near end stays under the player
- * while the far end pulls away to one side, so the world reads as turning past
- * the camera rather than sliding down a chute.
+ * Zero, and meant to stay zero. Anything else swings the far end of the road
+ * to one side while its near end stays under the player, which reads as the
+ * whole world being skewed across the screen rather than running away from the
+ * camera. The road is meant to go straight forward from the player to the
+ * middle of the horizon.
+ *
+ * Pitch and yaw are separate: HORIZON_Y above is what gives the view its
+ * height and depth, and it is not affected by this being zero.
  */
-export const VANISH_OFFSET = 120;
+export const VANISH_OFFSET = 0;
 
 /** The depth the projection pivots around: the drop's own line stays put. */
 export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
