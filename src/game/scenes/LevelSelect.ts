@@ -3,47 +3,57 @@ import {
     BUTTON_HEIGHT,
     COLOR_HUD_DIM,
     COLOR_HUD_TEXT,
-    DEFAULT_LANES,
+    COLOR_VALUES,
     DEPTH_HUD,
     GAME_WIDTH,
     HUD_FONT,
-    LEVEL_ROW_DETAIL_SIZE,
-    LEVEL_ROW_FIRST_Y,
-    LEVEL_ROW_GAP,
-    LEVEL_ROW_HEIGHT,
-    LEVEL_ROW_NAME_SIZE,
-    LEVEL_COLUMNS,
-    LEVEL_ROW_DETAIL_OFFSET,
-    LEVEL_ROW_NAME_OFFSET,
-    LEVEL_ROW_WIDTH,
     MENU_ENERGY_Y,
     MENU_HEADING_SIZE,
     MENU_HEADING_Y,
-    MENU_SCROLL_SPEED
+    ROUTE_DETAIL_OFFSET,
+    ROUTE_DETAIL_SIZE,
+    ROUTE_DONE_ALPHA,
+    ROUTE_LAST_Y,
+    ROUTE_LINE_GLOW,
+    ROUTE_LINE_STEPS,
+    ROUTE_LINE_WIDTH,
+    ROUTE_LOCKED_ALPHA,
+    ROUTE_NEXT_PULSE,
+    ROUTE_NEXT_PULSE_MS,
+    ROUTE_NODE_RADIUS,
+    ROUTE_NODE_RING,
+    ROUTE_NUMBER_SIZE
 } from '../config/constants';
 import { LEVELS } from '../config/levels';
+import { MENU_SKY_LOW, MENU_SKY_TOP } from '../config/menuTheme';
 import { WORLDS } from '../config/worldData';
-import { paintPageBackdrop } from '../systems/PageBackdrop';
 import { EnergySystem } from '../systems/EnergySystem';
-import { Environment } from '../systems/Environment';
-import { useLanes } from '../systems/Lanes';
+import { MenuSky } from '../systems/MenuSky';
+import { paintPageColors } from '../systems/PageBackdrop';
 import { SaveSystem } from '../systems/SaveSystem';
-import { TrackScroller } from '../systems/TrackScroller';
+import { mixColor } from '../utils/color';
 import { Button } from '../ui/Button';
 import { EnergyMeter } from '../ui/EnergyMeter';
+import { routePoint, stopAt, Stop } from '../ui/route';
 
 /**
- * One row per level, unlocked up to the furthest the player has reached.
+ * The levels, laid out as a route rather than a grid.
  *
- * A locked row is built as an inert button rather than a live one that refuses
- * the press, so there is no state in which it can start a level.
+ * A grid says "here is a list of ten things". A route says "here is a journey,
+ * and you have come this far along it", which is what this screen is actually
+ * for - and it costs nothing extra to say the better one.
+ *
+ * Each stop carries its own level's colour, so the list doubles as a preview of
+ * where the game goes: the eye reads the palette changing from the first stop to
+ * the last before it reads a single number.
+ *
+ * A locked stop is built inert rather than live and refusing, so there is no
+ * state in which it can start a level.
  */
 export class LevelSelect extends Scene
 {
-    private environment: Environment;
-    private track: TrackScroller;
+    private sky: MenuSky;
     private meter: EnergyMeter;
-    private distance = 0;
 
     constructor ()
     {
@@ -52,17 +62,11 @@ export class LevelSelect extends Scene
 
     create ()
     {
-        this.distance = 0;
+        //  The same place the title screen is, so moving between them reads as
+        //  turning around rather than as travelling.
+        paintPageColors(MENU_SKY_TOP, MENU_SKY_LOW);
 
-        //  The menus look down the same road the game is played on, sky and all.
-        //  See Title: without the environment everything above the horizon is
-        //  left unpainted. Always the standard road, whatever was played last.
-        useLanes(DEFAULT_LANES);
-
-        paintPageBackdrop(WORLDS.space);
-
-        this.environment = new Environment(this, WORLDS.space);
-        this.track = new TrackScroller(this, WORLDS.space);
+        this.sky = new MenuSky(this);
 
         const save = new SaveSystem();
         const energy = new EnergySystem(save);
@@ -77,70 +81,23 @@ export class LevelSelect extends Scene
 
         heading.setOrigin(0.5);
         heading.setDepth(DEPTH_HUD);
+        heading.setLetterSpacing(5);
 
         this.meter = new EnergyMeter(this, MENU_ENERGY_Y, energy);
 
+        const stops = LEVELS.map((_, index) => stopAt(index, LEVELS.length));
+
+        this.drawRoute(stops, furthest);
+
         LEVELS.forEach((level, index) => {
 
-            const unlocked = index <= furthest;
-
-            //  Two separate reasons a row cannot be started: not reached yet, or
-            //  nothing left to spend. Both render inert; only the wording differs.
-            const startable = unlocked && canPlay;
-
-            const column = index % LEVEL_COLUMNS;
-            const row = Math.floor(index / LEVEL_COLUMNS);
-
-            const x = (GAME_WIDTH / 2)
-                + ((column - ((LEVEL_COLUMNS - 1) / 2)) * (LEVEL_ROW_WIDTH + LEVEL_ROW_GAP));
-
-            const y = LEVEL_ROW_FIRST_Y + (row * (LEVEL_ROW_HEIGHT + LEVEL_ROW_GAP));
-
-            //  The row's own label is empty: the name and the score are laid out
-            //  left and right inside it rather than centred as one string.
-            const tile = new Button(this, {
-                x,
-                y,
-                width: LEVEL_ROW_WIDTH,
-                height: LEVEL_ROW_HEIGHT,
-                label: '',
-                variant: startable ? 'secondary' : 'locked',
-                onPress: () => this.scene.start('Play', { levelIndex: index })
-            });
-
-            tile.container.setDepth(DEPTH_HUD);
-
-            //  Stacked rather than side by side: a half-width tile has no room
-            //  for a name and a score on one line.
-            const name = this.add.text(0, LEVEL_ROW_NAME_OFFSET, level.name, {
-                fontFamily: HUD_FONT,
-                fontSize: LEVEL_ROW_NAME_SIZE,
-                color: startable ? COLOR_HUD_TEXT : COLOR_HUD_DIM
-            });
-
-            name.setOrigin(0.5);
-            tile.container.add(name);
-
-            const best = save.getBestScore(index);
-            const detail = unlocked ? (best === null ? 'NOT PLAYED' : `BEST ${best}`) : 'LOCKED';
-
-            const detailText = this.add.text(0, LEVEL_ROW_DETAIL_OFFSET, detail, {
-                fontFamily: HUD_FONT,
-                fontSize: LEVEL_ROW_DETAIL_SIZE,
-                color: COLOR_HUD_DIM
-            });
-
-            detailText.setOrigin(0.5);
-            tile.container.add(detailText);
+            this.buildStop(stops[index], index, level.world, save, furthest, canPlay);
 
         });
 
-        const rows = Math.ceil(LEVELS.length / LEVEL_COLUMNS);
-        const backY = LEVEL_ROW_FIRST_Y + (rows * (LEVEL_ROW_HEIGHT + LEVEL_ROW_GAP)) + BUTTON_HEIGHT;
-
         const back = new Button(this, {
             x: GAME_WIDTH / 2,
-            y: backY,
+            y: ROUTE_LAST_Y + BUTTON_HEIGHT + 24,
             label: 'BACK',
             variant: 'secondary',
             onPress: () => this.scene.start('Title')
@@ -151,12 +108,174 @@ export class LevelSelect extends Scene
         this.input.keyboard?.once('keydown-ESC', () => this.scene.start('Title'));
     }
 
+    /**
+     * The line joining the stops.
+     *
+     * Drawn in short steps rather than as one path, because each step carries
+     * its own colour and alpha: the route is lit in the colours of the levels
+     * it runs between, and goes dark past the furthest one reached.
+     */
+    private drawRoute (stops: Stop[], furthest: number): void
+    {
+        const gfx = this.add.graphics();
+
+        gfx.setDepth(DEPTH_HUD - 2);
+
+        const span = stops.length - 1;
+
+        for (let i = 0; i < span; i++)
+        {
+            //  A segment is walked if its far end is unlocked.
+            const walked = i + 1 <= furthest;
+
+            const from = tint(i);
+            const to = tint(i + 1);
+
+            for (let step = 0; step < ROUTE_LINE_STEPS; step++)
+            {
+                //  Sampled from the same curve the stops are placed on, so the
+                //  line passes exactly through each one rather than near it.
+                const a = routePoint((i + (step / ROUTE_LINE_STEPS)) / span);
+                const b = routePoint((i + ((step + 1) / ROUTE_LINE_STEPS)) / span);
+
+                const color = mixColor(from, to, step / ROUTE_LINE_STEPS);
+                const alpha = walked ? ROUTE_DONE_ALPHA : ROUTE_LOCKED_ALPHA;
+
+                //  A wide, faint pass under a narrow bright one, which is what
+                //  makes a line read as lit rather than as drawn.
+                gfx.lineStyle(ROUTE_LINE_WIDTH + (ROUTE_LINE_GLOW * 2), color, alpha * 0.18);
+                gfx.lineBetween(a.x, a.y, b.x, b.y);
+
+                gfx.lineStyle(ROUTE_LINE_WIDTH, color, alpha);
+                gfx.lineBetween(a.x, a.y, b.x, b.y);
+            }
+        }
+    }
+
+    /** One stop: its disc, its number, and what it says underneath. */
+    private buildStop (
+        stop: Stop,
+        index: number,
+        world: keyof typeof WORLDS,
+        save: SaveSystem,
+        furthest: number,
+        canPlay: boolean
+    ): void
+    {
+        const unlocked = index <= furthest;
+        const startable = unlocked && canPlay;
+        const color = tint(index);
+
+        const gfx = this.add.graphics();
+
+        gfx.setDepth(DEPTH_HUD - 1);
+
+        //  Locked stops keep their level's colour but lose almost all of it, so
+        //  the route still previews the journey without offering to start it.
+        const body = unlocked ? color : mixColor(color, MENU_SKY_TOP, 0.82);
+
+        if (unlocked)
+        {
+            //  A halo, which is most of what separates a reached stop from a
+            //  locked one at a glance.
+            for (let layer = 4; layer > 0; layer--)
+            {
+                gfx.fillStyle(color, 0.07);
+                gfx.fillCircle(stop.x, stop.y, ROUTE_NODE_RADIUS + (layer * 3.5));
+            }
+        }
+
+        gfx.fillStyle(body, 1);
+        gfx.fillCircle(stop.x, stop.y, ROUTE_NODE_RADIUS);
+
+        //  A lighter cap on top of the disc: the same one light the rest of the
+        //  game is lit by, so a stop reads as a bead rather than a sticker.
+        gfx.fillStyle(mixColor(body, 0xffffff, 0.3), unlocked ? 0.55 : 0.25);
+        gfx.fillEllipse(stop.x, stop.y - (ROUTE_NODE_RADIUS * 0.36), ROUTE_NODE_RADIUS * 1.1, ROUTE_NODE_RADIUS * 0.62);
+
+        gfx.lineStyle(ROUTE_NODE_RING * 0.5, mixColor(body, 0xffffff, 0.45), unlocked ? 0.8 : 0.25);
+        gfx.strokeCircle(stop.x, stop.y, ROUTE_NODE_RADIUS);
+
+        const number = this.add.text(stop.x, stop.y, LEVELS[index].name, {
+            fontFamily: HUD_FONT,
+            fontSize: ROUTE_NUMBER_SIZE,
+            color: unlocked ? '#ffffff' : COLOR_HUD_DIM
+        });
+
+        number.setOrigin(0.5);
+        number.setDepth(DEPTH_HUD);
+
+        //  The detail sits out to the stop's own side, away from the route, so
+        //  the line never has to run through a word.
+        const best = save.getBestScore(index);
+        const detail = unlocked ? (best === null ? 'NOT PLAYED' : `BEST ${best}`) : 'LOCKED';
+
+        const label = this.add.text(
+            stop.x + (stop.side * ROUTE_DETAIL_OFFSET),
+            stop.y,
+            detail,
+            {
+                fontFamily: HUD_FONT,
+                fontSize: ROUTE_DETAIL_SIZE,
+                color: unlocked ? COLOR_HUD_TEXT : COLOR_HUD_DIM
+            }
+        );
+
+        //  Anchored on the edge nearest its stop, so the text grows outwards
+        //  and can never reach across the route.
+        label.setOrigin(stop.side < 0 ? 1 : 0, 0.5);
+        label.setDepth(DEPTH_HUD);
+        label.setAlpha(unlocked ? 0.9 : 0.5);
+
+        void world;
+
+        if (!startable)
+        {
+            return;
+        }
+
+        //  The next one to play breathes, so the screen answers "where was I"
+        //  before it is read.
+        if (index === furthest)
+        {
+            const ring = this.add.graphics();
+
+            ring.setDepth(DEPTH_HUD - 1);
+            ring.lineStyle(2, 0xffffff, 0.75);
+            ring.strokeCircle(0, 0, ROUTE_NODE_RADIUS + ROUTE_NEXT_PULSE);
+            ring.setPosition(stop.x, stop.y);
+
+            this.tweens.add({
+                targets: ring,
+                scale: 1.14,
+                alpha: 0.15,
+                duration: ROUTE_NEXT_PULSE_MS,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.InOut'
+            });
+        }
+
+        //  A circle carries the press, sized past the disc so a thumb does not
+        //  have to be accurate.
+        const hit = this.add.circle(stop.x, stop.y, ROUTE_NODE_RADIUS + 12, 0x000000, 0);
+
+        hit.setDepth(DEPTH_HUD);
+        hit.setInteractive({ useHandCursor: true });
+        hit.on('pointerdown', () => this.scene.start('Play', { levelIndex: index }));
+    }
+
     update (_time: number, delta: number)
     {
-        this.distance += MENU_SCROLL_SPEED * (delta / 1000);
-
-        this.environment.update(this.distance, delta);
-        this.track.update(this.distance);
+        this.sky.update(delta);
         this.meter.update();
     }
+}
+
+/** A level's own colour, taken from the first entry in its world's palette. */
+function tint (index: number): number
+{
+    const level = LEVELS[index];
+
+    return COLOR_VALUES[WORLDS[level.world].palette[0]];
 }

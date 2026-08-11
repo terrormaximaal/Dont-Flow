@@ -792,6 +792,62 @@ export const MENU_HEADING_Y = 92;
  * of the screen and took the BACK button with them, which on a touch device
  * left no way out at all.
  */
+// ---------------------------------------------------------------------------
+//  The route
+//
+//  Levels are laid along a winding path rather than in a grid. A grid says
+//  "here is a list of ten things"; a route says "here is a journey, and you
+//  have come this far along it" - which is what the screen is actually for.
+// ---------------------------------------------------------------------------
+
+/** Where the first and last stop sit vertically. */
+export const ROUTE_FIRST_Y = 176;
+export const ROUTE_LAST_Y = 690;
+
+/**
+ * The wave the route runs along: how far it swings either side of centre, how
+ * many full cycles it makes between the first stop and the last, and where in
+ * the cycle it starts.
+ *
+ * Not a whole number of cycles, so the first and last stops sit at different
+ * points on the curve and the route does not look like it closes a loop.
+ */
+export const ROUTE_SWING = 92;
+
+/**
+ * 2.25 cycles from a zero phase, which is not a guess.
+ *
+ * At most cycle counts some pair of consecutive stops straddles a peak of the
+ * wave and lands within a few pixels of the same x - which puts two beads on
+ * what looks like a straight piece of line. Searched across cycle and phase for
+ * the pair that separates the *worst* pair the most: this one leaves every pair
+ * a full swing apart horizontally, and 108px apart in all.
+ */
+export const ROUTE_CYCLES = 2.25;
+export const ROUTE_PHASE = 0;
+
+/** The stop itself, and the ring drawn around the one you would play next. */
+export const ROUTE_NODE_RADIUS = 25;
+export const ROUTE_NODE_RING = 4;
+export const ROUTE_NEXT_PULSE = 6;
+export const ROUTE_NEXT_PULSE_MS = 1100;
+
+/** Type sizes on a stop: the number, and the line under it. */
+export const ROUTE_NUMBER_SIZE = 22;
+export const ROUTE_DETAIL_SIZE = 11;
+
+/** How far the detail line sits from the node's centre, out to its own side. */
+export const ROUTE_DETAIL_OFFSET = 44;
+
+/** The path between stops: how thick, and how much of it is glow. */
+export const ROUTE_LINE_WIDTH = 5;
+export const ROUTE_LINE_GLOW = 3;
+export const ROUTE_LINE_STEPS = 14;
+
+/** Alpha of the road already walked, and of the part still locked. */
+export const ROUTE_DONE_ALPHA = 0.85;
+export const ROUTE_LOCKED_ALPHA = 0.16;
+
 export const LEVEL_COLUMNS = 2;
 export const LEVEL_ROW_WIDTH = 150;
 export const LEVEL_ROW_HEIGHT = 66;

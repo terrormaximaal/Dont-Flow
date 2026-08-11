@@ -4,15 +4,17 @@ import {
     COLOR_VALUES,
     GAME_HEIGHT,
     GAME_WIDTH,
-    LEVEL_COLUMNS,
-    LEVEL_ROW_FIRST_Y,
-    LEVEL_ROW_GAP,
-    LEVEL_ROW_HEIGHT,
-    LEVEL_ROW_WIDTH
+    ROUTE_DETAIL_OFFSET,
+    ROUTE_LAST_Y,
+    ROUTE_NODE_RADIUS
 } from '../src/game/config/constants';
 import { LEVELS } from '../src/game/config/levels';
 import { WORLDS } from '../src/game/config/worldData';
 import { WorldId } from '../src/game/config/worlds';
+import { stopAt } from '../src/game/ui/route';
+
+/** Roughly how wide 'NOT PLAYED' sets, which is the longest label here. */
+const LABEL_REACH = 66;
 
 const IDS: WorldId[] = [
     'sky', 'mountains', 'canyon', 'forest', 'ice', 'desert', 'storm', 'city', 'space', 'void'
@@ -226,33 +228,94 @@ function channelDistance (a: number, b: number): number
     );
 }
 
-describe('the level select layout', () => {
+describe('the level select route', () => {
 
-    //  Ten levels in one column ran off the bottom of the screen and took the
-    //  BACK button with them, leaving a touch device with no way out. This
-    //  fails before that can happen again.
-    it('fits every level, and the way back, on screen', () => {
+    //  The grid this replaced once ran off the bottom of the screen and took
+    //  the BACK button with it, leaving a touch device with no way out. The
+    //  shape changed; the way it can fail did not.
+    it('fits every stop, and the way back, on screen', () => {
 
-        const rows = Math.ceil(LEVELS.length / LEVEL_COLUMNS);
-        const lastRowBottom = LEVEL_ROW_FIRST_Y
-            + ((rows - 1) * (LEVEL_ROW_HEIGHT + LEVEL_ROW_GAP))
-            + (LEVEL_ROW_HEIGHT / 2);
+        for (let i = 0; i < LEVELS.length; i++)
+        {
+            const stop = stopAt(i, LEVELS.length);
 
-        const backBottom = LEVEL_ROW_FIRST_Y
-            + (rows * (LEVEL_ROW_HEIGHT + LEVEL_ROW_GAP))
-            + BUTTON_HEIGHT
-            + (BUTTON_HEIGHT / 2);
+            expect(stop.y + ROUTE_NODE_RADIUS, `stop ${i}`).toBeLessThan(GAME_HEIGHT);
+            expect(stop.y - ROUTE_NODE_RADIUS, `stop ${i}`).toBeGreaterThan(0);
+        }
 
-        expect(lastRowBottom, 'last level row').toBeLessThan(GAME_HEIGHT);
+        const backBottom = ROUTE_LAST_Y + BUTTON_HEIGHT + 24 + (BUTTON_HEIGHT / 2);
+
         expect(backBottom, 'back button').toBeLessThan(GAME_HEIGHT);
 
     });
 
-    it('fits every column across the screen', () => {
+    it('keeps every stop and its label inside the screen', () => {
 
-        const width = (LEVEL_COLUMNS * LEVEL_ROW_WIDTH) + ((LEVEL_COLUMNS - 1) * LEVEL_ROW_GAP);
+        for (let i = 0; i < LEVELS.length; i++)
+        {
+            const stop = stopAt(i, LEVELS.length);
 
-        expect(width).toBeLessThan(GAME_WIDTH);
+            expect(stop.x - ROUTE_NODE_RADIUS, `stop ${i} left`).toBeGreaterThan(0);
+            expect(stop.x + ROUTE_NODE_RADIUS, `stop ${i} right`).toBeLessThan(GAME_WIDTH);
+
+            //  The detail runs outwards from the stop, away from the route, so
+            //  the far edge of the text is what has to fit.
+            const labelEdge = stop.x + (stop.side * (ROUTE_DETAIL_OFFSET + LABEL_REACH));
+
+            expect(labelEdge, `stop ${i} label`).toBeGreaterThan(0);
+            expect(labelEdge, `stop ${i} label`).toBeLessThan(GAME_WIDTH);
+        }
+
+    });
+
+    //  Two stops closer together than their own diameter would overlap into an
+    //  unreadable stack, and their touch targets would fight.
+    it('never overlaps two stops', () => {
+
+        for (let i = 0; i < LEVELS.length - 1; i++)
+        {
+            const a = stopAt(i, LEVELS.length);
+            const b = stopAt(i + 1, LEVELS.length);
+
+            const gap = Math.hypot(b.x - a.x, b.y - a.y);
+
+            expect(gap, `stops ${i} and ${i + 1}`).toBeGreaterThan(ROUTE_NODE_RADIUS * 2);
+        }
+
+    });
+
+    //  Not "alternates every stop" - that was the zig-zag this replaced, and a
+    //  wave does not do it. What matters is that the route uses the width of
+    //  the screen rather than running straight down the middle.
+    it('swings to both sides of the screen', () => {
+
+        const sides = LEVELS.map((_, i) => stopAt(i, LEVELS.length).side);
+
+        expect(sides).toContain(-1);
+        expect(sides).toContain(1);
+
+    });
+
+    it('moves sideways between every pair of stops', () => {
+
+        for (let i = 0; i < LEVELS.length - 1; i++)
+        {
+            const a = stopAt(i, LEVELS.length);
+            const b = stopAt(i + 1, LEVELS.length);
+
+            //  Two stops at the same x with a curve between them would put the
+            //  route through both and read as a straight line with beads on it.
+            expect(Math.abs(b.x - a.x), `stops ${i} and ${i + 1}`).toBeGreaterThan(8);
+        }
+
+    });
+
+    it('runs the route downwards from first to last', () => {
+
+        for (let i = 0; i < LEVELS.length - 1; i++)
+        {
+            expect(stopAt(i + 1, LEVELS.length).y).toBeGreaterThan(stopAt(i, LEVELS.length).y);
+        }
 
     });
 
