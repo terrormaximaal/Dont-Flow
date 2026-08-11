@@ -49,7 +49,7 @@ export const BLOCK_LANDSCAPE_QUERY = '(orientation: landscape) and (max-height: 
 // ---------------------------------------------------------------------------
 
 /** Where the road converges. Everything ahead runs towards this point. */
-export const HORIZON_Y = GAME_HEIGHT * 0.30;
+export const HORIZON_Y = GAME_HEIGHT * 0.24;
 
 /**
  * The vanishing point's distance left of centre.
@@ -58,7 +58,7 @@ export const HORIZON_Y = GAME_HEIGHT * 0.30;
  * while the far end pulls away to one side, so the world reads as turning past
  * the camera rather than sliding down a chute.
  */
-export const VANISH_OFFSET = 104;
+export const VANISH_OFFSET = 120;
 
 /** The depth the projection pivots around: the drop's own line stays put. */
 export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
@@ -67,7 +67,7 @@ export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
  * World distance at which something sits halfway between the horizon and the
  * player. Smaller bunches the far field harder into the distance.
  */
-export const PERSPECTIVE_DEPTH = 1150;
+export const PERSPECTIVE_DEPTH = 900;
 
 /** How fast something already passed drops away below the screen. */
 export const BEHIND_RATE = 0.55;

@@ -145,6 +145,11 @@ export interface WorldSpec
     orbAlpha?: number;
     orbRadius?: number;
     orbX?: number;
+    /**
+     * Where the sun or moon sits, measured from the horizon rather than from the
+     * top of the screen - a disc half below it reads as setting, and that has to
+     * stay true if the horizon is ever moved.
+     */
     orbY?: number;
 
     /** Occasional full-screen flash, for the storm. */

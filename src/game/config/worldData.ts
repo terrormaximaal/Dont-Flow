@@ -1,4 +1,4 @@
-import { GAME_HEIGHT } from './constants';
+import { HORIZON_Y } from './constants';
 import { WorldId, WorldSpec } from './worlds';
 
 //  The ten environments.
@@ -27,7 +27,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x2a4a6b, laneLine: 0x486d92, trackEdge: 0x86aecc, rung: 0x35577a,
         ...DARK_HUD,
         hazeColor: 0xffffff, hazeAlpha: 0.42,
-        orbColor: 0xfff6d8, orbAlpha: 0.5, orbRadius: 66, orbX: 372, orbY: 148,
+        orbColor: 0xfff6d8, orbAlpha: 0.5, orbRadius: 66, orbX: 372, orbY: HORIZON_Y - 108,
         //  Cloud banks either side, in a blue that reads against the pale
         //  ground rather than vanishing into it.
         roadside: { shape: 'blobs', color: 0x8fbede, alpha: 0.85, height: 74, spacing: 540, offset: 120, seed: 2 },
@@ -63,7 +63,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x2a1330, laneLine: 0x4a2450, trackEdge: 0x8a4472, rung: 0x361a3c,
         ...LIGHT_HUD,
         hazeColor: 0xff9d5c, hazeAlpha: 0.34,
-        orbColor: 0xffd08a, orbAlpha: 0.75, orbRadius: 78, orbX: 138, orbY: 300,
+        orbColor: 0xffd08a, orbAlpha: 0.75, orbRadius: 78, orbX: 138, orbY: HORIZON_Y + 44,
         layers: [
             { shape: 'mesa', color: 0x6b2f52, alpha: 0.6, parallax: 0.05, baseline: 8, height: 120, period: 190, wrap: 560, seed: 7 },
             { shape: 'mesa', color: 0x3a1733, alpha: 0.9, parallax: 0.13, baseline: 16, height: 165, period: 240, wrap: 660, seed: 23 }
@@ -113,7 +113,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x40261c, laneLine: 0x5d382a, trackEdge: 0x93603f, rung: 0x4b2d20,
         ...DARK_HUD,
         hazeColor: 0xffd28a, hazeAlpha: 0.4,
-        orbColor: 0xfff0c0, orbAlpha: 0.8, orbRadius: 86, orbX: 330, orbY: 250,
+        orbColor: 0xfff0c0, orbAlpha: 0.8, orbRadius: 86, orbX: 330, orbY: HORIZON_Y - 6,
         layers: [
             { shape: 'dunes', color: 0xd98f4e, alpha: 0.6, parallax: 0.05, baseline: 8, height: 90, period: 300, wrap: 560, seed: 9 },
             { shape: 'dunes', color: 0xa8633a, alpha: 0.85, parallax: 0.13, baseline: 16, height: 120, period: 360, wrap: 620, seed: 29 }
@@ -166,7 +166,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x252f56, laneLine: 0x3a4880, trackEdge: 0x6274c0, rung: 0x2c3866,
         ...LIGHT_HUD,
         hazeColor: 0x5560c0, hazeAlpha: 0.14,
-        orbColor: 0x6f7ad8, orbAlpha: 0.35, orbRadius: 104, orbX: 108, orbY: 210,
+        orbColor: 0x6f7ad8, orbAlpha: 0.35, orbRadius: 104, orbX: 108, orbY: HORIZON_Y - 46,
         layers: [
             { shape: 'blobs', color: 0x232a58, alpha: 0.7, parallax: 0.04, baseline: -90, height: 70, period: 260, wrap: 620, seed: 8 },
             { shape: 'shards', color: 0x1a1f42, alpha: 0.85, parallax: 0.12, baseline: 15, height: 90, period: 190, wrap: 700, seed: 44 }
@@ -184,7 +184,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x36255e, laneLine: 0x4c3580, trackEdge: 0x9a6ae0, rung: 0x3d2a68,
         ...LIGHT_HUD,
         hazeColor: 0xa050ff, hazeAlpha: 0.2,
-        orbColor: 0x8a3ad0, orbAlpha: 0.3, orbRadius: 120, orbX: 240, orbY: GAME_HEIGHT * 0.26,
+        orbColor: 0x8a3ad0, orbAlpha: 0.3, orbRadius: 120, orbX: 240, orbY: HORIZON_Y - 34,
         layers: [
             { shape: 'shards', color: 0x2a1250, alpha: 0.7, parallax: 0.04, baseline: 8, height: 120, period: 150, wrap: 560, seed: 1 },
             { shape: 'peaks', color: 0x1d0c38, alpha: 0.8, parallax: 0.1, baseline: 13, height: 160, period: 220, wrap: 640, seed: 33 },
