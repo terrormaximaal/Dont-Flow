@@ -23,6 +23,7 @@ import {
 } from '../config/constants';
 import { LEVELS } from '../config/levels';
 import { WORLDS } from '../config/worldData';
+import { paintPageBackdrop } from '../systems/PageBackdrop';
 import { EnergySystem } from '../systems/EnergySystem';
 import { Environment } from '../systems/Environment';
 import { useLanes } from '../systems/Lanes';
@@ -57,6 +58,8 @@ export class LevelSelect extends Scene
         //  See Title: without the environment everything above the horizon is
         //  left unpainted. Always the standard road, whatever was played last.
         useLanes(DEFAULT_LANES);
+
+        paintPageBackdrop(WORLDS.space);
 
         this.environment = new Environment(this, WORLDS.space);
         this.track = new TrackScroller(this, WORLDS.space);

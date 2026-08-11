@@ -18,6 +18,7 @@ import { buildLevel, ORB_ROW_SPACING } from '../config/level';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { WORLDS } from '../config/worldData';
+import { paintPageBackdrop } from '../systems/PageBackdrop';
 import { Course } from '../systems/Course';
 import { Environment } from '../systems/Environment';
 import { Roadside } from '../systems/Roadside';
@@ -143,6 +144,8 @@ export class Play extends Scene
         useLanes(level.lanes ?? DEFAULT_LANES);
 
         const world = WORLDS[level.world];
+
+        paintPageBackdrop(world);
 
         this.environment = new Environment(this, world);
         this.track = new TrackScroller(this, world);

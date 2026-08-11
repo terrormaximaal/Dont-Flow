@@ -20,6 +20,7 @@ import {
 } from '../config/constants';
 import { LEVELS } from '../config/levels';
 import { WORLDS } from '../config/worldData';
+import { paintPageBackdrop } from '../systems/PageBackdrop';
 import { EnergySystem } from '../systems/EnergySystem';
 import { Environment } from '../systems/Environment';
 import { useLanes } from '../systems/Lanes';
@@ -60,6 +61,8 @@ export class Title extends Scene
         //  the game being letterboxed into a band rather than filling the screen.
         //  Always the standard road, whatever level was played last.
         useLanes(DEFAULT_LANES);
+
+        paintPageBackdrop(WORLDS.space);
 
         this.environment = new Environment(this, WORLDS.space);
         this.track = new TrackScroller(this, WORLDS.space);
