@@ -1,5 +1,9 @@
 import { Scene } from 'phaser';
 import {
+    BLOOM_DURATION,
+    BLOOM_MOTES,
+    BLOOM_SIZE,
+    BLOOM_SPREAD,
     DEPTH_FX,
     SWALLOW_DURATION,
     SWALLOW_LENGTH,
@@ -67,6 +71,36 @@ export class Effects
                 ease: 'Quad.Out',
                 duration: SWALLOW_DURATION + (Math.random() * SWALLOW_STAGGER),
                 onComplete: () => strand.destroy()
+            });
+        }
+    }
+
+    /**
+     * A puff of colour thrown outwards, for the moment the drop is repainted.
+     *
+     * Outwards, unlike the swallow: the drop is not taking this colour in, it
+     * is shedding the one it was. Small and quick - the gate itself is the
+     * event, and this only has to say that the drop noticed.
+     */
+    bloom (x: number, y: number, color: number): void
+    {
+        for (let i = 0; i < BLOOM_MOTES; i++)
+        {
+            const angle = ((i / BLOOM_MOTES) * TAU) + ((Math.random() - 0.5) * 0.6);
+
+            const mote = this.scene.add.circle(x, y, BLOOM_SIZE / 2, color);
+
+            mote.setDepth(DEPTH_FX);
+
+            this.scene.tweens.add({
+                targets: mote,
+                x: x + (Math.cos(angle) * BLOOM_SPREAD),
+                y: y + (Math.sin(angle) * BLOOM_SPREAD),
+                scale: 0.2,
+                alpha: 0,
+                ease: 'Quad.Out',
+                duration: BLOOM_DURATION,
+                onComplete: () => mote.destroy()
             });
         }
     }

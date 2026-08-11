@@ -3,6 +3,8 @@ import {
     DEFAULT_LANES,
     COLOR_FLASH,
     COLOR_VALUES,
+    ColorId,
+    DROP_SCREEN_Y,
     FINISH_SLOWDOWN_MS,
     FLASH_DURATION,
     FORWARD_SPEED,
@@ -162,7 +164,7 @@ export class Play extends Scene
         this.rainbowSpan = RAINBOW_ROWS * (level.rowSpacing ?? ORB_ROW_SPACING);
 
         this.course = new Course(this, course, {
-            onGate: (color) => this.drop.setColorId(color),
+            onGate: (color) => this.onGate(color),
             onOrb: (orb, matched, y) => this.onOrb(orb.x, y, matched),
             onBlocked: (x, y) => this.onOrb(x, y, false),
             onFinish: () => this.onFinish()
@@ -182,6 +184,25 @@ export class Play extends Scene
         new OrientationGuard(this);
 
         this.events.once('shutdown', () => this.input_.destroy());
+    }
+
+    /**
+     * A gate repaints the drop, and the drop sheds the colour it was carrying.
+     */
+    private onGate (color: ColorId): void
+    {
+        //  Thrown off in the colour being left behind rather than the one
+        //  arriving: the new one is already flooding through the drop itself,
+        //  and two things saying the same thing at once say it half as clearly.
+        const previous = this.drop.getColorId();
+
+        this.drop.setColorId(color);
+
+        this.effects.bloom(
+            this.drop.getX(),
+            DROP_SCREEN_Y,
+            previous ? COLOR_VALUES[previous] : COLOR_VALUES[color]
+        );
     }
 
     /**

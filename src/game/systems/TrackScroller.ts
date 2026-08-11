@@ -2,12 +2,25 @@ import { Scene } from 'phaser';
 import {
     DEPTH_GROUND,
     DEPTH_TRACK,
+    EDGE_GLOW_ALPHA,
+    EDGE_GLOW_LAYERS,
+    EDGE_GLOW_SPREAD,
     GAME_HEIGHT,
     GAME_WIDTH,
     HORIZON_Y,
     LANE_LINE_THICKNESS,
+    ROAD_CONTACT_ALPHA,
+    ROAD_CONTACT_WIDTH,
+    ROAD_DEPTH_ALPHA,
+    ROAD_DEPTH_BANDS,
+    ROAD_SHEEN_ALPHA,
+    ROAD_SHEEN_LAYERS,
+    ROAD_SHEEN_WIDTH,
     RUNG_SPACING,
     RUNG_THICKNESS,
+    STRIP_ALPHA,
+    STRIP_INSET,
+    STRIP_WIDTH,
     TRACK_EDGE_THICKNESS,
     TRACK_LEFT,
     TRACK_WIDTH
@@ -15,6 +28,7 @@ import {
 import { WorldSpec } from '../config/worlds';
 import { depthScale, fillProjectedQuad, projectX, VANISH_X } from './Projection';
 import { laneCount, laneWidth } from './Lanes';
+import { visibleStrips } from './strips';
 import { screenYFor } from './World';
 
 /** The corridor's own colours, which each world re-tints. */
@@ -70,6 +84,9 @@ export class TrackScroller
     private readonly palette: TrackPalette;
     private readonly ground: number;
 
+    /** The world's own atmosphere, which the far end of the road fades into. */
+    private readonly haze: number;
+
     constructor (scene: Scene, world: WorldSpec)
     {
         this.palette = world;
@@ -77,6 +94,7 @@ export class TrackScroller
         //  The ground reads as the road's own surface pushed out to either side
         //  and dimmed, which keeps the path sitting *in* the world.
         this.ground = world.groundColor ?? world.track;
+        this.haze = world.hazeColor;
 
         this.groundGfx = scene.add.graphics();
         this.groundGfx.setDepth(DEPTH_GROUND);
@@ -96,8 +114,99 @@ export class TrackScroller
 
         this.fillGround(this.groundGfx, near, far);
         this.fillRoad(gfx, near, far);
+
+        //  Order matters: shade the surface, light it, then lay the markings on
+        //  top so nothing washes them out.
+        this.hazeDepth(gfx, near, far);
+        this.fillSheen(gfx, near, far);
+        this.strokeStrips(gfx, distance, near);
         this.strokeRungs(gfx, distance, near);
         this.strokeRails(gfx, near, far);
+        this.glowEdges(gfx, near, far);
+    }
+
+    /**
+     * The far end of the road fading into the world's own atmosphere.
+     *
+     * Aerial perspective, and the direction matters: distance washes a surface
+     * out towards the colour of the air in front of it, it does not darken it.
+     * The first attempt here laid black over the far road and it read as dirt -
+     * the road got muddier rather than deeper.
+     *
+     * Drawn in many thin bands rather than a few thick ones. Each band is a
+     * flat tone, so the step between two of them is visible as a line across
+     * the road unless the step is small enough to disappear.
+     */
+    private hazeDepth (gfx: Phaser.GameObjects.Graphics, near: number, far: number): void
+    {
+        const left = TRACK_LEFT - ROAD_CONTACT_WIDTH;
+        const right = TRACK_LEFT + TRACK_WIDTH + ROAD_CONTACT_WIDTH;
+
+        for (let band = 0; band < ROAD_DEPTH_BANDS; band++)
+        {
+            const from = far + ((near - far) * (band / ROAD_DEPTH_BANDS));
+            const to = far + ((near - far) * ((band + 1) / ROAD_DEPTH_BANDS));
+
+            //  Strongest at the far end, gone by the time the road arrives.
+            const strength = 1 - (band / ROAD_DEPTH_BANDS);
+
+            gfx.fillStyle(this.haze, ROAD_DEPTH_ALPHA * strength * strength);
+            fillProjectedQuad(gfx, left, right, from, to);
+        }
+    }
+
+    /** A soft sheen down the middle, as if the sky were reflected in the surface. */
+    private fillSheen (gfx: Phaser.GameObjects.Graphics, near: number, far: number): void
+    {
+        const middle = TRACK_LEFT + (TRACK_WIDTH / 2);
+
+        for (let layer = ROAD_SHEEN_LAYERS; layer > 0; layer--)
+        {
+            const half = (TRACK_WIDTH / 2) * ROAD_SHEEN_WIDTH * (layer / ROAD_SHEEN_LAYERS);
+
+            //  Only over the near half of the road: a reflection reaching all
+            //  the way to the horizon reads as fog sitting on the surface.
+            gfx.fillStyle(0xffffff, ROAD_SHEEN_ALPHA);
+            fillProjectedQuad(gfx, middle - half, middle + half, (far + near) / 2, near);
+        }
+    }
+
+    /**
+     * Light strips running down the road, spaced further apart than the rungs
+     * so they sweep past at a visibly different rate.
+     *
+     * Two rates of movement read as more speed than one, because the eye takes
+     * the difference between them rather than either alone.
+     */
+    private strokeStrips (gfx: Phaser.GameObjects.Graphics, distance: number, near: number): void
+    {
+        const inset = TRACK_WIDTH * STRIP_INSET;
+        const left = TRACK_LEFT + inset;
+        const right = TRACK_LEFT + TRACK_WIDTH - inset;
+
+        for (const strip of visibleStrips(distance, near))
+        {
+            gfx.fillStyle(this.palette.trackEdge, STRIP_ALPHA * strip.strength);
+
+            fillProjectedQuad(gfx, left, left + STRIP_WIDTH, strip.y, strip.tailY);
+            fillProjectedQuad(gfx, right - STRIP_WIDTH, right, strip.y, strip.tailY);
+        }
+    }
+
+    /** Soft light along the road's two edges, widest and faintest outermost. */
+    private glowEdges (gfx: Phaser.GameObjects.Graphics, near: number, far: number): void
+    {
+        for (let layer = EDGE_GLOW_LAYERS; layer > 0; layer--)
+        {
+            const spread = EDGE_GLOW_SPREAD * (layer / EDGE_GLOW_LAYERS);
+
+            gfx.lineStyle(TRACK_EDGE_THICKNESS + (spread * 2), this.palette.trackEdge, EDGE_GLOW_ALPHA);
+
+            for (const x of [ TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH ])
+            {
+                gfx.lineBetween(projectX(x, far), far, projectX(x, near), near);
+            }
+        }
     }
 
     /** The plane the road sits on, running back to the horizon. */
@@ -111,6 +220,12 @@ export class TrackScroller
         //  at a worn margin rather than a cut line.
         gfx.fillStyle(this.palette.track, 0.4);
         fillProjectedQuad(gfx, TRACK_LEFT - VERGE_WIDTH, TRACK_LEFT + TRACK_WIDTH + VERGE_WIDTH, far, near);
+
+        //  A darker band right against the road, which seats it on the verge
+        //  instead of letting the two meet as one flat join.
+        gfx.fillStyle(0x000000, ROAD_CONTACT_ALPHA);
+        fillProjectedQuad(gfx, TRACK_LEFT - ROAD_CONTACT_WIDTH, TRACK_LEFT, far, near);
+        fillProjectedQuad(gfx, TRACK_LEFT + TRACK_WIDTH, TRACK_LEFT + TRACK_WIDTH + ROAD_CONTACT_WIDTH, far, near);
     }
 
     private fillRoad (gfx: Phaser.GameObjects.Graphics, near: number, far: number): void

@@ -369,6 +369,89 @@ export const LANE_LINE_THICKNESS = 2;
 export const TRACK_EDGE_THICKNESS = 3;
 
 // ---------------------------------------------------------------------------
+//  Lighting
+//
+//  One light for the whole game, pointing up and to the left, which is where
+//  the drop's highlight has always sat. Everything lit reads from this so the
+//  scene agrees with itself.
+// ---------------------------------------------------------------------------
+
+export const LIGHT_X = -0.55;
+export const LIGHT_Y = -0.84;
+
+/** Tightens the lit band into a glancing highlight rather than a lit half. */
+export const LIGHT_FALLOFF = 2.6;
+
+// ---------------------------------------------------------------------------
+//  Road surface
+//
+//  All of this is drawn between the road's flat fill and its markings, and all
+//  of it is projected quads and lines - the same primitives the road itself is
+//  made of, so none of it costs a new pass or a texture.
+// ---------------------------------------------------------------------------
+
+/**
+ * Bands of shade laid over the road, darkest at the horizon.
+ *
+ * A single flat fill gives the eye nothing to measure distance against; this is
+ * aerial perspective, and it is most of what makes the road read as receding
+ * rather than as a painted triangle.
+ */
+export const ROAD_DEPTH_BANDS = 18;
+export const ROAD_DEPTH_ALPHA = 0.5;
+
+/** A soft sheen down the middle of the road, as if the sky were reflected. */
+export const ROAD_SHEEN_LAYERS = 3;
+export const ROAD_SHEEN_ALPHA = 0.05;
+export const ROAD_SHEEN_WIDTH = 0.62;
+
+/** A dark contact line where the road meets the verge, to seat one on the other. */
+export const ROAD_CONTACT_WIDTH = 15;
+export const ROAD_CONTACT_ALPHA = 0.16;
+
+/** Soft light along the road's edges, widest and faintest on the outside. */
+export const EDGE_GLOW_LAYERS = 3;
+export const EDGE_GLOW_ALPHA = 0.12;
+export const EDGE_GLOW_SPREAD = 7;
+
+/**
+ * Light strips running down the road, faster and further apart than the rungs.
+ *
+ * Two rates of movement read as more speed than one, because the eye picks the
+ * difference between them rather than either on its own.
+ */
+export const STRIP_SPACING = 470;
+export const STRIP_LENGTH = 150;
+export const STRIP_WIDTH = 5;
+export const STRIP_ALPHA = 0.16;
+export const STRIP_INSET = 0.24;
+
+// ---------------------------------------------------------------------------
+//  Drop surfacing
+// ---------------------------------------------------------------------------
+
+/** A lit edge where the drop turns away from the light. */
+export const DROP_RIM_ALPHA = 0.75;
+export const DROP_RIM_THICKNESS = 2.4;
+
+/** Light coming back up off the road, along the drop's underside. */
+export const DROP_BOUNCE_ALPHA = 0.3;
+export const DROP_BOUNCE_THICKNESS = 2;
+
+/** A soft core, so the drop reads as full of something rather than painted. */
+export const DROP_CORE_ALPHA = 0.1;
+
+/** The tight glint, drawn as a run of shrinking circles along the light. */
+export const DROP_GLINT_STEPS = 4;
+export const DROP_GLINT_LENGTH = 0.3;
+
+/** The puff of colour thrown off when a gate repaints the drop. */
+export const BLOOM_MOTES = 10;
+export const BLOOM_SPREAD = 46;
+export const BLOOM_SIZE = 7;
+export const BLOOM_DURATION = 340;
+
+// ---------------------------------------------------------------------------
 //  Gameplay colours
 //
 //  The colour a drop carries is an identity ('blue' / 'red'), not a hex value,

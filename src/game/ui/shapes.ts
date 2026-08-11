@@ -1,7 +1,12 @@
 import {
     COLOR_DROP_HIGHLIGHT,
+    DROP_BOUNCE_ALPHA,
+    DROP_BOUNCE_THICKNESS,
+    DROP_CORE_ALPHA,
     DROP_FLOOD_FROM,
     DROP_FLOOD_TO,
+    DROP_GLINT_LENGTH,
+    DROP_GLINT_STEPS,
     DROP_GLOW_ALPHA,
     DROP_GLOW_LAYERS,
     DROP_GLOW_SPREAD,
@@ -14,9 +19,14 @@ import {
     DROP_SHADOW_ALPHA,
     DROP_SHADOW_DROP,
     DROP_SHADOW_SQUASH,
-    DROP_SLOSH
+    DROP_RIM_ALPHA,
+    DROP_RIM_THICKNESS,
+    DROP_SLOSH,
+    LIGHT_X,
+    LIGHT_Y
 } from '../config/constants';
 import { clipAbove, Point } from '../entities/drop-surface';
+import { bounced, facing } from './lighting';
 
 /**
  * Fills a closed shape from a set of points, in whatever style is already set.
@@ -156,6 +166,11 @@ export function drawWaterDrop (gfx: Phaser.GameObjects.Graphics, paint: DropPain
         );
     }
 
+    //  A soft core, lighter than the body and offset towards the light. Reads
+    //  as light making it through the drop rather than stopping at the surface.
+    gfx.fillStyle(COLOR_DROP_HIGHLIGHT, DROP_CORE_ALPHA);
+    gfx.fillEllipse(slosh * 0.4, -radius * 0.1, radius * 1.25, radius * 1.05);
+
     //  Offset highlight, so the drop reads as a volume and its rotation is
     //  actually visible.
     gfx.fillStyle(COLOR_DROP_HIGHLIGHT, 0.32);
@@ -163,4 +178,72 @@ export function drawWaterDrop (gfx: Phaser.GameObjects.Graphics, paint: DropPain
 
     gfx.fillStyle(COLOR_DROP_HIGHLIGHT, 0.55);
     gfx.fillCircle((-radius * 0.34) + slosh, -radius * 0.42, radius * 0.15);
+
+    glint(gfx, radius, slosh);
+    rimLight(gfx, outline, halo);
+}
+
+/**
+ * The tight specular glint: a run of shrinking circles laid along the light's
+ * own direction, which gives an elongated streak without needing a rotated
+ * ellipse - and so without touching the canvas transform.
+ */
+function glint (gfx: Phaser.GameObjects.Graphics, radius: number, slosh: number): void
+{
+    const startX = (-radius * 0.34) + slosh;
+    const startY = -radius * 0.44;
+
+    for (let step = 0; step < DROP_GLINT_STEPS; step++)
+    {
+        const along = (step / DROP_GLINT_STEPS) * radius * DROP_GLINT_LENGTH;
+        const fade = 1 - (step / DROP_GLINT_STEPS);
+
+        gfx.fillStyle(COLOR_DROP_HIGHLIGHT, 0.5 * fade);
+        gfx.fillCircle(
+            startX + (LIGHT_X * along),
+            startY + (LIGHT_Y * along),
+            radius * 0.1 * fade
+        );
+    }
+}
+
+/**
+ * Light along the drop's edge: bright where it turns towards the key light,
+ * and a weaker, broader return from the road underneath it.
+ *
+ * Drawn segment by segment with its own alpha rather than as one stroked path,
+ * so the light falls off around the curve instead of starting and stopping.
+ * Both passes walk the outline that was already built for the body, so the rim
+ * ripples with the surface for free.
+ */
+function rimLight (gfx: Phaser.GameObjects.Graphics, outline: Point[], color: number): void
+{
+    for (let i = 0; i < outline.length; i++)
+    {
+        const a = outline[i];
+        const b = outline[(i + 1) % outline.length];
+
+        //  The outline is built around the origin, so a point's own offset is
+        //  the direction the surface faces there.
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+
+        const key = facing(midX, midY);
+
+        if (key > 0.01)
+        {
+            gfx.lineStyle(DROP_RIM_THICKNESS, COLOR_DROP_HIGHLIGHT, DROP_RIM_ALPHA * key);
+            gfx.lineBetween(a.x, a.y, b.x, b.y);
+        }
+
+        const bounce = bounced(midX, midY);
+
+        if (bounce > 0.01)
+        {
+            //  In the drop's own colour: it is the road returning the light the
+            //  drop is throwing down onto it.
+            gfx.lineStyle(DROP_BOUNCE_THICKNESS, color, DROP_BOUNCE_ALPHA * bounce);
+            gfx.lineBetween(a.x, a.y, b.x, b.y);
+        }
+    }
 }
