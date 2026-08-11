@@ -1,4 +1,4 @@
-import { GAME_HEIGHT } from './constants';
+import { HORIZON_Y } from './constants';
 import { WorldId, WorldSpec } from './worlds';
 
 //  The ten environments.
@@ -27,7 +27,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x2a4a6b, laneLine: 0x486d92, trackEdge: 0x86aecc, rung: 0x35577a,
         ...DARK_HUD,
         hazeColor: 0xffffff, hazeAlpha: 0.42,
-        orbColor: 0xfff6d8, orbAlpha: 0.5, orbRadius: 66, orbX: 372, orbY: 148,
+        orbColor: 0xfff6d8, orbAlpha: 0.5, orbRadius: 66, orbX: 372, orbY: HORIZON_Y - 108,
         //  Cloud banks either side, in a blue that reads against the pale
         //  ground rather than vanishing into it.
         roadside: { shape: 'blobs', color: 0x8fbede, alpha: 0.85, height: 74, spacing: 540, offset: 120, seed: 2 },
@@ -41,14 +41,17 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  2 - the first sense of distance: ridges behind ridges.
     mountains: {
         skyTop: 0x1d3557, skyBottom: 0x7fb4dc,
+        stars: { count: 60, color: 0xdce8ff, alpha: 0.5 },
         //  a cold valley floor the road is cut into
         groundColor: 0x27405c,
         track: 0x18293f, laneLine: 0x2b4463, trackEdge: 0x4f7aa6, rung: 0x22374f,
         ...LIGHT_HUD,
         hazeColor: 0xbcd9f2, hazeAlpha: 0.3,
         layers: [
-            { shape: 'peaks', color: 0x3f6690, alpha: 0.55, parallax: 0.05, baseline: 8, height: 130, period: 210, wrap: 620, seed: 5 },
-            { shape: 'peaks', color: 0x24425f, alpha: 0.8, parallax: 0.12, baseline: 15, height: 170, period: 260, wrap: 700, seed: 19 },
+            { shape: 'peaks', color: 0x3f6690, alpha: 0.55, parallax: 0.05, baseline: 8, height: 130, period: 210, wrap: 620, seed: 5,
+              detail: 0xdceaf7, detailAlpha: 0.4 },
+            { shape: 'peaks', color: 0x24425f, alpha: 0.8, parallax: 0.12, baseline: 15, height: 170, period: 260, wrap: 700, seed: 19,
+              detail: 0xc3d9ec, detailAlpha: 0.5 },
             { shape: 'blobs', color: 0xffffff, alpha: 0.28, parallax: 0.03, baseline: -85, height: 34, period: 200, wrap: 560, seed: 31 }
         ],
         roadside: { shape: 'peaks', color: 0x0f1e33, alpha: 0.75, height: 120, spacing: 520, offset: 120, seed: 3 },
@@ -63,7 +66,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x2a1330, laneLine: 0x4a2450, trackEdge: 0x8a4472, rung: 0x361a3c,
         ...LIGHT_HUD,
         hazeColor: 0xff9d5c, hazeAlpha: 0.34,
-        orbColor: 0xffd08a, orbAlpha: 0.75, orbRadius: 78, orbX: 138, orbY: 300,
+        orbColor: 0xffd08a, orbAlpha: 0.75, orbRadius: 78, orbX: 138, orbY: HORIZON_Y + 44,
         layers: [
             { shape: 'mesa', color: 0x6b2f52, alpha: 0.6, parallax: 0.05, baseline: 8, height: 120, period: 190, wrap: 560, seed: 7 },
             { shape: 'mesa', color: 0x3a1733, alpha: 0.9, parallax: 0.13, baseline: 16, height: 165, period: 240, wrap: 660, seed: 23 }
@@ -75,6 +78,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  4 - close, layered, and misty enough to hide what is coming.
     forest: {
         skyTop: 0x07171a, skyBottom: 0x17403a,
+        stars: { count: 70, color: 0xcfeae0, alpha: 0.4 },
         //  undergrowth, lighter than the path worn through it
         groundColor: 0x16332c,
         track: 0x0a1c1e, laneLine: 0x16332f, trackEdge: 0x2f6355, rung: 0x123028,
@@ -97,8 +101,10 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         ...DARK_HUD,
         hazeColor: 0xffffff, hazeAlpha: 0.45,
         layers: [
-            { shape: 'peaks', color: 0xa9d8ec, alpha: 0.75, parallax: 0.05, baseline: 8, height: 150, period: 200, wrap: 640, seed: 3 },
-            { shape: 'peaks', color: 0x7bb2d0, alpha: 0.9, parallax: 0.13, baseline: 16, height: 190, period: 250, wrap: 720, seed: 17 }
+            { shape: 'peaks', color: 0xa9d8ec, alpha: 0.75, parallax: 0.05, baseline: 8, height: 150, period: 200, wrap: 640, seed: 3,
+              detail: 0xffffff, detailAlpha: 0.75 },
+            { shape: 'peaks', color: 0x7bb2d0, alpha: 0.9, parallax: 0.13, baseline: 16, height: 190, period: 250, wrap: 720, seed: 17,
+              detail: 0xffffff, detailAlpha: 0.85 }
         ],
         specks: { count: 46, color: 0xffffff, alpha: 0.85, radius: 2.4, fall: 42, drift: 26 },
         roadside: { shape: 'peaks', color: 0x8cc2dc, alpha: 0.85, height: 130, spacing: 520, offset: 120, seed: 6 },
@@ -113,7 +119,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x40261c, laneLine: 0x5d382a, trackEdge: 0x93603f, rung: 0x4b2d20,
         ...DARK_HUD,
         hazeColor: 0xffd28a, hazeAlpha: 0.4,
-        orbColor: 0xfff0c0, orbAlpha: 0.8, orbRadius: 86, orbX: 330, orbY: 250,
+        orbColor: 0xfff0c0, orbAlpha: 0.8, orbRadius: 86, orbX: 330, orbY: HORIZON_Y - 6,
         layers: [
             { shape: 'dunes', color: 0xd98f4e, alpha: 0.6, parallax: 0.05, baseline: 8, height: 90, period: 300, wrap: 560, seed: 9 },
             { shape: 'dunes', color: 0xa8633a, alpha: 0.85, parallax: 0.13, baseline: 16, height: 120, period: 360, wrap: 620, seed: 29 }
@@ -125,6 +131,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  7 - the sky closes in; rain, and the occasional flash.
     storm: {
         skyTop: 0x080c16, skyBottom: 0x243448,
+        stars: { count: 40, color: 0x9fb6d0, alpha: 0.25 },
         //  sodden ground, barely lighter than the road
         groundColor: 0x18263a,
         track: 0x0c1420, laneLine: 0x1b2a3d, trackEdge: 0x3d5a7e, rung: 0x152130,
@@ -143,14 +150,17 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  8 - hard verticals and window light.
     city: {
         skyTop: 0x0e0724, skyBottom: 0x4a1f7a,
+        stars: { count: 55, color: 0xd8c8ff, alpha: 0.35 },
         //  the lit plane the towers stand on
         groundColor: 0x22123f,
         track: 0x120a26, laneLine: 0x241541, trackEdge: 0x50307e, rung: 0x1b1033,
         ...LIGHT_HUD,
         hazeColor: 0x7a4bd0, hazeAlpha: 0.22,
         layers: [
-            { shape: 'buildings', color: 0x241443, alpha: 0.85, parallax: 0.06, baseline: 9, height: 200, period: 74, wrap: 700, seed: 6 },
-            { shape: 'buildings', color: 0x140a29, alpha: 0.95, parallax: 0.15, baseline: 18, height: 250, period: 96, wrap: 820, seed: 22 }
+            { shape: 'buildings', color: 0x241443, alpha: 0.85, parallax: 0.06, baseline: 9, height: 200, period: 74, wrap: 700, seed: 6,
+              detail: 0xffc98a, detailAlpha: 0.28 },
+            { shape: 'buildings', color: 0x140a29, alpha: 0.95, parallax: 0.15, baseline: 18, height: 250, period: 96, wrap: 820, seed: 22,
+              detail: 0xffd9a0, detailAlpha: 0.42 }
         ],
         //  Lighter than the floor rather than darker: near towers catching the
         //  city's own glow read better here than black silhouettes.
@@ -166,7 +176,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x252f56, laneLine: 0x3a4880, trackEdge: 0x6274c0, rung: 0x2c3866,
         ...LIGHT_HUD,
         hazeColor: 0x5560c0, hazeAlpha: 0.14,
-        orbColor: 0x6f7ad8, orbAlpha: 0.35, orbRadius: 104, orbX: 108, orbY: 210,
+        orbColor: 0x6f7ad8, orbAlpha: 0.35, orbRadius: 104, orbX: 108, orbY: HORIZON_Y - 46,
         layers: [
             { shape: 'blobs', color: 0x232a58, alpha: 0.7, parallax: 0.04, baseline: -90, height: 70, period: 260, wrap: 620, seed: 8 },
             { shape: 'shards', color: 0x1a1f42, alpha: 0.85, parallax: 0.12, baseline: 15, height: 90, period: 190, wrap: 700, seed: 44 }
@@ -184,7 +194,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         track: 0x36255e, laneLine: 0x4c3580, trackEdge: 0x9a6ae0, rung: 0x3d2a68,
         ...LIGHT_HUD,
         hazeColor: 0xa050ff, hazeAlpha: 0.2,
-        orbColor: 0x8a3ad0, orbAlpha: 0.3, orbRadius: 120, orbX: 240, orbY: GAME_HEIGHT * 0.26,
+        orbColor: 0x8a3ad0, orbAlpha: 0.3, orbRadius: 120, orbX: 240, orbY: HORIZON_Y - 34,
         layers: [
             { shape: 'shards', color: 0x2a1250, alpha: 0.7, parallax: 0.04, baseline: 8, height: 120, period: 150, wrap: 560, seed: 1 },
             { shape: 'peaks', color: 0x1d0c38, alpha: 0.8, parallax: 0.1, baseline: 13, height: 160, period: 220, wrap: 640, seed: 33 },
