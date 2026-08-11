@@ -1,9 +1,12 @@
 import { Scene } from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, HORIZON_Y } from '../config/constants';
-import { LayerShape, LayerSpec, SpeckSpec, WorldSpec } from '../config/worlds';
+import { LayerSpec, SpeckSpec, WorldSpec } from '../config/worlds';
+import { seeded } from './noise';
+import { drawSilhouette } from './silhouettes';
 
 const SKY_BANDS = 40;
 const SKY_DEPTH = -100;
+const STAR_DEPTH = -99;
 const HAZE_DEPTH = -95;
 const CELESTIAL_DEPTH = -94;
 const LAYER_DEPTH = -90;
@@ -17,23 +20,6 @@ const LIGHTNING_MIN_MS = 4200;
 const LIGHTNING_MAX_MS = 11000;
 const LIGHTNING_ALPHA = 0.22;
 const LIGHTNING_FADE_MS = 240;
-
-/**
- * A small deterministic generator, so a world looks the same every time it is
- * played without any of it being stored.
- */
-function seeded (seed: number): () => number
-{
-    let state = (seed * 1103515245 + 12345) & 0x7fffffff;
-
-    return () => {
-
-        state = (state * 1103515245 + 12345) & 0x7fffffff;
-
-        return state / 0x7fffffff;
-
-    };
-}
 
 /**
  * The world behind the corridor: a sky, silhouette layers that scroll at their
@@ -66,6 +52,7 @@ export class Environment
         this.world = world;
 
         this.drawSky();
+        this.drawStars();
         this.drawCelestial();
         this.drawHaze();
 
@@ -108,6 +95,35 @@ export class Environment
 
             gfx.fillStyle(blend(top, bottom, t), 1);
             gfx.fillRect(0, i * bandHeight, GAME_WIDTH, bandHeight + 1);
+        }
+    }
+
+    /**
+     * A scatter of stars across the sky, in the worlds dark enough to show them.
+     *
+     * Drawn once into their own Graphics and never touched again: they are the
+     * furthest thing in the world, and anything that far away does not move.
+     */
+    private drawStars (): void
+    {
+        const spec = this.world.stars;
+
+        if (spec === undefined) { return; }
+
+        const gfx = this.scene.add.graphics();
+
+        gfx.setDepth(STAR_DEPTH);
+        gfx.fillStyle(spec.color, spec.alpha);
+
+        const random = seeded(61);
+
+        for (let i = 0; i < spec.count; i++)
+        {
+            //  Kept off the horizon, where the haze would swallow them anyway.
+            const y = random() * HORIZON_Y * 0.86;
+
+            //  Smaller ones are commoner, which is what a real sky looks like.
+            gfx.fillCircle(random() * GAME_WIDTH, y, 0.7 + (random() * random() * 1.6));
         }
     }
 
@@ -274,116 +290,4 @@ function blend (from: number, to: number, t: number): number
     const b = Math.round(fb + ((tb - fb) * t));
 
     return (r << 16) | (g << 8) | b;
-}
-
-/**
- * Draws one repeat of a layer's profile at a vertical offset.
- *
- * Every shape is built from the same idea - a baseline with something standing
- * on it - so a world's character comes from the silhouette rather than from
- * anything expensive.
- */
-function drawSilhouette (gfx: Phaser.GameObjects.Graphics, layer: LayerSpec, offset: number): void
-{
-    //  The same seed for every tile, so the three copies are identical and the
-    //  wrap is invisible.
-    const random = seeded(layer.seed);
-    const base = HORIZON_Y + layer.baseline;
-
-    gfx.fillStyle(layer.color, layer.alpha);
-
-    const shape: LayerShape = layer.shape;
-
-    if (shape === 'blobs')
-    {
-        for (let x = offset; x < offset + layer.wrap; x += layer.period * (0.5 + random() * 0.5))
-        {
-            const r = layer.height * (0.45 + random() * 0.65);
-            const y = base - (random() * layer.height * 0.6);
-
-            gfx.fillCircle(x, y, r);
-            gfx.fillCircle(x + r * 0.8, y + r * 0.25, r * 0.72);
-            gfx.fillCircle(x - r * 0.75, y + r * 0.3, r * 0.6);
-        }
-
-        return;
-    }
-
-    if (shape === 'buildings')
-    {
-        for (let x = offset; x < offset + layer.wrap; x += layer.period)
-        {
-            const w = layer.period * (0.55 + random() * 0.35);
-            const h = layer.height * (0.35 + random() * 0.75);
-
-            gfx.fillRect(x, base - h, w, h);
-        }
-
-        return;
-    }
-
-    if (shape === 'trees')
-    {
-        for (let x = offset; x < offset + layer.wrap; x += layer.period * (0.6 + random() * 0.6))
-        {
-            const h = layer.height * (0.6 + random() * 0.6);
-            const w = layer.period * (0.5 + random() * 0.3);
-
-            gfx.fillTriangle(x, base, x + w / 2, base - h, x + w, base);
-            gfx.fillTriangle(x + w * 0.1, base - h * 0.35, x + w / 2, base - h * 1.25, x + w * 0.9, base - h * 0.35);
-        }
-
-        return;
-    }
-
-    if (shape === 'mesa')
-    {
-        for (let x = offset; x < offset + layer.wrap; x += layer.period)
-        {
-            const w = layer.period * (0.6 + random() * 0.5);
-            const h = layer.height * (0.4 + random() * 0.7);
-            const inset = w * 0.12;
-
-            gfx.fillTriangle(x, base, x + inset, base - h, x + w - inset, base - h);
-            gfx.fillTriangle(x, base, x + w - inset, base - h, x + w, base);
-        }
-
-        return;
-    }
-
-    if (shape === 'shards')
-    {
-        for (let x = offset; x < offset + layer.wrap; x += layer.period * (0.6 + random() * 0.7))
-        {
-            const w = layer.period * (0.3 + random() * 0.4);
-            const h = layer.height * (0.5 + random() * 0.9);
-            const lean = (random() - 0.5) * w;
-
-            gfx.fillTriangle(x, base, x + lean + w / 2, base - h, x + w, base);
-        }
-
-        return;
-    }
-
-    //  'peaks', 'hills' and 'dunes' are all a run of humps; only their sharpness
-    //  differs.
-    const sharpness = shape === 'peaks' ? 1 : shape === 'hills' ? 0.55 : 0.3;
-
-    for (let x = offset; x < offset + layer.wrap; x += layer.period)
-    {
-        const w = layer.period * (0.85 + random() * 0.5);
-        const h = layer.height * (0.45 + random() * 0.8);
-        const peak = x + (w / 2) + ((random() - 0.5) * w * 0.3 * sharpness);
-
-        if (sharpness > 0.8)
-        {
-            gfx.fillTriangle(x, base, peak, base - h, x + w, base);
-        }
-        else
-        {
-            //  Rounded: a wide arc sitting on the baseline.
-            gfx.fillEllipse(peak, base, w * (1 + (1 - sharpness)), h * 2);
-            gfx.fillRect(x, base - 1, w, 2);
-        }
-    }
 }

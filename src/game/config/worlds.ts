@@ -47,6 +47,15 @@ export interface LayerSpec
     /** Height of the silhouettes above the baseline. */
     height: number;
 
+    /**
+     * Colour of the detail picked out on this layer, if any: lit windows in the
+     * towers, snow on the peaks. Leave it out and the layer stays a flat
+     * cut-out, which is what the nearest layers want - detail close to the road
+     * competes with the orbs drawn on it.
+     */
+    detail?: number;
+    detailAlpha?: number;
+
     /** Horizontal period of the shape, in pixels. */
     period: number;
 
@@ -151,6 +160,12 @@ export interface WorldSpec
      * stay true if the horizon is ever moved.
      */
     orbY?: number;
+
+    /**
+     * A scatter of stars across the sky, for the worlds dark enough to show
+     * them. Drawn once and left, since anything this far away does not move.
+     */
+    stars?: { count: number; color: number; alpha: number };
 
     /** Occasional full-screen flash, for the storm. */
     lightning?: boolean;

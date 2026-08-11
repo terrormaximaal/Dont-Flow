@@ -41,14 +41,17 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  2 - the first sense of distance: ridges behind ridges.
     mountains: {
         skyTop: 0x1d3557, skyBottom: 0x7fb4dc,
+        stars: { count: 60, color: 0xdce8ff, alpha: 0.5 },
         //  a cold valley floor the road is cut into
         groundColor: 0x27405c,
         track: 0x18293f, laneLine: 0x2b4463, trackEdge: 0x4f7aa6, rung: 0x22374f,
         ...LIGHT_HUD,
         hazeColor: 0xbcd9f2, hazeAlpha: 0.3,
         layers: [
-            { shape: 'peaks', color: 0x3f6690, alpha: 0.55, parallax: 0.05, baseline: 8, height: 130, period: 210, wrap: 620, seed: 5 },
-            { shape: 'peaks', color: 0x24425f, alpha: 0.8, parallax: 0.12, baseline: 15, height: 170, period: 260, wrap: 700, seed: 19 },
+            { shape: 'peaks', color: 0x3f6690, alpha: 0.55, parallax: 0.05, baseline: 8, height: 130, period: 210, wrap: 620, seed: 5,
+              detail: 0xdceaf7, detailAlpha: 0.4 },
+            { shape: 'peaks', color: 0x24425f, alpha: 0.8, parallax: 0.12, baseline: 15, height: 170, period: 260, wrap: 700, seed: 19,
+              detail: 0xc3d9ec, detailAlpha: 0.5 },
             { shape: 'blobs', color: 0xffffff, alpha: 0.28, parallax: 0.03, baseline: -85, height: 34, period: 200, wrap: 560, seed: 31 }
         ],
         roadside: { shape: 'peaks', color: 0x0f1e33, alpha: 0.75, height: 120, spacing: 520, offset: 120, seed: 3 },
@@ -75,6 +78,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  4 - close, layered, and misty enough to hide what is coming.
     forest: {
         skyTop: 0x07171a, skyBottom: 0x17403a,
+        stars: { count: 70, color: 0xcfeae0, alpha: 0.4 },
         //  undergrowth, lighter than the path worn through it
         groundColor: 0x16332c,
         track: 0x0a1c1e, laneLine: 0x16332f, trackEdge: 0x2f6355, rung: 0x123028,
@@ -97,8 +101,10 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         ...DARK_HUD,
         hazeColor: 0xffffff, hazeAlpha: 0.45,
         layers: [
-            { shape: 'peaks', color: 0xa9d8ec, alpha: 0.75, parallax: 0.05, baseline: 8, height: 150, period: 200, wrap: 640, seed: 3 },
-            { shape: 'peaks', color: 0x7bb2d0, alpha: 0.9, parallax: 0.13, baseline: 16, height: 190, period: 250, wrap: 720, seed: 17 }
+            { shape: 'peaks', color: 0xa9d8ec, alpha: 0.75, parallax: 0.05, baseline: 8, height: 150, period: 200, wrap: 640, seed: 3,
+              detail: 0xffffff, detailAlpha: 0.75 },
+            { shape: 'peaks', color: 0x7bb2d0, alpha: 0.9, parallax: 0.13, baseline: 16, height: 190, period: 250, wrap: 720, seed: 17,
+              detail: 0xffffff, detailAlpha: 0.85 }
         ],
         specks: { count: 46, color: 0xffffff, alpha: 0.85, radius: 2.4, fall: 42, drift: 26 },
         roadside: { shape: 'peaks', color: 0x8cc2dc, alpha: 0.85, height: 130, spacing: 520, offset: 120, seed: 6 },
@@ -125,6 +131,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  7 - the sky closes in; rain, and the occasional flash.
     storm: {
         skyTop: 0x080c16, skyBottom: 0x243448,
+        stars: { count: 40, color: 0x9fb6d0, alpha: 0.25 },
         //  sodden ground, barely lighter than the road
         groundColor: 0x18263a,
         track: 0x0c1420, laneLine: 0x1b2a3d, trackEdge: 0x3d5a7e, rung: 0x152130,
@@ -143,14 +150,17 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
     //  8 - hard verticals and window light.
     city: {
         skyTop: 0x0e0724, skyBottom: 0x4a1f7a,
+        stars: { count: 55, color: 0xd8c8ff, alpha: 0.35 },
         //  the lit plane the towers stand on
         groundColor: 0x22123f,
         track: 0x120a26, laneLine: 0x241541, trackEdge: 0x50307e, rung: 0x1b1033,
         ...LIGHT_HUD,
         hazeColor: 0x7a4bd0, hazeAlpha: 0.22,
         layers: [
-            { shape: 'buildings', color: 0x241443, alpha: 0.85, parallax: 0.06, baseline: 9, height: 200, period: 74, wrap: 700, seed: 6 },
-            { shape: 'buildings', color: 0x140a29, alpha: 0.95, parallax: 0.15, baseline: 18, height: 250, period: 96, wrap: 820, seed: 22 }
+            { shape: 'buildings', color: 0x241443, alpha: 0.85, parallax: 0.06, baseline: 9, height: 200, period: 74, wrap: 700, seed: 6,
+              detail: 0xffc98a, detailAlpha: 0.28 },
+            { shape: 'buildings', color: 0x140a29, alpha: 0.95, parallax: 0.15, baseline: 18, height: 250, period: 96, wrap: 820, seed: 22,
+              detail: 0xffd9a0, detailAlpha: 0.42 }
         ],
         //  Lighter than the floor rather than darker: near towers catching the
         //  city's own glow read better here than black silhouettes.
