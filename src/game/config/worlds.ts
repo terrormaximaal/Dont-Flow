@@ -91,6 +91,37 @@ export interface RoadsideSpec
     seed: number;
 }
 
+/** Shapes that hang in the sky, drifting past far slower than the ground. */
+export type FloaterShape = 'island' | 'crystal' | 'ring';
+
+export interface FloaterSpec
+{
+    shape: FloaterShape;
+    color: number;
+    alpha: number;
+
+    /** How many hang in the sky at once. */
+    count: number;
+
+    /** Size of one, in pixels at its widest. */
+    size: number;
+
+    /**
+     * The band of sky they occupy, as distances *above* the horizon.
+     *
+     * Above it, always. These are the one piece of scenery with nothing
+     * anchoring it to the ground, so nothing stops them wandering down over the
+     * road except saying they may not.
+     */
+    lowest: number;
+    highest: number;
+
+    /** Fraction of the scroll speed. Small, or they read as close. */
+    parallax: number;
+
+    seed: number;
+}
+
 export interface SpeckSpec
 {
     /** Small drifting particles: snow, stars, embers, rain. */
@@ -148,6 +179,9 @@ export interface WorldSpec
     roadside?: RoadsideSpec;
 
     specks?: SpeckSpec;
+
+    /** Things hanging in this world's sky: islands, crystals, structures. */
+    floaters?: FloaterSpec;
 
     /** Optional disc low in the sky: a sun, a moon, a planet. */
     orbColor?: number;

@@ -23,6 +23,7 @@ import { WORLDS } from '../config/worldData';
 import { paintPageBackdrop } from '../systems/PageBackdrop';
 import { Course } from '../systems/Course';
 import { Environment } from '../systems/Environment';
+import { Floaters } from '../systems/Floaters';
 import { Roadside } from '../systems/Roadside';
 import { Slipstream } from '../systems/Slipstream';
 import { Effects } from '../systems/Effects';
@@ -53,6 +54,7 @@ export class Play extends Scene
     private track: TrackScroller;
     private environment: Environment;
     private roadside: Roadside | null = null;
+    private floaters: Floaters | null = null;
     private slipstream: Slipstream;
     private trail: Trail;
     private course: Course;
@@ -155,6 +157,7 @@ export class Play extends Scene
         this.environment = new Environment(this, world);
         this.track = new TrackScroller(this, world);
         this.roadside = world.roadside ? new Roadside(this, world.roadside, world.hazeColor, world.hazeAlpha) : null;
+        this.floaters = world.floaters ? new Floaters(this, world.floaters) : null;
         this.slipstream = new Slipstream(this, world.trackEdge);
         this.trail = new Trail(this);
         this.drop = new Drop(this);
@@ -374,6 +377,7 @@ export class Play extends Scene
 
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);
+        this.floaters?.update(this.distance);
         this.roadside?.update(this.distance);
         this.slipstream.update(this.distance);
 

@@ -35,6 +35,10 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'blobs', color: 0xffffff, alpha: 0.5, parallax: 0.05, baseline: -95, height: 46, period: 190, wrap: 560, seed: 11 },
             { shape: 'blobs', color: 0xffffff, alpha: 0.75, parallax: 0.11, baseline: -125, height: 60, period: 250, wrap: 560, seed: 27 }
         ],
+        //  Islands over the cloud plane, barely darker than the sky they
+        //  hang in - the first level has two colours to read and nothing
+        //  up here may compete with them.
+        floaters: { shape: 'island', color: 0x7fb4dc, alpha: 0.35, count: 4, size: 26, lowest: 40, highest: 150, parallax: 0.02, seed: 3 },
         palette: [ 'red', 'blue' ]
     },
 
@@ -71,6 +75,8 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'mesa', color: 0x6b2f52, alpha: 0.6, parallax: 0.05, baseline: 8, height: 120, period: 190, wrap: 560, seed: 7 },
             { shape: 'mesa', color: 0x3a1733, alpha: 0.9, parallax: 0.13, baseline: 16, height: 165, period: 240, wrap: 660, seed: 23 }
         ],
+        //  Slabs of the same rock, torn loose and left hanging.
+        floaters: { shape: 'island', color: 0x6b2f52, alpha: 0.4, count: 3, size: 30, lowest: 60, highest: 170, parallax: 0.018, seed: 8 },
         roadside: { shape: 'mesa', color: 0x260b1c, alpha: 0.85, height: 150, spacing: 470, offset: 110, seed: 4 },
         palette: [ 'orange', 'purple' ]
     },
@@ -106,6 +112,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'peaks', color: 0x7bb2d0, alpha: 0.9, parallax: 0.13, baseline: 16, height: 190, period: 250, wrap: 720, seed: 17,
               detail: 0xffffff, detailAlpha: 0.85 }
         ],
+        floaters: { shape: 'crystal', color: 0xa9d8ec, alpha: 0.5, count: 5, size: 22, lowest: 50, highest: 160, parallax: 0.022, seed: 5 },
         specks: { count: 46, color: 0xffffff, alpha: 0.85, radius: 2.4, fall: 42, drift: 26 },
         roadside: { shape: 'peaks', color: 0x8cc2dc, alpha: 0.85, height: 130, spacing: 520, offset: 120, seed: 6 },
         palette: [ 'cyan', 'blue', 'pink' ]
@@ -181,6 +188,9 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'blobs', color: 0x232a58, alpha: 0.7, parallax: 0.04, baseline: -90, height: 70, period: 260, wrap: 620, seed: 8 },
             { shape: 'shards', color: 0x1a1f42, alpha: 0.85, parallax: 0.12, baseline: 15, height: 90, period: 190, wrap: 700, seed: 44 }
         ],
+        //  Structures, not rocks: the one world where something built is
+        //  more surprising than something broken.
+        floaters: { shape: 'ring', color: 0x6274c0, alpha: 0.4, count: 4, size: 34, lowest: 55, highest: 185, parallax: 0.015, seed: 12 },
         specks: { count: 70, color: 0xffffff, alpha: 0.7, radius: 1.6, fall: 18, drift: 0 },
         roadside: { shape: 'shards', color: 0x2a3266, alpha: 0.8, height: 120, spacing: 600, offset: 135, seed: 10 },
         palette: [ 'magenta', 'cyan', 'orange', 'green' ]
@@ -200,6 +210,8 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'peaks', color: 0x1d0c38, alpha: 0.8, parallax: 0.1, baseline: 13, height: 160, period: 220, wrap: 640, seed: 33 },
             { shape: 'buildings', color: 0x120722, alpha: 0.9, parallax: 0.17, baseline: 19, height: 190, period: 88, wrap: 760, seed: 55 }
         ],
+        //  Fragments of everywhere else, which is what this world is.
+        floaters: { shape: 'crystal', color: 0x8a3ad0, alpha: 0.45, count: 6, size: 28, lowest: 45, highest: 190, parallax: 0.026, seed: 21 },
         specks: { count: 54, color: 0xd8a8ff, alpha: 0.6, radius: 2, fall: 60, drift: 40 },
         roadside: { shape: 'shards', color: 0x3a1c68, alpha: 0.85, height: 165, spacing: 380, offset: 110, seed: 11 },
         palette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ]
