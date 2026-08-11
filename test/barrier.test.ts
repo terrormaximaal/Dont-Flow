@@ -100,9 +100,10 @@ describe('every level', () => {
 
             for (const [ distance, obstacles ] of rows)
             {
-                //  A row made entirely of hurdles has no free lane on purpose:
-                //  the way through it is over it. Checked separately below.
-                if (obstacles.every((o) => o.profile === 'low'))
+                //  A row made entirely of hurdles or holes has no free lane on
+                //  purpose: the way through it is over it. That the row is
+                //  entirely jumpable is checked in level.test.
+                if (obstacles.every((o) => o.profile !== 'full'))
                 {
                     continue;
                 }
@@ -113,7 +114,7 @@ describe('every level', () => {
 
                 for (let lane = 0; lane < laneCount(); lane++)
                 {
-                    if (obstacles.every((o) => isClear(lane, o.kind, o.lane, distance) || o.profile === 'low'))
+                    if (obstacles.every((o) => isClear(lane, o.kind, o.lane, distance) || o.profile !== 'full'))
                     {
                         free.push(lane);
                     }

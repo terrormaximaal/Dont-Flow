@@ -1,6 +1,12 @@
 import { Scene } from 'phaser';
 import {
     COLOR_VALUES,
+    GAP_DEPTH,
+    GAP_FLOOR_ALPHA,
+    GAP_LIP_ALPHA,
+    GAP_LIP_THICKNESS,
+    GAP_WARN_ALPHA,
+    GAP_WARN_BARS,
     HURDLE_CHEVRON_ALPHA,
     HURDLE_CHEVRONS,
     HURDLE_HEIGHT_SCALE,
@@ -95,6 +101,13 @@ export class Obstacle
         gfx.clear();
         gfx.setAlpha(drawStrength(this.distance, travelled));
 
+        if (this.profile === 'gap')
+        {
+            this.drawGap(gfx, left, right, travelled, scale);
+
+            return y;
+        }
+
         //  Its footprint on the road, which is what grounds it.
         gfx.fillStyle(value, OBSTACLE_FOOT_ALPHA);
         fillProjectedQuad(gfx, left, right, y - (OBSTACLE_DEPTH / 2), y + (OBSTACLE_DEPTH / 2));
@@ -145,6 +158,51 @@ export class Obstacle
         void half;
 
         return y;
+    }
+
+    /**
+     * A hole in the road.
+     *
+     * Drawn as an absence rather than an object: a dark floor sunk into the
+     * surface, a lit lip along the near edge so it reads as an edge rather than
+     * as a painted rectangle, and warning bars on the approach. Everything else
+     * on this road stands up from it; this is the only thing that goes down,
+     * and it has to say so before the player is on top of it.
+     */
+    private drawGap (
+        gfx: Phaser.GameObjects.Graphics,
+        left: number,
+        right: number,
+        travelled: number,
+        scale: number
+    ): void
+    {
+        const farY = screenYFor(this.distance + (GAP_DEPTH / 2), travelled);
+        const nearY = screenYFor(this.distance - (GAP_DEPTH / 2), travelled);
+
+        //  The hole itself: near black, whatever the world's road is, because
+        //  a hole is not a darker piece of road.
+        gfx.fillStyle(0x05070d, GAP_FLOOR_ALPHA);
+        fillProjectedQuad(gfx, left, right, farY, nearY);
+
+        //  A lit lip along the near edge, catching the same light everything
+        //  else in the game is lit by.
+        gfx.lineStyle(Math.max(1, GAP_LIP_THICKNESS * scale), COLOR_VALUES[this.color], GAP_LIP_ALPHA);
+        gfx.lineBetween(projectX(left, nearY), nearY, projectX(right, nearY), nearY);
+
+        //  Warning bars on the approach, so the hole is announced while there
+        //  is still road left to act on.
+        const warnY = screenYFor(this.distance - GAP_DEPTH, travelled);
+
+        gfx.lineStyle(Math.max(1, 2.5 * scale), COLOR_VALUES[this.color], GAP_WARN_ALPHA * 0.6);
+
+        for (let i = 0; i < GAP_WARN_BARS; i++)
+        {
+            const t = (i + 0.5) / GAP_WARN_BARS;
+            const x = left + ((right - left) * t);
+
+            gfx.lineBetween(projectX(x, warnY), warnY, projectX(x, nearY), nearY);
+        }
     }
 
     /** Upward chevrons across a hurdle's face: go over, not around. */

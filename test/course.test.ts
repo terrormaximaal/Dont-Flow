@@ -12,7 +12,7 @@ function stubScene (): unknown
     return { add: { graphics: () => gfx, circle: () => gfx, text: () => gfx } };
 }
 
-function courseWith (profile: 'full' | 'low', onBlocked: () => void): Course
+function courseWith (profile: 'full' | 'low' | 'gap', onBlocked: () => void): Course
 {
     useLanes(DEFAULT_LANES);
 
@@ -34,7 +34,12 @@ function courseWith (profile: 'full' | 'low', onBlocked: () => void): Course
 }
 
 /** Runs a course past the barrier at a given height and reports the hits. */
-function runPast (profile: 'full' | 'low', height: number): number
+function runPast (
+    profile: 'full' | 'low' | 'gap',
+    height: number,
+    color: 'red' | 'blue' = 'blue',
+    wild = false
+): number
 {
     let hits = 0;
 
@@ -42,9 +47,9 @@ function runPast (profile: 'full' | 'low', height: number): number
 
     for (let travelled = 900; travelled <= 1100; travelled += 10)
     {
-        //  Sitting in the barrier's own lane, carrying a colour it does not
-        //  match - the worst case, and the only one that can be blocked.
-        course.update(travelled, laneCenterX(1), 'blue', false, height);
+        //  Sitting in the barrier's own lane. 'blue' is the worst case against
+        //  a red barrier; 'red' is the colour that would excuse one.
+        course.update(travelled, laneCenterX(1), color, wild, height);
     }
 
     return hits;
@@ -99,6 +104,40 @@ describe('a barrier the course is carrying', () => {
         }
 
         expect(hits).toBe(1);
+
+    });
+
+});
+
+describe('a hole in the road', () => {
+
+    it('swallows a grounded drop', () => {
+
+        expect(runPast('gap', 0)).toBe(1);
+
+    });
+
+    it('is cleared by jumping it', () => {
+
+        expect(runPast('gap', 1)).toBe(0);
+        expect(runPast('gap', JUMP_CLEAR_HEIGHT)).toBe(0);
+
+    });
+
+    //  The whole point of the profile. Every other hazard in the game is a
+    //  question about which colour you are carrying; this one is not, and the
+    //  colour that would walk you through the identical barrier does nothing.
+    it('is not excused by carrying its colour', () => {
+
+        expect(runPast('full', 0, 'red'), 'wall of your colour').toBe(0);
+        expect(runPast('gap', 0, 'red'), 'hole of your colour').toBe(1);
+
+    });
+
+    it('is not excused by a rainbow drop either', () => {
+
+        expect(runPast('full', 0, 'blue', true), 'wall while rainbow').toBe(0);
+        expect(runPast('gap', 0, 'blue', true), 'hole while rainbow').toBe(1);
 
     });
 

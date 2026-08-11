@@ -271,6 +271,17 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
+                //  Holes, introduced the way the hurdle was: one at a time, in
+                //  a lane you can simply not be in, before any of them asks to
+                //  be jumped. The row that spans the road is the one that does,
+                //  and by then the player has seen three and knows what they
+                //  are. Colour is no help here and never will be, which is the
+                //  whole reason this hazard exists.
+                rows: [ '.2.', '0..', '..3', '.0.', '2..', '..0', '.3.', '000', '..2', '.3.', '00.', '..2', '.0.', '3..' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 1, 2 ],
                 obstacles: 'pulse',
                 rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3' ]
             },

@@ -142,7 +142,12 @@ export class Course
                     obstacle.profile
                 );
 
-                if (!wild && obstacle.color !== dropColor && blocked)
+                //  Colour excuses a barrier of the same colour, and a rainbow
+                //  excuses any of them - but neither excuses a hole. There is
+                //  nothing to match: the road is simply not there.
+                const excused = obstacle.profile !== 'gap' && (wild || obstacle.color === dropColor);
+
+                if (!excused && blocked)
                 {
                     this.events.onBlocked(centre, y);
                 }

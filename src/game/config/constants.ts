@@ -576,6 +576,18 @@ export const JUMP_SHADOW_FADE = 0.6;
  */
 export const HURDLE_HEIGHT_SCALE = 0.4;
 
+/** How far along the road a hole runs, and how dark its floor is. */
+export const GAP_DEPTH = 190;
+export const GAP_FLOOR_ALPHA = 0.9;
+
+/** The lit lip along the near edge, which is what stops a hole reading as paint. */
+export const GAP_LIP_THICKNESS = 4;
+export const GAP_LIP_ALPHA = 0.85;
+
+/** Hatched warning bars across the near lip. */
+export const GAP_WARN_BARS = 4;
+export const GAP_WARN_ALPHA = 0.75;
+
 /** Chevrons on a hurdle's face, which say "over" without saying anything. */
 export const HURDLE_CHEVRONS = 3;
 export const HURDLE_CHEVRON_ALPHA = 0.9;

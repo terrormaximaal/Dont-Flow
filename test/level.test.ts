@@ -34,7 +34,7 @@ describe('a level and its lanes', () => {
                 for (const row of section.rows)
                 {
                     expect(row.length, `level ${spec.name}: "${row}"`).toBe(lanes);
-                    expect(row, `level ${spec.name}`).toMatch(/^[1-5a-eA-E.*]+$/);
+                    expect(row, `level ${spec.name}`).toMatch(/^[1-5a-eA-E0.*]+$/);
                 }
             }
         }
@@ -278,9 +278,10 @@ describe('the shipped levels', () => {
 
     });
 
-    //  A row of hurdles is deliberately full: there is no lane to steer into,
-    //  which is exactly what makes it teach the jump. So the rule is about
-    //  full-height barriers only - those are the ones that can trap a player.
+    //  A row of hurdles or holes is deliberately full: there is no lane to
+    //  steer into, which is exactly what makes it teach the jump. So the rule
+    //  is about full-height barriers only - those are the ones that can trap a
+    //  player with no way out at all.
     it('never fill a row completely with barriers that cannot be jumped', () => {
 
         for (const level of LEVELS)
@@ -320,7 +321,8 @@ describe('the shipped levels', () => {
                         continue;
                     }
 
-                    const jumpable = [ ...row ].every((c) => 'ABCDE'.includes(c));
+                    //  Hurdles and holes both: the way through either is over.
+                    const jumpable = [ ...row ].every((c) => 'ABCDE0'.includes(c));
 
                     expect(jumpable, `level ${level.name} row "${row}"`).toBe(true);
                 }

@@ -44,7 +44,20 @@ export const FINISH_GAP = 520;
  * slider that must be jumped is a different problem from a static one that must
  * be, and both are worth having.
  */
-export type ObstacleProfile = 'full' | 'low';
+export type ObstacleProfile =
+    /** A wall. Passed only by carrying its colour; cannot be jumped. */
+    | 'full'
+    /** A hurdle. Passed by carrying its colour, or by being above it. */
+    | 'low'
+    /**
+     * A hole in the road. Passed only by being above it.
+     *
+     * The first hazard in the game that colour has nothing to do with, which
+     * is the point of it: every other thing on the road is a question about
+     * which colour you are carrying, and this one is a question about where
+     * you are and when.
+     */
+    | 'gap';
 
 export type ObstacleKind =
     /** Sits in its lane. */
@@ -172,6 +185,14 @@ const OBSTACLE_CHARS = 'abcde';
 
 /** The same barriers, low enough to jump. */
 const HURDLE_CHARS = 'ABCDE';
+
+/**
+ * A hole in the road. No colour, because colour does not save you from one.
+ *
+ * Zero rather than a letter: the orbs are 1-5, so a gap reads as "nothing
+ * here" on the same scale, which is what it is.
+ */
+const GAP_CHAR = '0';
 export const RAINBOW_CHAR = '*';
 
 /**
@@ -248,6 +269,23 @@ export function buildLevel (spec: LevelSpec): Level
                 //  to jump. One character apart on purpose - a row of hurdles
                 //  should read as a row of barriers at a glance, because that
                 //  is what it is.
+                if (character === GAP_CHAR)
+                {
+                    obstacles.push({
+                        distance: rowDistance,
+                        lane,
+                        //  Carried but never read: a gap is not a colour
+                        //  question. Kept on the spec so every obstacle has the
+                        //  same shape rather than an optional field that only
+                        //  one profile ever fills in.
+                        color: colorAt(0),
+                        kind: 'static',
+                        profile: 'gap'
+                    });
+
+                    continue;
+                }
+
                 const hurdleIndex = HURDLE_CHARS.indexOf(character);
 
                 if (hurdleIndex >= 0)
@@ -303,14 +341,15 @@ export function rowHasSafeLane (row: string): boolean
             return true;
         }
 
-        //  A hurdle is a way through as well, just not a sideways one. This is
-        //  what the jump bought: a row with no gap in it used to be a row the
-        //  player could be trapped by, and now it is a row they go over.
+        //  A hurdle or a hole is a way through as well, just not a sideways
+        //  one. This is what the jump bought: a row with no gap in it used to
+        //  be a row the player could be trapped by, and now it is a row they
+        //  go over.
         //
         //  Widening the rule rather than dropping it. The thing being guarded
         //  is still "every row has a way through", which is the invariant that
         //  matters; the jump only added a second kind of way.
-        if (HURDLE_CHARS.includes(character))
+        if (HURDLE_CHARS.includes(character) || character === GAP_CHAR)
         {
             return true;
         }

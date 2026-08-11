@@ -51,10 +51,13 @@ export function isWithinCatchRange (dropX: number, orbX: number): boolean
  * travelled - the caller has that, and passing it keeps the drawn barrier and
  * the collided barrier the same barrier.
  *
- * Height is the same idea one axis up: a low barrier is cleared by being above
- * it, and a full-height one cannot be jumped at all. A grounded drop against a
- * full-height barrier is exactly the test this has always been, so every level
- * built before jumping existed plays unchanged.
+ * Height is the same idea one axis up: a low barrier or a hole is cleared by
+ * being above it, and a full-height one cannot be jumped at all. A grounded
+ * drop against a full-height barrier is exactly the test this has always been,
+ * so every level built before jumping existed plays unchanged.
+ *
+ * Whether colour saves you is the caller's question, not this one's - and for
+ * a gap the answer is no, which is why the caller has to ask it separately.
  *
  * @param dropHeight 0 on the road, 1 at the top of a jump.
  * @param profile    Whether this barrier can be cleared from above.
@@ -67,7 +70,7 @@ export function isBlockedBy (
     profile: ObstacleProfile = 'full'
 ): boolean
 {
-    if (profile === 'low' && dropHeight >= JUMP_CLEAR_HEIGHT)
+    if (profile !== 'full' && dropHeight >= JUMP_CLEAR_HEIGHT)
     {
         return false;
     }
