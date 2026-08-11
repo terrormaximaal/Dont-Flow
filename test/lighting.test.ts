@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LIGHT_X, LIGHT_Y } from '../src/game/config/constants';
-import { bounced, facing } from '../src/game/ui/lighting';
+import { bounced, facing, fogAt } from '../src/game/ui/lighting';
 
 describe('the key light', () => {
 
@@ -63,6 +63,66 @@ describe('the key light', () => {
 
         expect(LIGHT_X).toBeLessThan(0);
         expect(LIGHT_Y).toBeLessThan(0);
+
+    });
+
+});
+
+describe('distance fog on the scenery', () => {
+
+    it('leaves a prop at the player\'s own line alone', () => {
+
+        for (const haze of [ 0.16, 0.3, 0.45 ])
+        {
+            expect(fogAt(1, haze), `haze ${haze}`).toBe(0);
+        }
+
+    });
+
+    //  The bug this exists for: applied flat, the fog washed the forest's near
+    //  black pines to pale mint. The forest names a light haze colour but lays
+    //  it on at 0.16, and the fog has to respect the second number too.
+    it('fogs a thin-aired world far less than a thick-aired one', () => {
+
+        const thin = fogAt(0.3, 0.16);
+        const thick = fogAt(0.3, 0.45);
+
+        expect(thin).toBeLessThan(thick);
+        expect(thin).toBeLessThan(0.2);
+
+    });
+
+    it('never fogs at all when the world declares no haze', () => {
+
+        for (let scale = 0; scale <= 1; scale += 0.1)
+        {
+            expect(fogAt(scale, 0)).toBe(0);
+        }
+
+    });
+
+    it('grows with distance and stays within 0 and 1', () => {
+
+        let previous = -1;
+
+        for (let scale = 1; scale >= 0; scale -= 0.05)
+        {
+            const fog = fogAt(scale, 0.45);
+
+            expect(fog).toBeGreaterThanOrEqual(previous);
+            expect(fog).toBeGreaterThanOrEqual(0);
+            expect(fog).toBeLessThanOrEqual(1);
+
+            previous = fog;
+        }
+
+    });
+
+    it('clamps a depth scale from outside the road', () => {
+
+        //  Below the player's line the projection scales past 1.
+        expect(fogAt(1.4, 0.45)).toBe(0);
+        expect(fogAt(-0.2, 0.45)).toBeLessThanOrEqual(1);
 
     });
 

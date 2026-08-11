@@ -36,6 +36,7 @@ import { TrackScroller } from '../systems/TrackScroller';
 import { Trail } from '../systems/Trail';
 import { rainbowAt } from '../utils/color';
 import { showFloatingScore } from '../ui/FloatingScore';
+import { addVignette } from '../ui/Vignette';
 import { Hud } from '../ui/Hud';
 import { LevelComplete } from '../ui/LevelComplete';
 import { PauseButton } from '../ui/PauseButton';
@@ -151,12 +152,14 @@ export class Play extends Scene
 
         this.environment = new Environment(this, world);
         this.track = new TrackScroller(this, world);
-        this.roadside = world.roadside ? new Roadside(this, world.roadside) : null;
+        this.roadside = world.roadside ? new Roadside(this, world.roadside, world.hazeColor, world.hazeAlpha) : null;
         this.trail = new Trail(this);
         this.drop = new Drop(this);
         this.effects = new Effects(this);
         this.scoring = new ScoreSystem();
         this.hud = new Hud(this, level.name, world);
+
+        addVignette(this);
 
         const course = buildLevel(level);
 

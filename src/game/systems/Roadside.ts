@@ -1,6 +1,20 @@
 import { Scene } from 'phaser';
-import { DEPTH_ROADSIDE, GAME_HEIGHT, GAME_WIDTH, TRACK_WIDTH } from '../config/constants';
+import {
+    DEPTH_ROADSIDE,
+    GAME_HEIGHT,
+    GAME_WIDTH,
+    LIGHT_X,
+    PROP_LIT_OFFSET,
+    PROP_LIT_TINT,
+    PROP_LIT_WIDTH,
+    PROP_SHADOW_ALPHA,
+    PROP_SHADOW_LENGTH,
+    PROP_SHADOW_SQUASH,
+    TRACK_WIDTH
+} from '../config/constants';
 import { LayerShape, RoadsideSpec } from '../config/worlds';
+import { mixColor } from '../utils/color';
+import { fogAt } from '../ui/lighting';
 import { depthScale, projectX } from './Projection';
 import { drawStrength, screenYFor } from './World';
 
@@ -30,9 +44,21 @@ export class Roadside
     private readonly gfx: Phaser.GameObjects.Graphics;
     private readonly spec: RoadsideSpec;
 
-    constructor (scene: Scene, spec: RoadsideSpec)
+    /** The world's air, which distant props fade into. */
+    private readonly haze: number;
+
+    /** The prop's colour with the light on it, for the side facing the lamp. */
+    private readonly lit: number;
+
+    /** How thick this world's air is, which is how hard the fog bites. */
+    private readonly hazeAlpha: number;
+
+    constructor (scene: Scene, spec: RoadsideSpec, haze: number, hazeAlpha: number)
     {
         this.spec = spec;
+        this.haze = haze;
+        this.hazeAlpha = hazeAlpha;
+        this.lit = mixColor(spec.color, 0xffffff, PROP_LIT_TINT);
 
         this.gfx = scene.add.graphics();
         this.gfx.setDepth(ROADSIDE_DEPTH);
@@ -77,7 +103,8 @@ export class Roadside
                     (GAME_WIDTH / 2) + (out * side),
                     y,
                     spec.height * scale * (0.7 + (wobble(index * 3.7 * side) * 0.6)),
-                    spec.alpha * strength
+                    spec.alpha * strength,
+                    scale
                 );
             }
         }
@@ -88,7 +115,8 @@ export class Roadside
         trackX: number,
         y: number,
         height: number,
-        alpha: number
+        alpha: number,
+        scale: number
     ): void
     {
         const x = projectX(trackX, y);
@@ -96,7 +124,50 @@ export class Roadside
 
         if (height < 1.5) { return; }
 
-        gfx.fillStyle(this.spec.color, alpha);
+        //  Its shadow first, thrown along the ground away from the light, so
+        //  the prop stands on the world rather than in front of it.
+        gfx.fillStyle(0x000000, PROP_SHADOW_ALPHA * alpha);
+        gfx.fillEllipse(
+            x - (LIGHT_X * width * PROP_SHADOW_LENGTH),
+            y,
+            width * 2.2,
+            width * 2.2 * PROP_SHADOW_SQUASH
+        );
+
+        //  Distance fades a prop into the world's own air, exactly as it does
+        //  the road. Without it, scenery beside a road receding into haze reads
+        //  as cut out and pasted on. How far is the world's own business: a
+        //  world with thin air barely fogs at all.
+        const fog = fogAt(scale, this.hazeAlpha);
+
+        this.shape(gfx, x, y, width, height, mixColor(this.spec.color, this.haze, fog), alpha);
+
+        //  A narrow strip shifted towards the light, which is the lit edge.
+        //  Doing it this way rather than per shape means every prop in every
+        //  world is lit from the same place for free.
+        this.shape(
+            gfx,
+            x + (LIGHT_X * width * PROP_LIT_OFFSET),
+            y,
+            width * PROP_LIT_WIDTH,
+            height,
+            mixColor(this.lit, this.haze, fog),
+            alpha * 0.9
+        );
+    }
+
+    /** The prop's silhouette in one colour, whatever shape this world uses. */
+    private shape (
+        gfx: Phaser.GameObjects.Graphics,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+        color: number,
+        alpha: number
+    ): void
+    {
+        gfx.fillStyle(color, alpha);
 
         const shape: LayerShape = this.spec.shape;
 
@@ -114,7 +185,9 @@ export class Roadside
             gfx.fillRect(x - width, y - height, width * 2, height);
 
             //  A couple of lit windows, which is all a tower needs to read.
-            gfx.fillStyle(this.spec.color, alpha * 0.4);
+            //  Taken from the colour being drawn rather than the spec's, so a
+            //  hazed tower's windows haze with it.
+            gfx.fillStyle(color, alpha * 0.4);
             gfx.fillRect(x - (width * 0.4), y - (height * 0.8), width * 0.3, height * 0.12);
             gfx.fillRect(x + (width * 0.1), y - (height * 0.5), width * 0.3, height * 0.12);
 

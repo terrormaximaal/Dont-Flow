@@ -1,4 +1,4 @@
-import { LIGHT_FALLOFF, LIGHT_X, LIGHT_Y } from '../config/constants';
+import { LIGHT_FALLOFF, LIGHT_X, LIGHT_Y, PROP_FOG } from '../config/constants';
 
 //  One light, for the whole game.
 //
@@ -57,4 +57,22 @@ export function bounced (x: number, y: number): number
     const dot = y / length;
 
     return dot <= 0 ? 0 : dot * dot;
+}
+
+/**
+ * How far a thing at this depth has faded into the world's air, 0 to 1.
+ *
+ * Scaled by the world's own haze strength, not applied flat. A world names a
+ * haze colour and how thickly it lays it on, and both matter: the forest names
+ * a pale mint but uses it at 0.16, so fogging its near black pines by the
+ * colour alone turned them ghostly white.
+ *
+ * @param scale      Depth scale, 1 at the player's line and 0 at the horizon.
+ * @param hazeAlpha  How thick this world's air is.
+ */
+export function fogAt (scale: number, hazeAlpha: number): number
+{
+    const depth = Math.min(1, Math.max(0, 1 - scale));
+
+    return Math.min(1, depth * PROP_FOG * hazeAlpha);
 }

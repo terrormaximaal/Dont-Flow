@@ -488,6 +488,60 @@ export const GATE_ZOOM_IN_MS = 70;
 export const GATE_ZOOM_OUT_MS = 160;
 
 // ---------------------------------------------------------------------------
+//  Roadside lighting and atmosphere
+// ---------------------------------------------------------------------------
+
+/**
+ * How far a distant prop fades into the world's own air.
+ *
+ * The road already does this. Props standing beside a road that recedes into
+ * haze while they stay full strength read as cut out and pasted on, which is
+ * most of what made the scenery look flat.
+ *
+ * Scaled by each world's own hazeAlpha at the point of use, because that is
+ * what says how thick its air is. Applied flat, this washed the forest's near
+ * black pines to pale mint - the forest names a light haze colour but lays it
+ * on at 0.16, and the fog has to respect that.
+ */
+export const PROP_FOG = 0.9;
+
+/**
+ * The lit face down the side of a prop turned towards the light: how much
+ * lighter it is, how wide a strip of the prop it covers, and how far towards
+ * the light it sits.
+ *
+ * A strip, not a repaint. At half the prop's width it stops reading as a lit
+ * edge and simply becomes the prop's colour, which turned every silhouette in
+ * the forest grey.
+ */
+export const PROP_LIT_TINT = 0.34;
+export const PROP_LIT_WIDTH = 0.3;
+export const PROP_LIT_OFFSET = 0.62;
+
+/** A prop's shadow, cast away from the light along the ground. */
+export const PROP_SHADOW_ALPHA = 0.2;
+export const PROP_SHADOW_LENGTH = 0.5;
+export const PROP_SHADOW_SQUASH = 0.16;
+
+// ---------------------------------------------------------------------------
+//  Vignette
+//
+//  Bands rather than a radial gradient, which Graphics cannot fill. Drawn once
+//  at scene start, not per frame - it never changes.
+// ---------------------------------------------------------------------------
+
+export const VIGNETTE_BANDS = 14;
+export const VIGNETTE_ALPHA = 0.2;
+
+/**
+ * Above the world and the effects, below the HUD.
+ *
+ * Over the HUD it would darken the score and the pause button - which sits in
+ * the top corner, the darkest part of a vignette.
+ */
+export const VIGNETTE_DEPTH = 30;
+
+// ---------------------------------------------------------------------------
 //  Orb presence
 // ---------------------------------------------------------------------------
 
