@@ -15,9 +15,20 @@ import {
     HUD_STROKE_THICKNESS_SMALL,
     MULTIPLIER_POP_MS,
     MULTIPLIER_POP_SCALE,
-    MULTIPLIER_VISIBLE_FROM
+    MULTIPLIER_VISIBLE_FROM,
+    COLOR_SCORE_GAIN,
+    COLOR_SCORE_LOSS,
+    HUD_GLOW_BLUR,
+    HUD_LEVEL_TRACKING,
+    SCORE_POP_MS,
+    SCORE_POP_SCALE,
+    SCORE_ROLL_MIN,
+    SCORE_ROLL_RATE,
+    SCORE_TINT_MS,
+    SCORE_TINT_SHIFT
 } from '../config/constants';
 import { WorldSpec } from '../config/worlds';
+import { shiftCss } from '../utils/color';
 
 /**
  * Score and multiplier readout. Pure display - it is handed values, it never
@@ -32,6 +43,17 @@ export class Hud
 
     private shownMultiplier = -1;
 
+    /** The world's own text colour, which the score returns to after a change. */
+    private readonly textColor: string;
+
+    /** That colour leaning towards a gain and towards a loss. */
+    private readonly gainColor: string;
+    private readonly lossColor: string;
+
+    /** What the readout currently says, and the value a roll is tweening. */
+    private shownScore = 0;
+    private readonly rolling = { value: 0 };
+
     constructor (scene: Scene, levelName: string, world?: WorldSpec)
     {
         this.scene = scene;
@@ -41,6 +63,14 @@ export class Hud
         const text = world?.hudText ?? COLOR_HUD_TEXT;
         const dim = world?.hudDim ?? COLOR_HUD_DIM;
         const stroke = world?.hudStroke ?? COLOR_HUD_STROKE;
+
+        this.textColor = text;
+
+        //  Shifted towards the accent rather than replaced by it. A flat pale
+        //  green reads well over the dark road the floating score flies off,
+        //  and disappears against the sky the total sits in front of.
+        this.gainColor = shiftCss(text, COLOR_SCORE_GAIN, SCORE_TINT_SHIFT);
+        this.lossColor = shiftCss(text, COLOR_SCORE_LOSS, SCORE_TINT_SHIFT);
 
         this.levelText = scene.add.text(GAME_WIDTH / 2, HUD_LEVEL_MARGIN_TOP, `LEVEL ${levelName}`, {
             fontFamily: HUD_FONT,
@@ -53,6 +83,10 @@ export class Hud
         this.levelText.setOrigin(0.5, 0);
         this.levelText.setDepth(DEPTH_HUD);
 
+        //  Tracked out. A short all-caps label reads as a title rather than as
+        //  a word once its letters are given room.
+        this.levelText.setLetterSpacing(HUD_LEVEL_TRACKING);
+
         this.scoreText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP, '0', {
             fontFamily: HUD_FONT,
             fontSize: HUD_SCORE_SIZE,
@@ -64,6 +98,10 @@ export class Hud
         this.scoreText.setOrigin(0.5, 0);
         this.scoreText.setDepth(DEPTH_HUD);
 
+        //  A soft glow in the world's own outline colour, which lets the score
+        //  hold against a bright sky or a dark one without a panel behind it.
+        this.scoreText.setShadow(0, 0, stroke, HUD_GLOW_BLUR, true, true);
+
         this.comboText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP + HUD_SCORE_SIZE + 8, '', {
             fontFamily: HUD_FONT,
             fontSize: HUD_COMBO_SIZE,
@@ -74,11 +112,86 @@ export class Hud
 
         this.comboText.setOrigin(0.5, 0);
         this.comboText.setDepth(DEPTH_HUD);
+        this.comboText.setShadow(0, 0, stroke, HUD_GLOW_BLUR * 0.6, true, true);
     }
 
+    /**
+     * The score, rolled up to rather than snapped to.
+     *
+     * A number that snaps is read as a *different* number; one that travels is
+     * read as the same number changing, which is the whole point of a counter.
+     * Rolled at a fixed rate rather than over a fixed duration, so a big gain
+     * takes visibly longer than a small one instead of every change feeling the
+     * same size.
+     */
     setScore (score: number): void
     {
-        this.scoreText.setText(String(score));
+        const from = this.shownScore;
+        const step = score - from;
+
+        if (step === 0)
+        {
+            return;
+        }
+
+        //  Whatever roll is running is dropped rather than queued, so a run of
+        //  quick collects always ends on the true total.
+        this.scene.tweens.killTweensOf(this.rolling);
+
+        this.reactToScore(step);
+
+        if (Math.abs(step) < SCORE_ROLL_MIN)
+        {
+            this.shownScore = score;
+            this.scoreText.setText(String(score));
+
+            return;
+        }
+
+        this.rolling.value = from;
+
+        this.scene.tweens.add({
+            targets: this.rolling,
+            value: score,
+            duration: (Math.abs(step) / SCORE_ROLL_RATE) * 1000,
+            ease: 'Quad.Out',
+            onUpdate: () => {
+
+                this.shownScore = Math.round(this.rolling.value);
+                this.scoreText.setText(String(this.shownScore));
+
+            },
+            onComplete: () => {
+
+                this.shownScore = score;
+                this.scoreText.setText(String(score));
+
+            }
+        });
+    }
+
+    /**
+     * The kick and the colour the score wears for a moment after a change.
+     *
+     * Green up, red down, and back to the world's own text colour - so what
+     * just happened is legible from the top of the screen without reading the
+     * number, which is where the player's eyes are not.
+     */
+    private reactToScore (step: number): void
+    {
+        this.scene.tweens.killTweensOf(this.scoreText);
+
+        this.scoreText.setScale(SCORE_POP_SCALE);
+        this.scoreText.setColor(step > 0 ? this.gainColor : this.lossColor);
+
+        this.scene.tweens.add({
+            targets: this.scoreText,
+            scale: 1,
+            duration: SCORE_POP_MS,
+            ease: 'Back.Out'
+        });
+
+        this.scene.time.delayedCall(SCORE_TINT_MS, () => this.scoreText.setColor(this.textColor));
     }
 
     /**

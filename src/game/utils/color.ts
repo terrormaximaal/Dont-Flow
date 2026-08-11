@@ -32,3 +32,28 @@ export function rainbowAt (phase: number): number
         wrapped - index
     );
 }
+
+/** Parses '#rrggbb' into a packed value. */
+export function fromCss (css: string): number
+{
+    return parseInt(css.replace('#', ''), 16);
+}
+
+/** Packs a value back into '#rrggbb'. */
+export function toCss (color: number): string
+{
+    return `#${color.toString(16).padStart(6, '0')}`;
+}
+
+/**
+ * Nudges a CSS colour towards another and hands back CSS.
+ *
+ * Used where a readout has to say something with colour without giving up the
+ * legibility its world was tuned for: replacing the text colour outright puts
+ * pale green on a pale sky, which says the right thing about the score and
+ * makes it unreadable while doing so.
+ */
+export function shiftCss (from: string, towards: string, amount: number): string
+{
+    return toCss(mixColor(fromCss(from), fromCss(towards), amount));
+}

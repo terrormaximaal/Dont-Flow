@@ -961,6 +961,48 @@ export const MULTIPLIER_POP_SCALE = 1.7;
 export const MULTIPLIER_POP_MS = 280;
 
 // ---------------------------------------------------------------------------
+//  HUD polish
+// ---------------------------------------------------------------------------
+
+/**
+ * How fast the score runs up to a new total, in points per second.
+ *
+ * A number that snaps is read as a different number; one that travels is read
+ * as the same number changing, which is the whole reason a counter rolls. Fast
+ * enough to have settled long before the next orb arrives.
+ */
+export const SCORE_ROLL_RATE = 260;
+
+/** Smallest step worth rolling. Below it the roll is slower than just showing it. */
+export const SCORE_ROLL_MIN = 2;
+
+/** The score's own kick when it changes, up and down. */
+export const SCORE_POP_SCALE = 1.22;
+export const SCORE_POP_MS = 190;
+
+/**
+ * How long the score wears the colour of what just happened.
+ *
+ * The colours themselves are the floating-score ones, above: the number that
+ * flies off the hit and the total it lands in have to agree.
+ */
+export const SCORE_TINT_MS = 260;
+
+/**
+ * How far towards that colour the world's own text colour is pulled.
+ *
+ * Low, and set by the tightest world rather than by taste: the desert carries
+ * dark text on a bright orange sky, and past about a quarter of the way the
+ * score stops separating from it. The kick carries the emphasis; this only has
+ * to carry the meaning.
+ */
+export const SCORE_TINT_SHIFT = 0.25;
+
+/** A soft glow behind the readouts, so they sit on any world without a plate. */
+export const HUD_GLOW_BLUR = 12;
+export const HUD_LEVEL_TRACKING = 3;
+
+// ---------------------------------------------------------------------------
 //  Course
 // ---------------------------------------------------------------------------
 
