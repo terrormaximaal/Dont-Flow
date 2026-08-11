@@ -37,6 +37,23 @@ export function paintPageBackdrop (world: WorldSpec): void
         `linear-gradient(to bottom, ${skyTop} 0%, ${skyBottom} ${horizon}%, ${ground} ${horizon}%, ${ground} 100%)`;
 }
 
+/**
+ * Paints the bars in two flat colours, for a screen that is not a world.
+ *
+ * The menu has no horizon and no ground, so there is nothing for the world
+ * version below to measure against - it just needs the bars to carry the top
+ * and bottom of whatever is on screen.
+ */
+export function paintPageColors (top: number, bottom: number): void
+{
+    if (typeof document === 'undefined')
+    {
+        return;
+    }
+
+    document.body.style.background = `linear-gradient(to bottom, ${css(top)} 0%, ${css(bottom)} 100%)`;
+}
+
 function css (color: number): string
 {
     return `#${color.toString(16).padStart(6, '0')}`;

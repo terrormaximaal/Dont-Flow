@@ -1003,6 +1003,35 @@ export const HUD_GLOW_BLUR = 12;
 export const HUD_LEVEL_TRACKING = 3;
 
 // ---------------------------------------------------------------------------
+//  Button surfacing
+// ---------------------------------------------------------------------------
+
+/** Corner radius. A hard corner is the fastest way to look unfinished. */
+export const BUTTON_RADIUS = 14;
+
+/** How much lighter the top of a button is than its foot. */
+export const BUTTON_SHEEN = 0.24;
+
+/** Bands the sheen is stepped through. One step reads as a seam, not a curve. */
+export const BUTTON_SHEEN_BANDS = 7;
+
+/** A hairline along the top edge, which is what reads as a raised surface. */
+export const BUTTON_EDGE_ALPHA = 0.4;
+
+/** A soft halo under the primary button, in its own colour. */
+export const BUTTON_GLOW_LAYERS = 5;
+export const BUTTON_GLOW_SPREAD = 9;
+export const BUTTON_GLOW_ALPHA = 0.07;
+
+/** The press: how far it sinks, and how long it takes to come back. */
+export const BUTTON_PRESS_SCALE = 0.955;
+export const BUTTON_PRESS_MS = 90;
+export const BUTTON_RELEASE_MS = 220;
+
+/** Letter spacing on a label. Buttons are set wider than sentences. */
+export const BUTTON_TRACKING = 2;
+
+// ---------------------------------------------------------------------------
 //  Course
 // ---------------------------------------------------------------------------
 

@@ -4,30 +4,25 @@ import {
     BUTTON_HEIGHT,
     COLOR_DROP_NEUTRAL,
     COLOR_HUD_DIM,
-    COLOR_HUD_TEXT,
-    DEFAULT_LANES,
     DEPTH_HUD,
     GAME_WIDTH,
     HUD_FONT,
-    MENU_SCROLL_SPEED,
     RESUME_AT_LAST_LEVEL,
     TITLE_BUTTONS_Y,
     TITLE_ENERGY_Y,
     TITLE_DROP_RADIUS,
     TITLE_LOGO_Y,
-    TITLE_SIZE,
     TITLE_TAGLINE_SIZE
 } from '../config/constants';
 import { LEVELS } from '../config/levels';
-import { WORLDS } from '../config/worldData';
-import { paintPageBackdrop } from '../systems/PageBackdrop';
+import { MENU_SKY_LOW, MENU_SKY_TOP } from '../config/menuTheme';
+import { paintPageColors } from '../systems/PageBackdrop';
 import { EnergySystem } from '../systems/EnergySystem';
-import { Environment } from '../systems/Environment';
-import { useLanes } from '../systems/Lanes';
+import { MenuSky } from '../systems/MenuSky';
 import { SaveSystem } from '../systems/SaveSystem';
-import { TrackScroller } from '../systems/TrackScroller';
 import { Button } from '../ui/Button';
 import { EnergyMeter } from '../ui/EnergyMeter';
+import { TitleMark } from '../ui/TitleMark';
 import { waterOutline } from '../entities/drop-surface';
 import { drawWaterDrop } from '../ui/shapes';
 
@@ -37,12 +32,9 @@ import { drawWaterDrop } from '../ui/shapes';
  */
 export class Title extends Scene
 {
-    private environment: Environment;
-    private track: TrackScroller;
+    private sky: MenuSky;
     private meter: EnergyMeter;
     private logo: Phaser.GameObjects.Graphics;
-    private distance = 0;
-
     /** Seconds on screen, so the logo ripples on its own clock. */
     private elapsed = 0;
 
@@ -53,19 +45,12 @@ export class Title extends Scene
 
     create ()
     {
-        this.distance = 0;
+        //  Somewhere else entirely, not the road with buttons over it. Looking
+        //  down the track made the first screen say "here is the game already"
+        //  rather than "here is what this game is".
+        paintPageColors(MENU_SKY_TOP, MENU_SKY_LOW);
 
-        //  The menus look down the same road the game is played on, sky and all.
-        //  Without the environment the road is only painted from the horizon
-        //  down, and everything above it stays bare background - which reads as
-        //  the game being letterboxed into a band rather than filling the screen.
-        //  Always the standard road, whatever level was played last.
-        useLanes(DEFAULT_LANES);
-
-        paintPageBackdrop(WORLDS.space);
-
-        this.environment = new Environment(this, WORLDS.space);
-        this.track = new TrackScroller(this, WORLDS.space);
+        this.sky = new MenuSky(this);
 
         const save = new SaveSystem();
         const energy = new EnergySystem(save);
@@ -75,7 +60,6 @@ export class Title extends Scene
         const canContinue = RESUME_AT_LAST_LEVEL && resumeLevel > 0;
         const canPlay = energy.mayStart();
 
-        this.distance = 0;
         this.elapsed = 0;
 
         //  The same drop the player steers, rippling on the spot - a still one
@@ -85,14 +69,7 @@ export class Title extends Scene
         this.logo.setPosition(GAME_WIDTH / 2, TITLE_LOGO_Y);
         this.logo.setDepth(DEPTH_HUD);
 
-        const title = this.add.text(GAME_WIDTH / 2, TITLE_LOGO_Y + 78, "DON'T FLOW", {
-            fontFamily: HUD_FONT,
-            fontSize: TITLE_SIZE,
-            color: COLOR_HUD_TEXT
-        });
-
-        title.setOrigin(0.5);
-        title.setDepth(DEPTH_HUD);
+        new TitleMark(this, TITLE_LOGO_Y + 78);
 
         const tagline = this.add.text(GAME_WIDTH / 2, TITLE_LOGO_Y + 116, 'MATCH THE COLOUR. KEEP THE COMBO.', {
             fontFamily: HUD_FONT,
@@ -145,7 +122,6 @@ export class Title extends Scene
 
     update (_time: number, delta: number)
     {
-        this.distance += MENU_SCROLL_SPEED * (delta / 1000);
         this.elapsed += delta / 1000;
 
         drawWaterDrop(this.logo, {
@@ -154,8 +130,7 @@ export class Title extends Scene
             color: COLOR_DROP_NEUTRAL
         });
 
-        this.environment.update(this.distance, delta);
-        this.track.update(this.distance);
+        this.sky.update(delta);
         this.meter.update();
     }
 }
