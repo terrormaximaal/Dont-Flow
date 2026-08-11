@@ -1,6 +1,9 @@
 import { Scene } from 'phaser';
 import {
     COLOR_VALUES,
+    HURDLE_CHEVRON_ALPHA,
+    HURDLE_CHEVRONS,
+    HURDLE_HEIGHT_SCALE,
     ColorId,
     DEPTH_ORBS,
     OBSTACLE_DEPTH,
@@ -11,7 +14,7 @@ import {
     OBSTACLE_FOOT_ALPHA,
     OBSTACLE_STAND_HEIGHT
 } from '../config/constants';
-import { ObstacleKind, ObstacleSpec } from '../config/level';
+import { ObstacleKind, ObstacleProfile, ObstacleSpec } from '../config/level';
 import { barrierCentre, barrierHalfWidth } from '../systems/barrier';
 import { depthScale, fillProjectedQuad, projectX } from '../systems/Projection';
 import { drawStrength, screenYFor } from '../systems/World';
@@ -36,6 +39,9 @@ export class Obstacle
     readonly color: ColorId;
     readonly kind: ObstacleKind;
 
+    /** Whether it can be cleared from above. */
+    readonly profile: ObstacleProfile;
+
     /** True once passed, so it can only count one time. */
     consumed = false;
 
@@ -47,6 +53,7 @@ export class Obstacle
         this.distance = spec.distance;
         this.color = spec.color;
         this.kind = spec.kind;
+        this.profile = spec.profile;
         this.lane = spec.lane;
 
         this.gfx = scene.add.graphics();
@@ -98,8 +105,11 @@ export class Obstacle
         if (baseRight - baseLeft < 2) { return y; }
 
         //  The face standing up from it. Flat and facing the camera, so its top
-        //  corners sit directly above the base ones.
-        const top = y - (OBSTACLE_STAND_HEIGHT * scale);
+        //  corners sit directly above the base ones. A low one stands a
+        //  fraction of the height, which is the only cue the player gets that
+        //  it can be jumped - so it has to be unmistakable.
+        const stand = OBSTACLE_STAND_HEIGHT * (this.profile === 'low' ? HURDLE_HEIGHT_SCALE : 1);
+        const top = y - (stand * scale);
 
         gfx.fillStyle(value, OBSTACLE_FILL_ALPHA);
         gfx.fillRect(baseLeft, top, baseRight - baseLeft, y - top);
@@ -108,6 +118,18 @@ export class Obstacle
         //  large orb - the two mean opposite things on contact.
         gfx.lineStyle(Math.max(1, OBSTACLE_EDGE_THICKNESS * scale), value, 1);
         gfx.strokeRect(baseLeft, top, baseRight - baseLeft, y - top);
+
+        if (this.profile === 'low')
+        {
+            //  Chevrons pointing up the face rather than hatching across it.
+            //  Hatching says "solid"; an arrow pointing over the top says the
+            //  one thing the player needs to know, in no words.
+            this.chevrons(gfx, baseLeft, baseRight, y, top, value, scale);
+
+            void half;
+
+            return y;
+        }
 
         gfx.lineStyle(Math.max(1, 2 * scale), value, OBSTACLE_HATCH_ALPHA);
 
@@ -123,6 +145,34 @@ export class Obstacle
         void half;
 
         return y;
+    }
+
+    /** Upward chevrons across a hurdle's face: go over, not around. */
+    private chevrons (
+        gfx: Phaser.GameObjects.Graphics,
+        left: number,
+        right: number,
+        base: number,
+        top: number,
+        value: number,
+        scale: number
+    ): void
+    {
+        const width = right - left;
+        const height = base - top;
+
+        gfx.lineStyle(Math.max(1, 2.5 * scale), 0xffffff, HURDLE_CHEVRON_ALPHA);
+
+        for (let i = 0; i < HURDLE_CHEVRONS; i++)
+        {
+            const cx = left + (width * ((i + 0.5) / HURDLE_CHEVRONS));
+            const arm = width / (HURDLE_CHEVRONS * 2.6);
+
+            gfx.lineBetween(cx - arm, base - (height * 0.25), cx, top + (height * 0.2));
+            gfx.lineBetween(cx, top + (height * 0.2), cx + arm, base - (height * 0.25));
+        }
+
+        void value;
     }
 
     destroy (): void

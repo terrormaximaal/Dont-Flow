@@ -1,5 +1,6 @@
 import {
     SWIPE_DOMINANCE,
+    SWIPE_UP_THRESHOLD,
     SWIPE_REANCHOR_DISTANCE,
     SWIPE_REPEAT_DELAY,
     SWIPE_THRESHOLD
@@ -19,6 +20,9 @@ export interface DragResult
     /** 0 when the drag has not asked for anything yet. */
     intent: LaneIntent | 0;
 
+    /** True when this drag has just asked for a jump. */
+    jump: boolean;
+
     /** Where the next movement should be measured from. */
     anchor: DragAnchor;
 }
@@ -35,6 +39,10 @@ export interface DragResult
  * - wandering vertically, so a gesture that starts as a downward drag is judged
  *   on where it goes next rather than being permanently disqualified by
  *   distance it covered earlier.
+ *
+ * Sideways is tested before upwards. A diagonal flick is far more likely to be
+ * a hurried lane change than a jump, and steering is the thing the player does
+ * constantly - it gets the benefit of the doubt.
  */
 export function evaluateDrag (anchor: DragAnchor, x: number, y: number): DragResult
 {
@@ -46,15 +54,22 @@ export function evaluateDrag (anchor: DragAnchor, x: number, y: number): DragRes
 
     if (farEnough && horizontalEnough)
     {
-        return { intent: dx > 0 ? 1 : -1, anchor: { x, y } };
+        return { intent: dx > 0 ? 1 : -1, jump: false, anchor: { x, y } };
+    }
+
+    //  Upwards, and clearly more up than across. Checked before the reanchor
+    //  below, which would otherwise swallow the very gesture it is measuring.
+    if (dy <= -SWIPE_UP_THRESHOLD && Math.abs(dy) >= Math.abs(dx) * SWIPE_DOMINANCE)
+    {
+        return { intent: 0, jump: true, anchor: { x, y } };
     }
 
     if (Math.abs(dy) >= SWIPE_REANCHOR_DISTANCE)
     {
-        return { intent: 0, anchor: { x, y } };
+        return { intent: 0, jump: false, anchor: { x, y } };
     }
 
-    return { intent: 0, anchor };
+    return { intent: 0, jump: false, anchor };
 }
 
 /**

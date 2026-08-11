@@ -181,7 +181,11 @@ export class Play extends Scene
 
         this.powerUps = new PowerUps(this, course.powerUps, (x, y) => this.onRainbow(x, y));
 
-        this.input_ = new InputSystem(this, (direction) => this.drop.moveLane(direction));
+        this.input_ = new InputSystem(
+            this,
+            (direction) => this.drop.moveLane(direction),
+            () => this.drop.jump(this.distance)
+        );
 
         this.pauseButton = new PauseButton(this, () => this.setPaused(true));
 
@@ -387,11 +391,17 @@ export class Play extends Scene
             : 0;
 
         this.drop.setWild(left > 0, left);
-        this.drop.update(dt);
+        this.drop.update(dt, this.distance);
 
         this.trail.update(this.distance, this.drop.getX(), this.drop.getPaintColor());
 
         this.powerUps.update(this.distance, this.drop.getX());
-        this.course.update(this.distance, this.drop.getX(), this.drop.getColorId(), left > 0);
+        this.course.update(
+            this.distance,
+            this.drop.getX(),
+            this.drop.getColorId(),
+            left > 0,
+            this.drop.getHeight()
+        );
     }
 }

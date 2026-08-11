@@ -538,6 +538,52 @@ export const PROP_SHADOW_LENGTH = 0.5;
 export const PROP_SHADOW_SQUASH = 0.16;
 
 // ---------------------------------------------------------------------------
+//  The jump
+//
+//  Measured in track distance, not seconds. A jump timed in seconds would clear
+//  a different length of road on every level, so an obstacle that could be
+//  cleared on level 1 might be unclearable on level 10 purely because the road
+//  is moving faster. In distance, a jump clears the same ground everywhere.
+// ---------------------------------------------------------------------------
+
+/** How much road one jump covers. */
+export const JUMP_SPAN = 620;
+
+/** How far up the screen the drop rises at the top of the arc. */
+export const JUMP_LIFT = 96;
+
+/**
+ * How high the drop must be to clear a low obstacle, 0 to 1.
+ *
+ * Well inside the arc at both ends, so clearing one is a matter of jumping at
+ * roughly the right time rather than exactly the right frame.
+ */
+export const JUMP_CLEAR_HEIGHT = 0.34;
+
+/** The squash going up and the squash landing, and how long each lasts. */
+export const JUMP_TAKEOFF_SQUASH = 0.26;
+export const JUMP_LANDING_SQUASH = 0.3;
+
+/** The shadow shrinks and fades as the drop climbs, which is how height reads. */
+export const JUMP_SHADOW_SHRINK = 0.55;
+export const JUMP_SHADOW_FADE = 0.6;
+
+/**
+ * How tall a low barrier stands, against a full one.
+ *
+ * Low enough that it reads as something to go over at a glance, without being
+ * so low it stops reading as a barrier at all.
+ */
+export const HURDLE_HEIGHT_SCALE = 0.4;
+
+/** Chevrons on a hurdle's face, which say "over" without saying anything. */
+export const HURDLE_CHEVRONS = 3;
+export const HURDLE_CHEVRON_ALPHA = 0.9;
+
+/** An upward flick this long, and this much more vertical than sideways, jumps. */
+export const SWIPE_UP_THRESHOLD = 34;
+
+// ---------------------------------------------------------------------------
 //  Slipstream
 //
 //  Motes streaking past the drop, placed at world distances like everything

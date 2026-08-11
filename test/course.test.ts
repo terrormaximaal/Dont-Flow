@@ -1,0 +1,105 @@
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_LANES, JUMP_CLEAR_HEIGHT } from '../src/game/config/constants';
+import { Level } from '../src/game/config/level';
+import { Course } from '../src/game/systems/Course';
+import { laneCenterX, useLanes } from '../src/game/systems/Lanes';
+
+/** Enough of a scene for the course to build its objects into. */
+function stubScene (): unknown
+{
+    const gfx: Record<string, unknown> = new Proxy({}, { get: () => () => gfx });
+
+    return { add: { graphics: () => gfx, circle: () => gfx, text: () => gfx } };
+}
+
+function courseWith (profile: 'full' | 'low', onBlocked: () => void): Course
+{
+    useLanes(DEFAULT_LANES);
+
+    const level: Level = {
+        gates: [],
+        orbs: [],
+        obstacles: [ { distance: 1000, lane: 1, color: 'red', kind: 'static', profile } ],
+        powerUps: [],
+        finishDistance: 100000
+    };
+
+    //  eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return new Course(stubScene() as any, level, {
+        onGate: () => {},
+        onOrb: () => {},
+        onBlocked,
+        onFinish: () => {}
+    });
+}
+
+/** Runs a course past the barrier at a given height and reports the hits. */
+function runPast (profile: 'full' | 'low', height: number): number
+{
+    let hits = 0;
+
+    const course = courseWith(profile, () => { hits++; });
+
+    for (let travelled = 900; travelled <= 1100; travelled += 10)
+    {
+        //  Sitting in the barrier's own lane, carrying a colour it does not
+        //  match - the worst case, and the only one that can be blocked.
+        course.update(travelled, laneCenterX(1), 'blue', false, height);
+    }
+
+    return hits;
+}
+
+describe('a barrier the course is carrying', () => {
+
+    //  The unit rule is tested next door in jump.test. This is the wiring:
+    //  whether the height the drop reports actually reaches the rule, which is
+    //  a different thing and the one more likely to be got wrong.
+    it('blocks a grounded drop whatever its profile', () => {
+
+        expect(runPast('full', 0), 'full').toBe(1);
+        expect(runPast('low', 0), 'low').toBe(1);
+
+    });
+
+    it('lets a jumping drop over a low one', () => {
+
+        expect(runPast('low', 1)).toBe(0);
+        expect(runPast('low', JUMP_CLEAR_HEIGHT)).toBe(0);
+
+    });
+
+    //  The regression for every level built before the jump existed.
+    it('never lets a jumping drop through a full-height one', () => {
+
+        for (let height = 0; height <= 1; height += 0.1)
+        {
+            expect(runPast('full', height), `height ${height.toFixed(1)}`).toBe(1);
+        }
+
+    });
+
+    it('still blocks a low one from a drop that has barely left the road', () => {
+
+        expect(runPast('low', JUMP_CLEAR_HEIGHT - 0.05)).toBe(1);
+
+    });
+
+    //  Height is the last argument and defaults to zero, so anything calling
+    //  the old way must still get the old answer.
+    it('treats a caller that passes no height as grounded', () => {
+
+        let hits = 0;
+
+        const course = courseWith('low', () => { hits++; });
+
+        for (let travelled = 900; travelled <= 1100; travelled += 10)
+        {
+            course.update(travelled, laneCenterX(1), 'blue');
+        }
+
+        expect(hits).toBe(1);
+
+    });
+
+});

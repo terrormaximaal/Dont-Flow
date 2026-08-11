@@ -1,4 +1,10 @@
-import { DROP_CONTACT_RADIUS, ORB_CATCH_RADIUS, TRACK_LEFT } from '../config/constants';
+import {
+    DROP_CONTACT_RADIUS,
+    JUMP_CLEAR_HEIGHT,
+    ORB_CATCH_RADIUS,
+    TRACK_LEFT
+} from '../config/constants';
+import { ObstacleProfile } from '../config/level';
 import { laneWidth } from './Lanes';
 
 //  What the drop is touching, as pure geometry.
@@ -44,8 +50,27 @@ export function isWithinCatchRange (dropX: number, orbX: number): boolean
  * itself, because a moving barrier's position is a function of distance
  * travelled - the caller has that, and passing it keeps the drawn barrier and
  * the collided barrier the same barrier.
+ *
+ * Height is the same idea one axis up: a low barrier is cleared by being above
+ * it, and a full-height one cannot be jumped at all. A grounded drop against a
+ * full-height barrier is exactly the test this has always been, so every level
+ * built before jumping existed plays unchanged.
+ *
+ * @param dropHeight 0 on the road, 1 at the top of a jump.
+ * @param profile    Whether this barrier can be cleared from above.
  */
-export function isBlockedBy (dropX: number, obstacleX: number, obstacleHalfWidth: number): boolean
+export function isBlockedBy (
+    dropX: number,
+    obstacleX: number,
+    obstacleHalfWidth: number,
+    dropHeight = 0,
+    profile: ObstacleProfile = 'full'
+): boolean
 {
+    if (profile === 'low' && dropHeight >= JUMP_CLEAR_HEIGHT)
+    {
+        return false;
+    }
+
     return Math.abs(dropX - obstacleX) < obstacleHalfWidth + DROP_CONTACT_RADIUS;
 }

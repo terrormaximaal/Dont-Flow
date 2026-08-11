@@ -100,13 +100,20 @@ describe('every level', () => {
 
             for (const [ distance, obstacles ] of rows)
             {
+                //  A row made entirely of hurdles has no free lane on purpose:
+                //  the way through it is over it. Checked separately below.
+                if (obstacles.every((o) => o.profile === 'low'))
+                {
+                    continue;
+                }
+
                 //  Worst case is carrying a colour none of them match, so none
                 //  of them can be passed through.
                 const free = [];
 
                 for (let lane = 0; lane < laneCount(); lane++)
                 {
-                    if (obstacles.every((o) => isClear(lane, o.kind, o.lane, distance)))
+                    if (obstacles.every((o) => isClear(lane, o.kind, o.lane, distance) || o.profile === 'low'))
                     {
                         free.push(lane);
                     }

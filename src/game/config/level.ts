@@ -36,6 +36,16 @@ export const FINISH_GAP = 520;
  * How an obstacle behaves. Introduced a kind at a time as the levels progress,
  * so no single level asks the player to read something they have not met.
  */
+/**
+ * Whether a barrier can be cleared from above.
+ *
+ * 'low' is the one that needs the jump. Kept separate from the kind rather than
+ * folded into it, because every kind of movement should be able to be low: a
+ * slider that must be jumped is a different problem from a static one that must
+ * be, and both are worth having.
+ */
+export type ObstacleProfile = 'full' | 'low';
+
 export type ObstacleKind =
     /** Sits in its lane. */
     | 'static'
@@ -138,6 +148,7 @@ export interface ObstacleSpec
     lane: number;
     color: ColorId;
     kind: ObstacleKind;
+    profile: ObstacleProfile;
 }
 
 /** A rainbow drop waiting to be picked up. It has no colour: that is the point. */
@@ -158,6 +169,9 @@ export interface Level
 
 const ORB_CHARS = '12345';
 const OBSTACLE_CHARS = 'abcde';
+
+/** The same barriers, low enough to jump. */
+const HURDLE_CHARS = 'ABCDE';
 export const RAINBOW_CHAR = '*';
 
 /**
@@ -223,7 +237,27 @@ export function buildLevel (spec: LevelSpec): Level
                         distance: rowDistance,
                         lane,
                         color: colorAt(obstacleIndex),
-                        kind: section.obstacles ?? 'static'
+                        kind: section.obstacles ?? 'static',
+                        profile: 'full'
+                    });
+
+                    continue;
+                }
+
+                //  The same letters in capitals: the same barrier, low enough
+                //  to jump. One character apart on purpose - a row of hurdles
+                //  should read as a row of barriers at a glance, because that
+                //  is what it is.
+                const hurdleIndex = HURDLE_CHARS.indexOf(character);
+
+                if (hurdleIndex >= 0)
+                {
+                    obstacles.push({
+                        distance: rowDistance,
+                        lane,
+                        color: colorAt(hurdleIndex),
+                        kind: section.obstacles ?? 'static',
+                        profile: 'low'
                     });
                 }
             }
@@ -265,6 +299,18 @@ export function rowHasSafeLane (row: string): boolean
             || character === '.'
             || character === RAINBOW_CHAR
             || ORB_CHARS.includes(character))
+        {
+            return true;
+        }
+
+        //  A hurdle is a way through as well, just not a sideways one. This is
+        //  what the jump bought: a row with no gap in it used to be a row the
+        //  player could be trapped by, and now it is a row they go over.
+        //
+        //  Widening the rule rather than dropping it. The thing being guarded
+        //  is still "every row has a way through", which is the invariant that
+        //  matters; the jump only added a second kind of way.
+        if (HURDLE_CHARS.includes(character))
         {
             return true;
         }

@@ -179,12 +179,26 @@ export const LEVELS: LevelSpec[] = [
         forwardSpeed: 480,
         rowSpacing: 152,
         //  Static barriers, now regularly, and orbs tucked in beside them.
+        //
+        //  Also where the jump is taught. A hurdle spans the whole road, so
+        //  there is no lane to steer into and the only way through is over -
+        //  which is the lesson, and it is taught by a wall the player cannot
+        //  misread rather than by a line of text. Introduced alone, in the
+        //  quietest part of the level, before it is ever mixed with anything.
         sections: [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
                 obstacles: 'static',
                 rows: [ '1..', '.b.', '..1', '2..', '.a.', '..2', '1.b', '..1', 'a..', '.*.', '..b', '1..', '.1.', 'b..', '..2' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 1, 0 ],
+                obstacles: 'static',
+                //  One clear run at it, then a second with orbs either side so
+                //  the jump is worth timing rather than just surviving.
+                rows: [ '...', '.2.', '...', 'AAA', '...', '.1.', '...', 'AAA', '2.2', '...', '.1.', 'AAA', '...', '.2.', '...' ]
             },
             {
                 splitAfterLane: 1,

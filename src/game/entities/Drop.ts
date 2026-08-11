@@ -8,14 +8,23 @@ import {
     DROP_LEAN_MAX,
     DROP_LEAN_REFERENCE_SPEED,
     DROP_RADIUS,
+    DROP_SHADOW_ALPHA,
+    DROP_SHADOW_DROP,
+    DROP_SHADOW_SQUASH,
     DROP_SCREEN_Y,
     DROP_STRETCH,
     DROP_TILT_SMOOTHING,
+    JUMP_LANDING_SQUASH,
+    JUMP_LIFT,
+    JUMP_SHADOW_FADE,
+    JUMP_SHADOW_SHRINK,
+    JUMP_TAKEOFF_SQUASH,
     LANE_CHANGE_SPEED,
     RAINBOW_CYCLE_SPEED,
     RAINBOW_WARNING,
     RAINBOW_WARNING_SPEED
 } from '../config/constants';
+import { hasLanded, jumpHeight } from '../systems/jump';
 import { clampLane, laneCenterX, startLane } from '../systems/Lanes';
 import { drawWaterDrop } from '../ui/shapes';
 import { rainbowAt } from '../utils/color';
@@ -69,8 +78,26 @@ export class Drop
     private flashColor: number | null = null;
     private flashTimer: Phaser.Time.TimerEvent | null = null;
 
+    /**
+     * Where the current jump began, or null on the road.
+     *
+     * A distance, not a timer: the arc is the same length of road on every
+     * level, and it stops dead with the rest of the world when paused.
+     */
+    private takeoff: number | null = null;
+
+    /** How high the drop is right now, 0 to 1. Collision reads this. */
+    private height = 0;
+
     /** Size, pop and idle wobble. Cosmetic only - collision never reads it. */
     private readonly juice = new DropJuice();
+
+    /**
+     * The shadow lives in its own object, because it must stay on the road
+     * while the body rises off it. Drawn into the body's Graphics it would
+     * simply travel up with the drop, which says nothing about height at all.
+     */
+    private readonly shadowGfx: Phaser.GameObjects.Graphics;
 
     private readonly scene: Scene;
     private readonly gfx: Phaser.GameObjects.Graphics;
@@ -78,6 +105,10 @@ export class Drop
     constructor (scene: Scene)
     {
         this.scene = scene;
+        this.shadowGfx = scene.add.graphics();
+        this.shadowGfx.setDepth(DEPTH_DROP - 1);
+        this.shadowGfx.setPosition(this.x, DROP_SCREEN_Y);
+
         this.gfx = scene.add.graphics();
         this.gfx.setDepth(DEPTH_DROP);
         this.gfx.setPosition(this.x, DROP_SCREEN_Y);
@@ -158,6 +189,7 @@ export class Drop
     setVisible (visible: boolean): void
     {
         this.gfx.setVisible(visible);
+        this.shadowGfx.setVisible(visible);
     }
 
     /**
@@ -181,6 +213,29 @@ export class Drop
         });
     }
 
+    /**
+     * Leave the road, if not already off it.
+     *
+     * Ignored mid-air rather than queued or stacked: a second jump that took
+     * effect on landing would fire at a moment the player has forgotten asking
+     * for, which is worse than nothing happening.
+     */
+    jump (travelled: number): void
+    {
+        if (this.takeoff !== null)
+        {
+            return;
+        }
+
+        this.takeoff = travelled;
+    }
+
+    /** How high the drop is, 0 on the road and 1 at the top of the arc. */
+    getHeight (): number
+    {
+        return this.height;
+    }
+
     getLane (): number
     {
         return this.targetLane;
@@ -194,8 +249,17 @@ export class Drop
     /**
      * @param dt Seconds since the last frame.
      */
-    update (dt: number): void
+    update (dt: number, travelled: number): void
     {
+        //  Height first: everything below is drawn from it.
+        if (this.takeoff !== null && hasLanded(travelled, this.takeoff))
+        {
+            this.takeoff = null;
+            this.juice.pulse();
+        }
+
+        this.height = jumpHeight(travelled, this.takeoff);
+
         const targetX = laneCenterX(this.targetLane);
         const previousX = this.x;
 
@@ -240,16 +304,45 @@ export class Drop
     private applyTransform (): void
     {
         //  Lean into the slide, with the slow idle sway underneath it.
-        this.gfx.setPosition(this.x, DROP_SCREEN_Y);
+        this.gfx.setPosition(this.x, DROP_SCREEN_Y - (JUMP_LIFT * this.height));
         this.gfx.setRotation((this.tilt * DROP_LEAN_MAX) + this.juice.getSway());
 
         //  Size comes from the score; the wobbles ride on top of it. Height
         //  gives back less than the width takes, so the drop reads as squashing
         //  rather than simply changing shape.
         const size = this.juice.getSize();
-        const squash = (Math.abs(this.tilt) * DROP_STRETCH) + this.juice.getSquash();
+
+        //  Stretched going up and squashed coming down, which is what makes a
+        //  jump read as effort rather than as a lift.
+        const air = this.takeoff !== null
+            ? -(JUMP_TAKEOFF_SQUASH * this.height) + (JUMP_LANDING_SQUASH * this.height * this.height * 0.4)
+            : 0;
+
+        const squash = (Math.abs(this.tilt) * DROP_STRETCH) + this.juice.getSquash() + air;
 
         this.gfx.setScale(size * (1 + squash), size * (1 - (squash * 0.6)));
+
+        this.drawShadow(size);
+    }
+
+    /**
+     * The shadow on the road, which is the only thing that says how high the
+     * drop is. It shrinks and fades as the drop climbs, and never leaves the
+     * ground.
+     */
+    private drawShadow (size: number): void
+    {
+        const shrink = 1 - (JUMP_SHADOW_SHRINK * this.height);
+
+        this.shadowGfx.setPosition(this.x, DROP_SCREEN_Y);
+        this.shadowGfx.clear();
+        this.shadowGfx.fillStyle(0x000000, DROP_SHADOW_ALPHA * (1 - (JUMP_SHADOW_FADE * this.height)));
+        this.shadowGfx.fillEllipse(
+            0,
+            DROP_SHADOW_DROP,
+            DROP_RADIUS * 2.1 * size * shrink,
+            DROP_RADIUS * 2 * DROP_SHADOW_SQUASH * size * shrink
+        );
     }
 
     private redraw (): void
@@ -275,6 +368,7 @@ export class Drop
 
     destroy (): void
     {
+        this.shadowGfx.destroy();
         this.gfx.destroy();
     }
 }

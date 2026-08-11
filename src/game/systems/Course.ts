@@ -72,12 +72,12 @@ export class Course
      * @param wild      Whether a rainbow drop is in hand, which matches every
      *                  colour there is: each orb scores and no barrier blocks.
      */
-    update (travelled: number, dropX: number, dropColor: ColorId | null, wild = false): void
+    update (travelled: number, dropX: number, dropColor: ColorId | null, wild = false, dropHeight = 0): void
     {
         const cullY = GAME_HEIGHT + CULL_MARGIN;
 
         this.updateGates(travelled, dropX, cullY);
-        this.updateObstacles(travelled, dropX, dropColor, wild, cullY);
+        this.updateObstacles(travelled, dropX, dropColor, wild, cullY, dropHeight);
         this.updateOrbs(travelled, dropX, dropColor, wild, cullY);
 
         this.finish.update(travelled);
@@ -117,7 +117,8 @@ export class Course
         dropX: number,
         dropColor: ColorId | null,
         wild: boolean,
-        cullY: number
+        cullY: number,
+        dropHeight: number
     ): void
     {
         for (let i = this.obstacles.length - 1; i >= 0; i--)
@@ -133,7 +134,15 @@ export class Course
                 //  itself with, so what is hit is what was on screen.
                 const centre = obstacle.trackXAt(travelled);
 
-                if (!wild && obstacle.color !== dropColor && isBlockedBy(dropX, centre, obstacle.halfWidthAt(travelled)))
+                const blocked = isBlockedBy(
+                    dropX,
+                    centre,
+                    obstacle.halfWidthAt(travelled),
+                    dropHeight,
+                    obstacle.profile
+                );
+
+                if (!wild && obstacle.color !== dropColor && blocked)
                 {
                     this.events.onBlocked(centre, y);
                 }

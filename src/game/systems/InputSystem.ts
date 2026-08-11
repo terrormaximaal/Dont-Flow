@@ -4,15 +4,19 @@ import { DragAnchor, evaluateDrag, isRepeatTooSoon, LaneIntent } from './swipe';
 export type { LaneIntent };
 
 /**
- * Turns touch swipes and arrow keys into lane-change intents.
+ * Turns touch swipes and arrow keys into intents.
  *
  * This system knows nothing about the drop or the track - it only reports that
- * the player asked to go left or right, and the scene decides what that means.
+ * the player asked to go left, go right, or leave the road, and the scene
+ * decides what any of that means.
+ *
+ * One finger does all of it: sideways steers, upwards jumps.
  */
 export class InputSystem
 {
     private readonly scene: Scene;
     private readonly onIntent: (direction: LaneIntent) => void;
+    private readonly onJump: () => void;
 
     /** Where the current drag was last measured from. */
     private anchor: DragAnchor = { x: 0, y: 0 };
@@ -24,10 +28,11 @@ export class InputSystem
     /** Scene clock reading of the last swipe-driven lane change. */
     private lastSwipeTime = 0;
 
-    constructor (scene: Scene, onIntent: (direction: LaneIntent) => void)
+    constructor (scene: Scene, onIntent: (direction: LaneIntent) => void, onJump: () => void = () => {})
     {
         this.scene = scene;
         this.onIntent = onIntent;
+        this.onJump = onJump;
 
         this.attachKeyboard();
         this.attachTouch();
@@ -47,6 +52,10 @@ export class InputSystem
         keyboard.on('keydown-A', this.moveLeft, this);
         keyboard.on('keydown-RIGHT', this.moveRight, this);
         keyboard.on('keydown-D', this.moveRight, this);
+
+        keyboard.on('keydown-UP', this.leap, this);
+        keyboard.on('keydown-W', this.leap, this);
+        keyboard.on('keydown-SPACE', this.leap, this);
     }
 
     private attachTouch (): void
@@ -82,6 +91,14 @@ export class InputSystem
         }
     }
 
+    private leap (): void
+    {
+        if (this.enabled)
+        {
+            this.onJump();
+        }
+    }
+
     private onPointerDown (pointer: Phaser.Input.Pointer): void
     {
         if (!this.enabled)
@@ -105,6 +122,14 @@ export class InputSystem
         }
 
         const result = evaluateDrag(this.anchor, pointer.x, pointer.y);
+
+        if (result.jump)
+        {
+            this.anchor = result.anchor;
+            this.leap();
+
+            return;
+        }
 
         if (result.intent === 0)
         {
