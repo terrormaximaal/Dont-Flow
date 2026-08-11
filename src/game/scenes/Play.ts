@@ -294,6 +294,14 @@ export class Play extends Scene
                 const score = this.scoring.getScore();
                 const isNewBest = this.save.recordScore(this.levelIndex, score);
 
+                //  Finishing is what earns the next level, not walking into it.
+                //  Without this, leaving by MENU rather than NEXT LEVEL loses
+                //  the progress the player just made.
+                if (hasNext)
+                {
+                    this.save.unlockLevel(this.levelIndex + 1);
+                }
+
                 new LevelComplete(this, {
                     levelName: LEVELS[this.levelIndex].name,
                     score,

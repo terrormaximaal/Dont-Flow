@@ -15,8 +15,13 @@ interface SaveData
      */
     furthestLevel: number;
 
-    /** Best score per level, index-aligned to LEVELS. */
-    bestScores: number[];
+    /**
+     * Best score per level, index-aligned to LEVELS. Null where the level has
+     * never been finished, which is not the same as having finished it on zero
+     * - and, now that a run can end below zero, not the same as a bad run
+     * either.
+     */
+    bestScores: (number | null)[];
 
     /** Energy in hand. */
     energy: number;
@@ -31,7 +36,7 @@ function emptySave (): SaveData
         version: SAVE_VERSION,
         currentLevel: 0,
         furthestLevel: 0,
-        bestScores: new Array(LEVEL_COUNT).fill(0),
+        bestScores: new Array(LEVEL_COUNT).fill(null),
         energy: MAX_ENERGY,
         energyAt: Date.now()
     };
@@ -150,9 +155,14 @@ export class SaveSystem
         return typeof value === 'number' && Number.isFinite(value) ? clampLevelIndex(Math.floor(value)) : 0;
     }
 
-    private static toScore (value: unknown): number
+    /**
+     * Any finite number is a real score, negatives included: wrong colours cost
+     * points, so a run genuinely can end below zero and that result has to
+     * survive a reload. Only junk becomes null.
+     */
+    private static toScore (value: unknown): number | null
     {
-        return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+        return typeof value === 'number' && Number.isFinite(value) ? Math.floor(value) : null;
     }
 
     private persist (): void
@@ -180,9 +190,10 @@ export class SaveSystem
         return this.data.furthestLevel;
     }
 
-    getBestScore (levelIndex: number): number
+    /** @returns the best score, or null if the level has never been finished. */
+    getBestScore (levelIndex: number): number | null
     {
-        return this.data.bestScores[clampLevelIndex(levelIndex)] ?? 0;
+        return this.data.bestScores[clampLevelIndex(levelIndex)] ?? null;
     }
 
     getEnergy (): number
@@ -221,6 +232,27 @@ export class SaveSystem
     }
 
     /**
+     * Opens a level up for selection without making it the current one.
+     *
+     * Reaching a level used to be the only thing that unlocked it, which meant
+     * finishing one and going back to the menu left the next still locked: the
+     * only way through was to take the NEXT LEVEL button on the spot.
+     */
+    unlockLevel (levelIndex: number): void
+    {
+        const index = clampLevelIndex(levelIndex);
+
+        if (index <= this.data.furthestLevel)
+        {
+            return;
+        }
+
+        this.data.furthestLevel = index;
+
+        this.persist();
+    }
+
+    /**
      * Records a finished level.
      *
      * @returns true if this run beat the stored best.
@@ -228,7 +260,10 @@ export class SaveSystem
     recordScore (levelIndex: number, score: number): boolean
     {
         const index = clampLevelIndex(levelIndex);
-        const isBest = score > this.data.bestScores[index];
+        const best = this.data.bestScores[index];
+
+        //  A first finish is always the best one, whatever it scored.
+        const isBest = best === null || score > best;
 
         if (isBest)
         {

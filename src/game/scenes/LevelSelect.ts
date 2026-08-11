@@ -119,7 +119,7 @@ export class LevelSelect extends Scene
             tile.container.add(name);
 
             const best = save.getBestScore(index);
-            const detail = unlocked ? (best > 0 ? `BEST ${best}` : 'NOT PLAYED') : 'LOCKED';
+            const detail = unlocked ? (best === null ? 'NOT PLAYED' : `BEST ${best}`) : 'LOCKED';
 
             const detailText = this.add.text(0, LEVEL_ROW_DETAIL_OFFSET, detail, {
                 fontFamily: HUD_FONT,

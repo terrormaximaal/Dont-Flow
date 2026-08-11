@@ -30,7 +30,8 @@ export interface LevelCompleteResult
     bestCombo: number;
 
     /** Best score stored for this level, after this run has been recorded. */
-    bestScore: number;
+    /** Null when this is the first finish, so there is no previous best to beat. */
+    bestScore: number | null;
 
     /** Whether this run set that best. */
     isNewBest: boolean;
@@ -117,7 +118,7 @@ export class LevelComplete
         const best = scene.add.text(
             GAME_WIDTH / 2,
             centerY + 68,
-            result.isNewBest ? 'NEW BEST!' : `BEST ${result.bestScore}`,
+            result.isNewBest || result.bestScore === null ? 'NEW BEST!' : `BEST ${result.bestScore}`,
             {
                 fontFamily: HUD_FONT,
                 fontSize: OVERLAY_BEST_SIZE,

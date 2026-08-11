@@ -27,7 +27,7 @@ describe('a fresh save', () => {
         expect(save.getResumeLevel()).toBe(0);
         expect(save.getFurthestLevel()).toBe(0);
         expect(save.getEnergy()).toBe(MAX_ENERGY);
-        expect(save.getBestScore(0)).toBe(0);
+        expect(save.getBestScore(0)).toBeNull();
 
     });
 
@@ -56,6 +56,67 @@ describe('recording progress', () => {
 
         expect(save.recordScore(0, 150)).toBe(true);
         expect(save.getBestScore(0)).toBe(150);
+
+    });
+
+    //  Best scores used to start at zero, which quietly broke every run that
+    //  ended below it: finishing on -80 did not beat 0, so nothing was stored
+    //  and the overlay announced 'BEST 0' - a score the player had never got.
+    it('treats a first finish as the best one, however badly it went', () => {
+
+        const save = new SaveSystem();
+
+        expect(save.getBestScore(0), 'nothing played yet').toBeNull();
+
+        expect(save.recordScore(0, -80), 'first finish is a best').toBe(true);
+        expect(save.getBestScore(0)).toBe(-80);
+
+    });
+
+    it('improves on a negative best without needing to reach zero', () => {
+
+        const save = new SaveSystem();
+
+        save.recordScore(0, -80);
+
+        expect(save.recordScore(0, -30), 'less bad is still better').toBe(true);
+        expect(save.getBestScore(0)).toBe(-30);
+
+        expect(save.recordScore(0, -50), 'worse than the best').toBe(false);
+        expect(save.getBestScore(0)).toBe(-30);
+
+    });
+
+    it('keeps a negative best across a reload', () => {
+
+        new SaveSystem().recordScore(2, -40);
+
+        expect(new SaveSystem().getBestScore(2)).toBe(-40);
+
+    });
+
+    //  Finishing a level and going back to the menu used to leave the next one
+    //  locked, because only starting a level had ever unlocked it.
+    it('opens the next level up without making it the current one', () => {
+
+        const save = new SaveSystem();
+
+        save.setCurrentLevel(0);
+        save.unlockLevel(1);
+
+        expect(save.getFurthestLevel(), 'next level reachable').toBe(1);
+        expect(save.getResumeLevel(), 'still on the level just played').toBe(0);
+
+    });
+
+    it('never rewinds an unlock', () => {
+
+        const save = new SaveSystem();
+
+        save.setCurrentLevel(4);
+        save.unlockLevel(1);
+
+        expect(save.getFurthestLevel()).toBe(4);
 
     });
 
@@ -106,7 +167,7 @@ describe('a hostile stored value', () => {
 
         expect(save.getResumeLevel()).toBe(0);
         expect(save.getFurthestLevel()).toBe(0);
-        expect(save.getBestScore(0)).toBe(0);
+        expect(save.getBestScore(0)).toBeNull();
 
     };
 
@@ -162,9 +223,12 @@ describe('a hostile stored value', () => {
 
         expect(save.getResumeLevel()).toBe(LEVEL_COUNT - 1);
         expect(save.getFurthestLevel()).toBe(0);
-        expect(save.getBestScore(0)).toBe(0);
-        expect(save.getBestScore(1)).toBe(0);
-        expect(save.getBestScore(2)).toBe(0);
+
+        //  A negative score is a real result now, so it survives; only the
+        //  values that are not numbers at all are thrown away.
+        expect(save.getBestScore(0)).toBe(-1);
+        expect(save.getBestScore(1)).toBeNull();
+        expect(save.getBestScore(2)).toBeNull();
 
     });
 
@@ -178,7 +242,7 @@ describe('a hostile stored value', () => {
 
         for (let i = 1; i < LEVEL_COUNT; i++)
         {
-            expect(save.getBestScore(i)).toBe(0);
+            expect(save.getBestScore(i)).toBeNull();
         }
 
         save.recordScore(0, 60);
