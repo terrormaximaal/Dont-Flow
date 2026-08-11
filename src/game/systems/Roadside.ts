@@ -4,6 +4,7 @@ import {
     GAME_HEIGHT,
     GAME_WIDTH,
     LIGHT_X,
+    PROP_LIGHT_LIFT,
     PROP_LIT_OFFSET,
     PROP_LIT_TINT,
     PROP_LIT_WIDTH,
@@ -58,7 +59,12 @@ export class Roadside
         this.spec = spec;
         this.haze = haze;
         this.hazeAlpha = hazeAlpha;
-        this.lit = mixColor(spec.color, 0xffffff, PROP_LIT_TINT);
+        //  Lit by the world's own air rather than by white. Light has a
+        //  colour, and mixing every prop towards pure white desaturates it -
+        //  space's blue shards came out pale grey, lit by a lamp from some
+        //  other world. Brightened first, so a world with dark air still lights
+        //  its scenery rather than shading it.
+        this.lit = mixColor(spec.color, mixColor(haze, 0xffffff, PROP_LIGHT_LIFT), PROP_LIT_TINT);
 
         this.gfx = scene.add.graphics();
         this.gfx.setDepth(ROADSIDE_DEPTH);

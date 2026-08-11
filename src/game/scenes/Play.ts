@@ -24,6 +24,7 @@ import { paintPageBackdrop } from '../systems/PageBackdrop';
 import { Course } from '../systems/Course';
 import { Environment } from '../systems/Environment';
 import { Roadside } from '../systems/Roadside';
+import { Slipstream } from '../systems/Slipstream';
 import { Effects } from '../systems/Effects';
 import { EnergySystem } from '../systems/EnergySystem';
 import { InputSystem } from '../systems/InputSystem';
@@ -52,6 +53,7 @@ export class Play extends Scene
     private track: TrackScroller;
     private environment: Environment;
     private roadside: Roadside | null = null;
+    private slipstream: Slipstream;
     private trail: Trail;
     private course: Course;
     private powerUps: PowerUps;
@@ -153,6 +155,7 @@ export class Play extends Scene
         this.environment = new Environment(this, world);
         this.track = new TrackScroller(this, world);
         this.roadside = world.roadside ? new Roadside(this, world.roadside, world.hazeColor, world.hazeAlpha) : null;
+        this.slipstream = new Slipstream(this, world.trackEdge);
         this.trail = new Trail(this);
         this.drop = new Drop(this);
         this.effects = new Effects(this);
@@ -226,6 +229,7 @@ export class Play extends Scene
             this.effects.swallow(x, y, colorId ? COLOR_VALUES[colorId] : COLOR_FLASH);
             this.effects.haptic(HAPTIC_COLLECT_MS);
             this.drop.pulse();
+            this.trail.boost(this.distance);
 
             showFloatingScore(this, x, y, gained);
         }
@@ -371,6 +375,7 @@ export class Play extends Scene
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);
         this.roadside?.update(this.distance);
+        this.slipstream.update(this.distance);
 
         //  How much of a rainbow drop is left, 1 down to 0.
         const left = this.rainbowSpan > 0

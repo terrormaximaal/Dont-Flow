@@ -207,6 +207,17 @@ export const TRAIL_STAMP_SPACING = 7;
 export const TRAIL_FADE_DISTANCE = 250;
 //  Width of the streak at the drop's own depth, and how far it narrows over its
 //  length - it should thin away behind rather than stop on a line.
+/**
+ * How much a collect thickens the streak, and how far it takes to settle.
+ *
+ * Distance rather than time, so a fast level does not get a shorter surge than
+ * a slow one. Consecutive collects stack it, which is what makes a combo build
+ * visibly without anything having to count.
+ */
+export const TRAIL_SURGE = 0.9;
+export const TRAIL_SURGE_CAP = 2.2;
+export const TRAIL_SURGE_DECAY = 320;
+
 export const TRAIL_WIDTH = 34;
 export const TRAIL_TAPER = 0.6;
 //  Strongest a mark ever is, right under the drop.
@@ -514,7 +525,10 @@ export const PROP_FOG = 0.9;
  * edge and simply becomes the prop's colour, which turned every silhouette in
  * the forest grey.
  */
-export const PROP_LIT_TINT = 0.34;
+export const PROP_LIT_TINT = 0.42;
+
+/** How far the world's haze is brightened before it is used as the light. */
+export const PROP_LIGHT_LIFT = 0.4;
 export const PROP_LIT_WIDTH = 0.3;
 export const PROP_LIT_OFFSET = 0.62;
 
@@ -522,6 +536,31 @@ export const PROP_LIT_OFFSET = 0.62;
 export const PROP_SHADOW_ALPHA = 0.2;
 export const PROP_SHADOW_LENGTH = 0.5;
 export const PROP_SHADOW_SQUASH = 0.16;
+
+// ---------------------------------------------------------------------------
+//  Slipstream
+//
+//  Motes streaking past the drop, placed at world distances like everything
+//  else, so they sweep by at exactly the speed the player is travelling and
+//  hold still when the run is paused.
+//
+//  Kept off the road on purpose. The corridor is where the player is reading
+//  orbs and barriers, and speed lines over it would be noise in the one place
+//  that must stay clean.
+// ---------------------------------------------------------------------------
+
+export const SLIP_SPACING = 150;
+export const SLIP_BUDGET = 20;
+export const SLIP_LENGTH = 90;
+export const SLIP_THICKNESS = 2.4;
+export const SLIP_ALPHA = 0.3;
+
+/** How far out from the road's edge they fly, and how far that varies. */
+export const SLIP_OFFSET = 34;
+export const SLIP_SPREAD = 150;
+
+/** Nearer than this is where speed actually reads; beyond it they are dots. */
+export const SLIP_MIN_SCALE = 0.34;
 
 // ---------------------------------------------------------------------------
 //  Vignette
