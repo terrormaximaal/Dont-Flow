@@ -32,8 +32,15 @@ const OVERDRAW = 260;
 /** How far ahead the road is drawn, in world distance. */
 const VIEW_DISTANCE = 26000;
 
-/** Ground beyond the road's edges, so the path floats on something. */
-const GROUND_SPREAD = 3.4;
+/**
+ * How far the verge reaches out past each edge of the road, in track pixels.
+ *
+ * Narrow on purpose. Spread wide it stops reading as a shoulder and becomes a
+ * second, paler road behind the real one: its edges still converge on the
+ * vanishing point, so however far out it goes it draws a hard wedge across the
+ * ground rather than disappearing off the sides.
+ */
+const VERGE_WIDTH = 92;
 
 /** Rungs closer together than this on screen are skipped as unreadable mush. */
 const MIN_RUNG_GAP = 3;
@@ -96,18 +103,14 @@ export class TrackScroller
     /** The plane the road sits on, running back to the horizon. */
     private fillGround (gfx: Phaser.GameObjects.Graphics, near: number, far: number): void
     {
-        const spread = TRACK_WIDTH * GROUND_SPREAD;
-        const left = (GAME_WIDTH / 2) - spread;
-        const right = (GAME_WIDTH / 2) + spread;
-
         gfx.fillStyle(this.ground, 1);
         gfx.fillTriangle(0, GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT, GAME_WIDTH, HORIZON_Y);
         gfx.fillTriangle(0, GAME_HEIGHT, GAME_WIDTH, HORIZON_Y, 0, HORIZON_Y);
 
-        //  A slightly lighter apron either side of the path, so the road is a
-        //  surface rather than a stripe painted on nothing.
-        gfx.fillStyle(this.palette.track, 0.45);
-        fillProjectedQuad(gfx, left, right, far, near);
+        //  A verge hugging each edge of the road, so the path meets the ground
+        //  at a worn margin rather than a cut line.
+        gfx.fillStyle(this.palette.track, 0.4);
+        fillProjectedQuad(gfx, TRACK_LEFT - VERGE_WIDTH, TRACK_LEFT + TRACK_WIDTH + VERGE_WIDTH, far, near);
     }
 
     private fillRoad (gfx: Phaser.GameObjects.Graphics, near: number, far: number): void
