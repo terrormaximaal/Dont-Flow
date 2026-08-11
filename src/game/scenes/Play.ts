@@ -198,11 +198,14 @@ export class Play extends Scene
 
         this.drop.setColorId(color);
 
-        this.effects.bloom(
-            this.drop.getX(),
-            DROP_SCREEN_Y,
-            previous ? COLOR_VALUES[previous] : COLOR_VALUES[color]
-        );
+        const shed = previous ? COLOR_VALUES[previous] : COLOR_VALUES[color];
+
+        //  Four signals inside half a second, none of which stop the run: the
+        //  colour floods through the drop, the old one puffs off it, a wave of
+        //  the new one runs back down the road, and the camera takes a step in.
+        this.effects.bloom(this.drop.getX(), DROP_SCREEN_Y, shed);
+        this.effects.wave(COLOR_VALUES[color]);
+        this.effects.punch(this.cameras.main);
     }
 
     /**

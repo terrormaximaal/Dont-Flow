@@ -452,6 +452,79 @@ export const BLOOM_SIZE = 7;
 export const BLOOM_DURATION = 340;
 
 // ---------------------------------------------------------------------------
+//  Gate presence
+//
+//  All of it driven by distance travelled rather than the clock, so a portal
+//  breathes with the world and stops dead when the run is paused.
+// ---------------------------------------------------------------------------
+
+/** The portal's resting breath: how deep, and how far the world moves per cycle. */
+export const PORTAL_PULSE_DEPTH = 0.28;
+export const PORTAL_PULSE_PERIOD = 620;
+
+/**
+ * How far out a portal starts reacting to the drop, and how much brighter it
+ * gets by the threshold.
+ *
+ * The point is to answer the player before they arrive: a doorway that only
+ * responds once passed through has told them nothing they could act on.
+ */
+export const PORTAL_REACT_DISTANCE = 900;
+export const PORTAL_REACT_GAIN = 0.7;
+
+/** Bands of energy climbing the inside of a doorway. */
+export const PORTAL_ENERGY_BANDS = 5;
+export const PORTAL_ENERGY_ALPHA = 0.22;
+export const PORTAL_ENERGY_RISE = 340;
+
+/** The wave of light thrown back down the road as a gate is crossed. */
+export const WAVE_DURATION = 420;
+export const WAVE_THICKNESS = 26;
+export const WAVE_ALPHA = 0.55;
+
+/** A small punch of the camera on crossing. Never a shake. */
+export const GATE_ZOOM = 1.015;
+export const GATE_ZOOM_IN_MS = 70;
+export const GATE_ZOOM_OUT_MS = 160;
+
+// ---------------------------------------------------------------------------
+//  Orb presence
+// ---------------------------------------------------------------------------
+
+/** Bob and spin, both measured against distance travelled. */
+export const ORB_FLOAT = 5;
+export const ORB_FLOAT_PERIOD = 300;
+export const ORB_SPIN_PER_PIXEL = 0.0022;
+
+/** A soft halo in the orb's own colour. */
+export const ORB_GLOW_LAYERS = 3;
+export const ORB_GLOW_ALPHA = 0.1;
+export const ORB_GLOW_SPREAD = 9;
+
+/** Motes circling an orb, so it reads as alive rather than parked. */
+export const ORB_MOTES = 3;
+export const ORB_MOTE_RADIUS = 1.6;
+export const ORB_MOTE_ORBIT = 1.7;
+export const ORB_MOTE_ALPHA = 0.65;
+
+/**
+ * How far out an orb starts answering the drop, and how much it swells by.
+ *
+ * Only ever for an orb the drop is actually lined up with, so the reaction is
+ * a promise the game then keeps.
+ */
+export const ORB_REACT_DISTANCE = 420;
+export const ORB_REACT_SWELL = 0.4;
+
+/**
+ * How far out a lined-up orb starts drifting towards the drop, and how much of
+ * the way it gets. Presentation only: contact is still decided on the orb's
+ * own lane position, which never moves.
+ */
+export const ORB_MAGNET_DISTANCE = 260;
+export const ORB_MAGNET_REACH = 0.85;
+
+// ---------------------------------------------------------------------------
 //  Gameplay colours
 //
 //  The colour a drop carries is an identity ('blue' / 'red'), not a hex value,

@@ -5,14 +5,32 @@ import {
     ColorId,
     DEPTH_ORBS,
     ORB_CORE_ALPHA,
-    ORB_RADIUS
+    ORB_FLOAT,
+    ORB_FLOAT_PERIOD,
+    ORB_GLOW_ALPHA,
+    ORB_GLOW_LAYERS,
+    ORB_GLOW_SPREAD,
+    ORB_MAGNET_DISTANCE,
+    ORB_MAGNET_REACH,
+    ORB_MOTE_ALPHA,
+    ORB_MOTE_ORBIT,
+    ORB_MOTE_RADIUS,
+    ORB_MOTES,
+    ORB_RADIUS,
+    ORB_REACT_DISTANCE,
+    ORB_REACT_SWELL,
+    ORB_SPIN_PER_PIXEL
 } from '../config/constants';
 import { OrbSpec } from '../config/level';
+import { isWithinCatchRange } from '../systems/contact';
 import { laneCenterX } from '../systems/Lanes';
 import { project } from '../systems/Projection';
 import { drawStrength, screenYFor } from '../systems/World';
+import { clamp } from '../utils/math';
 import { fillOutline } from '../ui/shapes';
 import { blobOutline } from './drop-surface';
+
+const TAU = Math.PI * 2;
 
 /**
  * A coloured collectible sitting in one lane. Matching the drop's colour scores;
@@ -55,29 +73,72 @@ export class Orb
     }
 
     /**
+     * @param dropX Screen x of the drop, so an orb can answer one lined up with
+     *              it. Presentation only - what is collected is still decided
+     *              from this orb's own lane position, which never moves.
      * @returns the orb's current screen y.
      */
-    update (travelled: number): number
+    update (travelled: number, dropX: number): number
     {
         const y = screenYFor(this.distance, travelled);
-        const projected = project(this.x, y);
+        const ahead = this.distance - travelled;
 
-        //  Position and size come from the projection; the orb's own `x` stays
-        //  in track space, which is what collision compares against.
-        this.gfx.setPosition(projected.x, y);
-        this.gfx.setScale(projected.scale);
+        //  Only ever for an orb the drop is actually lined up with, so a
+        //  reaction is a promise the game then keeps.
+        const lined = isWithinCatchRange(dropX, this.x);
+
+        const near = lined ? 1 - clamp(ahead / ORB_REACT_DISTANCE, 0, 1) : 0;
+        const pull = lined ? 1 - clamp(ahead / ORB_MAGNET_DISTANCE, 0, 1) : 0;
+
+        //  Drawn drifting towards the drop over the last stretch. Its track-space
+        //  x is untouched: this moves the picture, not the orb.
+        const drawnX = this.x + ((dropX - this.x) * pull * ORB_MAGNET_REACH);
+
+        const projected = project(drawnX, y);
+
+        //  Floating rather than parked, and turning slowly. Both come from the
+        //  distance travelled, so they move with the world and hold when paused.
+        const bob = Math.sin((travelled / ORB_FLOAT_PERIOD) * TAU + this.phase) * ORB_FLOAT;
+
+        this.gfx.setPosition(projected.x, y + (bob * projected.scale));
+        this.gfx.setScale(projected.scale * (1 + (near * ORB_REACT_SWELL)));
+        this.gfx.setRotation(travelled * ORB_SPIN_PER_PIXEL + this.phase);
         this.gfx.setAlpha(drawStrength(this.distance, travelled));
 
         this.gfx.clear();
+
+        //  A halo in its own colour, so an orb reads as lit rather than printed.
+        for (let layer = ORB_GLOW_LAYERS; layer > 0; layer--)
+        {
+            this.gfx.fillStyle(this.value, ORB_GLOW_ALPHA * (1 + near));
+            this.gfx.fillCircle(0, 0, ORB_RADIUS + (ORB_GLOW_SPREAD * (layer / ORB_GLOW_LAYERS)));
+        }
 
         this.gfx.fillStyle(this.value, 1);
         fillOutline(this.gfx, blobOutline(ORB_RADIUS, travelled * BLOB_RIPPLE_PER_PIXEL, this.phase));
 
         //  A lighter core keeps the orb readable against the dark track.
-        this.gfx.fillStyle(0xffffff, ORB_CORE_ALPHA);
+        this.gfx.fillStyle(0xffffff, ORB_CORE_ALPHA + (near * 0.2));
         this.gfx.fillCircle(0, 0, ORB_RADIUS * 0.45);
 
+        this.motes(travelled, near);
+
         return y;
+    }
+
+    /** A few motes circling the orb, counter to its own turn so both read. */
+    private motes (travelled: number, near: number): void
+    {
+        const orbit = ORB_RADIUS * ORB_MOTE_ORBIT;
+
+        this.gfx.fillStyle(0xffffff, ORB_MOTE_ALPHA * (0.5 + (near * 0.5)));
+
+        for (let i = 0; i < ORB_MOTES; i++)
+        {
+            const angle = (i / ORB_MOTES) * TAU - (travelled * ORB_SPIN_PER_PIXEL * 1.6) + this.phase;
+
+            this.gfx.fillCircle(Math.cos(angle) * orbit, Math.sin(angle) * orbit * 0.6, ORB_MOTE_RADIUS);
+        }
     }
 
     destroy (): void

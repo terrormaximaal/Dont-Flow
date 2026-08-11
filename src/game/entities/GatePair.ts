@@ -15,6 +15,13 @@ import {
     PORTAL_MOTE_RADIUS,
     PORTAL_MOTE_RISE,
     PORTAL_MOTES,
+    PORTAL_ENERGY_ALPHA,
+    PORTAL_ENERGY_BANDS,
+    PORTAL_ENERGY_RISE,
+    PORTAL_PULSE_DEPTH,
+    PORTAL_PULSE_PERIOD,
+    PORTAL_REACT_DISTANCE,
+    PORTAL_REACT_GAIN,
     PORTAL_SPILL_ALPHA,
     PORTAL_SPILL_DEPTH,
     PORTAL_SPILL_STEPS,
@@ -23,6 +30,7 @@ import {
 } from '../config/constants';
 import { GatePairSpec } from '../config/level';
 import { gateSideAt, gateSplitX } from '../systems/contact';
+import { clamp } from '../utils/math';
 import { depthScale, fillProjectedQuad, projectX } from '../systems/Projection';
 import { drawStrength, screenYFor } from '../systems/World';
 
@@ -67,7 +75,11 @@ export class GatePair
         return this.colors[gateSideAt(x, this.splitAfterLane)];
     }
 
-    update (travelled: number): number
+    /**
+     * @param dropX Screen x of the drop, so the doorway it is heading for can
+     *              answer before it arrives.
+     */
+    update (travelled: number, dropX: number): number
     {
         const y = screenYFor(this.distance, travelled);
         const scale = depthScale(y);
@@ -92,12 +104,24 @@ export class GatePair
 
         gfx.setAlpha(strength);
 
-        //  Light on the road comes first, so the doorways sit on top of it.
-        this.spill(gfx, TRACK_LEFT, this.splitX, this.colors[0], y, travelled);
-        this.spill(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, this.colors[1], y, travelled);
+        //  A slow breath, from distance rather than the clock so it moves with
+        //  the world and holds still when the run is paused.
+        const breath = 1 + (Math.sin((travelled / PORTAL_PULSE_PERIOD) * TAU) * PORTAL_PULSE_DEPTH);
 
-        this.portal(gfx, TRACK_LEFT, this.splitX, this.colors[0], y, scale, travelled);
-        this.portal(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, this.colors[1], y, scale, travelled);
+        //  The doorway the drop is lined up with brightens as it closes, so the
+        //  choice is answered before it is made rather than after.
+        const closing = 1 - clamp((this.distance - travelled) / PORTAL_REACT_DISTANCE, 0, 1);
+        const chosen = gateSideAt(dropX, this.splitAfterLane);
+
+        const life = (side: 0 | 1) =>
+            breath * (1 + (side === chosen ? closing * PORTAL_REACT_GAIN : 0));
+
+        //  Light on the road comes first, so the doorways sit on top of it.
+        this.spill(gfx, TRACK_LEFT, this.splitX, this.colors[0], y, travelled, life(0));
+        this.spill(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, this.colors[1], y, travelled, life(1));
+
+        this.portal(gfx, TRACK_LEFT, this.splitX, this.colors[0], y, scale, travelled, life(0));
+        this.portal(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, this.colors[1], y, scale, travelled, life(1));
 
         return y;
     }
@@ -112,7 +136,8 @@ export class GatePair
         right: number,
         color: ColorId,
         y: number,
-        travelled: number
+        travelled: number,
+        life: number
     ): void
     {
         const value = COLOR_VALUES[color];
@@ -126,7 +151,7 @@ export class GatePair
             const farY = screenYFor(to, travelled);
 
             //  Brightest at the threshold, gone by the far end of the pool.
-            gfx.fillStyle(value, PORTAL_SPILL_ALPHA * (1 - (i / PORTAL_SPILL_STEPS)) * 0.5);
+            gfx.fillStyle(value, PORTAL_SPILL_ALPHA * (1 - (i / PORTAL_SPILL_STEPS)) * 0.5 * life);
             fillProjectedQuad(gfx, left, right, farY, nearY);
         }
 
@@ -141,7 +166,8 @@ export class GatePair
         color: ColorId,
         y: number,
         scale: number,
-        travelled: number
+        travelled: number,
+        life: number
     ): void
     {
         const value = COLOR_VALUES[color];
@@ -161,12 +187,14 @@ export class GatePair
         {
             const spread = PORTAL_GLOW_SPREAD * scale * (layer / PORTAL_GLOW_LAYERS);
 
-            gfx.fillStyle(value, PORTAL_GLOW_ALPHA);
+            gfx.fillStyle(value, PORTAL_GLOW_ALPHA * life);
             this.arch(gfx, baseLeft - spread, baseRight + spread, y + (spread * 0.4), top - spread, rise);
         }
 
-        gfx.fillStyle(value, PORTAL_INNER_ALPHA);
+        gfx.fillStyle(value, PORTAL_INNER_ALPHA * life);
         this.arch(gfx, baseLeft, baseRight, y, top, rise);
+
+        this.energy(gfx, baseLeft, baseRight, y, height, value, travelled, life);
 
         //  The frame itself: two uprights and the arch over them.
         const thickness = Math.max(1.5, PORTAL_FRAME_THICKNESS * scale);
@@ -178,6 +206,40 @@ export class GatePair
         this.strokeArch(gfx, baseLeft, baseRight, top, rise);
 
         this.motes(gfx, baseLeft, baseRight, y, height, value, scale, travelled);
+    }
+
+    /**
+     * Bands of light climbing the inside of a doorway.
+     *
+     * What turns a coloured shape into something running: the frame is still,
+     * so anything moving inside it reads as the doorway being powered rather
+     * than as the doorway moving.
+     */
+    private energy (
+        gfx: Phaser.GameObjects.Graphics,
+        left: number,
+        right: number,
+        base: number,
+        height: number,
+        value: number,
+        travelled: number,
+        life: number
+    ): void
+    {
+        //  Below this a band is thinner than a line and only adds mush.
+        if (height < 24) { return; }
+
+        for (let i = 0; i < PORTAL_ENERGY_BANDS; i++)
+        {
+            const phase = ((i / PORTAL_ENERGY_BANDS) + (travelled / PORTAL_ENERGY_RISE)) % 1;
+
+            //  Fading as it climbs, so each band arrives rather than blinks out.
+            const fade = 1 - phase;
+            const y = base - (height * phase);
+
+            gfx.fillStyle(value, PORTAL_ENERGY_ALPHA * fade * life);
+            gfx.fillRect(left, y, right - left, Math.max(1, height * 0.035));
+        }
     }
 
     /** Fills a doorway: straight sides with a curved head. */

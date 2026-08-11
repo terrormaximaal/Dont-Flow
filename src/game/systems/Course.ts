@@ -95,7 +95,7 @@ export class Course
         for (let i = this.gates.length - 1; i >= 0; i--)
         {
             const gate = this.gates[i];
-            const y = gate.update(travelled);
+            const y = gate.update(travelled, dropX);
 
             if (!gate.triggered && travelled >= gate.distance)
             {
@@ -158,7 +158,7 @@ export class Course
         for (let i = this.orbs.length - 1; i >= 0; i--)
         {
             const orb = this.orbs[i];
-            const y = orb.update(travelled);
+            const y = orb.update(travelled, dropX);
 
             //  Reaching an orb's distance is only half of it - the drop also has
             //  to be in the right place across the track. Orbs it steers around

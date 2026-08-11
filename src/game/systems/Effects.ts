@@ -5,13 +5,24 @@ import {
     BLOOM_SIZE,
     BLOOM_SPREAD,
     DEPTH_FX,
+    DROP_SCREEN_Y,
+    GAME_HEIGHT,
+    GATE_ZOOM,
+    GATE_ZOOM_IN_MS,
+    GATE_ZOOM_OUT_MS,
     SWALLOW_DURATION,
     SWALLOW_LENGTH,
     SWALLOW_SPREAD,
     SWALLOW_STAGGER,
     SWALLOW_STRANDS,
-    SWALLOW_THICKNESS
+    SWALLOW_THICKNESS,
+    TRACK_LEFT,
+    TRACK_WIDTH,
+    WAVE_ALPHA,
+    WAVE_DURATION,
+    WAVE_THICKNESS
 } from '../config/constants';
+import { depthScale, fillProjectedQuad } from './Projection';
 
 const TAU = Math.PI * 2;
 
@@ -103,6 +114,72 @@ export class Effects
                 onComplete: () => mote.destroy()
             });
         }
+    }
+
+    /**
+     * A band of light sweeping down the road, thrown back as a gate is crossed.
+     *
+     * Widening as it comes, because the road does: a band that kept its width
+     * would read as an object flying at the camera rather than as light running
+     * along the surface.
+     */
+    wave (color: number): void
+    {
+        const gfx = this.scene.add.graphics();
+
+        gfx.setDepth(DEPTH_FX);
+
+        //  Drawn as a projected quad each frame rather than a rectangle being
+        //  scaled. A scaled rectangle only matches the road at the width it
+        //  started from: tweening it wide enough to cover the near end left it
+        //  spilling past both edges on the way down, which reads as a bar
+        //  across the screen instead of light running over a surface.
+        const sweep = { at: DROP_SCREEN_Y };
+
+        this.scene.tweens.add({
+            targets: sweep,
+            at: GAME_HEIGHT + WAVE_THICKNESS,
+            ease: 'Quad.In',
+            duration: WAVE_DURATION,
+            onUpdate: (tween) => {
+
+                const near = sweep.at;
+                const far = near - (WAVE_THICKNESS * depthScale(near));
+
+                gfx.clear();
+                gfx.fillStyle(color, WAVE_ALPHA * (1 - tween.progress));
+
+                fillProjectedQuad(gfx, TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH, far, near);
+
+            },
+            onComplete: () => gfx.destroy()
+        });
+    }
+
+    /**
+     * A short punch of the camera. Deliberately a zoom rather than a shake: a
+     * shake fights the player for control of a moving target.
+     */
+    punch (camera: Phaser.Cameras.Scene2D.Camera): void
+    {
+        //  Tweened rather than handed to camera.zoomTo, for two reasons. The
+        //  camera effect resolves its ease differently from a tween - it takes
+        //  an exact EaseMap key only, so the 'Quad.Out' that every tween here
+        //  accepts leaves its ease undefined and it throws on the first frame.
+        //  And starting the second zoom from inside the first one's progress
+        //  callback re-enters an effect that is still finishing.
+        this.scene.tweens.add({
+            targets: camera,
+            zoom: GATE_ZOOM,
+            ease: 'Quad.Out',
+            duration: GATE_ZOOM_IN_MS,
+            yoyo: true,
+            hold: 0,
+            //  Back out more slowly than in, which is what makes it a punch
+            //  rather than a bounce.
+            onYoyo: (tween) => { tween.duration = GATE_ZOOM_OUT_MS; },
+            onComplete: () => { camera.setZoom(1); }
+        });
     }
 
     /**
