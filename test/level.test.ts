@@ -302,10 +302,17 @@ describe('the shipped levels', () => {
 
     });
 
-    //  And a full row must be *entirely* jumpable. A row mixing a wall with
-    //  hurdles and no gap would need the player to be in a particular lane and
-    //  in the air at once, which is a different game from this one.
-    it('leaves a full row jumpable end to end', () => {
+    //  And a row blocked across its whole width must be *entirely* jumpable. A
+    //  row mixing a wall with hurdles and no gap would need the player to be in
+    //  a particular lane and in the air at once, which is a different game.
+    //
+    //  Only blockers count. The first version of this counted any occupied
+    //  lane, which made a row of two orbs on a two-lane level "full" and
+    //  demanded it be jumpable - orbs block nothing, and a dense row of them
+    //  is a reward rather than a hazard.
+    it('leaves a fully blocked row jumpable end to end', () => {
+
+        const BLOCKERS = 'abcdeABCDE0';
 
         for (const level of LEVELS)
         {
@@ -314,15 +321,15 @@ describe('the shipped levels', () => {
                 for (const row of section.rows)
                 {
                     const lanes = level.lanes ?? 3;
-                    const occupied = [ ...row ].filter((c) => c !== '.').length;
+                    const blockers = [ ...row ].filter((c) => BLOCKERS.includes(c));
 
-                    if (occupied < lanes)
+                    if (blockers.length < lanes)
                     {
                         continue;
                     }
 
                     //  Hurdles and holes both: the way through either is over.
-                    const jumpable = [ ...row ].every((c) => 'ABCDE0'.includes(c));
+                    const jumpable = blockers.every((c) => 'ABCDE0'.includes(c));
 
                     expect(jumpable, `level ${level.name} row "${row}"`).toBe(true);
                 }

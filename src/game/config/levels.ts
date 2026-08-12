@@ -32,24 +32,75 @@ export const LEVELS: LevelSpec[] = [
         palette: [ 'red', 'blue' ],
         forwardSpeed: 380,
         rowSpacing: 190,
-        //  One orb at a time, half a second apart, on a road with two lanes.
-        //  Everything the game is about and nothing else: this colour is mine,
-        //  that one is not.
+        //  Authored as a sequence rather than as a list of similar stretches.
+        //  Six movements, each with one job, and each one different enough from
+        //  its neighbours that the level has a shape you could describe:
+        //
+        //    1  intro       - nothing to get wrong. Learn what an orb is.
+        //    2  the choice  - the gate starts to matter. Both colours, spaced.
+        //    3  rhythm      - a pattern to fall into, and the pleasure of it.
+        //    4  the break   - the pattern breaks. Same idea, harder to read.
+        //    5  the gift    - a rainbow, and a dense run to spend it on.
+        //    6  the finale  - everything at once, tighter, and then the line.
         sections: [
+            //  1. Intro. One orb at a time with room around it. The first
+            //  thirty seconds of a game teach it, and this teaches exactly one
+            //  thing: that colour is yours.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1.', '..', '.2', '1.', '..', '.2', '1.', '.1', '2.', '..', '.1', '2.', '1.', '.2' ]
+                rows: [ '1.', '..', '.2', '..', '1.', '..', '.2', '1.' ]
             },
+            //  2. The choice. Same pace, but the colours now alternate faster
+            //  than a single gate can serve - so which side of the gate you
+            //  took starts to be a decision rather than a formality.
             {
                 splitAfterLane: 0,
                 gate: [ 1, 0 ],
-                rows: [ '.2', '1.', '..', '.1', '2.', '.2', '1.', '..', '2.', '.1', '1.', '.2', '2.', '.1' ]
+                rows: [ '.2', '1.', '..', '.1', '2.', '..', '.2', '1.', '2.', '.1' ]
             },
+            //  3. Rhythm. A repeating left-right figure, held long enough to
+            //  fall into. This is the part that should feel good rather than
+            //  test anything.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1.', '.2', '2.', '.1', '..', '1.', '.2', '1.', '.1', '2.', '.2', '1.', '..', '.1' ]
+                rows: [ '1.', '.1', '1.', '.1', '1.', '.1', '2.', '.2', '2.', '.2', '2.', '.2' ]
+            },
+            //  4. The break. The same figure with a beat missing here and
+            //  there, so the hands that learned it have to start watching
+            //  again. Nothing new is introduced - the difficulty is entirely
+            //  in the reading.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 0 ],
+                rows: [ '.1', '2.', '.2', '1.', '.1', '..', '2.', '.2', '1.', '..', '.1', '2.' ]
+            },
+            //  5. The gift. Dense, and generous to both colours at once: every
+            //  row offers red on the left or blue on the right, so whichever
+            //  side of the gate was taken there is a lane to sit in that pays
+            //  on almost every row - and the colour you are not carrying is
+            //  always in the *other* lane, so it can never be hit by accident.
+            //
+            //  A feast rather than a test. Three things were tried and rejected
+            //  for it: a rainbow, which belongs to level four once the basics
+            //  are taught; a gate with the same colour on both sides, which is
+            //  not a gate at all; and rows mixing both colours in one lane,
+            //  which is the hardest thing in the game rather than the kindest.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '..', '1.', '.2', '12', '1.', '.2', '12', '1.', '.2', '12' ]
+            },
+            //  6. The finale. Rows packed tighter than anywhere else in the
+            //  level and the colours changing on almost every one, ending on a
+            //  clean run at the line so it finishes on a good note rather than
+            //  on a mistake.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 0 ],
+                rowSpacing: 152,
+                rows: [ '.2', '1.', '.1', '2.', '.2', '1.', '.1', '2.', '1.', '.2', '2.', '.1', '1.', '.2' ]
             }
         ]
     },

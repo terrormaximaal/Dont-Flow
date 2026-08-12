@@ -74,6 +74,16 @@ export type ObstacleKind =
 export interface SectionSpec
 {
     /**
+     * How far apart this section's rows sit, overriding the level's own.
+     *
+     * The other half of a section's intensity. Speed is how fast the road
+     * comes; this is how much is on it - and a finale that packs its rows
+     * tighter asks more of the player without the level having to get faster,
+     * which is a different feeling and a more controllable one.
+     */
+    rowSpacing?: number;
+
+    /**
      * Multiplier on the level's forward speed through this section.
      *
      * Left out means 1, which is every section written before this existed.
@@ -250,7 +260,7 @@ export const RAINBOW_CHAR = '*';
  */
 export function buildLevel (spec: LevelSpec): Level
 {
-    const rowSpacing = spec.rowSpacing ?? ORB_ROW_SPACING;
+    const levelRowSpacing = spec.rowSpacing ?? ORB_ROW_SPACING;
     const lanes = spec.lanes ?? DEFAULT_LANES;
 
     const gates: GatePairSpec[] = [];
@@ -268,6 +278,7 @@ export function buildLevel (spec: LevelSpec): Level
     for (const section of spec.sections)
     {
         const sectionStart = cursor;
+        const rowSpacing = section.rowSpacing ?? levelRowSpacing;
 
         gates.push({
             distance: cursor,
