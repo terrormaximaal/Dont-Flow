@@ -11,12 +11,15 @@ import {
     HAPTIC_COLLECT_MS,
     HAPTIC_MISS_MS,
     MAX_DELTA,
+    PACE_SMOOTHING,
+    BOOST_ZOOM,
+    BOOST_ZOOM_SMOOTHING,
     RAINBOW_ROWS,
     RESUME_AT_LAST_LEVEL,
     SHAKE_DURATION,
     SHAKE_INTENSITY
 } from '../config/constants';
-import { buildLevel, ORB_ROW_SPACING } from '../config/level';
+import { buildLevel, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { WORLDS } from '../config/worldData';
@@ -37,6 +40,7 @@ import { ScoreSystem } from '../systems/ScoreSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Trail } from '../systems/Trail';
 import { rainbowAt } from '../utils/color';
+import { easeTowards } from '../utils/math';
 import { showFloatingScore } from '../ui/FloatingScore';
 import { addVignette } from '../ui/Vignette';
 import { Hud } from '../ui/Hud';
@@ -81,6 +85,16 @@ export class Play extends Scene
 
     /** Distance travelled in track pixels. Everything else is placed from this. */
     private distance = 0;
+
+    /** Stretches of this level that run at their own pace. */
+    private zones: SpeedZone[] = [];
+
+    /**
+     * The pace actually being run at, easing towards whatever the course asks
+     * for. Held separately from the zone's own figure so a boost arrives as
+     * something felt rather than as a step change, which reads as a glitch.
+     */
+    private pace = 1;
 
     /**
      * How far a rainbow drop lasts here, and the point on the course it runs out
@@ -127,6 +141,8 @@ export class Play extends Scene
         this.finished = false;
         this.pauseOverlay = null;
         this.rainbowUntil = 0;
+        this.pace = 1;
+        this.zones = [];
 
         //  Charged per level start, retries included. The menus already gate
         //  this, so failing here means Play was reached some other way - fall
@@ -168,6 +184,8 @@ export class Play extends Scene
         addVignette(this);
 
         const course = buildLevel(level);
+
+        this.zones = course.zones;
 
         //  Nine rows' worth, whatever this level's rows are spaced at.
         this.rainbowSpan = RAINBOW_ROWS * (level.rowSpacing ?? ORB_ROW_SPACING);
@@ -377,7 +395,18 @@ export class Play extends Scene
         //  Clamp so a stalled frame cannot jump the drop across the track.
         const dt = Math.min(delta / 1000, MAX_DELTA);
 
-        this.distance += this.forwardSpeed * this.speed.scale * dt;
+        //  The course's own pace here, eased into rather than stepped to.
+        this.pace = easeTowards(this.pace, speedAt(this.zones, this.distance), PACE_SMOOTHING, dt);
+
+        this.distance += this.forwardSpeed * this.speed.scale * this.pace * dt;
+
+        //  The camera pulls back a little when the road speeds up, which is the
+        //  oldest trick there is for making speed felt rather than measured.
+        //  Eased on its own, slower than the pace, so it lags the change and
+        //  reads as a reaction to it.
+        const target = 1 - ((1 - BOOST_ZOOM) * Math.max(0, this.pace - 1));
+
+        this.cameras.main.setZoom(easeTowards(this.cameras.main.zoom, target, BOOST_ZOOM_SMOOTHING, dt));
 
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);

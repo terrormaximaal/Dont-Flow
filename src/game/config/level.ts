@@ -74,6 +74,16 @@ export type ObstacleKind =
 export interface SectionSpec
 {
     /**
+     * Multiplier on the level's forward speed through this section.
+     *
+     * Left out means 1, which is every section written before this existed.
+     * A short burst above 1 is what makes a level have a shape rather than a
+     * tempo - and it costs nothing to read, because the road itself tells the
+     * player it has happened.
+     */
+    speed?: number;
+
+    /**
      * The lane boundary the two gates meet on. 0 splits after the first lane,
      * 1 after the second.
      *
@@ -177,7 +187,47 @@ export interface Level
     orbs: OrbSpec[];
     obstacles: ObstacleSpec[];
     powerUps: PowerUpSpec[];
+
+    /** Stretches of road the drop moves through faster or slower than usual. */
+    zones: SpeedZone[];
+
     finishDistance: number;
+}
+
+/**
+ * A stretch of course with its own pace.
+ *
+ * Held as distances rather than as a flag on each section, because what the
+ * game needs to ask at any moment is "how fast am I going *here*", and here is
+ * a distance. A level with no zones behaves exactly as it did before they
+ * existed: the lookup returns 1.
+ */
+export interface SpeedZone
+{
+    from: number;
+    to: number;
+
+    /** Multiplier on the level's own forward speed. */
+    speed: number;
+}
+
+/**
+ * How fast the course is running at a point on it.
+ *
+ * Pure, and total: any distance has an answer, including one past the finish
+ * or before the start.
+ */
+export function speedAt (zones: SpeedZone[], distance: number): number
+{
+    for (const zone of zones)
+    {
+        if (distance >= zone.from && distance < zone.to)
+        {
+            return zone.speed;
+        }
+    }
+
+    return 1;
 }
 
 const ORB_CHARS = '12345';
@@ -210,11 +260,15 @@ export function buildLevel (spec: LevelSpec): Level
 
     const colorAt = (index: number): ColorId => spec.palette[index] ?? spec.palette[0];
 
+    const zones: SpeedZone[] = [];
+
     let cursor = LEAD_IN;
     let lastRowDistance = cursor;
 
     for (const section of spec.sections)
     {
+        const sectionStart = cursor;
+
         gates.push({
             distance: cursor,
             splitAfterLane: section.splitAfterLane,
@@ -304,6 +358,14 @@ export function buildLevel (spec: LevelSpec): Level
             rowDistance += rowSpacing;
         }
 
+        //  A section that asks for a pace claims the road it occupies, from
+        //  its gate through to its last row. Claimed after the rows are walked,
+        //  because that is when the section's end is known.
+        if (section.speed !== undefined && section.speed !== 1)
+        {
+            zones.push({ from: sectionStart, to: lastRowDistance, speed: section.speed });
+        }
+
         cursor = lastRowDistance + SECTION_GAP;
     }
 
@@ -312,6 +374,7 @@ export function buildLevel (spec: LevelSpec): Level
         orbs,
         obstacles,
         powerUps,
+        zones,
         finishDistance: lastRowDistance + FINISH_GAP
     };
 }

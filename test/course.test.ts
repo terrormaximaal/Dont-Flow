@@ -21,6 +21,7 @@ function courseWith (profile: 'full' | 'low' | 'gap', onBlocked: () => void): Co
         orbs: [],
         obstacles: [ { distance: 1000, lane: 1, color: 'red', kind: 'static', profile } ],
         powerUps: [],
+        zones: [],
         finishDistance: 100000
     };
 

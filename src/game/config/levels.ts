@@ -320,6 +320,18 @@ export const LEVELS: LevelSpec[] = [
                 rows: [ '1..', '.2.', '..3', '1.2', '.3.', '2..', '..1', '.2.', '3..', '..2', '1.3', '.1.', '..3', '2..', '.1.' ]
             },
             {
+                splitAfterLane: 0,
+                gate: [ 1, 0 ],
+                //  A run. Nothing in the way but the colour question, taken at
+                //  a third again the pace - a level needs somewhere it opens
+                //  up, or the whole of it reads at one tempo however varied the
+                //  obstacles are. Clean road on purpose: speed is the thing
+                //  being asked about here, and asking two things at once would
+                //  make it a difficulty spike rather than a change of gear.
+                speed: 1.34,
+                rows: [ '.1.', '..2', '.2.', '1..', '.1.', '..1', '.2.', '2..', '.1.', '..2', '.2.', '1..' ]
+            },
+            {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'slider',

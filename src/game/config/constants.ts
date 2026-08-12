@@ -592,6 +592,20 @@ export const GAP_WARN_ALPHA = 0.75;
 export const HURDLE_CHEVRONS = 3;
 export const HURDLE_CHEVRON_ALPHA = 0.9;
 
+/**
+ * How quickly the road takes up a new pace.
+ *
+ * Eased rather than snapped. A step change in speed on a screen where the only
+ * cue is how fast the ground moves reads as a dropped frame - the player sees
+ * a glitch, not an event. Fast enough to arrive within the first row of the
+ * section, slow enough to be felt happening.
+ */
+export const PACE_SMOOTHING = 3.2;
+
+/** How far the camera pulls back at full boost, and how fast it follows. */
+export const BOOST_ZOOM = 0.965;
+export const BOOST_ZOOM_SMOOTHING = 2.4;
+
 /** An upward flick this long, and this much more vertical than sideways, jumps. */
 export const SWIPE_UP_THRESHOLD = 34;
 
