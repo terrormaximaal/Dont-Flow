@@ -540,46 +540,104 @@ export const LEVELS: LevelSpec[] = [
         rowSpacing: 142,
         //  Pulsing barriers, again alone before they are mixed. They never
         //  reach the next lane along, so what they cost is nerve, not room.
+        //
+        //  The first level built past a minute, and so the first one that has
+        //  to earn the length rather than just have it: ten movements, no two
+        //  of them asking the same question twice in a row.
+        //
+        //     1  the opening      - four colours, clean road.
+        //     2  the hole         - a hazard colour cannot answer.
+        //     3  the pulse        - a wall that breathes. Nerve, not room.
+        //     4  breathing room   - pulses with orbs beside them.
+        //     5  the crossing     - one long sweep, walls setting the line.
+        //     6  the gift         - nothing to hit. A breath.
+        //     7  holes and walls  - steer for one, jump the other.
+        //     8  the drum         - full-width holes on a beat.
+        //     9  pulse and pair   - two breathing walls, one lane between.
+        //    10  the finale       - everything, at the level's tightest spacing.
         sections: [
+            //  1. The opening. A level this long can afford to start quietly,
+            //  and needs to: everything after this is a hazard.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '.*.', '..1', '.3.', '2..', '..2', '1.3', '.1.', '..3', '2..' ]
+                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '..1', '2..', '.2.', '..3', '1.3', '.1.', '3..', '..2', '.3.', '1..', '..1', '.2.', '3..' ]
             },
+            //  2. The hole, introduced the way the hurdle was: one at a time,
+            //  in a lane you can simply not be in, before any of them asks to
+            //  be jumped. The row that spans the road is the one that does, and
+            //  by then the player has seen three and knows what they are.
+            //  Colour is no help here and never will be, which is the whole
+            //  reason this hazard exists.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
-                //  Holes, introduced the way the hurdle was: one at a time, in
-                //  a lane you can simply not be in, before any of them asks to
-                //  be jumped. The row that spans the road is the one that does,
-                //  and by then the player has seen three and knows what they
-                //  are. Colour is no help here and never will be, which is the
-                //  whole reason this hazard exists.
-                rows: [ '.2.', '0..', '..3', '.0.', '2..', '..0', '.3.', '000', '..2', '.3.', '00.', '..2', '.0.', '3..' ]
+                rows: [ '.2.', '0..', '..3', '.0.', '2..', '..0', '.3.', '000', '..2', '.3.', '00.', '..2', '.0.', '3..', '000', '.2.', '..3', '0..', '.3.' ]
             },
+            //  3. The pulse. A wall that breathes never reaches the lane next
+            //  door, so it takes nothing away except the nerve to stay put.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'pulse',
-                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3' ]
+                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..' ]
             },
+            //  4. Breathing room. Orbs beside the pulses, so sitting at the far
+            //  edge of the road until it passes costs something.
             {
                 splitAfterLane: 1,
                 gate: [ 2, 3 ],
-                obstacles: 'static',
-                rows: [ '..3', '.4.', 'b..', '..4', '.3.', 'a..', '..3', '.4.', 'b..', '.*.', '.a.', '4..', '..4', '.3.' ]
+                obstacles: 'pulse',
+                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'a..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.a.', '3..', '..4' ]
             },
+            //  5. The crossing. One continuous movement across the road rather
+            //  than a figure that repeats, with walls placed to set the line
+            //  rather than to be dodged individually.
+            {
+                splitAfterLane: 1,
+                gate: [ 2, 0 ],
+                obstacles: 'static',
+                rows: [ '..3', '.3.', '1..', 'b..', '.1.', '..3', '..b', '.3.', '1..', 'd..', '.1.', '..1', '.d.', '3..', '..3', 'b..', '.3.', '..1', '.b.', '1..' ]
+            },
+            //  6. The gift.
             {
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
-                obstacles: 'pulse',
-                rows: [ '4..', '..1', '.c.', '4..', '..4', 'b..', '.1.', '..4', '.b.', '1..', '..1', 'c..', '.4.', '..1' ]
+                rows: [ '...', '4..', '.1.', '..3', '4.3', '.1.', '.*.', '..3', '4.1', '.3.', '..1', '4..', '.3.', '4.1', '..3', '.1.', '4..', '..1', '.3.' ]
             },
+            //  7. Holes and walls. The two hazards that look nothing alike and
+            //  want opposite answers - a wall is a lane to leave, a hole is a
+            //  lane to leave the ground in - taken alternately so neither can
+            //  be answered on reflex.
             {
                 splitAfterLane: 1,
                 gate: [ 0, 2 ],
                 obstacles: 'static',
-                rows: [ '1..', '..3', '.b.', '1..', '..1', 'd..', '.*.', '..1', '.d.', '3..', '..3', 'b..', '.1.', '..3' ]
+                rows: [ '1..', '..3', '.b.', '0..', '..1', 'd..', '.0.', '..3', '1..', '.d.', '..0', '3..', '.1.', 'b..', '..0', '.3.', '0..', '..1', '.b.' ]
+            },
+            //  8. The drum. Full-width holes on a beat, evenly enough that the
+            //  jumps become a rhythm rather than four separate reactions.
+            {
+                splitAfterLane: 1,
+                gate: [ 2, 0 ],
+                obstacles: 'static',
+                rows: [ '.3.', '..1', '000', '.3.', '1..', '..3', '.1.', '000', '..3', '1..', '.3.', '..1', '000', '.1.', '3..', '..3', '.1.', '000', '..1' ]
+            },
+            //  9. Pulse and pair. Two breathing walls on a row, so the lane
+            //  between them is the only one there is and it keeps narrowing.
+            {
+                splitAfterLane: 1,
+                gate: [ 1, 3 ],
+                obstacles: 'pulse',
+                rows: [ '.2.', 'a.a', '..4', '.2.', 'd.d', '..2', '.4.', 'b.b', '2..', '..4', 'a.a', '.2.', '..4', 'd.d', '.4.', '2..', 'b.b', '..2', '.4.' ]
+            },
+            //  10. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 1 ],
+                obstacles: 'static',
+                rowSpacing: 128,
+                rows: [ '4..', '..2', '.b.', '4..', '000', '..4', 'd..', '.2.', '..2', 'b..', '000', '4..', '.d.', '..4', '2..', '.b.', '000', '.4.', '..2', 'd..', '.2.', '..4' ]
             }
         ]
     },
@@ -591,11 +649,23 @@ export const LEVELS: LevelSpec[] = [
         rowSpacing: 138,
         //  Everything met so far, in the same level but still a kind to a
         //  section, so each stretch reads as one idea.
+        //
+        //     1  the opening  - clean road, four colours.
+        //     2  the run      - the same, a third again as fast.
+        //     3  the sliders  - moving walls, on their own.
+        //     4  the pulses   - breathing walls, on their own.
+        //     5  the walls    - statics in pairs. One lane, not two.
+        //     6  the hurdles  - full-width, on a beat. The jump, on a clock.
+        //     7  the gift     - a breath, and a rainbow.
+        //     8  the sweep    - a wall that moves into the crossing.
+        //     9  holes and hurdles - both answered by leaving the ground.
+        //    10  the gauntlet - pulses in pairs, no quiet rows.
+        //    11  the finale   - all of it, at the level's tightest spacing.
         sections: [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '2..', '..1', '.2.', '3..', '..2', '1.3', '.1.', '..3', '2..', '.1.' ]
+                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '..1', '2..', '.2.', '..3', '1.3', '.1.', '3..', '..2', '.3.', '1..', '..1', '.2.', '3..', '..3', '1.2', '.4.', '..4' ]
             },
             {
                 splitAfterLane: 0,
@@ -607,31 +677,77 @@ export const LEVELS: LevelSpec[] = [
                 //  being asked about here, and asking two things at once would
                 //  make it a difficulty spike rather than a change of gear.
                 speed: 1.34,
-                rows: [ '.1.', '..2', '.2.', '1..', '.1.', '..1', '.2.', '2..', '.1.', '..2', '.2.', '1..' ]
+                rows: [ '.1.', '..2', '.2.', '1..', '.1.', '..1', '.2.', '2..', '.1.', '..2', '.2.', '1..', '.4.', '..1', '.2.', '4..', '.1.', '..4', '.2.', '1..', '.4.', '..2' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'slider',
-                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.*.', '..3', 'a..', '.3.', '..2', 'd..', '.3.', '..2', 'a..' ]
+                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.3.', '..2', 'a..', '.2.', '..3', 'd..', '.3.', '..2', 'a..', '.3.' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 2, 3 ],
                 obstacles: 'pulse',
-                rows: [ '..3', '.4.', 'b..', '..4', '.3.', 'a..', '..3', '.4.', 'b..', '..3', '.a.', '4..', '..4', '.3.', 'b..' ]
+                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.c.', '3..', '..4', '.b.', '4..', '..3' ]
             },
             {
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
                 obstacles: 'static',
-                rows: [ '4..', '..1', '.c.', '4..', '..4', 'b..', '.1.', '..4', '.*.', '1..', '..1', 'c..', '.4.', '..1', '.c.' ]
+                rows: [ '4..', '..1', '.b.', '4..', '..4', 'b.b', '.1.', '..4', 'c.c', '1..', '..1', 'b..', '.4.', '..1', 'd.d', '.4.', '..4', 'b.b', '.1.', '..4', 'c.c', '.1.' ]
+            },
+            //  6. The hurdles, evenly spaced for the first time in the game.
+            //  Level six taught that the jump exists; this asks for it on a
+            //  clock, which is a different thing to be good at.
+            {
+                splitAfterLane: 1,
+                gate: [ 0, 2 ],
+                obstacles: 'static',
+                rows: [ '1..', '..3', '.1.', 'AAA', '..1', '3..', '.3.', '..1', 'CCC', '1..', '.3.', '..3', '1..', 'AAA', '.1.', '..3', '3..', '..1', 'CCC', '.3.', '1..', '..3' ]
             },
             {
                 splitAfterLane: 1,
-                gate: [ 0, 3 ],
+                gate: [ 2, 1 ],
+                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2', '..4', '.2.', '3..', '..2', '.4.', '3.4', '.2.', '..3' ]
+            },
+            //  8. The sweep. Sliders alternating sides with the orbs placed
+            //  across from them, so the road asks for a crossing that the wall
+            //  is already moving into.
+            //
+            //  One slider to a row, never two. Every slider in the game runs
+            //  off the same clock and so sways the same way at the same moment,
+            //  which means a pair does not leave a moving gap between them - it
+            //  leaves a gap that closes completely at the far end of the sway.
+            //  `test/barrier.test.ts` holds every level to that.
+            {
+                splitAfterLane: 1,
+                gate: [ 3, 1 ],
                 obstacles: 'slider',
-                rows: [ '1..', '..4', '.c.', '1..', '..1', 'd..', '.4.', '..1', '.d.', '4..', '..4', 'c..', '.1.', '..4', '.c.' ]
+                rows: [ '4..', '..2', 'a..', '.4.', '..4', '..d', '2..', '.2.', 'a..', '..4', '.4.', '..b', '2..', '..2', 'a..', '.4.', '..4', '..d', '.2.', '2..', 'b..', '..4' ]
+            },
+            //  9. The two hazards colour cannot answer, alternating - a hole
+            //  and a hurdle want the same input and look nothing alike, so this
+            //  is the one stretch in the game where reading is easy and timing
+            //  is everything.
+            {
+                splitAfterLane: 1,
+                gate: [ 1, 3 ],
+                obstacles: 'static',
+                rows: [ '.2.', '..4', '000', '.2.', '4..', '..2', '.4.', 'BBB', '..2', '4..', '.2.', '..4', '000', '.4.', '2..', '..2', '.4.', 'BBB', '..4', '.2.', '4..', '..2' ]
+            },
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 3 ],
+                obstacles: 'pulse',
+                rows: [ '1..', '..4', 'a.a', '.1.', '..1', 'd.d', '4..', '.4.', 'a.a', '..1', '.1.', 'd.d', '4..', '..4', 'a.a', '.1.', '..1', 'd.d', '.4.', '4..', 'a.a', '..1' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 2, 0 ],
+                obstacles: 'static',
+                rowSpacing: 124,
+                rows: [ '3..', '..1', '.c.', '3..', '..3', '000', 'b..', '.1.', '..1', 'c..', '.3.', 'AAA', '..3', 'b..', '.1.', '..1', 'c..', '000', '.3.', '..1', 'b..', '.1.', '..3', '.3.' ]
             }
         ]
     },
@@ -643,35 +759,103 @@ export const LEVELS: LevelSpec[] = [
         rowSpacing: 134,
         //  Five colours and every kind of barrier. Nothing new is introduced
         //  here - it is the exam, not the lesson.
+        //
+        //  Twelve movements, one mechanic each, in the order they were taught.
+        //  The length is the point: by this stage a player can answer any one
+        //  of these, and what is left to ask is whether they can answer all of
+        //  them for a minute and a half without the concentration going.
+        //
+        //     1  the opening        - five colours, clean road.
+        //     2  the sliders
+        //     3  the pulses
+        //     4  the walls          - in pairs.
+        //     5  the hurdles        - full width, on a beat.
+        //     6  the holes          - full width, on a beat.
+        //     7  the gift           - the last breath in the game.
+        //     8  the sweep          - a wall that moves into the crossing.
+        //     9  pulses and holes   - the two that share no answer.
+        //    10  the run home       - clean road, and faster.
+        //    11  the gauntlet       - every static hazard at once.
+        //    12  the finale         - all of it, tightest spacing in the game.
         sections: [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '2..', '..1', '.2.', '.*.', '..2', '1.3', '.1.', '..3', '2..', '.1.', '..2' ]
+                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '..4', '2..', '.5.', '..3', '1.3', '.1.', '3..', '..2', '.4.', '1..', '..5', '.2.', '3..', '..3', '1.2', '.4.', '..4', '5..', '.1.', '..5', '.3.' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'slider',
-                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'e..', '.3.', '..2', 'a..', '.2.' ]
+                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'e..', '.3.', '..2', 'a..', '.2.', '..3', 'd..', '.3.', '..2', 'e..', '.2.', '..3', 'a..', '.3.', '..2' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 2, 3 ],
                 obstacles: 'pulse',
-                rows: [ '..3', '.4.', 'b..', '..4', '.3.', '.*.', '..3', '.4.', 'e..', '..3', '.a.', '4..', '..4', '.3.', 'b..', '..4' ]
+                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.c.', '3..', '..4', '.b.', '4..', '..3', 'c..', '.4.', '..3', '.b.' ]
             },
             {
                 splitAfterLane: 0,
                 gate: [ 3, 4 ],
                 obstacles: 'static',
-                rows: [ '4..', '..5', '.c.', '4..', '..4', 'b..', '.5.', '..4', '.b.', '5..', '..5', 'c..', '.4.', '..5', '.c.', '4..' ]
+                rows: [ '4..', '..5', '.c.', '4..', '..4', 'b.b', '.5.', '..4', 'c.c', '5..', '..5', 'b..', '.4.', '..5', 'd.d', '.4.', '..4', 'e.e', '.5.', '..4', 'c.c', '.5.', '4..', '..5', 'b.b', '.4.' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 4, 0 ],
+                obstacles: 'static',
+                rows: [ '5..', '..1', '.5.', 'AAA', '..5', '1..', '.1.', '..5', 'EEE', '5..', '.1.', '..1', '5..', 'AAA', '.5.', '..1', '1..', '..5', 'CCC', '.1.', '5..', '..1', '.5.', 'AAA', '..5', '.1.' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 0, 2 ],
+                obstacles: 'static',
+                rows: [ '.3.', '..1', '000', '.3.', '1..', '..3', '.1.', '000', '..3', '1..', '.3.', '..1', '000', '.1.', '3..', '..3', '.1.', '000', '..1', '.3.', '1..', '..3', '000', '.3.', '..1', '1..' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 2, 1 ],
+                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2', '..4', '.2.', '3..', '..2', '.4.', '3.4', '.2.', '..3', '5..', '.5.', '..5', '3.5' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 1, 3 ],
                 obstacles: 'slider',
-                rows: [ '5..', '..1', '.c.', '5..', '..5', 'd..', '.1.', '..5', '.d.', '1..', '.*.', 'c..', '.5.', '..1', '.c.', '5..' ]
+                //  One slider to a row - see level nine's eighth movement for
+                //  why a pair of them is not a narrow gap but a closed one.
+                rows: [ '4..', '..2', 'a..', '.4.', '..4', 'd..', '2..', '.2.', '..a', '..4', '.4.', 'b..', '2..', '..2', 'e..', '.4.', '..4', '..d', '.2.', '2..', 'b..', '..4', '.2.', 'a..', '..2', '.4.' ]
+            },
+            //  9. The two hazards that share no answer at all: a breathing wall
+            //  is a lane to leave, a hole is a lane to leave the ground in, and
+            //  neither one helps with the other.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                obstacles: 'pulse',
+                rows: [ '4..', '..1', '.b.', '0..', '..4', 'd..', '.0.', '..1', '4..', '.d.', '..0', '1..', '.4.', 'b..', '..0', '.1.', '0..', '..4', '.b.', '1..', '..0', 'd..', '.4.', '..1', '.0.', '4..' ]
+            },
+            //  10. The run home. The level opens up one last time before the
+            //  two hardest stretches in the game, so the ending has somewhere
+            //  to climb from.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 4 ],
+                speed: 1.28,
+                rows: [ '.1.', '..5', '.5.', '1..', '.1.', '..1', '.5.', '5..', '.1.', '..5', '.5.', '1..', '.5.', '..1', '.1.', '5..', '.5.', '..5', '.1.', '1..', '.5.', '..1', '.1.', '5..', '.5.', '..5' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 4, 2 ],
+                obstacles: 'static',
+                rows: [ '5..', '..3', '.c.', '5..', '000', '..5', 'e..', '.3.', 'c.c', 'EEE', '..5', '3..', '.e.', '..3', '000', '5..', '.5.', 'c.c', '..3', 'CCC', '.5.', 'e..', '..5', '.3.', '000', '..5' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 2, 0 ],
+                obstacles: 'static',
+                rowSpacing: 118,
+                rows: [ '3..', '..1', '.c.', '3..', '000', '..3', 'b..', '.1.', 'c.c', '..1', 'AAA', '3..', '.b.', '..3', 'e.e', '.1.', '000', '..3', 'c..', '.1.', 'b.b', '..1', 'CCC', '.3.', '1..', '..3', '.1.', '..1' ]
             }
         ]
     }

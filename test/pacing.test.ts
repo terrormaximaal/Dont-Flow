@@ -32,9 +32,10 @@ export function durationOf (index: number): number
 /**
  * What each level should run to.
  *
- * Only the levels that have been restructured are held to a band so far;
- * the rest are recorded below as a list of what is still to do, rather than
- * as a passing test that quietly says nothing.
+ * Three bands, and every level is in one of them: the early levels are short
+ * enough to want another straight away, the middle ones long enough to have a
+ * middle, and the late ones long enough that finishing is an achievement rather
+ * than a formality.
  */
 const BANDS: Array<{ level: number; from: number; to: number }> = [
     { level: 0, from: 30, to: 45 },
@@ -43,12 +44,15 @@ const BANDS: Array<{ level: number; from: number; to: number }> = [
     { level: 3, from: 45, to: 60 },
     { level: 4, from: 45, to: 60 },
     { level: 5, from: 45, to: 60 },
-    { level: 6, from: 45, to: 60 }
+    { level: 6, from: 45, to: 60 },
+    { level: 7, from: 60, to: 90 },
+    { level: 8, from: 60, to: 90 },
+    { level: 9, from: 60, to: 90 }
 ];
 
 describe('how long a level lasts', () => {
 
-    it('runs each restructured level inside its band', () => {
+    it('runs every level inside its band', () => {
 
         for (const band of BANDS)
         {
@@ -71,6 +75,8 @@ describe('how long a level lasts', () => {
 
         const done = BANDS.map((b) => b.level).sort((a, b) => a - b);
 
+        expect(done.length, 'every level held to a band').toBe(LEVELS.length);
+
         for (let i = 1; i < done.length; i++)
         {
             const earlier = durationOf(done[i - 1]);
@@ -89,7 +95,7 @@ describe('a level built as a sequence', () => {
     //  Six movements rather than three similar stretches. The shape is the
     //  thing being guarded: a level with two sections cannot have an intro, a
     //  middle and an ending, however good either section is.
-    it('gives every restructured level enough movements to have a shape', () => {
+    it('gives every level enough movements to have a shape', () => {
 
         for (const band of BANDS)
         {
@@ -100,7 +106,7 @@ describe('a level built as a sequence', () => {
     });
 
     //  A finale that is not denser than the level's own body is not a finale.
-    it('packs every restructured level\'s finale tighter than its opening', () => {
+    it('packs every level\'s finale tighter than its opening', () => {
 
         for (const band of BANDS)
         {
