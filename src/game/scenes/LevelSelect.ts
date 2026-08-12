@@ -95,11 +95,15 @@ export class LevelSelect extends Scene
 
         });
 
+        //  The same ghost pill the home screen uses. This screen shares the
+        //  menu's sky and is one tap from it, so a grey slab here against a
+        //  pill there reads as two different games rather than two screens.
         const back = new Button(this, {
             x: GAME_WIDTH / 2,
             y: ROUTE_LAST_Y + BUTTON_HEIGHT + 24,
             label: 'BACK',
-            variant: 'secondary',
+            variant: 'ghost',
+            radius: BUTTON_HEIGHT / 2,
             onPress: () => this.scene.start('Title')
         });
 

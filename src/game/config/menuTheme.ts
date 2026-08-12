@@ -9,9 +9,9 @@ import { GAME_HEIGHT } from './constants';
 //  the drop is suspended in, before any of it has become a track.
 
 /** Sky, top to bottom. Three stops, because two cannot bend. */
-export const MENU_SKY_TOP = 0x07061c;
-export const MENU_SKY_MID = 0x1b0f3f;
-export const MENU_SKY_LOW = 0x2c1250;
+export const MENU_SKY_TOP = 0x05041a;
+export const MENU_SKY_MID = 0x1d1046;
+export const MENU_SKY_LOW = 0x35155e;
 
 /** Bands the gradient is built from. Enough that no step is visible. */
 export const MENU_SKY_BANDS = 44;
@@ -70,13 +70,13 @@ export const MENU_BLOB_LAYERS = 20;
 
 export const MENU_BLOBS: BlobSpec[] = [
     //  A warm magenta mass low left, which is what the eye lands on first.
-    { color: 0xd8329b, radius: 190, x: 110, y: 470, driftX: 34, driftY: 26, periodX: 23, periodY: 17, alpha: 0.021 },
+    { color: 0xe8339f, radius: 200, x: 96, y: 500, driftX: 34, driftY: 26, periodX: 23, periodY: 17, alpha: 0.034 },
     //  Cyan opposite it, so the palette has two poles rather than one wash.
-    { color: 0x1fd9e0, radius: 165, x: 386, y: 300, driftX: 40, driftY: 30, periodX: 19, periodY: 27, alpha: 0.019 },
+    { color: 0x21e6ec, radius: 172, x: 396, y: 292, driftX: 40, driftY: 30, periodX: 19, periodY: 27, alpha: 0.031 },
     //  A violet body behind both, tying them together.
-    { color: 0x7a3ce8, radius: 240, x: 250, y: 210, driftX: 26, driftY: 20, periodX: 31, periodY: 21, alpha: 0.017 },
+    { color: 0x8447ff, radius: 250, x: 248, y: 196, driftX: 26, driftY: 20, periodX: 31, periodY: 21, alpha: 0.027 },
     //  A small hot core, for a highlight the others cannot give.
-    { color: 0xff7ad8, radius: 90, x: 320, y: 560, driftX: 30, driftY: 24, periodX: 13, periodY: 29, alpha: 0.019 }
+    { color: 0xff8ade, radius: 96, x: 336, y: 578, driftX: 30, driftY: 24, periodX: 13, periodY: 29, alpha: 0.030 }
 ];
 
 /**
@@ -94,20 +94,134 @@ export const MENU_STARS = 60;
 export const MENU_STAR_ALPHA = 0.55;
 
 // ---------------------------------------------------------------------------
-//  The wordmark
+//  Caustics
+//
+//  Wavering bands of light on the surface, the way light looks after it has
+//  passed through moving water. The one thing that makes a dark pool read as
+//  liquid rather than as a dark rectangle.
 // ---------------------------------------------------------------------------
 
-/** Top and bottom of the title's own gradient. */
+export const MENU_CAUSTICS = 9;
+export const MENU_CAUSTIC_ALPHA = 0.085;
+export const MENU_CAUSTIC_COLOR = 0x9fe8ff;
+
+/** How fast the pattern crawls, and how far each band bends as it goes. */
+export const MENU_CAUSTIC_SPEED = 0.22;
+export const MENU_CAUSTIC_BEND = 46;
+
+// ---------------------------------------------------------------------------
+//  The wordmark
+//
+//  Two lines, not one. A single line of capitals is a label however it is
+//  coloured; stacking a small tracked-out word over a large one is a lockup,
+//  and a lockup is what a game is remembered by.
+//
+//  The size difference does the work. DON'T is set small and wide so it reads
+//  as a qualifier, and FLOW is set large and filled with the game's own
+//  colours running through it - so the word itself does the thing the game is
+//  about, which is the only reason a gradient on a title is ever worth having.
+// ---------------------------------------------------------------------------
+
+/** The small word above. */
+export const TITLE_TOP_SIZE = 32;
+export const TITLE_TOP_TRACKING = 13;
+export const TITLE_TOP_COLOR = '#cfe4ff';
+export const TITLE_TOP_ALPHA = 0.92;
+
+/** The large word below, which carries the colour. */
+export const TITLE_MAIN_SIZE = 84;
+export const TITLE_MAIN_TRACKING = 5;
+
+/**
+ * The liquid running through it, left to right.
+ *
+ * Four stops rather than two: a two-stop ramp across four letters gives each
+ * letter one flat colour, and the point is that the colour *travels* through
+ * the word.
+ */
+export const TITLE_FLOW_STOPS = [ '#5df3ff', '#7ea8ff', '#d46bff', '#ff6bc4' ];
+
+/** Kept for anything still asking for a single fill. */
 export const TITLE_FILL_TOP = '#ffffff';
 export const TITLE_FILL_LOW = '#7fd8ff';
 
 /** The glow behind it, and how far it spreads. */
-export const TITLE_GLOW = '#2ea8ff';
-export const TITLE_GLOW_BLUR = 26;
+export const TITLE_GLOW = '#8a4bff';
+export const TITLE_GLOW_BLUR = 34;
 
-/** Space between letters. A wordmark is set wider than a sentence. */
+/** Space between letters, for anything setting a single line. */
 export const TITLE_TRACKING = 4;
 
-/** The rule under the wordmark, which is most of what makes it a mark. */
-export const TITLE_RULE_WIDTH = 210;
-export const TITLE_RULE_ALPHA = 0.85;
+/**
+ * The rule above the wordmark, which gives the block a top edge to hang from.
+ *
+ * Narrow, and above rather than between: the two words sit close enough to
+ * read as one mark, so anything laid between them fouls the big one.
+ */
+export const TITLE_RULE_WIDTH = 96;
+export const TITLE_RULE_ALPHA = 0.8;
+export const TITLE_RULE_LIFT = 16;
+
+/**
+ * The wordmark's own reflection, thrown down into the pool.
+ *
+ * Not a decoration: it is what ties the top half of the screen to the bottom
+ * half, so the title belongs to the place rather than sitting in front of it.
+ */
+export const TITLE_REFLECT_ALPHA = 0.15;
+
+/**
+ * Short and close, not a full mirror image.
+ *
+ * The first version squashed to 0.55 and sat 26px clear of the word, which put
+ * a ghost of FLOW directly on top of the tagline - the layout test was only
+ * checking the upright elements, so nothing caught it. A reflection belongs
+ * against the thing it reflects; the gap is what made it a second object.
+ */
+export const TITLE_REFLECT_SQUASH = 0.34;
+export const TITLE_REFLECT_GAP = 6;
+
+// ---------------------------------------------------------------------------
+//  Arriving
+//
+//  The menu used to appear all at once, fully formed, which is the single
+//  clearest tell that a screen was assembled rather than designed. Everything
+//  now comes in from somewhere, in the order the eye should read it.
+// ---------------------------------------------------------------------------
+
+/** The drop falls in first and lands, because it is the subject. */
+export const ENTER_DROP_MS = 620;
+export const ENTER_DROP_FROM = -160;
+
+/** Then the two words, one after the other. */
+export const ENTER_MARK_MS = 520;
+export const ENTER_MARK_RISE = 26;
+export const ENTER_MARK_STAGGER = 110;
+
+export const ENTER_TAGLINE_MS = 460;
+
+/** Then the way in, last, so it is the thing left moving when the eye arrives. */
+export const ENTER_BUTTON_MS = 480;
+export const ENTER_BUTTON_RISE = 22;
+export const ENTER_BUTTON_STAGGER = 90;
+
+/** How long the whole arrival takes. Anything longer is a screen you wait for. */
+export const ENTER_TOTAL_MS = 1200;
+
+/** Leaving: a wash to black, so the menu and the level are not cut together. */
+export const LEAVE_FADE_MS = 260;
+
+// ---------------------------------------------------------------------------
+//  Menu buttons
+// ---------------------------------------------------------------------------
+
+/** The primary button's gradient, which is the title's colour again. */
+export const MENU_BUTTON_FROM = 0x39c8ff;
+export const MENU_BUTTON_TO = 0xa96bff;
+
+/** The ghost button: a stroke and almost nothing else. */
+export const COLOR_BUTTON_GHOST = 0x8fb4ff;
+export const COLOR_BUTTON_GHOST_LABEL = '#dbe8ff';
+export const BUTTON_GHOST_FILL_ALPHA = 0.07;
+export const BUTTON_GHOST_EDGE_ALPHA = 0.42;
+export const BUTTON_GHOST_EDGE_WIDTH = 1.5;

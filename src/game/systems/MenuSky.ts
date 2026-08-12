@@ -3,6 +3,11 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../config/constants';
 import {
     BlobSpec,
     MENU_BLOB_LAYERS,
+    MENU_CAUSTIC_ALPHA,
+    MENU_CAUSTIC_BEND,
+    MENU_CAUSTIC_COLOR,
+    MENU_CAUSTIC_SPEED,
+    MENU_CAUSTICS,
     MENU_BLOBS,
     MENU_DROPLET_ALPHA,
     MENU_DROPLET_RISE,
@@ -213,10 +218,60 @@ export class MenuSky
             );
         }
 
+        this.drawCaustics(gfx);
+
         //  A bright line right on the surface, which is what actually says
         //  "this is where one thing ends and another begins".
         gfx.lineStyle(1.5, 0xbfe4ff, 0.22);
         gfx.lineBetween(0, MENU_POOL_Y, GAME_WIDTH, MENU_POOL_Y);
+    }
+
+    /**
+     * Light bent through moving water, crawling across the surface.
+     *
+     * The one thing that makes a dark pool read as liquid rather than as a
+     * dark rectangle. Each band is a chain of short overlapping ellipses whose
+     * height rises and falls along its length, which gives the pinched,
+     * wandering shape caustics have - a single stretched ellipse gives a lozenge
+     * and reads as a smudge.
+     *
+     * Every band runs on its own phase and its own drift, so the pattern never
+     * lines up into anything regular, and they fade towards the bottom of the
+     * screen where the water is meant to be deeper.
+     */
+    private drawCaustics (gfx: Phaser.GameObjects.Graphics): void
+    {
+        const depth = GAME_HEIGHT - MENU_POOL_Y;
+
+        for (let band = 0; band < MENU_CAUSTICS; band++)
+        {
+            const t = (band + 0.5) / MENU_CAUSTICS;
+
+            //  Packed towards the surface, like everything else in the pool:
+            //  further down is further away, and further away is smaller.
+            const y = MENU_POOL_Y + (depth * t * t);
+
+            const phase = (this.elapsed * MENU_CAUSTIC_SPEED) + (band * 2.7);
+            const width = 60 + (fraction(band * 6.1) * 90);
+
+            //  Crawling sideways and wrapping, so a band never appears or
+            //  vanishes at the edge of the screen.
+            const centre = (((phase * 40) + (fraction(band * 8.9) * GAME_WIDTH)) % (GAME_WIDTH + 200)) - 100;
+
+            for (let i = 0; i < 7; i++)
+            {
+                const along = (i / 6) - 0.5;
+
+                //  Thickest in the middle of the band and pinched at both ends.
+                const taper = Math.cos(along * Math.PI);
+
+                const x = centre + (along * width);
+                const bend = Math.sin(phase + (along * 3.4)) * MENU_CAUSTIC_BEND * 0.06;
+
+                gfx.fillStyle(MENU_CAUSTIC_COLOR, MENU_CAUSTIC_ALPHA * (1 - t) * Math.max(0, taper));
+                gfx.fillEllipse(x, y + bend, width * 0.34, 3 + (t * 5));
+            }
+        }
     }
 
     /** Droplets rising through the field. */

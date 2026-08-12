@@ -22,9 +22,27 @@ import {
     COLOR_BUTTON_SECONDARY_LABEL,
     HUD_FONT
 } from '../config/constants';
+import {
+    BUTTON_GHOST_EDGE_ALPHA,
+    BUTTON_GHOST_EDGE_WIDTH,
+    BUTTON_GHOST_FILL_ALPHA,
+    COLOR_BUTTON_GHOST,
+    COLOR_BUTTON_GHOST_LABEL,
+    MENU_BUTTON_FROM,
+    MENU_BUTTON_TO
+} from '../config/menuTheme';
 import { mixColor } from '../utils/color';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'locked';
+/**
+ * How a button is drawn.
+ *
+ * 'hero' and 'ghost' are the pair the home screen uses, and they exist because
+ * two buttons of the same shape in slightly different greys are not a
+ * hierarchy - the eye has to be told which one is the way in. A filled pill
+ * with a gradient and a halo against an outline with almost nothing in it says
+ * that in one glance, without either of them being large or loud.
+ */
+export type ButtonVariant = 'primary' | 'secondary' | 'locked' | 'hero' | 'ghost';
 
 export interface ButtonOptions
 {
@@ -37,13 +55,40 @@ export interface ButtonOptions
     width?: number;
     height?: number;
     labelSize?: number;
+
+    /** Corner radius. Half the height makes a pill, which is the menu's shape. */
+    radius?: number;
 }
 
-const VARIANTS: Record<ButtonVariant, { fill: number; label: string; glow: boolean }> = {
+interface VariantStyle
+{
+    fill: number;
+    label: string;
+    glow: boolean;
+
+    /** Second colour, for a surface that runs from one hue to another. */
+    fillTo?: number;
+
+    /** Drawn as an outline with almost nothing inside it. */
+    ghost?: boolean;
+}
+
+const VARIANTS: Record<ButtonVariant, VariantStyle> = {
     primary: { fill: COLOR_BUTTON, label: COLOR_BUTTON_LABEL, glow: true },
     secondary: { fill: COLOR_BUTTON_SECONDARY, label: COLOR_BUTTON_SECONDARY_LABEL, glow: false },
-    locked: { fill: COLOR_BUTTON_LOCKED, label: COLOR_BUTTON_LOCKED_LABEL, glow: false }
+    locked: { fill: COLOR_BUTTON_LOCKED, label: COLOR_BUTTON_LOCKED_LABEL, glow: false },
+    hero: { fill: MENU_BUTTON_FROM, fillTo: MENU_BUTTON_TO, label: COLOR_BUTTON_LABEL, glow: true },
+    ghost: { fill: COLOR_BUTTON_GHOST, label: COLOR_BUTTON_GHOST_LABEL, glow: false, ghost: true }
 };
+
+/**
+ * Bands a left-to-right gradient is built from. Graphics cannot fill one.
+ *
+ * Enough that no single step is visible: what gives a banded ramp away is the
+ * absolute jump between two neighbours, and across a button this wide
+ * twenty-odd bands leaves each one several pixels across and each step legible.
+ */
+const GRADIENT_BANDS = 56;
 
 /**
  * A tappable label, used by every screen that has one.
@@ -80,13 +125,14 @@ export class Button
         const variant = options.variant ?? 'primary';
         const width = options.width ?? BUTTON_WIDTH;
         const height = options.height ?? BUTTON_HEIGHT;
+        const radius = options.radius ?? BUTTON_RADIUS;
         const colors = VARIANTS[variant];
 
         this.container = scene.add.container(options.x, options.y);
 
         const surface = scene.add.graphics();
 
-        this.paint(surface, width, height, colors.fill, colors.glow);
+        this.paint(surface, width, height, radius, colors);
         this.container.add(surface);
 
         //  A separate transparent rectangle carries the input, because a
@@ -127,33 +173,77 @@ export class Button
         gfx: Phaser.GameObjects.Graphics,
         width: number,
         height: number,
-        fill: number,
-        glow: boolean
+        radius: number,
+        style: VariantStyle
     ): void
     {
         const left = -width / 2;
         const top = -height / 2;
+        const fill = style.fill;
 
-        if (glow)
+        if (style.ghost)
+        {
+            this.paintGhost(gfx, left, top, width, height, radius, fill);
+
+            return;
+        }
+
+        if (style.glow)
         {
             //  A halo in the button's own colour, widening outwards.
             for (let layer = BUTTON_GLOW_LAYERS; layer > 0; layer--)
             {
                 const spread = BUTTON_GLOW_SPREAD * (layer / BUTTON_GLOW_LAYERS);
 
-                gfx.fillStyle(fill, BUTTON_GLOW_ALPHA);
+                gfx.fillStyle(style.fillTo ?? fill, BUTTON_GLOW_ALPHA);
                 gfx.fillRoundedRect(
                     left - spread,
                     top - spread,
                     width + (spread * 2),
                     height + (spread * 2),
-                    BUTTON_RADIUS + spread
+                    radius + spread
                 );
             }
         }
 
         gfx.fillStyle(fill, 1);
-        gfx.fillRoundedRect(left, top, width, height, BUTTON_RADIUS);
+        gfx.fillRoundedRect(left, top, width, height, radius);
+
+        //  A surface that travels from one hue to the other, banded because
+        //  Graphics has no gradient fill.
+        //
+        //  The two rounded ends are drawn as discs and the straight middle is
+        //  banded between them, in that order so the bands overwrite the
+        //  inner half of each disc and only the cap itself survives.
+        //
+        //  The first version capped each end with a rounded rectangle instead.
+        //  A rounded rectangle needs to be twice the radius wide before it has
+        //  any corner at all, so on a pill that is a flat block a quarter of
+        //  the button long at each end - the gradient only ran across the
+        //  middle half and both ends were visibly solid.
+        if (style.fillTo !== undefined)
+        {
+            const capped = width - (radius * 2);
+
+            gfx.fillStyle(fill, 1);
+            gfx.fillCircle(left + radius, 0, radius);
+
+            gfx.fillStyle(style.fillTo, 1);
+            gfx.fillCircle(left + width - radius, 0, radius);
+
+            for (let band = 0; band < GRADIENT_BANDS; band++)
+            {
+                const t = band / (GRADIENT_BANDS - 1);
+
+                gfx.fillStyle(mixColor(fill, style.fillTo, t), 1);
+                gfx.fillRect(
+                    left + radius + (capped * (band / GRADIENT_BANDS)),
+                    top,
+                    (capped / GRADIENT_BANDS) + 1,
+                    height
+                );
+            }
+        }
 
         //  Lighter at the top, falling to the body colour by the middle.
         //  Graphics cannot fill a gradient, and one lighter half over a darker
@@ -165,19 +255,50 @@ export class Button
             const bandTop = top + (height * 0.5 * t);
             const bandHeight = (height * 0.5) / BUTTON_SHEEN_BANDS;
 
-            gfx.fillStyle(mixColor(fill, 0xffffff, BUTTON_SHEEN * (1 - t)), 1);
+            //  White at an alpha, not the fill colour mixed towards white.
+            //  Mixing repaints the band in the *start* colour, which wipes out
+            //  a gradient underneath it - the top half of the button came out
+            //  flat cyan while the bottom half ramped, with a hard line across
+            //  the middle where the sheen stopped. Compositing leaves whatever
+            //  is beneath it alone, and looks identical on a solid button.
+            gfx.fillStyle(0xffffff, BUTTON_SHEEN * (1 - t));
 
             //  Only the first band rounds its top corners; the rest are inside
             //  the shape already.
             gfx.fillRoundedRect(left, bandTop, width, bandHeight + 1, band === 0
-                ? { tl: BUTTON_RADIUS, tr: BUTTON_RADIUS, bl: 0, br: 0 }
+                ? { tl: radius, tr: radius, bl: 0, br: 0 }
                 : 0);
         }
 
         //  A hairline along the top edge, which is most of what reads as a
         //  raised surface rather than a painted shape.
         gfx.lineStyle(1.5, mixColor(fill, 0xffffff, 0.55), BUTTON_EDGE_ALPHA);
-        gfx.lineBetween(left + BUTTON_RADIUS, top + 1, left + width - BUTTON_RADIUS, top + 1);
+        gfx.lineBetween(left + radius, top + 1, left + width - radius, top + 1);
+    }
+
+    /**
+     * An outline with almost nothing in it.
+     *
+     * The whole point is what it does not have: no gradient, no halo, no top
+     * hairline. Against a filled button it reads immediately as the second
+     * choice, which is what a hierarchy is - and it costs nothing to look at,
+     * so the eye goes where it should.
+     */
+    private paintGhost (
+        gfx: Phaser.GameObjects.Graphics,
+        left: number,
+        top: number,
+        width: number,
+        height: number,
+        radius: number,
+        fill: number
+    ): void
+    {
+        gfx.fillStyle(fill, BUTTON_GHOST_FILL_ALPHA);
+        gfx.fillRoundedRect(left, top, width, height, radius);
+
+        gfx.lineStyle(BUTTON_GHOST_EDGE_WIDTH, fill, BUTTON_GHOST_EDGE_ALPHA);
+        gfx.strokeRoundedRect(left, top, width, height, radius);
     }
 
     private sink (): void

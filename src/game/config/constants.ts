@@ -921,7 +921,7 @@ export const COLOR_BUTTON_LOCKED_LABEL = '#4a5675';
 export const MENU_SCROLL_SPEED = 90;
 
 export const TITLE_LOGO_Y = GAME_HEIGHT * 0.30;
-export const TITLE_DROP_RADIUS = 30;
+export const TITLE_DROP_RADIUS = 34;
 export const TITLE_SIZE = 46;
 export const TITLE_TAGLINE_SIZE = 15;
 export const TITLE_BUTTONS_Y = GAME_HEIGHT * 0.60;
