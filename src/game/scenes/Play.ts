@@ -1,13 +1,24 @@
 import { Scene } from 'phaser';
 import {
     DEFAULT_LANES,
+    COLOR_FAIL_FLASH,
     COLOR_FLASH,
     COLOR_VALUES,
     ColorId,
+    DEPTH_OVERLAY,
     DROP_SCREEN_Y,
+    FAIL_FLASH_MS,
+    FAIL_SHAKE_INTENSITY,
+    FAIL_SHAKE_MS,
+    FAIL_SLOWDOWN_MS,
+    FAIL_WASH_ALPHA,
+    FAIL_WASH_MS,
+    FAIL_ZOOM,
     FINISH_SLOWDOWN_MS,
     FLASH_DURATION,
     FORWARD_SPEED,
+    GAME_HEIGHT,
+    GAME_WIDTH,
     HAPTIC_COLLECT_MS,
     HAPTIC_MISS_MS,
     MAX_DELTA,
@@ -45,6 +56,8 @@ import { showFloatingScore } from '../ui/FloatingScore';
 import { addVignette } from '../ui/Vignette';
 import { Hud } from '../ui/Hud';
 import { LevelComplete } from '../ui/LevelComplete';
+import { LowVignette } from '../ui/LowVignette';
+import { RunFailed } from '../ui/RunFailed';
 import { PauseButton } from '../ui/PauseButton';
 import { PauseOverlay } from '../ui/PauseOverlay';
 
@@ -68,14 +81,25 @@ export class Play extends Scene
     private scoring: ScoreSystem;
     private save: SaveSystem;
     private hud: Hud;
+    private lowVignette: LowVignette;
     private pauseButton: PauseButton;
     private pauseOverlay: PauseOverlay | null = null;
 
     /** Gates the update loop. The scene keeps running so the overlay stays tappable. */
     private paused = false;
 
-    /** True once the finish is crossed, after which pausing is meaningless. */
+    /**
+     * True once the run is over either way - finished or run out.
+     *
+     * One flag rather than two, because everything that reads it is asking the
+     * same question: is this run still being played. Pausing, input and the
+     * course all stop on it, and a second flag would mean four places that each
+     * have to remember to check both.
+     */
     private finished = false;
+
+    /** How long the course is, so a failed run can say how far it got. */
+    private finishDistance = 1;
 
     /** Which level of LEVELS is being played. Carried across restarts as scene data. */
     private levelIndex = 0;
@@ -143,6 +167,7 @@ export class Play extends Scene
         this.rainbowUntil = 0;
         this.pace = 1;
         this.zones = [];
+        this.finishDistance = 1;
 
         //  Charged per level start, retries included. The menus already gate
         //  this, so failing here means Play was reached some other way - fall
@@ -183,9 +208,18 @@ export class Play extends Scene
 
         addVignette(this);
 
+        //  Built after the plain vignette so it lies over the top of it.
+        this.lowVignette = new LowVignette(this);
+
+        //  The drop wears the bank as its own size, so it starts part-grown and
+        //  visibly shrinks as the run is spent. That is the fail warning the
+        //  player cannot miss: it happens where they are already looking.
+        this.drop.setScore(this.scoring.getScore());
+
         const course = buildLevel(level);
 
         this.zones = course.zones;
+        this.finishDistance = course.finishDistance;
 
         //  Nine rows' worth, whatever this level's rows are spaced at.
         this.rainbowSpan = RAINBOW_ROWS * (level.rowSpacing ?? ORB_ROW_SPACING);
@@ -222,6 +256,11 @@ export class Play extends Scene
      */
     private onGate (color: ColorId): void
     {
+        if (this.finished)
+        {
+            return;
+        }
+
         //  Thrown off in the colour being left behind rather than the one
         //  arriving: the new one is already flooding through the drop itself,
         //  and two things saying the same thing at once say it half as clearly.
@@ -245,6 +284,15 @@ export class Play extends Scene
      */
     private onOrb (x: number, y: number, matched: boolean): void
     {
+        //  The course keeps drawing while the road coasts to a stop, either
+        //  way a run ends, so it keeps reporting too. Nothing it reports means
+        //  anything now: a run that is over cannot be scored, and a penalty
+        //  landing behind the fail panel would be the game arguing with itself.
+        if (this.finished)
+        {
+            return;
+        }
+
         if (matched)
         {
             const gained = this.scoring.collect();
@@ -277,6 +325,111 @@ export class Play extends Scene
         //  The drop's size is the score, so the player can read how the run is
         //  going without looking away from the road.
         this.drop.setScore(this.scoring.getScore());
+
+        //  Asked here rather than watched for in update, so the run ends on the
+        //  hit that emptied the bank and not on the frame after it - which is
+        //  the difference between the fail landing on the thing that caused it
+        //  and landing on whatever happened to be under the drop next.
+        if (this.scoring.isOut())
+        {
+            this.onFailed(x, y);
+
+            return;
+        }
+
+        this.lowVignette.setLow(this.scoring.isLow());
+        this.hud.setLow(this.scoring.isLow());
+    }
+
+    /**
+     * The bank has run out, and the road is taken away.
+     *
+     * Everything here is one event drawn out over a second and a bit: the hit,
+     * the world draining, the road coasting to a stop, and only then the panel.
+     * Drawn out on purpose - a fail that cuts straight to a menu is read as the
+     * game breaking, and a player who does not see what killed them has nothing
+     * to do differently next time.
+     */
+    private onFailed (x: number, y: number): void
+    {
+        if (this.finished)
+        {
+            return;
+        }
+
+        this.finished = true;
+
+        this.pauseButton.setVisible(false);
+        this.input_.setEnabled(false);
+
+        //  The warning has done its job and is about to be contradicted by
+        //  something far louder.
+        this.lowVignette.clear();
+
+        const camera = this.cameras.main;
+
+        camera.shake(FAIL_SHAKE_MS, FAIL_SHAKE_INTENSITY);
+        camera.flash(FAIL_FLASH_MS, 255, 85, 102);
+
+        this.effects.haptic(HAPTIC_MISS_MS * 3);
+        this.effects.bloom(x, y, COLOR_FAIL_FLASH);
+
+        //  Creeping in as it stops. The camera has pulled *back* for speed all
+        //  game, so coming forward is the opposite gesture and reads as the
+        //  world closing rather than as another boost.
+        this.tweens.add({
+            targets: camera,
+            zoom: FAIL_ZOOM,
+            duration: FAIL_SLOWDOWN_MS,
+            ease: 'Sine.InOut'
+        });
+
+        //  The colour draining out. A wash rather than a fade to black, so the
+        //  level is still legible underneath it - the player should be able to
+        //  see the hazard they are stopped against.
+        const wash = this.add.rectangle(
+            GAME_WIDTH / 2,
+            GAME_HEIGHT / 2,
+            GAME_WIDTH,
+            GAME_HEIGHT,
+            COLOR_FAIL_FLASH,
+            0
+        );
+
+        wash.setDepth(DEPTH_OVERLAY - 1);
+
+        this.tweens.add({
+            targets: wash,
+            fillAlpha: FAIL_WASH_ALPHA,
+            duration: FAIL_WASH_MS,
+            ease: 'Quad.Out'
+        });
+
+        this.tweens.add({
+            targets: this.speed,
+            scale: 0,
+            duration: FAIL_SLOWDOWN_MS,
+            //  Long and soft, where the finish is short and firm. The road is
+            //  running down rather than pulling up.
+            ease: 'Sine.Out',
+            onComplete: () => {
+
+                this.hud.setVisible(false);
+
+                //  A failed run banks nothing - not the score, which is zero,
+                //  and not the level after it, which has to be finished for.
+                new RunFailed(this, {
+                    levelName: LEVELS[this.levelIndex].name,
+                    progress: this.distance / this.finishDistance,
+                    bestCombo: this.scoring.getBestCombo(),
+                    bestScore: this.save.getBestScore(this.levelIndex)
+                }, {
+                    onRetry: () => this.startLevel(this.levelIndex),
+                    onMenu: () => this.scene.start('Title')
+                }, new EnergySystem(this.save));
+
+            }
+        });
     }
 
     /**
@@ -284,6 +437,11 @@ export class Play extends Scene
      */
     private onRainbow (x: number, y: number): void
     {
+        if (this.finished)
+        {
+            return;
+        }
+
         //  Taking a second one while the first is still going extends it from
         //  now rather than stacking, so it can never be banked into a long run
         //  that skips a whole level.
@@ -334,6 +492,11 @@ export class Play extends Scene
 
     private onFinish (): void
     {
+        if (this.finished)
+        {
+            return;
+        }
+
         this.finished = true;
 
         this.pauseButton.setVisible(false);

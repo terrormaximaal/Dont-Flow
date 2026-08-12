@@ -6,6 +6,7 @@ import {
     VIGNETTE_BANDS,
     VIGNETTE_DEPTH
 } from '../config/constants';
+import { vignetteBands } from './vignetteBands';
 
 /**
  * A soft darkening around the edges of the screen.
@@ -32,16 +33,10 @@ export function addVignette (scene: Scene): Phaser.GameObjects.Graphics
     //  eat into the road.
     const reach = GAME_WIDTH / 6;
 
-    for (let band = 0; band < VIGNETTE_BANDS; band++)
+    for (const band of vignetteBands(reach, VIGNETTE_BANDS, VIGNETTE_ALPHA))
     {
-        const inset = (band / VIGNETTE_BANDS) * reach;
-
-        //  Squared, so it falls away from the edge rather than ramping evenly -
-        //  an even ramp reads as a grey border.
-        const fade = 1 - (band / VIGNETTE_BANDS);
-
-        gfx.lineStyle((reach / VIGNETTE_BANDS) + 1, 0x000000, (VIGNETTE_ALPHA / VIGNETTE_BANDS) * fade * fade);
-        gfx.strokeRect(inset, inset, GAME_WIDTH - (inset * 2), GAME_HEIGHT - (inset * 2));
+        gfx.lineStyle(band.width, 0x000000, band.alpha);
+        gfx.strokeRect(band.inset, band.inset, GAME_WIDTH - (band.inset * 2), GAME_HEIGHT - (band.inset * 2));
     }
 
     return gfx;

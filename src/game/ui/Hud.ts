@@ -24,6 +24,7 @@ import {
     SCORE_POP_SCALE,
     SCORE_ROLL_MIN,
     SCORE_ROLL_RATE,
+    SCORE_START,
     SCORE_TINT_MS,
     SCORE_TINT_SHIFT
 } from '../config/constants';
@@ -51,8 +52,19 @@ export class Hud
     private readonly lossColor: string;
 
     /** What the readout currently says, and the value a roll is tweening. */
-    private shownScore = 0;
-    private readonly rolling = { value: 0 };
+    private shownScore = SCORE_START;
+    private readonly rolling = { value: SCORE_START };
+
+    /**
+     * Whether the run is nearly out.
+     *
+     * Held rather than passed in, because it decides the colour the score
+     * *rests* at - the pop after each change still goes green or red, and then
+     * settles back to this instead of to the world's own text colour. A number
+     * sitting there in red is a different statement from one that flashed red
+     * and recovered, and the difference is exactly what needs saying.
+     */
+    private low = false;
 
     constructor (scene: Scene, levelName: string, world?: WorldSpec)
     {
@@ -87,7 +99,7 @@ export class Hud
         //  a word once its letters are given room.
         this.levelText.setLetterSpacing(HUD_LEVEL_TRACKING);
 
-        this.scoreText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP, '0', {
+        this.scoreText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP, String(SCORE_START), {
             fontFamily: HUD_FONT,
             fontSize: HUD_SCORE_SIZE,
             color: text,
@@ -191,7 +203,40 @@ export class Hud
             ease: 'Back.Out'
         });
 
-        this.scene.time.delayedCall(SCORE_TINT_MS, () => this.scoreText.setColor(this.textColor));
+        this.scene.time.delayedCall(SCORE_TINT_MS, () => this.scoreText.setColor(this.restingColor()));
+    }
+
+    /**
+     * Whether the run is close to running out.
+     *
+     * Applied immediately as well as remembered, so it does not wait for the
+     * next change to be seen - the moment a run drops into trouble is a moment
+     * where nothing else may happen for a while.
+     */
+    setLow (low: boolean): void
+    {
+        if (low === this.low)
+        {
+            return;
+        }
+
+        this.low = low;
+
+        this.scoreText.setColor(this.restingColor());
+    }
+
+    /**
+     * The colour the score sits at between changes.
+     *
+     * The full loss colour when the run is low, not the shifted one the pops
+     * use. A quarter-shift is right for a tint that lasts a third of a second
+     * and wrong for a state that lasts until the run ends or recovers - the
+     * momentary version has the number's own colour to fall back to, and this
+     * one has to say "still" on its own.
+     */
+    private restingColor (): string
+    {
+        return this.low ? COLOR_SCORE_LOSS : this.textColor;
     }
 
     /**

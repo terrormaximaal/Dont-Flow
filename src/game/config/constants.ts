@@ -642,7 +642,16 @@ export const SLIP_MIN_SCALE = 0.34;
 // ---------------------------------------------------------------------------
 
 export const VIGNETTE_BANDS = 14;
-export const VIGNETTE_ALPHA = 0.2;
+
+/**
+ * The alpha of the outermost ring, which is the strength of the whole effect.
+ *
+ * Stated as the edge rather than as a total divided between the rings, because
+ * only one ring covers any given pixel - so the total was never a number
+ * anything could see, and reading it as one made the low-score vignette an
+ * order of magnitude fainter than intended.
+ */
+export const VIGNETTE_ALPHA = 0.2 / VIGNETTE_BANDS;
 
 /**
  * Above the world and the effects, below the HUD.
@@ -769,6 +778,63 @@ export const COLOR_FINISH_DARK = 0x1b2540;
 export const FINISH_SLOWDOWN_MS = 520;
 
 // ---------------------------------------------------------------------------
+//  Running out
+//
+//  What happens when the bank empties. Deliberately slower and heavier than
+//  the finish: crossing the line is a full stop, and this is the road being
+//  taken away, which should not feel like the same event in a different colour.
+// ---------------------------------------------------------------------------
+
+/**
+ * How long the road takes to stop once the run is over.
+ *
+ * Two and a half times the finish. The extra is the whole effect - it is long
+ * enough to watch, which is what makes it read as slow motion rather than as a
+ * pause, and it gives the player a moment to see what they hit.
+ */
+export const FAIL_SLOWDOWN_MS = 1300;
+
+/** How far the camera creeps in over that stop. Small, and never released. */
+export const FAIL_ZOOM = 1.09;
+
+/** The hit itself: a hard shake, then the colour draining out of the world. */
+export const FAIL_SHAKE_MS = 420;
+export const FAIL_SHAKE_INTENSITY = 0.022;
+
+/** A flash of the loss colour over everything, at the moment of the hit. */
+export const FAIL_FLASH_MS = 340;
+export const COLOR_FAIL_FLASH = 0xff5566;
+
+/** How long the world takes to drain to the fail wash, and how dark that is. */
+export const FAIL_WASH_MS = 900;
+export const FAIL_WASH_ALPHA = 0.42;
+
+/**
+ * The edges closing in as the bank runs low.
+ *
+ * A second vignette in the loss colour, held at zero until the score drops
+ * under the warning line and then breathing in and out. The point is that it
+ * is visible in the corner of the eye while the player is looking at the road,
+ * which a number at the top of the screen is not.
+ */
+export const LOW_VIGNETTE_ALPHA = 0.34;
+
+/**
+ * Enough rings that the ramp between them is not a ramp anyone can see.
+ *
+ * Far more than the ambient vignette needs, and for a reason that is easy to
+ * get wrong: what makes a step visible is the *absolute* jump in alpha between
+ * two neighbouring rings, not the number of rings. The ambient darkening is so
+ * faint that fourteen steps are invisible; this one is twenty times stronger,
+ * so the same fourteen steps read as fourteen concentric rectangles drawn in
+ * the corners. Drawn once at startup, so the count costs nothing per frame.
+ */
+export const LOW_VIGNETTE_BANDS = 60;
+export const LOW_VIGNETTE_FADE_MS = 420;
+export const LOW_PULSE_MS = 760;
+export const LOW_PULSE_DEPTH = 0.45;
+
+// ---------------------------------------------------------------------------
 //  Saving
 // ---------------------------------------------------------------------------
 
@@ -827,6 +893,10 @@ export const OVERLAY_DIM_ALPHA = 0.78;
 export const COLOR_OVERLAY_DIM = 0x060a14;
 
 export const OVERLAY_TITLE_SIZE = 34;
+
+/** The fail panel's heading, which is louder than the level-complete one. */
+export const OVERLAY_FAIL_TITLE_SIZE = 44;
+export const COLOR_FAIL_TITLE = '#ff6b78';
 export const OVERLAY_SCORE_SIZE = 76;
 export const OVERLAY_DETAIL_SIZE = 20;
 export const OVERLAY_BEST_SIZE = 18;
@@ -961,12 +1031,35 @@ export const SCORE_PER_ORB = 10;
 /**
  * A wrong colour costs double what a right one pays.
  *
- * The score is allowed to go negative rather than being floored at zero: the
- * penalty has to be felt, and hiding it would make a bad run read the same as a
- * cautious one.
+ * The penalty has to be felt, and the score is where it lands. Nothing is
+ * hidden or floored part-way: a bad run reads as a bad run.
  */
 export const WRONG_COLOR_MULTIPLIER = 2;
 export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
+
+/**
+ * What a run starts with.
+ *
+ * The score is not a tally any more, it is a bank: the run begins with this
+ * much and ends the moment it is gone. That one change is what makes every
+ * mistake matter - a tally that goes negative is a number you can shrug at,
+ * where a bank that empties takes the level away from you.
+ *
+ * Six clean mistakes deep, which is the number this is actually chosen for.
+ * Deep enough that a single misread is a scare rather than a death, shallow
+ * enough that a stretch played badly ends the run rather than being coasted
+ * through - and the drop already wears the number as its own size, so a player
+ * running low can see it without looking away from the road.
+ */
+export const SCORE_START = SCORE_PENALTY * 6;
+
+/**
+ * The point below which the run is visibly in trouble.
+ *
+ * Two mistakes from the end, so the warning arrives while there is still
+ * something to do about it rather than as an obituary.
+ */
+export const SCORE_WARNING = SCORE_PENALTY * 2;
 
 /**
  * The combo multiplier: what a streak is actually worth.
