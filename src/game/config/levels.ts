@@ -65,7 +65,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1.', '.1', '1.', '.1', '1.', '.1', '2.', '.2', '2.', '.2', '2.', '.2' ]
+                rows: [ '1.', '.1', '1.', '.1', '1.', '.1', '2.', '.2', '2.', '.2' ]
             },
             //  4. The break. The same figure with a beat missing here and
             //  there, so the hands that learned it have to start watching
@@ -74,7 +74,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 1, 0 ],
-                rows: [ '.1', '2.', '.2', '1.', '.1', '..', '2.', '.2', '1.', '..', '.1', '2.' ]
+                rows: [ '.1', '2.', '.2', '1.', '.1', '..', '2.', '.2', '1.', '.1' ]
             },
             //  5. The gift. Dense, and generous to both colours at once: every
             //  row offers red on the left or blue on the right, so whichever
@@ -90,7 +90,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '..', '1.', '.2', '12', '1.', '.2', '12', '1.', '.2', '12' ]
+                rows: [ '..', '1.', '.2', '12', '1.', '.2', '12', '.2' ]
             },
             //  6. The finale. Rows packed tighter than anywhere else in the
             //  level and the colours changing on almost every one, ending on a
@@ -100,7 +100,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 0,
                 gate: [ 1, 0 ],
                 rowSpacing: 152,
-                rows: [ '.2', '1.', '.1', '2.', '.2', '1.', '.1', '2.', '1.', '.2', '2.', '.1', '1.', '.2' ]
+                rows: [ '.2', '1.', '.1', '2.', '.2', '1.', '.1', '2.', '1.', '.2', '2.', '.1' ]
             }
         ]
     },
@@ -112,22 +112,59 @@ export const LEVELS: LevelSpec[] = [
         forwardSpeed: 400,
         rowSpacing: 180,
         //  The same two lanes, with the gaps taken out and the colours changing
-        //  sides more often. Still nothing to hit.
+        //  sides more often. Still nothing to hit - level two is about reading
+        //  speed, not about hazards.
+        //
+        //    1  pick up    - where level one left off, straight in.
+        //    2  the switch - the colour changes side on almost every row.
+        //    3  rhythm     - a longer figure than level one's, and a faster one.
+        //    4  the squeeze- the same figure with the rows packed tighter.
+        //    5  the gift   - a feast, generous to whichever colour is carried.
+        //    6  the finale - tightest rows in the level, then the line.
         sections: [
+            //  1. Straight in. No settling-in row: a second level can assume
+            //  the first one happened.
             {
                 splitAfterLane: 0,
                 gate: [ 1, 0 ],
-                rows: [ '.1', '2.', '.2', '1.', '.1', '1.', '.2', '2.', '.1', '1.', '2.', '.2', '.1', '1.', '.2' ]
+                rows: [ '.1', '2.', '.2', '1.', '.1', '1.', '.2', '2.', '.1', '1.' ]
             },
+            //  2. The switch. The colour that pays moves side on nearly every
+            //  row, which is the whole skill of this level introduced on its
+            //  own before anything is asked on top of it.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1.', '.2', '1.', '2.', '.1', '.2', '1.', '.1', '2.', '.2', '1.', '.1', '2.', '.2', '1.' ]
+                rows: [ '1.', '.1', '2.', '.2', '1.', '.1', '2.', '.2', '1.', '.1', '2.', '.2' ]
             },
+            //  3. Rhythm. Four beats to the figure rather than level one's two,
+            //  so it takes longer to learn and pays better once it is.
             {
                 splitAfterLane: 0,
                 gate: [ 1, 0 ],
-                rows: [ '.2', '1.', '.1', '2.', '.2', '1.', '.2', '2.', '.1', '1.', '.2', '.1', '2.', '1.', '.1' ]
+                rows: [ '.2', '.2', '1.', '1.', '.2', '.2', '1.', '1.', '.1', '.1', '2.', '2.' ]
+            },
+            //  4. The squeeze. The same idea with the rows closer together -
+            //  nothing new to read, just less time to read it in.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rowSpacing: 152,
+                rows: [ '1.', '.2', '1.', '.2', '2.', '.1', '2.', '.1', '1.', '.2', '1.', '.1' ]
+            },
+            //  5. The gift. Both colours served at once, each on its own side.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 0 ],
+                rows: [ '..', '.2', '1.', '12', '.2', '1.', '12', '.2', '1.', '12' ]
+            },
+            //  6. The finale. Tighter than the squeeze, and switching sides on
+            //  every row.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rowSpacing: 138,
+                rows: [ '1.', '.2', '1.', '.2', '1.', '.2', '2.', '.1', '2.', '.1', '1.', '.2', '1.', '.1' ]
             }
         ]
     },
@@ -139,21 +176,59 @@ export const LEVELS: LevelSpec[] = [
         rowSpacing: 172,
         //  The middle lane opens. Same two colours, so the only new thing to
         //  learn is that there are now three places to be.
+        //
+        //    1  the middle - orbs down the centre, which is the new lane.
+        //    2  the edges  - out to the sides, so all three get used.
+        //    3  rhythm     - a figure that crosses the whole road.
+        //    4  the sweep  - one long crossing, left to right and back.
+        //    5  the gift   - a feast down the middle and both shoulders.
+        //    6  the finale - the full width, tightly packed, then the line.
         sections: [
+            //  1. The middle. Every orb in the new lane, so the first thing
+            //  the level does is put the player there.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..1', '.1.', '2..', '..2', '.1.', '1..', '..1', '.2.', '2..', '..1', '.1.', '1.2', '..1' ]
+                rows: [ '.1.', '...', '.2.', '...', '.1.', '.2.', '.1.', '.2.', '.1.', '.2.' ]
             },
+            //  2. The edges. Out to the sides and back, so all three lanes are
+            //  used before any of them is asked for quickly.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
-                rows: [ '..2', '.1.', '2..', '.2.', '..1', '1..', '.2.', '..2', '.1.', '2..', '1.2', '.2.', '..1', '2..', '.2.' ]
+                rows: [ '2..', '..2', '1..', '..1', '.2.', '2..', '..2', '.1.', '1..', '..1', '.2.', '2..', '..1', '1..', '.2.', '..2' ]
             },
+            //  3. Rhythm. A figure that crosses the whole road and repeats -
+            //  three lanes make a longer pattern than two, which is most of
+            //  what the extra lane is for.
             {
                 splitAfterLane: 1,
                 gate: [ 0, 1 ],
-                rows: [ '.1.', '2..', '..1', '1..', '.2.', '..2', '1..', '.1.', '2.1', '..2', '.1.', '1..', '..1', '.2.', '2..' ]
+                rows: [ '1..', '.1.', '..1', '.1.', '1..', '.1.', '..1', '.1.', '2..', '.2.', '..2', '.2.', '2..', '.2.', '..2', '.2.' ]
+            },
+            //  4. The sweep. One continuous crossing rather than a repeating
+            //  figure: the road asks for a single long movement, which is a
+            //  different thing to do with the same controls.
+            {
+                splitAfterLane: 1,
+                gate: [ 1, 0 ],
+                rows: [ '2..', '.2.', '..2', '..2', '.2.', '2..', '1..', '.1.', '..1', '..1', '.1.', '1..', '.1.', '..1', '.2.', '2..' ]
+            },
+            //  5. The gift. Three lanes fed at once - wherever the player is,
+            //  something pays, and the colour they are not carrying is never in
+            //  the lane they are standing in.
+            {
+                splitAfterLane: 1,
+                gate: [ 0, 1 ],
+                rows: [ '...', '1..', '.1.', '..2', '1.2', '.1.', '..2', '1.2', '.1.', '..2' ]
+            },
+            //  6. The finale. Full width, packed tighter than anything before
+            //  it, finishing on a clean run at the line.
+            {
+                splitAfterLane: 1,
+                gate: [ 1, 0 ],
+                rowSpacing: 146,
+                rows: [ '2..', '..1', '.2.', '1..', '..2', '.1.', '2..', '..1', '.2.', '1..', '..2', '.1.', '2..', '..2' ]
             }
         ]
     },

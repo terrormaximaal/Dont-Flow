@@ -37,7 +37,9 @@ export function durationOf (index: number): number
  * as a passing test that quietly says nothing.
  */
 const BANDS: Array<{ level: number; from: number; to: number }> = [
-    { level: 0, from: 30, to: 45 }
+    { level: 0, from: 30, to: 45 },
+    { level: 1, from: 30, to: 45 },
+    { level: 2, from: 30, to: 45 }
 ];
 
 describe('how long a level lasts', () => {
@@ -83,22 +85,29 @@ describe('a level built as a sequence', () => {
     //  Six movements rather than three similar stretches. The shape is the
     //  thing being guarded: a level with two sections cannot have an intro, a
     //  middle and an ending, however good either section is.
-    it('gives level one enough movements to have a shape', () => {
+    it('gives every restructured level enough movements to have a shape', () => {
 
-        expect(LEVELS[0].sections.length).toBeGreaterThanOrEqual(5);
+        for (const band of BANDS)
+        {
+            expect(LEVELS[band.level].sections.length, `level ${LEVELS[band.level].name}`)
+                .toBeGreaterThanOrEqual(5);
+        }
 
     });
 
     //  A finale that is not denser than the level's own body is not a finale.
-    it('packs level one\'s last section tighter than its first', () => {
+    it('packs every restructured level\'s finale tighter than its opening', () => {
 
-        const spec = LEVELS[0];
-        const level = spec.rowSpacing ?? 0;
+        for (const band of BANDS)
+        {
+            const spec = LEVELS[band.level];
+            const level = spec.rowSpacing ?? 0;
 
-        const first = spec.sections[0].rowSpacing ?? level;
-        const last = spec.sections[spec.sections.length - 1].rowSpacing ?? level;
+            const first = spec.sections[0].rowSpacing ?? level;
+            const last = spec.sections[spec.sections.length - 1].rowSpacing ?? level;
 
-        expect(last).toBeLessThan(first);
+            expect(last, `level ${spec.name}`).toBeLessThan(first);
+        }
 
     });
 
