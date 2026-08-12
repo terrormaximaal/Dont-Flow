@@ -140,6 +140,52 @@ export interface SpeckSpec
     streak?: number;
 }
 
+/**
+ * How a world marks its road.
+ *
+ * The one thing that was the same in all ten. Every world had its own sky,
+ * ground, scenery and weather, and then the identical corridor drawn down the
+ * middle of it in a different colour - which is the largest object on screen
+ * and the one the player actually looks at, so ten worlds still read as one
+ * road in ten palettes.
+ *
+ * Every field is optional and falls back to the constant it replaces, so a
+ * world that says nothing here is drawn exactly as it always was. What is on
+ * offer is deliberately the parameters the road is already drawn from rather
+ * than a list of named looks: a boardwalk is close-set heavy cross-bars with no
+ * light strips, and saying so in numbers keeps the space open.
+ */
+export interface RoadSurfaceSpec
+{
+    /** Distance along the road between cross-bars. Larger is sparser. */
+    rungSpacing?: number;
+    rungThickness?: number;
+
+    /** Zero for a road with no cross-bars at all. */
+    rungAlpha?: number;
+
+    /**
+     * Lane dividers broken into dashes rather than run solid.
+     *
+     * Measured along the road like everything else, so they bunch towards the
+     * horizon by themselves. This is the difference between a highway and a
+     * light-grid, and it is worth having as its own thing rather than as a
+     * spacing: a solid line says "stay in your lane" and a dashed one says
+     * "cross when you like", which is what this game is actually about.
+     */
+    dashSpacing?: number;
+    dashLength?: number;
+
+    /** The running light strips down each side. Zero turns them off. */
+    stripAlpha?: number;
+
+    /** The wet-looking reflection down the middle. Zero turns it off. */
+    sheenAlpha?: number;
+
+    /** How far the shoulder reaches out past the road. */
+    vergeWidth?: number;
+}
+
 export interface WorldSpec
 {
     /** Sky colour at the top of the screen. */
@@ -203,6 +249,9 @@ export interface WorldSpec
 
     /** Occasional full-screen flash, for the storm. */
     lightning?: boolean;
+
+    /** How this world's road is marked. Left out, it is marked the default way. */
+    surface?: RoadSurfaceSpec;
 
     /** The colours levels in this world draw from. */
     palette: ColorId[];
