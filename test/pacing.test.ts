@@ -39,7 +39,9 @@ export function durationOf (index: number): number
 const BANDS: Array<{ level: number; from: number; to: number }> = [
     { level: 0, from: 30, to: 45 },
     { level: 1, from: 30, to: 45 },
-    { level: 2, from: 30, to: 45 }
+    { level: 2, from: 30, to: 45 },
+    { level: 3, from: 45, to: 60 },
+    { level: 4, from: 45, to: 60 }
 ];
 
 describe('how long a level lasts', () => {

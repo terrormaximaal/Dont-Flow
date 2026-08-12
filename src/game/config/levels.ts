@@ -240,26 +240,44 @@ export const LEVELS: LevelSpec[] = [
         rowSpacing: 165,
         //  A third colour, and still nothing to hit. Two colours on a row now,
         //  so a row can be a real choice rather than a yes or no.
+        //
+        //    1  meet purple - the new colour alone, so it is learned as itself.
+        //    2  two on a row- the first real choice: both colours, one lane each.
+        //    3  rhythm      - a three-colour figure, longer than any so far.
+        //    4  the decoy   - the wrong colour sits where the hand wants to go.
+        //    5  the gift    - all three fed at once, none of them a trap.
+        //    6  the finale  - three colours, full width, packed tight.
         sections: [
             {
                 splitAfterLane: 0,
-                gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '2..', '.*.', '.2.', '3..', '..2', '1.3', '.1.', '..3', '2..' ]
+                gate: [ 0, 2 ],
+                rows: [ '..3', '...', '.3.', '...', '3..', '...', '.3.', '..3', '3..', '.3.', '..3', '3..', '.3.', '..3' ]
             },
             {
                 splitAfterLane: 1,
-                gate: [ 1, 2 ],
-                rows: [ '.2.', '..3', '2..', '.3.', '..2', '3.2', '.2.', '..3', '2..', '.1.', '..2', '3..', '.3.', '2.3' ]
+                gate: [ 2, 1 ],
+                rows: [ '1.3', '3.1', '.1.', '1.3', '3.1', '.3.', '1.3', '3.1', '.1.', '3.1', '1.3', '.3.', '1.3', '3.1', '.1.' ]
             },
             {
                 splitAfterLane: 1,
-                gate: [ 2, 0 ],
-                rows: [ '..3', '1..', '.3.', '..1', '3..', '.1.', '1.3', '..3', '.*.', '3..', '..1', '.3.', '1..', '..3' ]
+                gate: [ 1, 0 ],
+                rows: [ '1..', '.2.', '..3', '.2.', '1..', '.2.', '..3', '.2.', '1..', '.2.', '..3', '.2.', '1..', '.2.', '..3', '.2.' ]
             },
             {
                 splitAfterLane: 0,
                 gate: [ 0, 2 ],
-                rows: [ '1..', '..3', '.1.', '3..', '..1', '.3.', '1.3', '..1', '3..', '.1.', '..3', '1..', '.3.', '..1' ]
+                rows: [ '1.2', '.3.', '2.1', '.1.', '3.2', '.2.', '1.3', '.1.', '2.3', '.3.', '1.2', '.2.', '3.1', '.1.', '2.3', '.2.', '1.3', '.3.', '2.1', '.1.', '3.2', '.2.' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 2, 1 ],
+                rows: [ '...', '1..', '.2.', '..3', '123', '1..', '.2.', '..3', '123', '1..', '.2.', '..3', '123', '.2.' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 1, 2 ],
+                rowSpacing: 142,
+                rows: [ '1..', '.3.', '..2', '3..', '.1.', '..3', '2..', '.2.', '..1', '1..', '.3.', '..2', '3..', '.1.', '..3', '2..', '.2.', '..1', '3..', '.2.', '..3', '1..', '.1.', '..2' ]
             }
         ]
     },
@@ -272,29 +290,59 @@ export const LEVELS: LevelSpec[] = [
         //  The first barriers. Static, one at a time, and always with two lanes
         //  open beside them - a barrier in your own colour is passed straight
         //  through, which is the whole reason to notice what colour you are.
+        //
+        //    1  clean       - no barriers at all, so the level starts familiar.
+        //    2  the first   - one barrier, alone, with room either side of it.
+        //    3  the pass    - a barrier in your own colour. Straight through.
+        //    4  rhythm      - barriers on a beat, orbs between them.
+        //    5  the gift    - no barriers again, and a feast. A breath.
+        //    6  the finale  - barriers and orbs together, packed tight.
         sections: [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..1', '.1.', '2..', '..2', '1..', '.2.', '..1', '2..', '.1.', '..2', '1..', '.2.' ]
+                rows: [ '1..', '.2.', '..3', '.2.', '1..', '..3', '.1.', '2..', '..2', '.3.', '1..', '..1', '.2.', '3..' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 1, 2 ],
+                obstacles: 'static',
+                rows: [ '...', '.1.', '...', 'a..', '..2', '.3.', 'a..', '.1.', '..3', 'a..', '.2.', '..1', 'a..', '.3.', '..2' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 2, 0 ],
+                obstacles: 'static',
+                rows: [ '.2.', 'c..', '..1', 'c..', '.3.', 'c..', '..2', 'c..', '.1.', 'c..', '..3', 'c..', '.2.', '..1', 'c..', '.3.' ]
+            },
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'static',
+                rows: [ 'a..', '.1.', '..b', '.2.', 'a..', '.3.', '..b', '.1.', 'a..', '.2.', '..b', '.3.', 'a..', '.1.', '..b', '.2.', 'c..', '.3.', '..a', '.1.', 'b..', '.2.', '..c', '.3.' ]
+            },
+            {
+                splitAfterLane: 1,
+                gate: [ 2, 1 ],
+                rows: [ '...', '1..', '.2.', '..3', '1.3', '.2.', '1..', '..3', '.2.', '1.3', '..1', '.3.', '2..', '.2.' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
                 obstacles: 'static',
-                rows: [ '..2', 'a..', '.1.', '..2', '.b.', '.*.', '..1', 'a..', '.2.', '..2', '.a.', '2..', '..1', '.b.' ]
-            },
-            {
-                splitAfterLane: 1,
-                gate: [ 0, 2 ],
-                obstacles: 'static',
-                rows: [ '1..', '..c', '.1.', 'a..', '..3', '.c.', '1..', '..1', 'a..', '.3.', '..c', '1..', '.a.', '..3' ]
+                //  6. Pairs. Two barriers on a row for the first time, which
+                //  leaves exactly one lane rather than two - the same rule
+                //  asking for precision instead of a choice.
+                rows: [ '.2.', 'a.a', '..1', 'b.b', '.3.', 'a.a', '1..', 'c.c', '..2', 'a.a', '.1.', 'b.b', '..3', 'a.a', '.2.', 'c.c' ]
             },
             {
                 splitAfterLane: 0,
-                gate: [ 2, 0 ],
+                gate: [ 0, 2 ],
                 obstacles: 'static',
-                rows: [ '..3', '.1.', 'c..', '..1', '.a.', '3..', '..3', 'c..', '.1.', '.*.', '3..', '.3.', '..1', 'c..' ]
+                rowSpacing: 136,
+                //  7. The finale. Everything the level taught, packed tighter
+                //  than any of it was taught at.
+                rows: [ 'a.1', '.2.', 'b..', '..3', '.a.', '1..', '..b', '.3.', 'c..', '.1.', '..2', 'a..', '.3.', '..1', '.b.', '2..', '..3', '.1.', 'a..', '..2' ]
             }
         ]
     },
