@@ -1317,6 +1317,19 @@ export const MULTIPLIER_POP_MS = 280;
 export const SCORE_ROLL_RATE = 260;
 
 /** Smallest step worth rolling. Below it the roll is slower than just showing it. */
+/**
+ * The bank meter under the score: one segment per mistake it can still absorb.
+ *
+ * Narrower than the score above it on purpose. It is a footnote to that number
+ * rather than a second readout competing with it, and the eye should land on
+ * the total first and only then on how much room is left.
+ */
+export const BANK_METER_WIDTH = 118;
+export const BANK_METER_HEIGHT = 5;
+export const BANK_METER_GAP = 3;
+export const BANK_METER_TRACK_ALPHA = 0.22;
+export const BANK_METER_FADE_MS = 260;
+
 export const SCORE_ROLL_MIN = 2;
 
 /** The score's own kick when it changes, up and down. */

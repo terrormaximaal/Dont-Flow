@@ -216,6 +216,7 @@ export class Play extends Scene
         //  visibly shrinks as the run is spent. That is the fail warning the
         //  player cannot miss: it happens where they are already looking.
         this.drop.setScore(this.scoring.getScore());
+        this.hud.setScore(this.scoring.getScore());
 
         const course = buildLevel(level);
 
