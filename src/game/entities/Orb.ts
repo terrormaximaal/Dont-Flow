@@ -5,6 +5,7 @@ import {
     ColorId,
     DEPTH_ORBS,
     ORB_CORE_ALPHA,
+    ORB_PASS_FADE,
     ORB_RADIUS
 } from '../config/constants';
 import { OrbSpec } from '../config/level';
@@ -13,6 +14,16 @@ import { project } from '../systems/Projection';
 import { drawStrength, screenYFor } from '../systems/World';
 import { fillOutline } from '../ui/shapes';
 import { blobOutline } from './drop-surface';
+
+/**
+ * How much of an orb is left to draw, given how far past the drop it now is.
+ */
+function fadedPast (past: number): number
+{
+    if (past <= 0) { return 1; }
+
+    return Math.max(0, 1 - (past / ORB_PASS_FADE));
+}
 
 /**
  * A coloured collectible sitting in one lane. Matching the drop's colour scores;
@@ -61,14 +72,20 @@ export class Orb
     {
         const y = screenYFor(this.distance, travelled);
         const projected = project(this.x, y);
+        const past = travelled - this.distance;
+
+        this.gfx.clear();
 
         //  Position and size come from the projection; the orb's own `x` stays
         //  in track space, which is what collision compares against.
         this.gfx.setPosition(projected.x, y);
         this.gfx.setScale(projected.scale);
-        this.gfx.setAlpha(drawStrength(this.distance, travelled));
+        this.gfx.setAlpha(drawStrength(this.distance, travelled) * fadedPast(past));
 
-        this.gfx.clear();
+        if (past >= ORB_PASS_FADE)
+        {
+            return y;
+        }
 
         this.gfx.fillStyle(this.value, 1);
         fillOutline(this.gfx, blobOutline(ORB_RADIUS, travelled * BLOB_RIPPLE_PER_PIXEL, this.phase));

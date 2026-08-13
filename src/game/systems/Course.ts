@@ -5,7 +5,7 @@ import { FinishGate } from '../entities/FinishGate';
 import { GatePair } from '../entities/GatePair';
 import { Obstacle } from '../entities/Obstacle';
 import { Orb } from '../entities/Orb';
-import { isBlockedBy, isWithinCatchRange } from './contact';
+import { isBlockedBy, isOrbTouched } from './contact';
 
 export interface CourseEvents
 {
@@ -68,17 +68,24 @@ export class Course
     /**
      * @param travelled Distance the drop has covered.
      * @param dropX     Current screen x of the drop.
+     * @param targetX   Centre of the lane the drop is heading for.
      * @param dropColor The drop's colour, or null before its first gate.
      * @param wild      Whether a rainbow drop is in hand, which matches every
      *                  colour there is: each orb scores and no barrier blocks.
      */
-    update (travelled: number, dropX: number, dropColor: ColorId | null, wild = false): void
+    update (
+        travelled: number,
+        dropX: number,
+        targetX: number,
+        dropColor: ColorId | null,
+        wild = false
+    ): void
     {
         const cullY = GAME_HEIGHT + CULL_MARGIN;
 
         this.updateGates(travelled, dropX, cullY);
         this.updateObstacles(travelled, dropX, dropColor, wild, cullY);
-        this.updateOrbs(travelled, dropX, dropColor, wild, cullY);
+        this.updateOrbs(travelled, dropX, targetX, dropColor, wild, cullY);
 
         this.finish.update(travelled);
 
@@ -150,6 +157,7 @@ export class Course
     private updateOrbs (
         travelled: number,
         dropX: number,
+        targetX: number,
         dropColor: ColorId | null,
         wild: boolean,
         cullY: number
@@ -161,13 +169,14 @@ export class Course
             const y = orb.update(travelled);
 
             //  Reaching an orb's distance is only half of it - the drop also has
-            //  to be in the right place across the track. Orbs it steers around
-            //  are simply left behind.
+            //  to be in the right place across the track, and settling there
+            //  rather than sliding through. Orbs it steers around, or crosses on
+            //  its way somewhere else, are simply left behind.
             if (!orb.consumed && travelled >= orb.distance)
             {
                 orb.consumed = true;
 
-                if (isWithinCatchRange(dropX, orb.x))
+                if (isOrbTouched(dropX, targetX, orb.x))
                 {
                     this.events.onOrb(orb, wild || orb.color === dropColor, y);
 

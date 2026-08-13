@@ -80,9 +80,9 @@ export const BEHIND_RATE = 0.55;
 export const FORWARD_SPEED = 420;
 
 //  Lane slide smoothing rate. This is an exponential rate constant, not a
-//  duration: higher = snappier, lower = floatier. ~14 lands around a 0.2s
+//  duration: higher = snappier, lower = floatier. ~20 lands around a 0.14s
 //  slide. The drop always eases towards the target lane, it never snaps.
-export const LANE_CHANGE_SPEED = 14;
+export const LANE_CHANGE_SPEED = 20;
 
 //  Largest timestep we will simulate in one frame. Stops the drop teleporting
 //  when the tab is backgrounded and delta spikes.
@@ -573,6 +573,12 @@ export const ORB_CORE_ALPHA = 0.3;
 //  looks like a hit counts as one.
 export const ORB_CATCH_SLACK = 4;
 export const ORB_CATCH_RADIUS = DROP_RADIUS + ORB_RADIUS + ORB_CATCH_SLACK;
+
+//  How far past the drop a missed orb keeps being drawn, in track pixels.
+//  Behind the player there is no depth left to show and the perspective only
+//  spreads things outwards, which reads as the orb sliding sideways. Fading it
+//  out over a short stretch keeps the miss visible without the drift.
+export const ORB_PASS_FADE = 70;
 
 export const SCORE_PER_ORB = 10;
 

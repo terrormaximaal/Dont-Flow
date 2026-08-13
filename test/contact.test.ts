@@ -6,7 +6,7 @@ import {
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../src/game/config/constants';
-import { gateSideAt, gateSplitX, isWithinCatchRange } from '../src/game/systems/contact';
+import { gateSideAt, gateSplitX, isOrbTouched, isWithinCatchRange } from '../src/game/systems/contact';
 import { laneCenterX, laneCount, laneWidth, useLanes } from '../src/game/systems/Lanes';
 
 //  Gate splits sit on a lane boundary, so these all assume the standard road.
@@ -120,6 +120,40 @@ describe('catching an orb', () => {
 
         expect(isWithinCatchRange(a, a + ORB_CATCH_RADIUS - 0.001)).toBe(true);
         expect(isWithinCatchRange(a, a + ORB_CATCH_RADIUS)).toBe(false);
+
+    });
+
+});
+
+describe('crossing a lane rather than landing in it', () => {
+
+    it('collects an orb in the lane the drop is settling into', () => {
+
+        const lane = laneCenterX(1);
+
+        expect(isOrbTouched(lane, lane, lane)).toBe(true);
+
+    });
+
+    it('lets the drop pass over an orb it is only crossing', () => {
+
+        //  Lane 0 to lane 2 goes straight over the middle lane. Halfway across,
+        //  the drop is right on top of the orb sitting there - and must not
+        //  touch it, or two-lane swipes would be a lottery.
+        const middle = laneCenterX(1);
+
+        expect(isWithinCatchRange(middle, middle)).toBe(true);
+        expect(isOrbTouched(middle, laneCenterX(2), middle)).toBe(false);
+        expect(isOrbTouched(middle, laneCenterX(0), middle)).toBe(false);
+
+    });
+
+    it('still needs the drop to have arrived, not just to be aiming', () => {
+
+        //  Heading for an orb's lane is not enough on its own; the drop has to
+        //  be close enough across the track as well, or a swipe would score the
+        //  moment it started.
+        expect(isOrbTouched(laneCenterX(0), laneCenterX(1), laneCenterX(1))).toBe(false);
 
     });
 

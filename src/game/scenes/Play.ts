@@ -345,6 +345,12 @@ export class Play extends Scene
         this.trail.update(this.distance, this.drop.getX(), this.drop.getPaintColor());
 
         this.powerUps.update(this.distance, this.drop.getX());
-        this.course.update(this.distance, this.drop.getX(), this.drop.getColorId(), left > 0);
+        this.course.update(
+            this.distance,
+            this.drop.getX(),
+            this.drop.getTargetX(),
+            this.drop.getColorId(),
+            left > 0
+        );
     }
 }

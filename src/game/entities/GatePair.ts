@@ -157,12 +157,18 @@ export class GatePair
         const rise = height * PORTAL_ARCH_RISE;
 
         //  A soft halo, built from a few widening passes rather than a blur.
+        //
+        //  Each pass is the doorway pushed out by the same amount all the way
+        //  round: wider, deeper, and with the arch rising further to match. Grow
+        //  the width without growing the rise and the halo's shoulders stay
+        //  square while the doorway they sit behind is already curving - which
+        //  put a visible box around every portal.
         for (let layer = PORTAL_GLOW_LAYERS; layer > 0; layer--)
         {
             const spread = PORTAL_GLOW_SPREAD * scale * (layer / PORTAL_GLOW_LAYERS);
 
             gfx.fillStyle(value, PORTAL_GLOW_ALPHA);
-            this.arch(gfx, baseLeft - spread, baseRight + spread, y + (spread * 0.4), top - spread, rise);
+            this.arch(gfx, baseLeft - spread, baseRight + spread, y + (spread * 0.4), top, rise + spread);
         }
 
         gfx.fillStyle(value, PORTAL_INNER_ALPHA);

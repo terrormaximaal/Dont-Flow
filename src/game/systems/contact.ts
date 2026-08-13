@@ -38,6 +38,23 @@ export function isWithinCatchRange (dropX: number, orbX: number): boolean
 }
 
 /**
+ * Whether an orb counts as touched.
+ *
+ * Being close is not enough on its own: the drop also has to be heading for the
+ * orb's lane. Crossing two lanes puts the drop straight through the middle one,
+ * and without this a swipe across the track would sweep up - or be punished by -
+ * every orb it passed over on the way. Sliding through a lane is now travel;
+ * only the lane the drop is settling into is somewhere it has actually been.
+ *
+ * @param dropX   Where the drop is right now, mid-slide.
+ * @param targetX Centre of the lane it is heading for.
+ */
+export function isOrbTouched (dropX: number, targetX: number, orbX: number): boolean
+{
+    return isWithinCatchRange(dropX, orbX) && Math.abs(targetX - orbX) < laneWidth() / 2;
+}
+
+/**
  * Whether the drop is inside a barrier.
  *
  * Takes the barrier's current centre and half-width rather than reading them

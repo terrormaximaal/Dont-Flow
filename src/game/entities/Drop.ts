@@ -191,6 +191,12 @@ export class Drop
         return this.x;
     }
 
+    /** Centre of the lane the drop is heading for, which it may not have reached. */
+    getTargetX (): number
+    {
+        return laneCenterX(this.targetLane);
+    }
+
     /**
      * @param dt Seconds since the last frame.
      */
