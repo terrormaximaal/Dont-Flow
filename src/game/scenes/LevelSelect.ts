@@ -33,6 +33,7 @@ import { paintPageColors } from '../systems/PageBackdrop';
 import { SaveSystem } from '../systems/SaveSystem';
 import { mixColor } from '../utils/color';
 import { Button } from '../ui/Button';
+import { arrive, leaveTo } from '../ui/transition';
 import { EnergyMeter } from '../ui/EnergyMeter';
 import { routePoint, stopAt, Stop } from '../ui/route';
 
@@ -104,12 +105,14 @@ export class LevelSelect extends Scene
             label: 'BACK',
             variant: 'ghost',
             radius: BUTTON_HEIGHT / 2,
-            onPress: () => this.scene.start('Title')
+            onPress: () => leaveTo(this, () => this.scene.start('Title'))
         });
 
         back.container.setDepth(DEPTH_HUD);
 
-        this.input.keyboard?.once('keydown-ESC', () => this.scene.start('Title'));
+        this.input.keyboard?.once('keydown-ESC', () => leaveTo(this, () => this.scene.start('Title')));
+
+        arrive(this);
     }
 
     /**
@@ -266,7 +269,7 @@ export class LevelSelect extends Scene
 
         hit.setDepth(DEPTH_HUD);
         hit.setInteractive({ useHandCursor: true });
-        hit.on('pointerdown', () => this.scene.start('Play', { levelIndex: index }));
+        hit.on('pointerdown', () => leaveTo(this, () => this.scene.start('Play', { levelIndex: index })));
     }
 
     update (_time: number, delta: number)

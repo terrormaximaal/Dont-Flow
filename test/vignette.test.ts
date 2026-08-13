@@ -6,6 +6,7 @@ import {
     VIGNETTE_ALPHA,
     VIGNETTE_BANDS
 } from '../src/game/config/constants';
+import { sheenBands } from '../src/game/ui/Button';
 import { vignetteBands } from '../src/game/ui/vignetteBands';
 
 describe('a vignette built out of rings', () => {
@@ -131,6 +132,41 @@ describe('the two vignettes the game draws', () => {
             bands[bands.length - 1].inset;
 
         expect(reachOf(warning)).toBeGreaterThan(reachOf(ambient) * 1.5);
+
+    });
+
+});
+
+//  The same lesson a third time, so it is stated once for everything that
+//  fakes a gradient by stacking flat shapes. Phaser's Graphics has no gradient
+//  fill, so every soft ramp in this game is built this way - and each time, the
+//  thing that gives it away is the absolute jump between two neighbours rather
+//  than how many of them there are.
+describe('every banded ramp the game draws', () => {
+
+    /** Above this, a step across a flat surface reads as a line. */
+    const VISIBLE_STEP = 0.012;
+
+    it('steps the button sheen too finely to be seen', () => {
+
+        const bands = sheenBands();
+
+        expect(bands.length).toBeGreaterThan(1);
+
+        for (let i = 1; i < bands.length; i++)
+        {
+            expect(bands[i - 1] - bands[i], `sheen band ${i}`).toBeLessThan(VISIBLE_STEP);
+        }
+
+    });
+
+    it('fades the button sheen away rather than stopping while still visible', () => {
+
+        const bands = sheenBands();
+
+        //  A sheen that ends part-way puts a line across the middle of the
+        //  button where it stops.
+        expect(bands[bands.length - 1]).toBeLessThan(VISIBLE_STEP);
 
     });
 

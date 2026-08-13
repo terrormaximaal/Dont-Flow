@@ -22,6 +22,7 @@ import {
 import { EnergySystem } from '../systems/EnergySystem';
 import { Button, ButtonVariant } from './Button';
 import { EnergyMeter } from './EnergyMeter';
+import { stagger } from './LevelComplete';
 
 export interface RunFailedResult
 {
@@ -148,7 +149,7 @@ export class RunFailed
 
         const buttons: Array<[ string, ButtonVariant, () => void ]> = [
             [ 'RETRY', canPlayAgain ? 'primary' : 'locked', actions.onRetry ],
-            [ 'MENU', 'secondary', actions.onMenu ]
+            [ 'MENU', 'ghost', actions.onMenu ]
         ];
 
         buttons.forEach(([ label, variant, action ], index) => {
@@ -184,5 +185,7 @@ export class RunFailed
             duration: OVERLAY_FADE_MS,
             ease: 'Quad.Out'
         });
+
+        stagger(scene, [ title, reached, through, detail ]);
     }
 }

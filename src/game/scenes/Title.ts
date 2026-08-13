@@ -4,8 +4,6 @@ import {
     BUTTON_WIDTH,
     COLOR_HUD_DIM,
     DEPTH_HUD,
-    DEPTH_OVERLAY,
-    GAME_HEIGHT,
     GAME_WIDTH,
     HUD_FONT,
     RESUME_AT_LAST_LEVEL,
@@ -23,7 +21,6 @@ import {
     ENTER_MARK_RISE,
     ENTER_MARK_STAGGER,
     ENTER_TAGLINE_MS,
-    LEAVE_FADE_MS,
     MENU_SKY_LOW,
     MENU_SKY_TOP
 } from '../config/menuTheme';
@@ -36,6 +33,7 @@ import { EnergyMeter } from '../ui/EnergyMeter';
 import { MENU_LAYOUT } from '../ui/menuLayout';
 import { TAGLINE } from '../ui/taglines';
 import { TitleMark } from '../ui/TitleMark';
+import { arrive, leaveTo } from '../ui/transition';
 import { waterOutline } from '../entities/drop-surface';
 import { drawWaterDrop } from '../ui/shapes';
 import { menuDropColor } from '../ui/menuDrop';
@@ -56,9 +54,6 @@ export class Title extends Scene
 
     /** Seconds on screen, so the drop ripples and shifts hue on its own clock. */
     private elapsed = 0;
-
-    /** True once a button has been pressed, so a second press cannot fire. */
-    private leaving = false;
 
     constructor ()
     {
@@ -83,7 +78,6 @@ export class Title extends Scene
         const canPlay = energy.mayStart();
 
         this.elapsed = 0;
-        this.leaving = false;
 
         //  The same drop the player steers, rippling on the spot - a still one
         //  next to a living one would look like a different drop.
@@ -116,7 +110,7 @@ export class Title extends Scene
             //  rectangle: this is the one screen that is trying to be looked at.
             radius: BUTTON_HEIGHT / 2,
             width: BUTTON_WIDTH + 26,
-            onPress: () => this.leaveTo(() => this.startLevel(canContinue ? resumeLevel : 0))
+            onPress: () => leaveTo(this, () => this.startLevel(canContinue ? resumeLevel : 0))
         });
 
         play.container.setDepth(DEPTH_HUD);
@@ -128,7 +122,7 @@ export class Title extends Scene
             variant: 'ghost',
             radius: BUTTON_HEIGHT / 2,
             width: BUTTON_WIDTH + 26,
-            onPress: () => this.leaveTo(() => this.scene.start('LevelSelect'))
+            onPress: () => leaveTo(this, () => this.scene.start('LevelSelect'))
         });
 
         levels.container.setDepth(DEPTH_HUD);
@@ -137,9 +131,11 @@ export class Title extends Scene
 
         this.enter(mark, tagline, play, levels);
 
+        arrive(this);
+
         if (canPlay)
         {
-            const start = () => this.leaveTo(() => this.startLevel(canContinue ? resumeLevel : 0));
+            const start = () => leaveTo(this, () => this.startLevel(canContinue ? resumeLevel : 0));
 
             this.input.keyboard?.once('keydown-SPACE', start);
             this.input.keyboard?.once('keydown-ENTER', start);
@@ -228,46 +224,6 @@ export class Title extends Scene
                 ease: 'Cubic.Out'
             });
 
-        });
-    }
-
-    /**
-     * Leaving, with a wash rather than a cut.
-     *
-     * The menu and the first frame of a level are two completely different
-     * pictures, and cutting between them reads as the game restarting. A short
-     * fade is enough - long enough to be a transition, short enough that nobody
-     * waiting to play notices they waited.
-     *
-     * Guarded, because the scene keeps taking input while the fade runs and two
-     * presses would start two scenes.
-     */
-    private leaveTo (go: () => void): void
-    {
-        if (this.leaving)
-        {
-            return;
-        }
-
-        this.leaving = true;
-
-        const wash = this.add.rectangle(
-            GAME_WIDTH / 2,
-            GAME_HEIGHT / 2,
-            GAME_WIDTH,
-            GAME_HEIGHT,
-            0x000000,
-            0
-        );
-
-        wash.setDepth(DEPTH_OVERLAY + 10);
-
-        this.tweens.add({
-            targets: wash,
-            fillAlpha: 1,
-            duration: LEAVE_FADE_MS,
-            ease: 'Quad.In',
-            onComplete: go
         });
     }
 

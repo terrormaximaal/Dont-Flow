@@ -15,8 +15,12 @@ import {
     OVERLAY_DIM_ALPHA,
     OVERLAY_ENERGY_TICK_MS,
     OVERLAY_ENERGY_Y,
+    OVERLAY_COUNT_MAX_MS,
+    OVERLAY_COUNT_RATE,
     OVERLAY_FADE_MS,
+    OVERLAY_PART_RISE,
     OVERLAY_SCORE_SIZE,
+    OVERLAY_STAGGER_MS,
     OVERLAY_TITLE_SIZE
 } from '../config/constants';
 import { EnergySystem } from '../systems/EnergySystem';
@@ -94,7 +98,7 @@ export class LevelComplete
         title.setOrigin(0.5);
         layer.add(title);
 
-        const score = scene.add.text(GAME_WIDTH / 2, centerY - 20, String(result.score), {
+        const score = scene.add.text(GAME_WIDTH / 2, centerY - 20, '0', {
             fontFamily: HUD_FONT,
             fontSize: OVERLAY_SCORE_SIZE,
             color: COLOR_HUD_TEXT
@@ -102,6 +106,26 @@ export class LevelComplete
 
         score.setOrigin(0.5);
         layer.add(score);
+
+        //  Counted up rather than stamped down. The total is the whole point of
+        //  this screen and it was being handed over as a finished fact - a
+        //  number that travels reads as something earned, and the same number
+        //  arriving complete reads as a label.
+        //
+        //  Rated rather than timed, then capped: a small score should not take
+        //  as long to arrive as a large one, and a very large one should not
+        //  keep the player waiting to press the button underneath it.
+        const counter = { value: 0 };
+
+        scene.tweens.add({
+            targets: counter,
+            value: result.score,
+            duration: Math.min(OVERLAY_COUNT_MAX_MS, (result.score / OVERLAY_COUNT_RATE) * 1000),
+            delay: OVERLAY_FADE_MS,
+            ease: 'Cubic.Out',
+            onUpdate: () => score.setText(String(Math.round(counter.value))),
+            onComplete: () => score.setText(String(result.score))
+        });
 
         //  "STREAK" is how many this run took in a row; "BEST" below is the
         //  stored score for the level. Deliberately not written with an x - that
@@ -153,12 +177,12 @@ export class LevelComplete
         //  rather than live and bouncing the player back to the title with no
         //  explanation. Menu always works.
         const playVariant = canPlayAgain ? 'primary' : 'locked';
-        const retryVariant = canPlayAgain ? 'secondary' : 'locked';
+        const retryVariant = canPlayAgain ? 'ghost' : 'locked';
 
         const buttons: Array<[ string, ButtonVariant, () => void ]> = [
             [ result.hasNext ? 'NEXT LEVEL' : 'START OVER', playVariant, actions.onPrimary ],
             [ 'RETRY', retryVariant, actions.onRetry ],
-            [ 'MENU', 'secondary', actions.onMenu ]
+            [ 'MENU', 'ghost', actions.onMenu ]
         ];
 
         buttons.forEach(([ label, variant, action ], index) => {
@@ -197,5 +221,31 @@ export class LevelComplete
             duration: OVERLAY_FADE_MS,
             ease: 'Quad.Out'
         });
+
+        //  And the parts of it in reading order, a few frames apart. Fading a
+        //  panel in as one block is what an assembled screen looks like; the
+        //  dim behind it is deliberately not in the list, because the backdrop
+        //  should already be there when the first line arrives.
+        stagger(scene, [ title, score, detail, best ]);
     }
+}
+
+/** Rises each part into place, one after another. */
+export function stagger (scene: Scene, parts: Phaser.GameObjects.Components.Transform[]): void
+{
+    parts.forEach((part, index) => {
+
+        const restingY = part.y;
+
+        part.y = restingY + OVERLAY_PART_RISE;
+
+        scene.tweens.add({
+            targets: part,
+            y: restingY,
+            duration: OVERLAY_FADE_MS,
+            delay: index * OVERLAY_STAGGER_MS,
+            ease: 'Cubic.Out'
+        });
+
+    });
 }

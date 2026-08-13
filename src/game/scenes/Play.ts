@@ -60,6 +60,7 @@ import { LowVignette } from '../ui/LowVignette';
 import { RunFailed } from '../ui/RunFailed';
 import { PauseButton } from '../ui/PauseButton';
 import { PauseOverlay } from '../ui/PauseOverlay';
+import { arrive, leaveTo } from '../ui/transition';
 
 /**
  * The one and only scene for now. It owns the single piece of shared state -
@@ -249,6 +250,8 @@ export class Play extends Scene
         new OrientationGuard(this);
 
         this.events.once('shutdown', () => this.input_.destroy());
+
+        arrive(this);
     }
 
     /**
@@ -425,7 +428,7 @@ export class Play extends Scene
                     bestScore: this.save.getBestScore(this.levelIndex)
                 }, {
                     onRetry: () => this.startLevel(this.levelIndex),
-                    onMenu: () => this.scene.start('Title')
+                    onMenu: () => leaveTo(this, () => this.scene.start('Title'))
                 }, new EnergySystem(this.save));
 
             }
@@ -478,7 +481,7 @@ export class Play extends Scene
             this.pauseOverlay = new PauseOverlay(this, {
                 onResume: () => this.setPaused(false),
                 onRetry: () => this.startLevel(this.levelIndex),
-                onMenu: () => this.scene.start('Title')
+                onMenu: () => leaveTo(this, () => this.scene.start('Title'))
             }, new EnergySystem(this.save));
 
             return;
@@ -536,7 +539,7 @@ export class Play extends Scene
                     //  first rather than dead-ending.
                     onPrimary: () => this.startLevel(hasNext ? this.levelIndex + 1 : 0),
                     onRetry: () => this.startLevel(this.levelIndex),
-                    onMenu: () => this.scene.start('Title')
+                    onMenu: () => leaveTo(this, () => this.scene.start('Title'))
                 }, new EnergySystem(this.save));
 
             }
@@ -545,7 +548,7 @@ export class Play extends Scene
 
     private startLevel (levelIndex: number): void
     {
-        this.scene.restart({ levelIndex });
+        leaveTo(this, () => this.scene.restart({ levelIndex }));
     }
 
     update (_time: number, delta: number)

@@ -18,8 +18,6 @@ import {
     COLOR_BUTTON_LABEL,
     COLOR_BUTTON_LOCKED,
     COLOR_BUTTON_LOCKED_LABEL,
-    COLOR_BUTTON_SECONDARY,
-    COLOR_BUTTON_SECONDARY_LABEL,
     HUD_FONT
 } from '../config/constants';
 import {
@@ -42,7 +40,7 @@ import { mixColor } from '../utils/color';
  * with a gradient and a halo against an outline with almost nothing in it says
  * that in one glance, without either of them being large or loud.
  */
-export type ButtonVariant = 'primary' | 'secondary' | 'locked' | 'hero' | 'ghost';
+export type ButtonVariant = 'primary' | 'locked' | 'hero' | 'ghost';
 
 export interface ButtonOptions
 {
@@ -75,11 +73,31 @@ interface VariantStyle
 
 const VARIANTS: Record<ButtonVariant, VariantStyle> = {
     primary: { fill: COLOR_BUTTON, label: COLOR_BUTTON_LABEL, glow: true },
-    secondary: { fill: COLOR_BUTTON_SECONDARY, label: COLOR_BUTTON_SECONDARY_LABEL, glow: false },
     locked: { fill: COLOR_BUTTON_LOCKED, label: COLOR_BUTTON_LOCKED_LABEL, glow: false },
     hero: { fill: MENU_BUTTON_FROM, fillTo: MENU_BUTTON_TO, label: COLOR_BUTTON_LABEL, glow: true },
     ghost: { fill: COLOR_BUTTON_GHOST, label: COLOR_BUTTON_GHOST_LABEL, glow: false, ghost: true }
 };
+
+/**
+ * The sheen down the top half of a button, as a list of alphas.
+ *
+ * Pure and exported so how finely it steps is something a test can ask about.
+ * It is the third place in this game to make the same mistake - stacked
+ * opacity in too few steps does not read as a soft ramp, it reads as the
+ * steps - and on a pill, where the eye is already following a smooth curve,
+ * seven bands are seven visible stripes across the top of the button.
+ */
+export function sheenBands (): number[]
+{
+    const bands: number[] = [];
+
+    for (let band = 0; band < BUTTON_SHEEN_BANDS; band++)
+    {
+        bands.push(BUTTON_SHEEN * (1 - (band / BUTTON_SHEEN_BANDS)));
+    }
+
+    return bands;
+}
 
 /**
  * Bands a left-to-right gradient is built from. Graphics cannot fill one.
@@ -249,8 +267,8 @@ export class Button
         //  Graphics cannot fill a gradient, and one lighter half over a darker
         //  one puts a hard line across the button - so it is banded, with the
         //  steps small enough to read as a curve.
-        for (let band = 0; band < BUTTON_SHEEN_BANDS; band++)
-        {
+        sheenBands().forEach((alpha, band) => {
+
             const t = band / BUTTON_SHEEN_BANDS;
             const bandTop = top + (height * 0.5 * t);
             const bandHeight = (height * 0.5) / BUTTON_SHEEN_BANDS;
@@ -261,14 +279,15 @@ export class Button
             //  flat cyan while the bottom half ramped, with a hard line across
             //  the middle where the sheen stopped. Compositing leaves whatever
             //  is beneath it alone, and looks identical on a solid button.
-            gfx.fillStyle(0xffffff, BUTTON_SHEEN * (1 - t));
+            gfx.fillStyle(0xffffff, alpha);
 
             //  Only the first band rounds its top corners; the rest are inside
             //  the shape already.
             gfx.fillRoundedRect(left, bandTop, width, bandHeight + 1, band === 0
                 ? { tl: radius, tr: radius, bl: 0, br: 0 }
                 : 0);
-        }
+
+        });
 
         //  A hairline along the top edge, which is most of what reads as a
         //  raised surface rather than a painted shape.

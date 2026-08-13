@@ -74,8 +74,8 @@ export class PauseOverlay
         //  Resume and Menu cost nothing, so both always work.
         const buttons: Array<[ string, ButtonVariant, () => void ]> = [
             [ 'RESUME', 'primary', actions.onResume ],
-            [ 'RETRY', canRetry ? 'secondary' : 'locked', actions.onRetry ],
-            [ 'MENU', 'secondary', actions.onMenu ]
+            [ 'RETRY', canRetry ? 'ghost' : 'locked', actions.onRetry ],
+            [ 'MENU', 'ghost', actions.onMenu ]
         ];
 
         buttons.forEach(([ label, variant, action ], index) => {

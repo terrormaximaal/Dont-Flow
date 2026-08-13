@@ -902,14 +902,33 @@ export const OVERLAY_DETAIL_SIZE = 20;
 export const OVERLAY_BEST_SIZE = 18;
 export const COLOR_NEW_BEST = '#ffc857';
 
+/**
+ * The completion panel's total counting up rather than appearing.
+ *
+ * The score is the whole point of the screen and it was being handed over as a
+ * finished fact. A number that travels is read as something earned; the same
+ * number stamped down is read as a label. Rolled at a rate rather than over a
+ * duration, like the in-game readout, so a big score visibly takes longer.
+ */
+export const OVERLAY_COUNT_RATE = 420;
+export const OVERLAY_COUNT_MAX_MS = 1100;
+
+/**
+ * How the panel's parts arrive.
+ *
+ * The same idea as the home screen: fading a whole panel in as one block is
+ * what an assembled screen looks like. Staggering it by a few frames a line
+ * costs nothing and reads as a result being announced.
+ */
+export const OVERLAY_STAGGER_MS = 80;
+export const OVERLAY_PART_RISE = 14;
+
 export const BUTTON_WIDTH = 220;
 export const BUTTON_HEIGHT = 62;
 export const BUTTON_LABEL_SIZE = 24;
 export const BUTTON_GAP = 14;
 export const COLOR_BUTTON = 0x3fa9f5;
 export const COLOR_BUTTON_LABEL = '#04101f';
-export const COLOR_BUTTON_SECONDARY = 0x243352;
-export const COLOR_BUTTON_SECONDARY_LABEL = '#c3d0e8';
 export const COLOR_BUTTON_LOCKED = 0x141d33;
 export const COLOR_BUTTON_LOCKED_LABEL = '#4a5675';
 
@@ -1006,6 +1025,9 @@ export const LEVEL_ROW_DETAIL_OFFSET = 15;
 // ---------------------------------------------------------------------------
 
 /** Kept at a comfortable touch size rather than the size of the icon. */
+/** The pause control's own slab. Chrome, not one of the button family. */
+export const COLOR_PAUSE_BUTTON = 0x243352;
+
 export const PAUSE_BUTTON_SIZE = 44;
 export const PAUSE_BUTTON_MARGIN = 14;
 export const PAUSE_BAR_WIDTH = 5;
@@ -1228,13 +1250,30 @@ export const HUD_LEVEL_TRACKING = 3;
 // ---------------------------------------------------------------------------
 
 /** Corner radius. A hard corner is the fastest way to look unfinished. */
-export const BUTTON_RADIUS = 14;
+/**
+ * Corner radius, which at half the height is a pill.
+ *
+ * One shape everywhere. The home screen was reworked into pills and the panels
+ * kept their softer rectangle, which meant the game had two button languages
+ * one tap apart - and the difference read as two builds rather than as a
+ * deliberate distinction. What separates the home screen's PLAY now is that it
+ * is the only gradient in the game, which is a stronger signal than a corner.
+ */
+export const BUTTON_RADIUS = BUTTON_HEIGHT / 2;
 
 /** How much lighter the top of a button is than its foot. */
 export const BUTTON_SHEEN = 0.24;
 
 /** Bands the sheen is stepped through. One step reads as a seam, not a curve. */
-export const BUTTON_SHEEN_BANDS = 7;
+/**
+ * Enough bands that the ramp is not visible as bands.
+ *
+ * Seven of them stepped the alpha by about 0.034 each, which is nearly three
+ * times the point at which a step across a flat surface becomes a line - and
+ * on a pill, where the eye is already following a curve, it read as stripes.
+ * Drawn once per button, so the count costs nothing.
+ */
+export const BUTTON_SHEEN_BANDS = 26;
 
 /** A hairline along the top edge, which is what reads as a raised surface. */
 export const BUTTON_EDGE_ALPHA = 0.4;
