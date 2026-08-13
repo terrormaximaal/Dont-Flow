@@ -63,3 +63,59 @@ export function stopAt (index: number, count: number): Stop
         side: point.x < GAME_WIDTH / 2 ? -1 : 1
     };
 }
+
+/**
+ * What a stop is, from the player's point of view.
+ *
+ * Four states, and the scene draws all four differently, so they are named
+ * rather than left as three booleans that have to be read together. It is a
+ * short function guarding the most important rule on the screen - that a level
+ * which has not been reached cannot be started - and a short function is
+ * exactly the kind that gets an extra condition bolted onto it later.
+ */
+export type StopState =
+    /** Not reached yet. Wears a padlock, and is built with no hit area at all. */
+    | 'locked'
+    /** Reached and played past. Shows its number and its best score. */
+    | 'open'
+    /** Reached, and the furthest one. Breathes, so the screen says "here". */
+    | 'next'
+    /**
+     * Reached, but there is no energy to start it with.
+     *
+     * Drawn exactly like an open one and pressable by nothing. The meter is
+     * what explains the wait; a stop that looked different for this reason
+     * would be saying the same thing a second time in a worse place.
+     */
+    | 'waiting';
+
+/**
+ * @param furthest The furthest level reached, as an index.
+ * @param canPlay  Whether there is energy to start a level at all.
+ */
+export function stopState (index: number, furthest: number, canPlay: boolean): StopState
+{
+    if (index > furthest)
+    {
+        return 'locked';
+    }
+
+    if (!canPlay)
+    {
+        return 'waiting';
+    }
+
+    return index === furthest ? 'next' : 'open';
+}
+
+/** Whether a stop in this state may start its level. */
+export function isStartable (state: StopState): boolean
+{
+    return state === 'next' || state === 'open';
+}
+
+/** Whether a stop in this state shows its number and score rather than a lock. */
+export function isReached (state: StopState): boolean
+{
+    return state !== 'locked';
+}

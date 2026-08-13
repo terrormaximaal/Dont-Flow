@@ -984,7 +984,15 @@ export const TITLE_TAGLINE_SIZE = 15;
 export const TITLE_BUTTONS_Y = GAME_HEIGHT * 0.60;
 
 export const MENU_HEADING_SIZE = 26;
-export const MENU_HEADING_Y = 92;
+export const MENU_HEADING_Y = 88;
+
+/** A kicker rule above the heading, the same mark the home screen carries. */
+export const MENU_KICKER_Y = 60;
+export const MENU_KICKER_WIDTH = 76;
+
+/** How far along the game the player is, set under the heading. */
+export const MENU_PROGRESS_Y = 118;
+export const MENU_PROGRESS_SIZE = 13;
 
 /**
  * Level select is a grid, not a list: ten rows in one column ran off the bottom
@@ -1000,8 +1008,8 @@ export const MENU_HEADING_Y = 92;
 // ---------------------------------------------------------------------------
 
 /** Where the first and last stop sit vertically. */
-export const ROUTE_FIRST_Y = 176;
-export const ROUTE_LAST_Y = 690;
+export const ROUTE_FIRST_Y = 178;
+export const ROUTE_LAST_Y = 702;
 
 /**
  * The wave the route runs along: how far it swings either side of centre, how
@@ -1026,22 +1034,76 @@ export const ROUTE_CYCLES = 2.25;
 export const ROUTE_PHASE = 0;
 
 /** The stop itself, and the ring drawn around the one you would play next. */
-export const ROUTE_NODE_RADIUS = 25;
+export const ROUTE_NODE_RADIUS = 26;
 export const ROUTE_NODE_RING = 4;
 export const ROUTE_NEXT_PULSE = 6;
 export const ROUTE_NEXT_PULSE_MS = 1100;
 
 /** Type sizes on a stop: the number, and the line under it. */
 export const ROUTE_NUMBER_SIZE = 22;
-export const ROUTE_DETAIL_SIZE = 11;
+export const ROUTE_DETAIL_SIZE = 12;
 
 /** How far the detail line sits from the node's centre, out to its own side. */
-export const ROUTE_DETAIL_OFFSET = 44;
+/**
+ * How far out from a stop its score sits.
+ *
+ * Far enough to clear the route on its way out of the bead. At the old
+ * forty-four the line and the first stop's label crossed each other, which
+ * reads as a collision however cleanly the label is drawn on top.
+ */
+export const ROUTE_DETAIL_OFFSET = 56;
 
 /** The path between stops: how thick, and how much of it is glow. */
-export const ROUTE_LINE_WIDTH = 5;
-export const ROUTE_LINE_GLOW = 3;
+export const ROUTE_LINE_WIDTH = 7;
+export const ROUTE_LINE_GLOW = 5;
 export const ROUTE_LINE_STEPS = 14;
+
+/**
+ * Light travelling along the part of the route already walked.
+ *
+ * The one piece of ambient movement this screen has, and it is the right one:
+ * the game is named after flow, so the path the player has flowed along is the
+ * thing that should be moving. Nothing ahead of the furthest level moves at
+ * all, which makes the boundary between reached and not visible without a
+ * single label.
+ */
+export const ROUTE_MOTES = 5;
+export const ROUTE_MOTE_RADIUS = 3.2;
+export const ROUTE_MOTE_ALPHA = 0.9;
+export const ROUTE_MOTE_SECONDS = 7.5;
+
+/** How the stops arrive: staggered down the route, in the order they are walked. */
+export const ROUTE_ENTER_MS = 420;
+export const ROUTE_ENTER_STAGGER = 46;
+export const ROUTE_ENTER_FROM = 0.55;
+
+/** The dip a stop takes when it is pressed, before the screen washes out. */
+export const ROUTE_PRESS_SCALE = 0.88;
+export const ROUTE_PRESS_MS = 110;
+
+// ---------------------------------------------------------------------------
+//  The bead a stop is drawn as
+//
+//  Each one is a window onto the world its level is played in: that world's own
+//  sky over that world's own ground, with a horizon between them. Ten of them
+//  down the route is a preview of the whole game.
+// ---------------------------------------------------------------------------
+
+/** Bands the sky inside a bead is laid in. Enough that no step shows. */
+export const BEAD_BANDS = 26;
+
+/** Where the ground starts, as a fraction of the radius from the centre. */
+export const BEAD_GROUND_LINE = 0.22;
+
+export const BEAD_RING_WIDTH = 2.5;
+export const BEAD_SHEEN_ALPHA = 0.22;
+
+export const BEAD_HALO_LAYERS = 5;
+export const BEAD_HALO_SPREAD = 9;
+export const BEAD_HALO_ALPHA = 0.055;
+
+/** How far a locked bead is washed towards the menu's own sky. */
+export const BEAD_LOCKED_MUTE = 0.8;
 
 /** Alpha of the road already walked, and of the part still locked. */
 export const ROUTE_DONE_ALPHA = 0.85;
