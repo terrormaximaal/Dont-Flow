@@ -30,6 +30,7 @@ import {
 } from '../config/constants';
 import { WorldSpec } from '../config/worlds';
 import { shiftCss } from '../utils/color';
+import { BankMeter } from './BankMeter';
 
 /**
  * Score and multiplier readout. Pure display - it is handed values, it never
@@ -41,6 +42,16 @@ export class Hud
     private readonly levelText: Phaser.GameObjects.Text;
     private readonly scoreText: Phaser.GameObjects.Text;
     private readonly comboText: Phaser.GameObjects.Text;
+
+    /**
+     * How many mistakes the run can still absorb.
+     *
+     * Separate from the number rather than folded into it, because they say
+     * different things: the score is how well the run has gone, and this is how
+     * much of it is left. They only look like the same fact while the run is
+     * healthy.
+     */
+    private readonly bank: BankMeter;
 
     private shownMultiplier = -1;
 
@@ -114,7 +125,12 @@ export class Hud
         //  hold against a bright sky or a dark one without a panel behind it.
         this.scoreText.setShadow(0, 0, stroke, HUD_GLOW_BLUR, true, true);
 
-        this.comboText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP + HUD_SCORE_SIZE + 8, '', {
+        //  Directly under the total, with the multiplier pushed below it. The
+        //  order matters: score, then how much room is left, then what the next
+        //  orb is worth - which is the order a player asks those questions in.
+        this.bank = new BankMeter(scene, HUD_MARGIN_TOP + HUD_SCORE_SIZE + 12, text);
+
+        this.comboText = scene.add.text(GAME_WIDTH / 2, HUD_MARGIN_TOP + HUD_SCORE_SIZE + 26, '', {
             fontFamily: HUD_FONT,
             fontSize: HUD_COMBO_SIZE,
             color: dim,
@@ -138,6 +154,12 @@ export class Hud
      */
     setScore (score: number): void
     {
+        //  The meter is told first and unconditionally. It reports a count
+        //  rather than a total, so it has to be right even when the total has
+        //  not moved - and a run that starts already low would otherwise show
+        //  a full bank until the first orb.
+        this.bank.setScore(score);
+
         const from = this.shownScore;
         const step = score - from;
 
@@ -248,6 +270,7 @@ export class Hud
         this.levelText.setVisible(visible);
         this.scoreText.setVisible(visible);
         this.comboText.setVisible(visible);
+        this.bank.setVisible(visible);
     }
 
     setMultiplier (multiplier: number): void
