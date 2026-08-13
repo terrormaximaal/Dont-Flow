@@ -12,6 +12,40 @@ function stubScene (): unknown
     return { add: { graphics: () => gfx, circle: () => gfx, text: () => gfx } };
 }
 
+/** Runs a course past a single orb in lane 1 and reports how often it was taken. */
+function runPastOrb (targetLane: number, height: number): number
+{
+    useLanes(DEFAULT_LANES);
+
+    let taken = 0;
+
+    const level: Level = {
+        gates: [],
+        orbs: [ { distance: 1000, lane: 1, color: 'red' } ],
+        obstacles: [],
+        powerUps: [],
+        zones: [],
+        finishDistance: 100000
+    };
+
+    //  eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const course = new Course(stubScene() as any, level, {
+        onGate: () => {},
+        onOrb: () => { taken++; },
+        onBlocked: () => {},
+        onFinish: () => {}
+    });
+
+    for (let travelled = 900; travelled <= 1100; travelled += 10)
+    {
+        //  Sitting right on the orb the whole way past. What varies is where the
+        //  drop is *going* and how high it is.
+        course.update(travelled, laneCenterX(1), laneCenterX(targetLane), 'red', false, height);
+    }
+
+    return taken;
+}
+
 function courseWith (profile: 'full' | 'low' | 'gap', onBlocked: () => void): Course
 {
     useLanes(DEFAULT_LANES);
@@ -105,6 +139,35 @@ describe('a barrier the course is carrying', () => {
         }
 
         expect(hits).toBe(1);
+
+    });
+
+});
+
+describe('an orb the course is carrying', () => {
+
+    it('is collected by a drop settling in its lane', () => {
+
+        expect(runPastOrb(1, 0)).toBe(1);
+
+    });
+
+    //  Passing over a lane on the way to another one is travel, not arrival.
+    //  Without this, a two-lane swipe takes whatever is in the middle lane -
+    //  including the wrong colour it was swiping to avoid.
+    it('is left alone by a drop only crossing its lane', () => {
+
+        expect(runPastOrb(0, 0), 'crossing to the left').toBe(0);
+        expect(runPastOrb(2, 0), 'crossing to the right').toBe(0);
+
+    });
+
+    //  An orb sits on the road like everything else on it.
+    it('is cleared by jumping over it', () => {
+
+        expect(runPastOrb(1, 1), 'top of the arc').toBe(0);
+        expect(runPastOrb(1, JUMP_CLEAR_HEIGHT), 'just high enough').toBe(0);
+        expect(runPastOrb(1, JUMP_CLEAR_HEIGHT - 0.05), 'barely off the road').toBe(1);
 
     });
 

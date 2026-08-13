@@ -584,8 +584,15 @@ export const PROP_SHADOW_SQUASH = 0.16;
 //  is moving faster. In distance, a jump clears the same ground everywhere.
 // ---------------------------------------------------------------------------
 
-/** How much road one jump covers. */
-export const JUMP_SPAN = 620;
+/**
+ * How much road one jump covers.
+ *
+ * At the base pace this is a shade over a second in the air. Longer than that
+ * and the drop hangs: the player has already decided what the jump was for
+ * before it lands, and the wait reads as the game being slow rather than as
+ * weight.
+ */
+export const JUMP_SPAN = 460;
 
 /** How far up the screen the drop rises at the top of the arc. */
 export const JUMP_LIFT = 96;

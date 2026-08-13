@@ -100,6 +100,31 @@ export function sheenBands (): number[]
 }
 
 /**
+ * How far in from a button's bounding box its own outline sits, `dy` below the
+ * top edge.
+ *
+ * The sheen is laid in bands and a band is a rectangle, which is exactly right
+ * across the straight part of a button and quite wrong across a rounded cap: a
+ * full-width band over a corner *is* a corner. Stacked up the top half of a
+ * pill, that drew a lighter square around every filled button - most obvious on
+ * PLAY and RESUME, where the sheen is brightest.
+ *
+ * Same idea as the world bead's sky bands: follow the shape's own chord rather
+ * than reaching for a mask.
+ */
+export function sheenInset (dy: number, radius: number): number
+{
+    if (dy >= radius || radius <= 0)
+    {
+        return 0;
+    }
+
+    const reach = radius - dy;
+
+    return radius - Math.sqrt(Math.max(0, (radius * radius) - (reach * reach)));
+}
+
+/**
  * Bands a left-to-right gradient is built from. Graphics cannot fill one.
  *
  * Enough that no single step is visible: what gives a banded ramp away is the
@@ -281,11 +306,12 @@ export class Button
             //  is beneath it alone, and looks identical on a solid button.
             gfx.fillStyle(0xffffff, alpha);
 
-            //  Only the first band rounds its top corners; the rest are inside
-            //  the shape already.
-            gfx.fillRoundedRect(left, bandTop, width, bandHeight + 1, band === 0
-                ? { tl: radius, tr: radius, bl: 0, br: 0 }
-                : 0);
+            //  Pulled in to wherever the button's own edge is at this height, so
+            //  the sheen ends where the shape does instead of squaring off its
+            //  corners.
+            const inset = sheenInset(bandTop - top, radius);
+
+            gfx.fillRect(left + inset, bandTop, width - (inset * 2), bandHeight + 1);
 
         });
 

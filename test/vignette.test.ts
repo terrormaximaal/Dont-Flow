@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+    BUTTON_HEIGHT,
     GAME_WIDTH,
     LOW_VIGNETTE_ALPHA,
     LOW_VIGNETTE_BANDS,
     VIGNETTE_ALPHA,
     VIGNETTE_BANDS
 } from '../src/game/config/constants';
-import { sheenBands } from '../src/game/ui/Button';
+import { sheenBands, sheenInset } from '../src/game/ui/Button';
 import { vignetteBands } from '../src/game/ui/vignetteBands';
 
 describe('a vignette built out of rings', () => {
@@ -156,6 +157,32 @@ describe('every banded ramp the game draws', () => {
         for (let i = 1; i < bands.length; i++)
         {
             expect(bands[i - 1] - bands[i], `sheen band ${i}`).toBeLessThan(VISIBLE_STEP);
+        }
+
+    });
+
+    it('keeps every sheen band inside the button it lights', () => {
+
+        //  A band is a rectangle; the button is a pill. Reaching the full width
+        //  at the top of the cap is what drew a lighter square around every
+        //  filled button, so the inset has to be the shape's own chord.
+        const radius = BUTTON_HEIGHT / 2;
+
+        //  At the very top edge, only the flat part between the two caps.
+        expect(sheenInset(0, radius)).toBeCloseTo(radius);
+
+        //  Level with the centre of the caps, and below it, the full width.
+        expect(sheenInset(radius, radius)).toBe(0);
+        expect(sheenInset(radius * 2, radius)).toBe(0);
+
+        //  And never outside the shape in between: a band's half-width plus its
+        //  inset is the radius' own circle, never wider.
+        for (let dy = 0; dy <= radius; dy += 0.5)
+        {
+            const inset = sheenInset(dy, radius);
+            const reach = radius - dy;
+
+            expect((radius - inset) ** 2 + (reach ** 2), `at ${dy}`).toBeCloseTo(radius ** 2);
         }
 
     });
