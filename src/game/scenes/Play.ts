@@ -218,6 +218,14 @@ export class Play extends Scene
         this.drop.setScore(this.scoring.getScore());
         this.hud.setScore(this.scoring.getScore());
 
+        //  Every level now begins one mistake from the end, so the warning is
+        //  on from the first frame rather than waiting for the first orb to
+        //  arrive and tell it. Saying it here rather than in onOrb is the
+        //  difference between a rule the player is warned about and a rule they
+        //  discover by dying to it.
+        this.hud.setLow(this.scoring.isLow());
+        this.lowVignette.setLow(this.scoring.isLow());
+
         const course = buildLevel(level);
 
         this.zones = course.zones;

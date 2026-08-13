@@ -12,11 +12,12 @@ import { ScoreSystem } from '../src/game/systems/ScoreSystem';
 
 describe('scoring', () => {
 
-    it('starts with a bank rather than empty', () => {
+    it('starts at nothing', () => {
 
         const scoring = new ScoreSystem();
 
         expect(scoring.getScore()).toBe(SCORE_START);
+        expect(SCORE_START).toBe(0);
         expect(scoring.getCombo()).toBe(0);
         expect(scoring.getBestCombo()).toBe(0);
 
@@ -27,7 +28,7 @@ describe('scoring', () => {
         const scoring = new ScoreSystem();
 
         expect(scoring.collect()).toBe(SCORE_PER_ORB);
-        expect(scoring.getScore()).toBe(SCORE_START + SCORE_PER_ORB);
+        expect(scoring.getScore()).toBe(SCORE_PER_ORB);
 
     });
 
@@ -48,17 +49,7 @@ describe('scoring', () => {
         scoring.collect();
         scoring.penalise();
 
-        expect(scoring.getScore()).toBe(SCORE_START);
-
-    });
-
-    it('takes the penalty straight out of the bank', () => {
-
-        const scoring = new ScoreSystem();
-
-        scoring.penalise();
-
-        expect(scoring.getScore()).toBe(SCORE_START - SCORE_PENALTY);
+        expect(scoring.getScore()).toBe(0);
 
     });
 
@@ -79,75 +70,91 @@ describe('a run running out', () => {
         return last;
     }
 
-    it('is not over while there is anything in the bank', () => {
+    //  The rule, stated once. Zero is alive; a point below it is not.
+    it('is alive at exactly nothing', () => {
 
         const scoring = new ScoreSystem();
 
-        expect(scoring.isOut()).toBe(false);
-
-        mistakes(scoring, (SCORE_START / SCORE_PENALTY) - 1);
-
-        expect(scoring.getScore()).toBeGreaterThan(0);
+        expect(scoring.getScore()).toBe(0);
         expect(scoring.isOut()).toBe(false);
 
     });
 
-    it('is over the moment the bank empties', () => {
+    it('is over the moment the score goes below nothing', () => {
 
         const scoring = new ScoreSystem();
 
-        mistakes(scoring, SCORE_START / SCORE_PENALTY);
+        scoring.collect();
+        scoring.penalise();
 
-        expect(scoring.getScore()).toBe(0);
+        expect(scoring.getScore()).toBeLessThan(0);
         expect(scoring.isOut()).toBe(true);
 
     });
 
-    //  A tally that runs to -140 is a number nobody reads. Stopping at empty is
-    //  what makes the last mistake of a run legible as the last one.
-    it('never charges more than is left, and says how much that was', () => {
+    //  The example from the brief, kept as a test because it is the clearest
+    //  statement of the rule there is: ten in hand, a twenty-point mistake,
+    //  and the run is over at minus ten.
+    it('ends a run holding ten that takes a twenty-point mistake', () => {
 
         const scoring = new ScoreSystem();
 
-        //  One collect off a round number of mistakes, so what is left when the
-        //  last one lands is less than a full penalty rather than exactly none.
         scoring.collect();
 
-        mistakes(scoring, SCORE_START / SCORE_PENALTY);
+        expect(scoring.getScore()).toBe(SCORE_PER_ORB);
 
-        const remaining = scoring.getScore();
+        scoring.penalise();
 
-        expect(remaining).toBeGreaterThan(0);
-        expect(remaining).toBeLessThan(SCORE_PENALTY);
-
-        expect(scoring.penalise()).toBe(-remaining);
-        expect(scoring.getScore()).toBe(0);
-
-    });
-
-    it('stays over however many more mistakes are charged', () => {
-
-        const scoring = new ScoreSystem();
-
-        mistakes(scoring, 40);
-
-        expect(scoring.getScore()).toBe(0);
+        expect(scoring.getScore()).toBe(SCORE_PER_ORB - SCORE_PENALTY);
         expect(scoring.isOut()).toBe(true);
 
     });
 
-    it('warns before it ends, with room left to do something about it', () => {
+    //  The version before this one charged only as far as there was anything
+    //  left, so the score stopped dead at zero. Under the rule above that would
+    //  have meant no run could ever end, which is the single most important
+    //  thing about this method.
+    it('charges the full penalty even when it takes the score under', () => {
 
         const scoring = new ScoreSystem();
 
-        expect(scoring.isLow(), 'at the start').toBe(false);
+        expect(scoring.penalise()).toBe(-SCORE_PENALTY);
+        expect(scoring.getScore()).toBe(-SCORE_PENALTY);
 
-        //  Down to the warning line exactly.
-        mistakes(scoring, (SCORE_START - SCORE_WARNING) / SCORE_PENALTY);
+    });
 
-        expect(scoring.getScore()).toBe(SCORE_WARNING);
-        expect(scoring.isLow(), 'on the line').toBe(true);
+    it('keeps charging past the end rather than settling anywhere', () => {
+
+        const scoring = new ScoreSystem();
+
+        mistakes(scoring, 5);
+
+        expect(scoring.getScore()).toBe(-SCORE_PENALTY * 5);
+        expect(scoring.isOut()).toBe(true);
+
+    });
+
+    //  Starting at nothing means starting one mistake from the end, so the
+    //  warning is on from the first frame of every level.
+    it('warns from the very start, because the first mistake is fatal', () => {
+
+        const scoring = new ScoreSystem();
+
+        expect(scoring.isLow()).toBe(true);
         expect(scoring.isOut()).toBe(false);
+
+    });
+
+    it('stops warning once enough is banked to survive a mistake', () => {
+
+        const scoring = new ScoreSystem();
+
+        while (scoring.getScore() <= SCORE_WARNING)
+        {
+            scoring.collect();
+        }
+
+        expect(scoring.isLow()).toBe(false);
 
     });
 
@@ -155,7 +162,7 @@ describe('a run running out', () => {
 
         const scoring = new ScoreSystem();
 
-        mistakes(scoring, SCORE_START / SCORE_PENALTY);
+        scoring.penalise();
 
         expect(scoring.isOut()).toBe(true);
         expect(scoring.isLow()).toBe(false);
@@ -166,9 +173,7 @@ describe('a run running out', () => {
 
         const scoring = new ScoreSystem();
 
-        mistakes(scoring, (SCORE_START - SCORE_WARNING) / SCORE_PENALTY);
-
-        expect(scoring.isLow()).toBe(true);
+        expect(scoring.isLow(), 'at the start').toBe(true);
 
         for (let i = 0; i < 12; i++)
         {
@@ -176,6 +181,7 @@ describe('a run running out', () => {
         }
 
         expect(scoring.isLow(), 'after a clean stretch').toBe(false);
+        expect(scoring.isOut()).toBe(false);
 
     });
 

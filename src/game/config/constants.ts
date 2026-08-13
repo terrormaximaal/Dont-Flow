@@ -862,7 +862,20 @@ export const FAIL_WASH_ALPHA = 0.42;
  * is visible in the corner of the eye while the player is looking at the road,
  * which a number at the top of the screen is not.
  */
-export const LOW_VIGNETTE_ALPHA = 0.34;
+/**
+ * How hard the edges press in while the next mistake is fatal.
+ *
+ * Softer than it was, because what it reports has changed. It used to mark a
+ * state a run had to fall into, which was rare and lasted seconds; under the
+ * rule that a level starts at nothing, being one mistake from the end is where
+ * every level *begins* and can last a third of it. At the old strength that is
+ * a game shouting through its whole opening, and an alarm that never stops is
+ * an alarm nobody hears.
+ *
+ * Still several times the ambient darkening, and still the loudest thing on
+ * the screen that is not the road.
+ */
+export const LOW_VIGNETTE_ALPHA = 0.24;
 
 /**
  * Enough rings that the ramp between them is not a ramp anyone can see.
@@ -1175,26 +1188,37 @@ export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
 /**
  * What a run starts with.
  *
- * The score is not a tally any more, it is a bank: the run begins with this
- * much and ends the moment it is gone. That one change is what makes every
- * mistake matter - a tally that goes negative is a number you can shrug at,
- * where a bank that empties takes the level away from you.
+ * Nothing. The score is the performance figure and the survival condition at
+ * once: everything correct adds to it, everything wrong takes from it, and the
+ * run ends the moment it goes below zero.
  *
- * Six clean mistakes deep, which is the number this is actually chosen for.
- * Deep enough that a single misread is a scare rather than a death, shallow
- * enough that a stretch played badly ends the run rather than being coasted
- * through - and the drop already wears the number as its own size, so a player
- * running low can see it without looking away from the road.
+ * Starting at zero is what makes that rule bite from the first second. There is
+ * no cushion to spend, so the opening of a level stops being a formality -
+ * points have to be earned before a mistake can be afforded, and the first
+ * stretch of a level is the stretch that buys the rest of it.
+ *
+ * Raise this to hand the player a cushion. The rule below does not change.
  */
-export const SCORE_START = SCORE_PENALTY * 6;
+export const SCORE_START = 0;
 
 /**
- * The point below which the run is visibly in trouble.
+ * The score a run ends *below*.
  *
- * Two mistakes from the end, so the warning arrives while there is still
- * something to do about it rather than as an obituary.
+ * Strictly below, not at. Zero is alive: a player who has spent exactly what
+ * they earned is on the edge rather than over it, and the difference between
+ * "nothing left" and "gone" is most of the tension of a bad run's last few
+ * seconds.
  */
-export const SCORE_WARNING = SCORE_PENALTY * 2;
+export const SCORE_DEATH_BELOW = 0;
+
+/**
+ * The score at or below which the run is visibly in trouble.
+ *
+ * One mistake's worth. At or under this, the next wrong colour ends the run -
+ * so the warning is not "you are getting low", it is "the next one is fatal",
+ * which is worth interrupting the screen for.
+ */
+export const SCORE_WARNING = SCORE_PENALTY;
 
 /**
  * The combo multiplier: what a streak is actually worth.
