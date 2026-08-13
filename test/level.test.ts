@@ -34,7 +34,7 @@ describe('a level and its lanes', () => {
                 for (const row of section.rows)
                 {
                     expect(row.length, `level ${spec.name}: "${row}"`).toBe(lanes);
-                    expect(row, `level ${spec.name}`).toMatch(/^[1-5a-e.*]+$/);
+                    expect(row, `level ${spec.name}`).toMatch(/^[1-5a-eA-E0.*]+$/);
                 }
             }
         }
@@ -87,9 +87,46 @@ describe('buildLevel', () => {
 
         expect(level.orbs).toHaveLength(0);
         expect(level.obstacles).toEqual([
-            { distance: LEAD_IN + GATE_TO_ORBS, lane: 0, color: 'red', kind: 'slider' },
-            { distance: LEAD_IN + GATE_TO_ORBS, lane: 2, color: 'yellow', kind: 'slider' }
+            { distance: LEAD_IN + GATE_TO_ORBS, lane: 0, color: 'red', kind: 'slider', profile: 'full' },
+            { distance: LEAD_IN + GATE_TO_ORBS, lane: 2, color: 'yellow', kind: 'slider', profile: 'full' }
         ]);
+
+    });
+
+    //  Capitals are the same barrier, low enough to jump. One character apart
+    //  on purpose: a row of hurdles should read as a row of barriers, because
+    //  that is what it is.
+    it('reads capitals as the same barriers, low enough to jump', () => {
+
+        const level = buildLevel(base([
+            { splitAfterLane: 0, gate: [ 0, 1 ], rows: [ 'A.c' ] }
+        ]));
+
+        expect(level.obstacles).toHaveLength(2);
+
+        expect(level.obstacles[0].profile).toBe('low');
+        expect(level.obstacles[1].profile).toBe('full');
+
+    });
+
+    it('takes a barrier\'s colour from its letter, whatever its case', () => {
+
+        const lower = buildLevel(base([ { splitAfterLane: 0, gate: [ 0, 1 ], rows: [ 'c..' ] } ]));
+        const upper = buildLevel(base([ { splitAfterLane: 0, gate: [ 0, 1 ], rows: [ 'C..' ] } ]));
+
+        expect(upper.obstacles[0].color).toBe(lower.obstacles[0].color);
+        expect(upper.obstacles[0].profile).not.toBe(lower.obstacles[0].profile);
+
+    });
+
+    it('gives a capital the same movement as the section it is in', () => {
+
+        const level = buildLevel(base([
+            { splitAfterLane: 0, gate: [ 0, 1 ], obstacles: 'slider', rows: [ 'B..' ] }
+        ]));
+
+        expect(level.obstacles[0].kind).toBe('slider');
+        expect(level.obstacles[0].profile).toBe('low');
 
     });
 
@@ -241,7 +278,11 @@ describe('the shipped levels', () => {
 
     });
 
-    it('never fill a row completely', () => {
+    //  A row of hurdles or holes is deliberately full: there is no lane to
+    //  steer into, which is exactly what makes it teach the jump. So the rule
+    //  is about full-height barriers only - those are the ones that can trap a
+    //  player with no way out at all.
+    it('never fill a row completely with barriers that cannot be jumped', () => {
 
         for (const level of LEVELS)
         {
@@ -249,12 +290,48 @@ describe('the shipped levels', () => {
             {
                 for (const row of section.rows)
                 {
-                    const filled = [ ...row ].filter((character) => character !== '.').length;
+                    const blocking = [ ...row ].filter((character) => 'abcde'.includes(character)).length;
 
                     //  One short of the lane count, whatever that is, so there
                     //  is always somewhere to go.
-                    expect(filled, `level ${level.name} row "${row}"`)
+                    expect(blocking, `level ${level.name} row "${row}"`)
                         .toBeLessThanOrEqual((level.lanes ?? 3) - 1);
+                }
+            }
+        }
+
+    });
+
+    //  And a row blocked across its whole width must be *entirely* jumpable. A
+    //  row mixing a wall with hurdles and no gap would need the player to be in
+    //  a particular lane and in the air at once, which is a different game.
+    //
+    //  Only blockers count. The first version of this counted any occupied
+    //  lane, which made a row of two orbs on a two-lane level "full" and
+    //  demanded it be jumpable - orbs block nothing, and a dense row of them
+    //  is a reward rather than a hazard.
+    it('leaves a fully blocked row jumpable end to end', () => {
+
+        const BLOCKERS = 'abcdeABCDE0';
+
+        for (const level of LEVELS)
+        {
+            for (const section of level.sections)
+            {
+                for (const row of section.rows)
+                {
+                    const lanes = level.lanes ?? 3;
+                    const blockers = [ ...row ].filter((c) => BLOCKERS.includes(c));
+
+                    if (blockers.length < lanes)
+                    {
+                        continue;
+                    }
+
+                    //  Hurdles and holes both: the way through either is over.
+                    const jumpable = blockers.every((c) => 'ABCDE0'.includes(c));
+
+                    expect(jumpable, `level ${level.name} row "${row}"`).toBe(true);
                 }
             }
         }

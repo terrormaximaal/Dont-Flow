@@ -5,6 +5,7 @@ import {
     LANE_CHANGE_SPEED,
     OBSTACLE_HALF_WIDTH,
     ORB_CATCH_RADIUS,
+    SLIDER_PERIOD,
     SWIPE_REPEAT_DELAY,
     TRACK_LEFT,
     TRACK_WIDTH
@@ -100,13 +101,21 @@ describe('every level', () => {
 
             for (const [ distance, obstacles ] of rows)
             {
+                //  A row made entirely of hurdles or holes has no free lane on
+                //  purpose: the way through it is over it. That the row is
+                //  entirely jumpable is checked in level.test.
+                if (obstacles.every((o) => o.profile !== 'full'))
+                {
+                    continue;
+                }
+
                 //  Worst case is carrying a colour none of them match, so none
                 //  of them can be passed through.
                 const free = [];
 
                 for (let lane = 0; lane < laneCount(); lane++)
                 {
-                    if (obstacles.every((o) => isClear(lane, o.kind, o.lane, distance)))
+                    if (obstacles.every((o) => isClear(lane, o.kind, o.lane, distance) || o.profile !== 'full'))
                     {
                         free.push(lane);
                     }
@@ -130,11 +139,80 @@ describe('every level', () => {
             const crossing = (Math.log(((laneCount() - 1) * laneWidth()) / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000;
             const dragged = SWIPE_REPEAT_DELAY + ((Math.log(laneWidth() / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000);
 
-            const available = ((spec.rowSpacing ?? ORB_ROW_SPACING) / (spec.forwardSpeed ?? FORWARD_SPEED)) * 1000;
+            //  The tightest the level ever gets, not the level's own default.
+            //  Finales pack their rows closer and the fast stretches run their
+            //  road past faster, and both of those shorten exactly this window
+            //  - so measuring the default would be measuring the easiest part
+            //  of the level and calling it the level.
+            const spacing = Math.min(
+                spec.rowSpacing ?? ORB_ROW_SPACING,
+                ...spec.sections.map((section) => section.rowSpacing ?? spec.rowSpacing ?? ORB_ROW_SPACING)
+            );
+
+            const speed = (spec.forwardSpeed ?? FORWARD_SPEED)
+                * Math.max(1, ...spec.sections.map((section) => section.speed ?? 1));
+
+            const available = (spacing / speed) * 1000;
 
             expect(available, `level ${spec.name}, separate swipes`).toBeGreaterThan(crossing);
             expect(available, `level ${spec.name}, one drag`).toBeGreaterThan(dragged);
         }
+
+    });
+
+    //  Every slider in the game runs off one clock, so they all sway the same
+    //  way at the same moment. Two on a row therefore do not leave a gap that
+    //  moves between them - they leave one that closes, because the one on the
+    //  left comes in while the one on the right goes out.
+    //
+    //  The row-by-row check above does catch this, but only where a row happens
+    //  to land: the same pair a few hundred pixels along passes. That makes it
+    //  a trap rather than a rule, so the rule is stated here.
+    it('never puts two sliders on the same row', () => {
+
+        for (const spec of LEVELS)
+        {
+            for (const section of spec.sections)
+            {
+                if (section.obstacles !== 'slider')
+                {
+                    continue;
+                }
+
+                for (const row of section.rows)
+                {
+                    //  Full-height sliders only. A sliding hurdle is answered
+                    //  by leaving the ground rather than by finding the lane
+                    //  between them, so a row of those is not relying on a gap
+                    //  and cannot be robbed of one.
+                    const sliders = [ ...row ].filter((c) => 'abcde'.includes(c)).length;
+
+                    expect(sliders, `level ${spec.name} row "${row}"`).toBeLessThanOrEqual(1);
+                }
+            }
+        }
+
+    });
+
+    it('closes the lane between two sliders somewhere in their sway', () => {
+
+        useLanes(DEFAULT_LANES);
+
+        //  The claim the rule above rests on, checked rather than asserted:
+        //  there is a point in the sway where a drop in the middle lane is
+        //  inside one of a pair standing either side of it.
+        let closed = false;
+
+        for (let distance = 0; distance < SLIDER_PERIOD; distance += 7)
+        {
+            const trapped = [ 0, 2 ].some(
+                (lane) => !isClear(1, 'slider', lane, distance)
+            );
+
+            closed ||= trapped;
+        }
+
+        expect(closed).toBe(true);
 
     });
 

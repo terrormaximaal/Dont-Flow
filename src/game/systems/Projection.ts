@@ -47,9 +47,9 @@ export function depthScale (screenY: number): number
  * Projects a point on the flat road into the view.
  *
  * Everything is simply pulled towards the vanishing point in proportion to its
- * depth. That single rule gives convergence, the narrowing of the road and the
- * diagonal run all at once - and because it is linear in screen y, straight
- * lines in the world stay straight on screen.
+ * depth. That single rule gives both convergence and the narrowing of the road
+ * at once - and because it is linear in screen y, straight lines in the world
+ * stay straight on screen.
  *
  * @param trackX  Lane-space x, as laneCenterX gives it.
  * @param screenY Depth down the screen, as screenYFor gives it.

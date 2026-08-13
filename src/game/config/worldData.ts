@@ -35,6 +35,14 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'blobs', color: 0xffffff, alpha: 0.5, parallax: 0.05, baseline: -95, height: 46, period: 190, wrap: 560, seed: 11 },
             { shape: 'blobs', color: 0xffffff, alpha: 0.75, parallax: 0.11, baseline: -125, height: 60, period: 250, wrap: 560, seed: 27 }
         ],
+        //  Islands over the cloud plane, barely darker than the sky they
+        //  hang in - the first level has two colours to read and nothing
+        //  up here may compete with them.
+        floaters: { shape: 'island', color: 0x7fb4dc, alpha: 0.35, count: 4, size: 26, lowest: 40, highest: 150, parallax: 0.02, seed: 3 },
+        //  A pale shelf laid across the clouds: soft, sparse cross-bars and a
+        //  wide bright reflection, with none of the light strips a built road
+        //  would carry. Level one, and the emptiest road in the game.
+        surface: { rungSpacing: 156, rungThickness: 6, rungAlpha: 0.5, stripAlpha: 0, sheenAlpha: 0.10, vergeWidth: 120 },
         palette: [ 'red', 'blue' ]
     },
 
@@ -55,6 +63,9 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'blobs', color: 0xffffff, alpha: 0.28, parallax: 0.03, baseline: -85, height: 34, period: 200, wrap: 560, seed: 31 }
         ],
         roadside: { shape: 'peaks', color: 0x0f1e33, alpha: 0.75, height: 120, spacing: 520, offset: 120, seed: 3 },
+        //  A pass road, marked the way a road is: a broken centre line and
+        //  nothing else on the surface at all.
+        surface: { rungAlpha: 0, dashSpacing: 240, dashLength: 120, stripAlpha: 0, sheenAlpha: 0.03 },
         palette: [ 'red', 'blue' ]
     },
 
@@ -71,7 +82,12 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'mesa', color: 0x6b2f52, alpha: 0.6, parallax: 0.05, baseline: 8, height: 120, period: 190, wrap: 560, seed: 7 },
             { shape: 'mesa', color: 0x3a1733, alpha: 0.9, parallax: 0.13, baseline: 16, height: 165, period: 240, wrap: 660, seed: 23 }
         ],
+        //  Slabs of the same rock, torn loose and left hanging.
+        floaters: { shape: 'island', color: 0x6b2f52, alpha: 0.4, count: 3, size: 30, lowest: 60, highest: 170, parallax: 0.018, seed: 8 },
         roadside: { shape: 'mesa', color: 0x260b1c, alpha: 0.85, height: 150, spacing: 470, offset: 110, seed: 4 },
+        //  Sleepers cut into the rock. Close-set and heavy, with a broad
+        //  shoulder of the same stone either side.
+        surface: { rungSpacing: 78, rungThickness: 8, stripAlpha: 0, sheenAlpha: 0.02, vergeWidth: 130 },
         palette: [ 'orange', 'purple' ]
     },
 
@@ -89,6 +105,9 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'trees', color: 0x0e2723, alpha: 0.95, parallax: 0.16, baseline: 18, height: 200, period: 122, wrap: 560, seed: 41 }
         ],
         roadside: { shape: 'trees', color: 0x06170f, alpha: 0.95, height: 175, spacing: 300, offset: 100, seed: 5 },
+        //  A boardwalk. Planks close enough together to read as planks, laid
+        //  narrow so the trees crowd right up to the edge of it.
+        surface: { rungSpacing: 52, rungThickness: 7, rungAlpha: 0.55, stripAlpha: 0, sheenAlpha: 0.02, vergeWidth: 58 },
         palette: [ 'green', 'yellow', 'purple' ]
     },
 
@@ -106,8 +125,13 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'peaks', color: 0x7bb2d0, alpha: 0.9, parallax: 0.13, baseline: 16, height: 190, period: 250, wrap: 720, seed: 17,
               detail: 0xffffff, detailAlpha: 0.85 }
         ],
+        floaters: { shape: 'crystal', color: 0xa9d8ec, alpha: 0.5, count: 5, size: 22, lowest: 50, highest: 160, parallax: 0.022, seed: 5 },
         specks: { count: 46, color: 0xffffff, alpha: 0.85, radius: 2.4, fall: 42, drift: 26 },
         roadside: { shape: 'peaks', color: 0x8cc2dc, alpha: 0.85, height: 130, spacing: 520, offset: 120, seed: 6 },
+        //  A sheet, swept clear. Nothing crosses it - the only things on the
+        //  surface are the reflection and two faint runners of light, which is
+        //  what makes it read as polished rather than as unfinished.
+        surface: { rungAlpha: 0, stripAlpha: 0.12, sheenAlpha: 0.15, vergeWidth: 155 },
         palette: [ 'cyan', 'blue', 'pink' ]
     },
 
@@ -125,6 +149,9 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'dunes', color: 0xa8633a, alpha: 0.85, parallax: 0.13, baseline: 16, height: 120, period: 360, wrap: 620, seed: 29 }
         ],
         roadside: { shape: 'dunes', color: 0xb06f3e, alpha: 0.8, height: 95, spacing: 560, offset: 130, seed: 7 },
+        //  A highway. Long dashes with long gaps, no cross-bars, and nothing
+        //  reflected in it at all: this is the one dry surface in the game.
+        surface: { rungAlpha: 0, dashSpacing: 320, dashLength: 170, stripAlpha: 0, sheenAlpha: 0, vergeWidth: 108 },
         palette: [ 'yellow', 'orange', 'blue' ]
     },
 
@@ -144,6 +171,10 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         specks: { count: 60, color: 0xa8c4e0, alpha: 0.5, radius: 1.4, fall: 620, drift: 90, streak: 16 },
         lightning: true,
         roadside: { shape: 'hills', color: 0x05090f, alpha: 0.9, height: 130, spacing: 480, offset: 115, seed: 8 },
+        //  The same road soaked. Short, frequent dashes, the strongest
+        //  reflection in the game bar the ice, and the light strips just
+        //  visible through the water.
+        surface: { rungAlpha: 0, dashSpacing: 170, dashLength: 70, stripAlpha: 0.10, sheenAlpha: 0.12 },
         palette: [ 'blue', 'red', 'green', 'yellow' ]
     },
 
@@ -165,6 +196,10 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  Lighter than the floor rather than darker: near towers catching the
         //  city's own glow read better here than black silhouettes.
         roadside: { shape: 'buildings', color: 0x402573, alpha: 0.95, height: 260, spacing: 360, offset: 105, seed: 9 },
+        //  Lit track. Everything on it turned up: tight bright cross-bars,
+        //  strips at full strength, and barely any shoulder - the towers start
+        //  where the road stops.
+        surface: { rungSpacing: 104, rungAlpha: 1, stripAlpha: 0.26, sheenAlpha: 0.06, vergeWidth: 70 },
         palette: [ 'cyan', 'magenta', 'yellow', 'green' ]
     },
 
@@ -181,8 +216,15 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'blobs', color: 0x232a58, alpha: 0.7, parallax: 0.04, baseline: -90, height: 70, period: 260, wrap: 620, seed: 8 },
             { shape: 'shards', color: 0x1a1f42, alpha: 0.85, parallax: 0.12, baseline: 15, height: 90, period: 190, wrap: 700, seed: 44 }
         ],
+        //  Structures, not rocks: the one world where something built is
+        //  more surprising than something broken.
+        floaters: { shape: 'ring', color: 0x6274c0, alpha: 0.4, count: 4, size: 34, lowest: 55, highest: 185, parallax: 0.015, seed: 12 },
         specks: { count: 70, color: 0xffffff, alpha: 0.7, radius: 1.6, fall: 18, drift: 0 },
         roadside: { shape: 'shards', color: 0x2a3266, alpha: 0.8, height: 120, spacing: 600, offset: 135, seed: 10 },
+        //  A beam with nothing underneath it. No cross-bars, no reflection and
+        //  hardly a shoulder - just two runners of light travelling away, which
+        //  is the only thing here that says the road is moving at all.
+        surface: { rungAlpha: 0, stripAlpha: 0.34, sheenAlpha: 0, vergeWidth: 34 },
         palette: [ 'magenta', 'cyan', 'orange', 'green' ]
     },
 
@@ -200,8 +242,14 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
             { shape: 'peaks', color: 0x1d0c38, alpha: 0.8, parallax: 0.1, baseline: 13, height: 160, period: 220, wrap: 640, seed: 33 },
             { shape: 'buildings', color: 0x120722, alpha: 0.9, parallax: 0.17, baseline: 19, height: 190, period: 88, wrap: 760, seed: 55 }
         ],
+        //  Fragments of everywhere else, which is what this world is.
+        floaters: { shape: 'crystal', color: 0x8a3ad0, alpha: 0.45, count: 6, size: 28, lowest: 45, highest: 190, parallax: 0.026, seed: 21 },
         specks: { count: 54, color: 0xd8a8ff, alpha: 0.6, radius: 2, fall: 60, drift: 40 },
         roadside: { shape: 'shards', color: 0x3a1c68, alpha: 0.85, height: 165, spacing: 380, offset: 110, seed: 11 },
+        //  Every marking the game has, on one road. Heavy cross-bars a long
+        //  way apart, dashes between them and strips down both sides - which
+        //  is what this world is: pieces of all the others at once.
+        surface: { rungSpacing: 168, rungThickness: 9, rungAlpha: 0.9, dashSpacing: 210, dashLength: 60, stripAlpha: 0.28, sheenAlpha: 0.04, vergeWidth: 96 },
         palette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ]
     }
 };

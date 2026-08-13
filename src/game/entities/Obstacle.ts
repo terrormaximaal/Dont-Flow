@@ -1,6 +1,15 @@
 import { Scene } from 'phaser';
 import {
     COLOR_VALUES,
+    GAP_DEPTH,
+    GAP_FLOOR_ALPHA,
+    GAP_LIP_ALPHA,
+    GAP_LIP_THICKNESS,
+    GAP_WARN_ALPHA,
+    GAP_WARN_BARS,
+    HURDLE_CHEVRON_ALPHA,
+    HURDLE_CHEVRONS,
+    HURDLE_HEIGHT_SCALE,
     ColorId,
     DEPTH_ORBS,
     OBSTACLE_DEPTH,
@@ -11,7 +20,7 @@ import {
     OBSTACLE_FOOT_ALPHA,
     OBSTACLE_STAND_HEIGHT
 } from '../config/constants';
-import { ObstacleKind, ObstacleSpec } from '../config/level';
+import { ObstacleKind, ObstacleProfile, ObstacleSpec } from '../config/level';
 import { barrierCentre, barrierHalfWidth } from '../systems/barrier';
 import { depthScale, fillProjectedQuad, projectX } from '../systems/Projection';
 import { drawStrength, screenYFor } from '../systems/World';
@@ -36,6 +45,9 @@ export class Obstacle
     readonly color: ColorId;
     readonly kind: ObstacleKind;
 
+    /** Whether it can be cleared from above. */
+    readonly profile: ObstacleProfile;
+
     /** True once passed, so it can only count one time. */
     consumed = false;
 
@@ -47,6 +59,7 @@ export class Obstacle
         this.distance = spec.distance;
         this.color = spec.color;
         this.kind = spec.kind;
+        this.profile = spec.profile;
         this.lane = spec.lane;
 
         this.gfx = scene.add.graphics();
@@ -88,6 +101,13 @@ export class Obstacle
         gfx.clear();
         gfx.setAlpha(drawStrength(this.distance, travelled));
 
+        if (this.profile === 'gap')
+        {
+            this.drawGap(gfx, left, right, travelled, scale);
+
+            return y;
+        }
+
         //  Its footprint on the road, which is what grounds it.
         gfx.fillStyle(value, OBSTACLE_FOOT_ALPHA);
         fillProjectedQuad(gfx, left, right, y - (OBSTACLE_DEPTH / 2), y + (OBSTACLE_DEPTH / 2));
@@ -98,8 +118,11 @@ export class Obstacle
         if (baseRight - baseLeft < 2) { return y; }
 
         //  The face standing up from it. Flat and facing the camera, so its top
-        //  corners sit directly above the base ones.
-        const top = y - (OBSTACLE_STAND_HEIGHT * scale);
+        //  corners sit directly above the base ones. A low one stands a
+        //  fraction of the height, which is the only cue the player gets that
+        //  it can be jumped - so it has to be unmistakable.
+        const stand = OBSTACLE_STAND_HEIGHT * (this.profile === 'low' ? HURDLE_HEIGHT_SCALE : 1);
+        const top = y - (stand * scale);
 
         gfx.fillStyle(value, OBSTACLE_FILL_ALPHA);
         gfx.fillRect(baseLeft, top, baseRight - baseLeft, y - top);
@@ -108,6 +131,18 @@ export class Obstacle
         //  large orb - the two mean opposite things on contact.
         gfx.lineStyle(Math.max(1, OBSTACLE_EDGE_THICKNESS * scale), value, 1);
         gfx.strokeRect(baseLeft, top, baseRight - baseLeft, y - top);
+
+        if (this.profile === 'low')
+        {
+            //  Chevrons pointing up the face rather than hatching across it.
+            //  Hatching says "solid"; an arrow pointing over the top says the
+            //  one thing the player needs to know, in no words.
+            this.chevrons(gfx, baseLeft, baseRight, y, top, value, scale);
+
+            void half;
+
+            return y;
+        }
 
         gfx.lineStyle(Math.max(1, 2 * scale), value, OBSTACLE_HATCH_ALPHA);
 
@@ -123,6 +158,79 @@ export class Obstacle
         void half;
 
         return y;
+    }
+
+    /**
+     * A hole in the road.
+     *
+     * Drawn as an absence rather than an object: a dark floor sunk into the
+     * surface, a lit lip along the near edge so it reads as an edge rather than
+     * as a painted rectangle, and warning bars on the approach. Everything else
+     * on this road stands up from it; this is the only thing that goes down,
+     * and it has to say so before the player is on top of it.
+     */
+    private drawGap (
+        gfx: Phaser.GameObjects.Graphics,
+        left: number,
+        right: number,
+        travelled: number,
+        scale: number
+    ): void
+    {
+        const farY = screenYFor(this.distance + (GAP_DEPTH / 2), travelled);
+        const nearY = screenYFor(this.distance - (GAP_DEPTH / 2), travelled);
+
+        //  The hole itself: near black, whatever the world's road is, because
+        //  a hole is not a darker piece of road.
+        gfx.fillStyle(0x05070d, GAP_FLOOR_ALPHA);
+        fillProjectedQuad(gfx, left, right, farY, nearY);
+
+        //  A lit lip along the near edge, catching the same light everything
+        //  else in the game is lit by.
+        gfx.lineStyle(Math.max(1, GAP_LIP_THICKNESS * scale), COLOR_VALUES[this.color], GAP_LIP_ALPHA);
+        gfx.lineBetween(projectX(left, nearY), nearY, projectX(right, nearY), nearY);
+
+        //  Warning bars on the approach, so the hole is announced while there
+        //  is still road left to act on.
+        const warnY = screenYFor(this.distance - GAP_DEPTH, travelled);
+
+        gfx.lineStyle(Math.max(1, 2.5 * scale), COLOR_VALUES[this.color], GAP_WARN_ALPHA * 0.6);
+
+        for (let i = 0; i < GAP_WARN_BARS; i++)
+        {
+            const t = (i + 0.5) / GAP_WARN_BARS;
+            const x = left + ((right - left) * t);
+
+            gfx.lineBetween(projectX(x, warnY), warnY, projectX(x, nearY), nearY);
+        }
+    }
+
+    /** Upward chevrons across a hurdle's face: go over, not around. */
+    private chevrons (
+        gfx: Phaser.GameObjects.Graphics,
+        left: number,
+        right: number,
+        base: number,
+        top: number,
+        value: number,
+        scale: number
+    ): void
+    {
+        const width = right - left;
+        const height = base - top;
+
+        gfx.lineStyle(Math.max(1, 2.5 * scale), 0xffffff, HURDLE_CHEVRON_ALPHA);
+
+        for (let i = 0; i < HURDLE_CHEVRONS; i++)
+        {
+            const cx = left + (width * ((i + 0.5) / HURDLE_CHEVRONS));
+            const arm = width / (HURDLE_CHEVRONS * 2.6);
+
+            gfx.lineBetween(cx - arm, base - (height * 0.25), cx, top + (height * 0.2));
+            gfx.lineBetween(cx, top + (height * 0.2), cx + arm, base - (height * 0.25));
+        }
+
+        void value;
     }
 
     destroy (): void

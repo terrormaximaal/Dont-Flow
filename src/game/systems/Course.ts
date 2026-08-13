@@ -72,20 +72,23 @@ export class Course
      * @param dropColor The drop's colour, or null before its first gate.
      * @param wild      Whether a rainbow drop is in hand, which matches every
      *                  colour there is: each orb scores and no barrier blocks.
+     * @param dropHeight How far off the road the drop is, 0 to 1. High enough
+     *                  and it sails over whatever it is passing.
      */
     update (
         travelled: number,
         dropX: number,
         targetX: number,
         dropColor: ColorId | null,
-        wild = false
+        wild = false,
+        dropHeight = 0
     ): void
     {
         const cullY = GAME_HEIGHT + CULL_MARGIN;
 
         this.updateGates(travelled, dropX, cullY);
-        this.updateObstacles(travelled, dropX, dropColor, wild, cullY);
-        this.updateOrbs(travelled, dropX, targetX, dropColor, wild, cullY);
+        this.updateObstacles(travelled, dropX, dropColor, wild, cullY, dropHeight);
+        this.updateOrbs(travelled, dropX, targetX, dropColor, wild, cullY, dropHeight);
 
         this.finish.update(travelled);
 
@@ -102,13 +105,13 @@ export class Course
         for (let i = this.gates.length - 1; i >= 0; i--)
         {
             const gate = this.gates[i];
-            const y = gate.update(travelled);
+            const y = gate.update(travelled, dropX);
 
             if (!gate.triggered && travelled >= gate.distance)
             {
                 gate.triggered = true;
 
-                this.events.onGate(gate.colorAt(dropX));
+                this.events.onGate(gate.colorAt(dropX, travelled));
             }
 
             if (y > cullY)
@@ -124,7 +127,8 @@ export class Course
         dropX: number,
         dropColor: ColorId | null,
         wild: boolean,
-        cullY: number
+        cullY: number,
+        dropHeight: number
     ): void
     {
         for (let i = this.obstacles.length - 1; i >= 0; i--)
@@ -140,7 +144,20 @@ export class Course
                 //  itself with, so what is hit is what was on screen.
                 const centre = obstacle.trackXAt(travelled);
 
-                if (!wild && obstacle.color !== dropColor && isBlockedBy(dropX, centre, obstacle.halfWidthAt(travelled)))
+                const blocked = isBlockedBy(
+                    dropX,
+                    centre,
+                    obstacle.halfWidthAt(travelled),
+                    dropHeight,
+                    obstacle.profile
+                );
+
+                //  Colour excuses a barrier of the same colour, and a rainbow
+                //  excuses any of them - but neither excuses a hole. There is
+                //  nothing to match: the road is simply not there.
+                const excused = obstacle.profile !== 'gap' && (wild || obstacle.color === dropColor);
+
+                if (!excused && blocked)
                 {
                     this.events.onBlocked(centre, y);
                 }
@@ -160,23 +177,32 @@ export class Course
         targetX: number,
         dropColor: ColorId | null,
         wild: boolean,
-        cullY: number
+        cullY: number,
+        dropHeight: number
     ): void
     {
         for (let i = this.orbs.length - 1; i >= 0; i--)
         {
             const orb = this.orbs[i];
-            const y = orb.update(travelled);
+
+            //  The same question drives both what an orb does and what it is
+            //  worth, so it is asked once: would this orb be taken right now?
+            //  An orb that leans out towards the drop is then always one the
+            //  drop is really about to swallow.
+            const touching = isOrbTouched(dropX, targetX, orb.x, dropHeight);
+
+            const y = orb.update(travelled, dropX, touching);
 
             //  Reaching an orb's distance is only half of it - the drop also has
-            //  to be in the right place across the track, and settling there
-            //  rather than sliding through. Orbs it steers around, or crosses on
-            //  its way somewhere else, are simply left behind.
+            //  to be in the right place across the track, settling there rather
+            //  than sliding through, and on the road rather than over it. Orbs it
+            //  steers around, crosses on its way elsewhere, or jumps clean over
+            //  are simply left behind.
             if (!orb.consumed && travelled >= orb.distance)
             {
                 orb.consumed = true;
 
-                if (isOrbTouched(dropX, targetX, orb.x))
+                if (touching)
                 {
                     this.events.onOrb(orb, wild || orb.color === dropColor, y);
 

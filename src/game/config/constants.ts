@@ -41,24 +41,29 @@ export const DROP_SCREEN_Y = GAME_HEIGHT * 0.78;
 export const BLOCK_LANDSCAPE_QUERY = '(orientation: landscape) and (max-height: 520px)';
 
 // ---------------------------------------------------------------------------
-//  Diagonal projection
+//  Perspective projection
 //
-//  The world is authored straight - lanes and distances - and sheared into a
-//  diagonal corridor only when it is drawn. Collision never sees any of this,
-//  which is what keeps the tilt free to change without touching gameplay.
+//  The world is authored straight - lanes and distances - and put into
+//  perspective only when it is drawn. Collision never sees any of this, which
+//  is what keeps the camera free to change without touching gameplay.
 // ---------------------------------------------------------------------------
 
-/** Where the road converges. Everything ahead runs towards this point. */
+/** How high up the screen the horizon sits: the camera's pitch. */
 export const HORIZON_Y = GAME_HEIGHT * 0.24;
 
 /**
- * The vanishing point's distance left of centre.
+ * The vanishing point's distance left of centre: the camera's yaw.
  *
- * This is what makes the road diagonal: the near end stays under the player
- * while the far end pulls away to one side, so the world reads as turning past
- * the camera rather than sliding down a chute.
+ * Zero, and meant to stay zero. Anything else swings the far end of the road
+ * to one side while its near end stays under the player, which reads as the
+ * whole world being skewed across the screen rather than running away from the
+ * camera. The road is meant to go straight forward from the player to the
+ * middle of the horizon.
+ *
+ * Pitch and yaw are separate: HORIZON_Y above is what gives the view its
+ * height and depth, and it is not affected by this being zero.
  */
-export const VANISH_OFFSET = 120;
+export const VANISH_OFFSET = 0;
 
 /** The depth the projection pivots around: the drop's own line stays put. */
 export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
@@ -202,6 +207,17 @@ export const TRAIL_STAMP_SPACING = 7;
 export const TRAIL_FADE_DISTANCE = 250;
 //  Width of the streak at the drop's own depth, and how far it narrows over its
 //  length - it should thin away behind rather than stop on a line.
+/**
+ * How much a collect thickens the streak, and how far it takes to settle.
+ *
+ * Distance rather than time, so a fast level does not get a shorter surge than
+ * a slow one. Consecutive collects stack it, which is what makes a combo build
+ * visibly without anything having to count.
+ */
+export const TRAIL_SURGE = 0.9;
+export const TRAIL_SURGE_CAP = 2.2;
+export const TRAIL_SURGE_DECAY = 320;
+
 export const TRAIL_WIDTH = 34;
 export const TRAIL_TAPER = 0.6;
 //  Strongest a mark ever is, right under the drop.
@@ -364,6 +380,363 @@ export const LANE_LINE_THICKNESS = 2;
 export const TRACK_EDGE_THICKNESS = 3;
 
 // ---------------------------------------------------------------------------
+//  Lighting
+//
+//  One light for the whole game, pointing up and to the left, which is where
+//  the drop's highlight has always sat. Everything lit reads from this so the
+//  scene agrees with itself.
+// ---------------------------------------------------------------------------
+
+export const LIGHT_X = -0.55;
+export const LIGHT_Y = -0.84;
+
+/** Tightens the lit band into a glancing highlight rather than a lit half. */
+export const LIGHT_FALLOFF = 2.6;
+
+// ---------------------------------------------------------------------------
+//  Road surface
+//
+//  All of this is drawn between the road's flat fill and its markings, and all
+//  of it is projected quads and lines - the same primitives the road itself is
+//  made of, so none of it costs a new pass or a texture.
+// ---------------------------------------------------------------------------
+
+/**
+ * Bands of shade laid over the road, darkest at the horizon.
+ *
+ * A single flat fill gives the eye nothing to measure distance against; this is
+ * aerial perspective, and it is most of what makes the road read as receding
+ * rather than as a painted triangle.
+ */
+export const ROAD_DEPTH_BANDS = 18;
+export const ROAD_DEPTH_ALPHA = 0.5;
+
+/** A soft sheen down the middle of the road, as if the sky were reflected. */
+export const ROAD_SHEEN_LAYERS = 3;
+export const ROAD_SHEEN_ALPHA = 0.05;
+export const ROAD_SHEEN_WIDTH = 0.62;
+
+/** A dark contact line where the road meets the verge, to seat one on the other. */
+export const ROAD_CONTACT_WIDTH = 15;
+export const ROAD_CONTACT_ALPHA = 0.16;
+
+/** Soft light along the road's edges, widest and faintest on the outside. */
+export const EDGE_GLOW_LAYERS = 3;
+export const EDGE_GLOW_ALPHA = 0.12;
+export const EDGE_GLOW_SPREAD = 7;
+
+/**
+ * Light strips running down the road, faster and further apart than the rungs.
+ *
+ * Two rates of movement read as more speed than one, because the eye picks the
+ * difference between them rather than either on its own.
+ */
+export const STRIP_SPACING = 470;
+export const STRIP_LENGTH = 150;
+export const STRIP_WIDTH = 5;
+export const STRIP_ALPHA = 0.16;
+export const STRIP_INSET = 0.24;
+
+// ---------------------------------------------------------------------------
+//  Drop surfacing
+// ---------------------------------------------------------------------------
+
+/** A lit edge where the drop turns away from the light. */
+export const DROP_RIM_ALPHA = 0.75;
+export const DROP_RIM_THICKNESS = 2.4;
+
+/** Light coming back up off the road, along the drop's underside. */
+export const DROP_BOUNCE_ALPHA = 0.3;
+export const DROP_BOUNCE_THICKNESS = 2;
+
+/** A soft core, so the drop reads as full of something rather than painted. */
+export const DROP_CORE_ALPHA = 0.1;
+
+/** The tight glint, drawn as a run of shrinking circles along the light. */
+export const DROP_GLINT_STEPS = 4;
+export const DROP_GLINT_LENGTH = 0.3;
+
+/** The puff of colour thrown off when a gate repaints the drop. */
+export const BLOOM_MOTES = 10;
+export const BLOOM_SPREAD = 46;
+export const BLOOM_SIZE = 7;
+export const BLOOM_DURATION = 340;
+
+// ---------------------------------------------------------------------------
+//  Gate presence
+//
+//  All of it driven by distance travelled rather than the clock, so a portal
+//  breathes with the world and stops dead when the run is paused.
+// ---------------------------------------------------------------------------
+
+/** The portal's resting breath: how deep, and how far the world moves per cycle. */
+export const PORTAL_PULSE_DEPTH = 0.28;
+export const PORTAL_PULSE_PERIOD = 620;
+
+/**
+ * How far out a portal starts reacting to the drop, and how much brighter it
+ * gets by the threshold.
+ *
+ * The point is to answer the player before they arrive: a doorway that only
+ * responds once passed through has told them nothing they could act on.
+ */
+export const PORTAL_REACT_DISTANCE = 900;
+
+/**
+ * How far out a swapping gate starts trading its colours, and how long it takes.
+ *
+ * The start is deliberately the same distance at which a doorway begins
+ * brightening for the lane the drop is in: the gate answers your choice, and
+ * then changes its mind. Anything earlier and the swap happens before the
+ * player has committed to anything, which makes it decoration.
+ *
+ * What is left after the span is the road there is to react in, and it is
+ * enormous compared with what a lane change actually costs - crossing the whole
+ * track takes under a hundred pixels even on the fastest level. That is on
+ * purpose. A twist should cost attention rather than reflexes, and the guard in
+ * test/gates.test.ts measures it against the real levels rather than trusting
+ * these two numbers to stay sensible.
+ */
+export const GATE_SWAP_START = 900;
+export const GATE_SWAP_SPAN = 200;
+
+/**
+ * How much white the doorways wash through as the colours change hands.
+ *
+ * Nearly all the way. At half this the swap read as the doorways going pale
+ * for a moment, which is not an event - a player watching the road would see
+ * the colours were different afterwards and never see them change. The whole
+ * job of the flash is to be the thing that makes them look back up.
+ */
+export const GATE_SWAP_FLASH_ALPHA = 0.85;
+
+/**
+ * The second frame a swapping gate carries, so it can be told apart before it
+ * does anything.
+ *
+ * A twist that gives no warning at all is a trick. This is the warning: the
+ * doorway is drawn twice, and the player learns what a double frame means the
+ * first time one of them swaps.
+ */
+export const GATE_SWAP_FRAME_INSET = 7;
+export const PORTAL_REACT_GAIN = 0.7;
+
+/** Bands of energy climbing the inside of a doorway. */
+export const PORTAL_ENERGY_BANDS = 5;
+export const PORTAL_ENERGY_ALPHA = 0.22;
+export const PORTAL_ENERGY_RISE = 340;
+
+/** The wave of light thrown back down the road as a gate is crossed. */
+export const WAVE_DURATION = 420;
+export const WAVE_THICKNESS = 26;
+export const WAVE_ALPHA = 0.55;
+
+/** A small punch of the camera on crossing. Never a shake. */
+export const GATE_ZOOM = 1.015;
+export const GATE_ZOOM_IN_MS = 70;
+export const GATE_ZOOM_OUT_MS = 160;
+
+// ---------------------------------------------------------------------------
+//  Roadside lighting and atmosphere
+// ---------------------------------------------------------------------------
+
+/**
+ * How far a distant prop fades into the world's own air.
+ *
+ * The road already does this. Props standing beside a road that recedes into
+ * haze while they stay full strength read as cut out and pasted on, which is
+ * most of what made the scenery look flat.
+ *
+ * Scaled by each world's own hazeAlpha at the point of use, because that is
+ * what says how thick its air is. Applied flat, this washed the forest's near
+ * black pines to pale mint - the forest names a light haze colour but lays it
+ * on at 0.16, and the fog has to respect that.
+ */
+export const PROP_FOG = 0.9;
+
+/**
+ * The lit face down the side of a prop turned towards the light: how much
+ * lighter it is, how wide a strip of the prop it covers, and how far towards
+ * the light it sits.
+ *
+ * A strip, not a repaint. At half the prop's width it stops reading as a lit
+ * edge and simply becomes the prop's colour, which turned every silhouette in
+ * the forest grey.
+ */
+export const PROP_LIT_TINT = 0.42;
+
+/** How far the world's haze is brightened before it is used as the light. */
+export const PROP_LIGHT_LIFT = 0.4;
+export const PROP_LIT_WIDTH = 0.3;
+export const PROP_LIT_OFFSET = 0.62;
+
+/** A prop's shadow, cast away from the light along the ground. */
+export const PROP_SHADOW_ALPHA = 0.2;
+export const PROP_SHADOW_LENGTH = 0.5;
+export const PROP_SHADOW_SQUASH = 0.16;
+
+// ---------------------------------------------------------------------------
+//  The jump
+//
+//  Measured in track distance, not seconds. A jump timed in seconds would clear
+//  a different length of road on every level, so an obstacle that could be
+//  cleared on level 1 might be unclearable on level 10 purely because the road
+//  is moving faster. In distance, a jump clears the same ground everywhere.
+// ---------------------------------------------------------------------------
+
+/** How much road one jump covers. */
+export const JUMP_SPAN = 620;
+
+/** How far up the screen the drop rises at the top of the arc. */
+export const JUMP_LIFT = 96;
+
+/**
+ * How high the drop must be to clear a low obstacle, 0 to 1.
+ *
+ * Well inside the arc at both ends, so clearing one is a matter of jumping at
+ * roughly the right time rather than exactly the right frame.
+ */
+export const JUMP_CLEAR_HEIGHT = 0.34;
+
+/** The squash going up and the squash landing, and how long each lasts. */
+export const JUMP_TAKEOFF_SQUASH = 0.26;
+export const JUMP_LANDING_SQUASH = 0.3;
+
+/** The shadow shrinks and fades as the drop climbs, which is how height reads. */
+export const JUMP_SHADOW_SHRINK = 0.55;
+export const JUMP_SHADOW_FADE = 0.6;
+
+/**
+ * How tall a low barrier stands, against a full one.
+ *
+ * Low enough that it reads as something to go over at a glance, without being
+ * so low it stops reading as a barrier at all.
+ */
+export const HURDLE_HEIGHT_SCALE = 0.4;
+
+/** How far along the road a hole runs, and how dark its floor is. */
+export const GAP_DEPTH = 190;
+export const GAP_FLOOR_ALPHA = 0.9;
+
+/** The lit lip along the near edge, which is what stops a hole reading as paint. */
+export const GAP_LIP_THICKNESS = 4;
+export const GAP_LIP_ALPHA = 0.85;
+
+/** Hatched warning bars across the near lip. */
+export const GAP_WARN_BARS = 4;
+export const GAP_WARN_ALPHA = 0.75;
+
+/** Chevrons on a hurdle's face, which say "over" without saying anything. */
+export const HURDLE_CHEVRONS = 3;
+export const HURDLE_CHEVRON_ALPHA = 0.9;
+
+/**
+ * How quickly the road takes up a new pace.
+ *
+ * Eased rather than snapped. A step change in speed on a screen where the only
+ * cue is how fast the ground moves reads as a dropped frame - the player sees
+ * a glitch, not an event. Fast enough to arrive within the first row of the
+ * section, slow enough to be felt happening.
+ */
+export const PACE_SMOOTHING = 3.2;
+
+/** How far the camera pulls back at full boost, and how fast it follows. */
+export const BOOST_ZOOM = 0.965;
+export const BOOST_ZOOM_SMOOTHING = 2.4;
+
+/** An upward flick this long, and this much more vertical than sideways, jumps. */
+export const SWIPE_UP_THRESHOLD = 34;
+
+// ---------------------------------------------------------------------------
+//  Slipstream
+//
+//  Motes streaking past the drop, placed at world distances like everything
+//  else, so they sweep by at exactly the speed the player is travelling and
+//  hold still when the run is paused.
+//
+//  Kept off the road on purpose. The corridor is where the player is reading
+//  orbs and barriers, and speed lines over it would be noise in the one place
+//  that must stay clean.
+// ---------------------------------------------------------------------------
+
+export const SLIP_SPACING = 150;
+export const SLIP_BUDGET = 20;
+export const SLIP_LENGTH = 90;
+export const SLIP_THICKNESS = 2.4;
+export const SLIP_ALPHA = 0.3;
+
+/** How far out from the road's edge they fly, and how far that varies. */
+export const SLIP_OFFSET = 34;
+export const SLIP_SPREAD = 150;
+
+/** Nearer than this is where speed actually reads; beyond it they are dots. */
+export const SLIP_MIN_SCALE = 0.34;
+
+// ---------------------------------------------------------------------------
+//  Vignette
+//
+//  Bands rather than a radial gradient, which Graphics cannot fill. Drawn once
+//  at scene start, not per frame - it never changes.
+// ---------------------------------------------------------------------------
+
+export const VIGNETTE_BANDS = 14;
+
+/**
+ * The alpha of the outermost ring, which is the strength of the whole effect.
+ *
+ * Stated as the edge rather than as a total divided between the rings, because
+ * only one ring covers any given pixel - so the total was never a number
+ * anything could see, and reading it as one made the low-score vignette an
+ * order of magnitude fainter than intended.
+ */
+export const VIGNETTE_ALPHA = 0.2 / VIGNETTE_BANDS;
+
+/**
+ * Above the world and the effects, below the HUD.
+ *
+ * Over the HUD it would darken the score and the pause button - which sits in
+ * the top corner, the darkest part of a vignette.
+ */
+export const VIGNETTE_DEPTH = 30;
+
+// ---------------------------------------------------------------------------
+//  Orb presence
+// ---------------------------------------------------------------------------
+
+/** Bob and spin, both measured against distance travelled. */
+export const ORB_FLOAT = 5;
+export const ORB_FLOAT_PERIOD = 300;
+export const ORB_SPIN_PER_PIXEL = 0.0022;
+
+/** A soft halo in the orb's own colour. */
+export const ORB_GLOW_LAYERS = 3;
+export const ORB_GLOW_ALPHA = 0.1;
+export const ORB_GLOW_SPREAD = 9;
+
+/** Motes circling an orb, so it reads as alive rather than parked. */
+export const ORB_MOTES = 3;
+export const ORB_MOTE_RADIUS = 1.6;
+export const ORB_MOTE_ORBIT = 1.7;
+export const ORB_MOTE_ALPHA = 0.65;
+
+/**
+ * How far out an orb starts answering the drop, and how much it swells by.
+ *
+ * Only ever for an orb the drop is actually lined up with, so the reaction is
+ * a promise the game then keeps.
+ */
+export const ORB_REACT_DISTANCE = 420;
+export const ORB_REACT_SWELL = 0.4;
+
+/**
+ * How far out a lined-up orb starts drifting towards the drop, and how much of
+ * the way it gets. Presentation only: contact is still decided on the orb's
+ * own lane position, which never moves.
+ */
+export const ORB_MAGNET_DISTANCE = 260;
+export const ORB_MAGNET_REACH = 0.85;
+
+// ---------------------------------------------------------------------------
 //  Gameplay colours
 //
 //  The colour a drop carries is an identity ('blue' / 'red'), not a hex value,
@@ -443,6 +816,63 @@ export const COLOR_FINISH_DARK = 0x1b2540;
 export const FINISH_SLOWDOWN_MS = 520;
 
 // ---------------------------------------------------------------------------
+//  Running out
+//
+//  What happens when the bank empties. Deliberately slower and heavier than
+//  the finish: crossing the line is a full stop, and this is the road being
+//  taken away, which should not feel like the same event in a different colour.
+// ---------------------------------------------------------------------------
+
+/**
+ * How long the road takes to stop once the run is over.
+ *
+ * Two and a half times the finish. The extra is the whole effect - it is long
+ * enough to watch, which is what makes it read as slow motion rather than as a
+ * pause, and it gives the player a moment to see what they hit.
+ */
+export const FAIL_SLOWDOWN_MS = 1300;
+
+/** How far the camera creeps in over that stop. Small, and never released. */
+export const FAIL_ZOOM = 1.09;
+
+/** The hit itself: a hard shake, then the colour draining out of the world. */
+export const FAIL_SHAKE_MS = 420;
+export const FAIL_SHAKE_INTENSITY = 0.022;
+
+/** A flash of the loss colour over everything, at the moment of the hit. */
+export const FAIL_FLASH_MS = 340;
+export const COLOR_FAIL_FLASH = 0xff5566;
+
+/** How long the world takes to drain to the fail wash, and how dark that is. */
+export const FAIL_WASH_MS = 900;
+export const FAIL_WASH_ALPHA = 0.42;
+
+/**
+ * The edges closing in as the bank runs low.
+ *
+ * A second vignette in the loss colour, held at zero until the score drops
+ * under the warning line and then breathing in and out. The point is that it
+ * is visible in the corner of the eye while the player is looking at the road,
+ * which a number at the top of the screen is not.
+ */
+export const LOW_VIGNETTE_ALPHA = 0.34;
+
+/**
+ * Enough rings that the ramp between them is not a ramp anyone can see.
+ *
+ * Far more than the ambient vignette needs, and for a reason that is easy to
+ * get wrong: what makes a step visible is the *absolute* jump in alpha between
+ * two neighbouring rings, not the number of rings. The ambient darkening is so
+ * faint that fourteen steps are invisible; this one is twenty times stronger,
+ * so the same fourteen steps read as fourteen concentric rectangles drawn in
+ * the corners. Drawn once at startup, so the count costs nothing per frame.
+ */
+export const LOW_VIGNETTE_BANDS = 60;
+export const LOW_VIGNETTE_FADE_MS = 420;
+export const LOW_PULSE_MS = 760;
+export const LOW_PULSE_DEPTH = 0.45;
+
+// ---------------------------------------------------------------------------
 //  Saving
 // ---------------------------------------------------------------------------
 
@@ -501,10 +931,35 @@ export const OVERLAY_DIM_ALPHA = 0.78;
 export const COLOR_OVERLAY_DIM = 0x060a14;
 
 export const OVERLAY_TITLE_SIZE = 34;
+
+/** The fail panel's heading, which is louder than the level-complete one. */
+export const OVERLAY_FAIL_TITLE_SIZE = 44;
+export const COLOR_FAIL_TITLE = '#ff6b78';
 export const OVERLAY_SCORE_SIZE = 76;
 export const OVERLAY_DETAIL_SIZE = 20;
 export const OVERLAY_BEST_SIZE = 18;
 export const COLOR_NEW_BEST = '#ffc857';
+
+/**
+ * The completion panel's total counting up rather than appearing.
+ *
+ * The score is the whole point of the screen and it was being handed over as a
+ * finished fact. A number that travels is read as something earned; the same
+ * number stamped down is read as a label. Rolled at a rate rather than over a
+ * duration, like the in-game readout, so a big score visibly takes longer.
+ */
+export const OVERLAY_COUNT_RATE = 420;
+export const OVERLAY_COUNT_MAX_MS = 1100;
+
+/**
+ * How the panel's parts arrive.
+ *
+ * The same idea as the home screen: fading a whole panel in as one block is
+ * what an assembled screen looks like. Staggering it by a few frames a line
+ * costs nothing and reads as a result being announced.
+ */
+export const OVERLAY_STAGGER_MS = 80;
+export const OVERLAY_PART_RISE = 14;
 
 export const BUTTON_WIDTH = 220;
 export const BUTTON_HEIGHT = 62;
@@ -512,8 +967,6 @@ export const BUTTON_LABEL_SIZE = 24;
 export const BUTTON_GAP = 14;
 export const COLOR_BUTTON = 0x3fa9f5;
 export const COLOR_BUTTON_LABEL = '#04101f';
-export const COLOR_BUTTON_SECONDARY = 0x243352;
-export const COLOR_BUTTON_SECONDARY_LABEL = '#c3d0e8';
 export const COLOR_BUTTON_LOCKED = 0x141d33;
 export const COLOR_BUTTON_LOCKED_LABEL = '#4a5675';
 
@@ -525,19 +978,137 @@ export const COLOR_BUTTON_LOCKED_LABEL = '#4a5675';
 export const MENU_SCROLL_SPEED = 90;
 
 export const TITLE_LOGO_Y = GAME_HEIGHT * 0.30;
-export const TITLE_DROP_RADIUS = 30;
+export const TITLE_DROP_RADIUS = 34;
 export const TITLE_SIZE = 46;
 export const TITLE_TAGLINE_SIZE = 15;
 export const TITLE_BUTTONS_Y = GAME_HEIGHT * 0.60;
 
 export const MENU_HEADING_SIZE = 26;
-export const MENU_HEADING_Y = 92;
+export const MENU_HEADING_Y = 88;
+
+/** A kicker rule above the heading, the same mark the home screen carries. */
+export const MENU_KICKER_Y = 60;
+export const MENU_KICKER_WIDTH = 76;
+
+/** How far along the game the player is, set under the heading. */
+export const MENU_PROGRESS_Y = 118;
+export const MENU_PROGRESS_SIZE = 13;
 
 /**
  * Level select is a grid, not a list: ten rows in one column ran off the bottom
  * of the screen and took the BACK button with them, which on a touch device
  * left no way out at all.
  */
+// ---------------------------------------------------------------------------
+//  The route
+//
+//  Levels are laid along a winding path rather than in a grid. A grid says
+//  "here is a list of ten things"; a route says "here is a journey, and you
+//  have come this far along it" - which is what the screen is actually for.
+// ---------------------------------------------------------------------------
+
+/** Where the first and last stop sit vertically. */
+export const ROUTE_FIRST_Y = 178;
+export const ROUTE_LAST_Y = 702;
+
+/**
+ * The wave the route runs along: how far it swings either side of centre, how
+ * many full cycles it makes between the first stop and the last, and where in
+ * the cycle it starts.
+ *
+ * Not a whole number of cycles, so the first and last stops sit at different
+ * points on the curve and the route does not look like it closes a loop.
+ */
+export const ROUTE_SWING = 92;
+
+/**
+ * 2.25 cycles from a zero phase, which is not a guess.
+ *
+ * At most cycle counts some pair of consecutive stops straddles a peak of the
+ * wave and lands within a few pixels of the same x - which puts two beads on
+ * what looks like a straight piece of line. Searched across cycle and phase for
+ * the pair that separates the *worst* pair the most: this one leaves every pair
+ * a full swing apart horizontally, and 108px apart in all.
+ */
+export const ROUTE_CYCLES = 2.25;
+export const ROUTE_PHASE = 0;
+
+/** The stop itself, and the ring drawn around the one you would play next. */
+export const ROUTE_NODE_RADIUS = 26;
+export const ROUTE_NODE_RING = 4;
+export const ROUTE_NEXT_PULSE = 6;
+export const ROUTE_NEXT_PULSE_MS = 1100;
+
+/** Type sizes on a stop: the number, and the line under it. */
+export const ROUTE_NUMBER_SIZE = 22;
+export const ROUTE_DETAIL_SIZE = 12;
+
+/** How far the detail line sits from the node's centre, out to its own side. */
+/**
+ * How far out from a stop its score sits.
+ *
+ * Far enough to clear the route on its way out of the bead. At the old
+ * forty-four the line and the first stop's label crossed each other, which
+ * reads as a collision however cleanly the label is drawn on top.
+ */
+export const ROUTE_DETAIL_OFFSET = 56;
+
+/** The path between stops: how thick, and how much of it is glow. */
+export const ROUTE_LINE_WIDTH = 7;
+export const ROUTE_LINE_GLOW = 5;
+export const ROUTE_LINE_STEPS = 14;
+
+/**
+ * Light travelling along the part of the route already walked.
+ *
+ * The one piece of ambient movement this screen has, and it is the right one:
+ * the game is named after flow, so the path the player has flowed along is the
+ * thing that should be moving. Nothing ahead of the furthest level moves at
+ * all, which makes the boundary between reached and not visible without a
+ * single label.
+ */
+export const ROUTE_MOTES = 5;
+export const ROUTE_MOTE_RADIUS = 3.2;
+export const ROUTE_MOTE_ALPHA = 0.9;
+export const ROUTE_MOTE_SECONDS = 7.5;
+
+/** How the stops arrive: staggered down the route, in the order they are walked. */
+export const ROUTE_ENTER_MS = 420;
+export const ROUTE_ENTER_STAGGER = 46;
+export const ROUTE_ENTER_FROM = 0.55;
+
+/** The dip a stop takes when it is pressed, before the screen washes out. */
+export const ROUTE_PRESS_SCALE = 0.88;
+export const ROUTE_PRESS_MS = 110;
+
+// ---------------------------------------------------------------------------
+//  The bead a stop is drawn as
+//
+//  Each one is a window onto the world its level is played in: that world's own
+//  sky over that world's own ground, with a horizon between them. Ten of them
+//  down the route is a preview of the whole game.
+// ---------------------------------------------------------------------------
+
+/** Bands the sky inside a bead is laid in. Enough that no step shows. */
+export const BEAD_BANDS = 26;
+
+/** Where the ground starts, as a fraction of the radius from the centre. */
+export const BEAD_GROUND_LINE = 0.22;
+
+export const BEAD_RING_WIDTH = 2.5;
+export const BEAD_SHEEN_ALPHA = 0.22;
+
+export const BEAD_HALO_LAYERS = 5;
+export const BEAD_HALO_SPREAD = 9;
+export const BEAD_HALO_ALPHA = 0.055;
+
+/** How far a locked bead is washed towards the menu's own sky. */
+export const BEAD_LOCKED_MUTE = 0.8;
+
+/** Alpha of the road already walked, and of the part still locked. */
+export const ROUTE_DONE_ALPHA = 0.85;
+export const ROUTE_LOCKED_ALPHA = 0.16;
+
 export const LEVEL_COLUMNS = 2;
 export const LEVEL_ROW_WIDTH = 150;
 export const LEVEL_ROW_HEIGHT = 66;
@@ -554,6 +1125,9 @@ export const LEVEL_ROW_DETAIL_OFFSET = 15;
 // ---------------------------------------------------------------------------
 
 /** Kept at a comfortable touch size rather than the size of the icon. */
+/** The pause control's own slab. Chrome, not one of the button family. */
+export const COLOR_PAUSE_BUTTON = 0x243352;
+
 export const PAUSE_BUTTON_SIZE = 44;
 export const PAUSE_BUTTON_MARGIN = 14;
 export const PAUSE_BAR_WIDTH = 5;
@@ -585,12 +1159,35 @@ export const SCORE_PER_ORB = 10;
 /**
  * A wrong colour costs double what a right one pays.
  *
- * The score is allowed to go negative rather than being floored at zero: the
- * penalty has to be felt, and hiding it would make a bad run read the same as a
- * cautious one.
+ * The penalty has to be felt, and the score is where it lands. Nothing is
+ * hidden or floored part-way: a bad run reads as a bad run.
  */
 export const WRONG_COLOR_MULTIPLIER = 2;
 export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
+
+/**
+ * What a run starts with.
+ *
+ * The score is not a tally any more, it is a bank: the run begins with this
+ * much and ends the moment it is gone. That one change is what makes every
+ * mistake matter - a tally that goes negative is a number you can shrug at,
+ * where a bank that empties takes the level away from you.
+ *
+ * Six clean mistakes deep, which is the number this is actually chosen for.
+ * Deep enough that a single misread is a scare rather than a death, shallow
+ * enough that a stretch played badly ends the run rather than being coasted
+ * through - and the drop already wears the number as its own size, so a player
+ * running low can see it without looking away from the road.
+ */
+export const SCORE_START = SCORE_PENALTY * 6;
+
+/**
+ * The point below which the run is visibly in trouble.
+ *
+ * Two mistakes from the end, so the warning arrives while there is still
+ * something to do about it rather than as an obituary.
+ */
+export const SCORE_WARNING = SCORE_PENALTY * 2;
 
 /**
  * The combo multiplier: what a streak is actually worth.
@@ -711,6 +1308,94 @@ export const MULTIPLIER_VISIBLE_FROM = 2;
 //  the top of the screen is easy to miss with your eyes on the road.
 export const MULTIPLIER_POP_SCALE = 1.7;
 export const MULTIPLIER_POP_MS = 280;
+
+// ---------------------------------------------------------------------------
+//  HUD polish
+// ---------------------------------------------------------------------------
+
+/**
+ * How fast the score runs up to a new total, in points per second.
+ *
+ * A number that snaps is read as a different number; one that travels is read
+ * as the same number changing, which is the whole reason a counter rolls. Fast
+ * enough to have settled long before the next orb arrives.
+ */
+export const SCORE_ROLL_RATE = 260;
+
+/** Smallest step worth rolling. Below it the roll is slower than just showing it. */
+export const SCORE_ROLL_MIN = 2;
+
+/** The score's own kick when it changes, up and down. */
+export const SCORE_POP_SCALE = 1.22;
+export const SCORE_POP_MS = 190;
+
+/**
+ * How long the score wears the colour of what just happened.
+ *
+ * The colours themselves are the floating-score ones, above: the number that
+ * flies off the hit and the total it lands in have to agree.
+ */
+export const SCORE_TINT_MS = 260;
+
+/**
+ * How far towards that colour the world's own text colour is pulled.
+ *
+ * Low, and set by the tightest world rather than by taste: the desert carries
+ * dark text on a bright orange sky, and past about a quarter of the way the
+ * score stops separating from it. The kick carries the emphasis; this only has
+ * to carry the meaning.
+ */
+export const SCORE_TINT_SHIFT = 0.25;
+
+/** A soft glow behind the readouts, so they sit on any world without a plate. */
+export const HUD_GLOW_BLUR = 12;
+export const HUD_LEVEL_TRACKING = 3;
+
+// ---------------------------------------------------------------------------
+//  Button surfacing
+// ---------------------------------------------------------------------------
+
+/** Corner radius. A hard corner is the fastest way to look unfinished. */
+/**
+ * Corner radius, which at half the height is a pill.
+ *
+ * One shape everywhere. The home screen was reworked into pills and the panels
+ * kept their softer rectangle, which meant the game had two button languages
+ * one tap apart - and the difference read as two builds rather than as a
+ * deliberate distinction. What separates the home screen's PLAY now is that it
+ * is the only gradient in the game, which is a stronger signal than a corner.
+ */
+export const BUTTON_RADIUS = BUTTON_HEIGHT / 2;
+
+/** How much lighter the top of a button is than its foot. */
+export const BUTTON_SHEEN = 0.24;
+
+/** Bands the sheen is stepped through. One step reads as a seam, not a curve. */
+/**
+ * Enough bands that the ramp is not visible as bands.
+ *
+ * Seven of them stepped the alpha by about 0.034 each, which is nearly three
+ * times the point at which a step across a flat surface becomes a line - and
+ * on a pill, where the eye is already following a curve, it read as stripes.
+ * Drawn once per button, so the count costs nothing.
+ */
+export const BUTTON_SHEEN_BANDS = 26;
+
+/** A hairline along the top edge, which is what reads as a raised surface. */
+export const BUTTON_EDGE_ALPHA = 0.4;
+
+/** A soft halo under the primary button, in its own colour. */
+export const BUTTON_GLOW_LAYERS = 5;
+export const BUTTON_GLOW_SPREAD = 9;
+export const BUTTON_GLOW_ALPHA = 0.07;
+
+/** The press: how far it sinks, and how long it takes to come back. */
+export const BUTTON_PRESS_SCALE = 0.955;
+export const BUTTON_PRESS_MS = 90;
+export const BUTTON_RELEASE_MS = 220;
+
+/** Letter spacing on a label. Buttons are set wider than sentences. */
+export const BUTTON_TRACKING = 2;
 
 // ---------------------------------------------------------------------------
 //  Course

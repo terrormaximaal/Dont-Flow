@@ -1,12 +1,22 @@
-import { COMBO_MAX_MULTIPLIER, COMBO_STEP, SCORE_PENALTY, SCORE_PER_ORB } from '../config/constants';
+import {
+    COMBO_MAX_MULTIPLIER,
+    COMBO_STEP,
+    SCORE_PENALTY,
+    SCORE_PER_ORB,
+    SCORE_START,
+    SCORE_WARNING
+} from '../config/constants';
 
 /**
  * Score and combo bookkeeping. Deliberately has no idea what an orb is - it is
  * told that something was collected or missed, and nothing else.
+ *
+ * The score is a bank rather than a tally: the run starts with something in it
+ * and ends when it is empty. Everything below follows from that one decision.
  */
 export class ScoreSystem
 {
-    private score = 0;
+    private score = SCORE_START;
     private combo = 0;
     private bestCombo = 0;
 
@@ -43,19 +53,50 @@ export class ScoreSystem
     /**
      * A wrong colour: costs double a correct one, and ends the streak.
      *
+     * Charged only as far as there is anything left to charge, so the bank
+     * stops at empty rather than running on into numbers that mean nothing. The
+     * amount returned is the amount actually taken, which makes the last
+     * mistake of a run visibly the one that finished it - a floating "-8"
+     * against a full "-20" says "that was the rest of it" without a word.
+     *
      * @returns the points lost, as a negative number.
      */
     penalise (): number
     {
-        this.score -= SCORE_PENALTY;
+        const taken = Math.min(SCORE_PENALTY, this.score);
+
+        this.score -= taken;
         this.combo = 0;
 
-        return -SCORE_PENALTY;
+        return -taken;
     }
 
     getScore (): number
     {
         return this.score;
+    }
+
+    /**
+     * Whether the run is over.
+     *
+     * The whole point of the bank. Asked after every change rather than watched
+     * for, so the run ends on the hit that emptied it and not a frame later.
+     */
+    isOut (): boolean
+    {
+        return this.score <= 0;
+    }
+
+    /**
+     * Whether the run is close enough to the end to be told about it.
+     *
+     * False once it is actually over: at that point the run has its own, much
+     * louder answer, and a warning still showing underneath it would be reading
+     * the state of a run that no longer exists.
+     */
+    isLow (): boolean
+    {
+        return this.score > 0 && this.score <= SCORE_WARNING;
     }
 
     getCombo (): number

@@ -1,6 +1,6 @@
 import { Scene } from 'phaser';
 import {
-    COLOR_BUTTON_SECONDARY,
+    COLOR_PAUSE_BUTTON,
     COLOR_PAUSE_ICON,
     DEPTH_HUD,
     GAME_WIDTH,
@@ -29,7 +29,7 @@ export class PauseButton
         this.container = scene.add.container(x, y);
         this.container.setDepth(DEPTH_HUD);
 
-        const background = scene.add.rectangle(0, 0, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, COLOR_BUTTON_SECONDARY, 0.7);
+        const background = scene.add.rectangle(0, 0, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, COLOR_PAUSE_BUTTON, 0.7);
 
         background.setInteractive({ useHandCursor: true });
         background.on('pointerdown', onPress);
