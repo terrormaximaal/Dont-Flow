@@ -481,6 +481,44 @@ export const PORTAL_PULSE_PERIOD = 620;
  * responds once passed through has told them nothing they could act on.
  */
 export const PORTAL_REACT_DISTANCE = 900;
+
+/**
+ * How far out a swapping gate starts trading its colours, and how long it takes.
+ *
+ * The start is deliberately the same distance at which a doorway begins
+ * brightening for the lane the drop is in: the gate answers your choice, and
+ * then changes its mind. Anything earlier and the swap happens before the
+ * player has committed to anything, which makes it decoration.
+ *
+ * What is left after the span is the road there is to react in, and it is
+ * enormous compared with what a lane change actually costs - crossing the whole
+ * track takes under a hundred pixels even on the fastest level. That is on
+ * purpose. A twist should cost attention rather than reflexes, and the guard in
+ * test/gates.test.ts measures it against the real levels rather than trusting
+ * these two numbers to stay sensible.
+ */
+export const GATE_SWAP_START = 900;
+export const GATE_SWAP_SPAN = 200;
+
+/**
+ * How much white the doorways wash through as the colours change hands.
+ *
+ * Nearly all the way. At half this the swap read as the doorways going pale
+ * for a moment, which is not an event - a player watching the road would see
+ * the colours were different afterwards and never see them change. The whole
+ * job of the flash is to be the thing that makes them look back up.
+ */
+export const GATE_SWAP_FLASH_ALPHA = 0.85;
+
+/**
+ * The second frame a swapping gate carries, so it can be told apart before it
+ * does anything.
+ *
+ * A twist that gives no warning at all is a trick. This is the warning: the
+ * doorway is drawn twice, and the player learns what a double frame means the
+ * first time one of them swaps.
+ */
+export const GATE_SWAP_FRAME_INSET = 7;
 export const PORTAL_REACT_GAIN = 0.7;
 
 /** Bands of energy climbing the inside of a doorway. */

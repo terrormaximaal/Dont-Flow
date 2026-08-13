@@ -101,7 +101,7 @@ export class Course
             {
                 gate.triggered = true;
 
-                this.events.onGate(gate.colorAt(dropX));
+                this.events.onGate(gate.colorAt(dropX, travelled));
             }
 
             if (y > cullY)

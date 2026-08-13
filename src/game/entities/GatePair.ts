@@ -3,6 +3,8 @@ import {
     COLOR_VALUES,
     ColorId,
     DEPTH_GATES,
+    GATE_SWAP_FLASH_ALPHA,
+    GATE_SWAP_FRAME_INSET,
     PORTAL_ARCH_RISE,
     PORTAL_ARCH_STEPS,
     PORTAL_FRAME_THICKNESS,
@@ -30,6 +32,8 @@ import {
 } from '../config/constants';
 import { GatePairSpec } from '../config/level';
 import { gateSideAt, gateSplitX } from '../systems/contact';
+import { gateColorsAt, gateSwapFlash } from '../systems/gates';
+import { mixColor } from '../utils/color';
 import { clamp } from '../utils/math';
 import { depthScale, fillProjectedQuad, projectX } from '../systems/Projection';
 import { drawStrength, screenYFor } from '../systems/World';
@@ -56,12 +60,14 @@ export class GatePair
     private readonly splitX: number;
     private readonly splitAfterLane: 0 | 1;
     private readonly colors: [ ColorId, ColorId ];
+    private readonly swap: boolean;
     private readonly gfx: Phaser.GameObjects.Graphics;
 
     constructor (scene: Scene, spec: GatePairSpec)
     {
         this.distance = spec.distance;
         this.colors = spec.colors;
+        this.swap = spec.swap ?? false;
         this.splitAfterLane = spec.splitAfterLane;
         this.splitX = gateSplitX(spec.splitAfterLane);
 
@@ -69,10 +75,20 @@ export class GatePair
         this.gfx.setDepth(DEPTH_GATES);
     }
 
-    /** Which portal a given track-space x falls inside. */
-    colorAt (x: number): ColorId
+    /**
+     * Which portal a given track-space x falls inside, and what colour it is
+     * *at this point on the course*.
+     *
+     * Asked once, at contact. The picture is drawn every frame from the same
+     * function, which is what stops a swapping gate from ever looking like one
+     * thing and answering as another - the whole mechanic rests on it being a
+     * twist rather than a lie.
+     */
+    colorAt (x: number, travelled: number): ColorId
     {
-        return this.colors[gateSideAt(x, this.splitAfterLane)];
+        const colors = gateColorsAt(this.colors, this.distance, travelled, this.swap);
+
+        return colors[gateSideAt(x, this.splitAfterLane)];
     }
 
     /**
@@ -116,12 +132,23 @@ export class GatePair
         const life = (side: 0 | 1) =>
             breath * (1 + (side === chosen ? closing * PORTAL_REACT_GAIN : 0));
 
-        //  Light on the road comes first, so the doorways sit on top of it.
-        this.spill(gfx, TRACK_LEFT, this.splitX, this.colors[0], y, travelled, life(0));
-        this.spill(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, this.colors[1], y, travelled, life(1));
+        //  The same answer the collision will get, so the picture can never
+        //  disagree with it.
+        const colors = gateColorsAt(this.colors, this.distance, travelled, this.swap);
 
-        this.portal(gfx, TRACK_LEFT, this.splitX, this.colors[0], y, scale, travelled, life(0));
-        this.portal(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, this.colors[1], y, scale, travelled, life(1));
+        //  Washing towards white as the colours change hands. A crossfade on
+        //  its own is something a player watching the road can miss entirely;
+        //  a flash at the moment of the swap is what makes them look back.
+        const flash = gateSwapFlash(this.distance, travelled, this.swap) * GATE_SWAP_FLASH_ALPHA;
+
+        const shown = (side: 0 | 1) => mixColor(COLOR_VALUES[colors[side]], 0xffffff, flash);
+
+        //  Light on the road comes first, so the doorways sit on top of it.
+        this.spill(gfx, TRACK_LEFT, this.splitX, shown(0), y, travelled, life(0));
+        this.spill(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, shown(1), y, travelled, life(1));
+
+        this.portal(gfx, TRACK_LEFT, this.splitX, shown(0), y, scale, travelled, life(0));
+        this.portal(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, shown(1), y, scale, travelled, life(1));
 
         return y;
     }
@@ -134,13 +161,12 @@ export class GatePair
         gfx: Phaser.GameObjects.Graphics,
         left: number,
         right: number,
-        color: ColorId,
+        value: number,
         y: number,
         travelled: number,
         life: number
     ): void
     {
-        const value = COLOR_VALUES[color];
 
         for (let i = 0; i < PORTAL_SPILL_STEPS; i++)
         {
@@ -163,15 +189,13 @@ export class GatePair
         gfx: Phaser.GameObjects.Graphics,
         left: number,
         right: number,
-        color: ColorId,
+        value: number,
         y: number,
         scale: number,
         travelled: number,
         life: number
     ): void
     {
-        const value = COLOR_VALUES[color];
-
         const baseLeft = projectX(left, y);
         const baseRight = projectX(right, y);
         const width = baseRight - baseLeft;
@@ -204,6 +228,24 @@ export class GatePair
         gfx.lineBetween(baseRight, y, baseRight, top);
 
         this.strokeArch(gfx, baseLeft, baseRight, top, rise);
+
+        //  A second frame inside the first, for the gates that swap. This is
+        //  the warning the mechanic needs to be a twist rather than a trick:
+        //  the doorway is drawn twice, and a player learns what that means the
+        //  first time one of them changes its mind.
+        if (this.swap)
+        {
+            const inset = GATE_SWAP_FRAME_INSET * scale;
+
+            if (baseRight - baseLeft > inset * 3)
+            {
+                gfx.lineStyle(Math.max(1, thickness * 0.6), value, 0.75);
+                gfx.lineBetween(baseLeft + inset, y, baseLeft + inset, top + inset);
+                gfx.lineBetween(baseRight - inset, y, baseRight - inset, top + inset);
+
+                this.strokeArch(gfx, baseLeft + inset, baseRight - inset, top + inset, rise * 0.8);
+            }
+        }
 
         this.motes(gfx, baseLeft, baseRight, y, height, value, scale, travelled);
     }

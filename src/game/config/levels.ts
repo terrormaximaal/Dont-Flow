@@ -659,8 +659,9 @@ export const LEVELS: LevelSpec[] = [
         //     7  the gift     - a breath, and a rainbow.
         //     8  the sweep    - a wall that moves into the crossing.
         //     9  holes and hurdles - both answered by leaving the ground.
-        //    10  the gauntlet - pulses in pairs, no quiet rows.
-        //    11  the finale   - all of it, at the level's tightest spacing.
+        //    10  the switch   - a gate that changes its mind. Clean road.
+        //    11  the gauntlet - pulses in pairs, no quiet rows.
+        //    12  the finale   - all of it, at the level's tightest spacing.
         sections: [
             {
                 splitAfterLane: 0,
@@ -735,6 +736,21 @@ export const LEVELS: LevelSpec[] = [
                 gate: [ 1, 3 ],
                 obstacles: 'static',
                 rows: [ '.2.', '..4', '000', '.2.', '4..', '..2', '.4.', 'BBB', '..2', '4..', '.2.', '..4', '000', '.4.', '2..', '..2', '.4.', 'BBB', '..4', '.2.', '4..', '..2' ]
+            },
+            //  10. The switch. The one hazard in the game that is not on the
+            //  road: the gate itself changes its mind on the way in, so a lane
+            //  taken early stops being a lane taken.
+            //
+            //  Introduced the way every other kind was - alone, with nothing
+            //  else to read. The road behind it is clean on purpose: the only
+            //  question in this stretch is which colour you are actually
+            //  carrying, and anything else here would make it a spike rather
+            //  than a lesson.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                gateSwap: true,
+                rows: [ '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..', '.3.', '..2', '3..', '.3.', '..2', '2..', '.3.' ]
             },
             {
                 splitAfterLane: 0,
@@ -844,9 +860,13 @@ export const LEVELS: LevelSpec[] = [
                 speed: 1.28,
                 rows: [ '.1.', '..5', '.5.', '1..', '.1.', '..1', '.5.', '5..', '.1.', '..5', '.5.', '1..', '.5.', '..1', '.1.', '5..', '.5.', '..5', '.1.', '1..', '.5.', '..1', '.1.', '5..', '.5.', '..5' ]
             },
+            //  The one place in the game the switch is asked for on top of
+            //  something else. It is the exam, and by here it has been met on
+            //  its own a whole level ago.
             {
                 splitAfterLane: 1,
                 gate: [ 4, 2 ],
+                gateSwap: true,
                 obstacles: 'static',
                 rows: [ '5..', '..3', '.c.', '5..', '000', '..5', 'e..', '.3.', 'c.c', 'EEE', '..5', '3..', '.e.', '..3', '000', '5..', '.5.', 'c.c', '..3', 'CCC', '.5.', 'e..', '..5', '.3.', '000', '..5' ]
             },

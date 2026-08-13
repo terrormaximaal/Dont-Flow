@@ -105,6 +105,15 @@ export interface SectionSpec
     /** Gate colours, as indices into the level's palette. */
     gate: [ number, number ];
 
+    /**
+     * Whether this section's gate trades its colours as the drop approaches.
+     *
+     * The one hazard in the game that is not on the road. Introduced late and
+     * alone, like every other kind, and marked on the doorway itself so it can
+     * be recognised before it does anything.
+     */
+    gateSwap?: boolean;
+
     /** How obstacles in this section behave. Defaults to static. */
     obstacles?: ObstacleKind;
 
@@ -166,6 +175,9 @@ export interface GatePairSpec
     distance: number;
     splitAfterLane: 0 | 1;
     colors: [ ColorId, ColorId ];
+
+    /** Whether this pair trades its two colours on the way in. */
+    swap?: boolean;
 }
 
 export interface OrbSpec
@@ -283,7 +295,8 @@ export function buildLevel (spec: LevelSpec): Level
         gates.push({
             distance: cursor,
             splitAfterLane: section.splitAfterLane,
-            colors: [ colorAt(section.gate[0]), colorAt(section.gate[1]) ]
+            colors: [ colorAt(section.gate[0]), colorAt(section.gate[1]) ],
+            swap: section.gateSwap
         });
 
         let rowDistance = cursor + GATE_TO_ORBS;
