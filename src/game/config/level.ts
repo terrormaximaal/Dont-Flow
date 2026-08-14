@@ -66,7 +66,23 @@ export type ObstacleKind =
     /** Slides across the track, forcing the lane change to be timed. */
     | 'slider'
     /** Holds its lane but breathes in and out, narrowing the safe gap. */
-    | 'pulse';
+    | 'pulse'
+    /**
+     * A bar turning about its lane.
+     *
+     * Wide across the road when broadside and barely there edge-on, so it is
+     * answered by arriving while it is turned away rather than by going round
+     * it. Never covers the whole road: see ROTOR_REACH.
+     */
+    | 'rotor'
+    /**
+     * There, then not there, then there again.
+     *
+     * The only kind that is ever absent. Paired with the 'gap' profile it is a
+     * disappearing floor - the road itself coming and going - which is the one
+     * obstacle in the game that is neither a colour question nor a lane one.
+     */
+    | 'blinker';
 
 // ---------------------------------------------------------------------------
 //  Authored level format
@@ -366,7 +382,12 @@ export function buildLevel (spec: LevelSpec): Level
                         //  same shape rather than an optional field that only
                         //  one profile ever fills in.
                         color: colorAt(0),
-                        kind: 'static',
+                        //  A hole moves if its section says the obstacles do.
+                        //  It used to be pinned to its lane whatever the
+                        //  section asked for, which quietly made a sliding
+                        //  hole - a hole you have to time rather than step
+                        //  around - impossible to author at all.
+                        kind: section.obstacles ?? 'static',
                         profile: 'gap'
                     });
 

@@ -144,7 +144,11 @@ export class Course
                 //  itself with, so what is hit is what was on screen.
                 const centre = obstacle.trackXAt(travelled);
 
-                const blocked = isBlockedBy(
+                //  A disappearing floor that is shut right now is road, and
+                //  road is not an obstacle. Asked here rather than inside
+                //  isBlockedBy because it is not a question about where the
+                //  drop is: the barrier is not there to be hit.
+                const blocked = obstacle.presentAt(travelled) && isBlockedBy(
                     dropX,
                     centre,
                     obstacle.halfWidthAt(travelled),

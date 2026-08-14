@@ -1353,6 +1353,58 @@ export const SLIDER_PERIOD = 620;
 export const PULSE_AMOUNT = 0.42;
 export const PULSE_PERIOD = 300;
 
+/**
+ * Rotating bars: how far the bar reaches from its pivot, and over what stretch.
+ *
+ * A bar turning about its lane is seen from above as a width that opens and
+ * closes: broadside it reaches its full length across the road, edge-on it is
+ * barely there. That is the whole obstacle - not a thing to steer around, a
+ * thing to arrive at while it is turned away.
+ *
+ * The reach is deliberately less than two lanes. A bar that could cover its own
+ * lane and both neighbours at once would leave a three-lane road with no way
+ * through at all at the top of its sweep, and there is a test holding rotors to
+ * leaving a lane free through the whole turn rather than only where the row
+ * happens to land - the same rule the paired sliders had to learn.
+ */
+export const ROTOR_REACH = 150;
+export const ROTOR_PERIOD = 540;
+
+/**
+ * How a rotating bar is drawn: a beam on a post, not a wall.
+ *
+ * A wall of changing width reads as a pulse with a wide setting, and a player
+ * who reads it that way stands in the next lane and is swept off the road. The
+ * height is where the beam sweeps, as a fraction of how tall a barrier stands.
+ */
+export const ROTOR_BAR_HEIGHT = 0.62;
+export const ROTOR_BAR_THICKNESS = 13;
+export const ROTOR_POST_WIDTH = 9;
+
+/**
+ * Disappearing floor: how much of its cycle the hole is open, and how long.
+ *
+ * A hole that is not always there. Colour has never saved anyone from a hole,
+ * and neither does a lane change if every lane on the row is one - it is a
+ * question of arriving while the road is back.
+ *
+ * Open for less than half the cycle, so the road is solid more often than not.
+ * A floor that is missing most of the time is a hole with interruptions, which
+ * is a different and much worse obstacle.
+ */
+export const BLINK_PERIOD = 480;
+export const BLINK_OPEN = 0.42;
+
+/**
+ * How faintly a closed disappearing floor is still drawn.
+ *
+ * Not nothing. A hole that vanished without a trace would be one the player
+ * could only learn about by falling into it, and the rhythm is the whole
+ * obstacle - it has to be visible while it is shut, or there is nothing to
+ * read. Faint enough that open and closed are never confused at a glance.
+ */
+export const BLINK_GHOST_ALPHA = 0.22;
+
 // ---------------------------------------------------------------------------
 //  Feedback
 // ---------------------------------------------------------------------------
