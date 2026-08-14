@@ -1027,9 +1027,45 @@ export const MENU_PROGRESS_SIZE = 13;
 //  have come this far along it" - which is what the screen is actually for.
 // ---------------------------------------------------------------------------
 
-/** Where the first and last stop sit vertically. */
-export const ROUTE_FIRST_Y = 178;
-export const ROUTE_LAST_Y = 702;
+/** The band of screen the route is seen through, between heading and BACK. */
+export const ROUTE_VIEW_TOP = 150;
+export const ROUTE_VIEW_BOTTOM = 700;
+
+/**
+ * How far inside each edge of that band a stop takes to fade out completely.
+ *
+ * Nothing is clipped: everything on the route fades out over the last stretch
+ * of its approach and reaches the edge with nothing left to cut. Wider than a
+ * bead, so the fade is read as a fade rather than as a flicker at the edge.
+ */
+export const ROUTE_FADE_BAND = 76;
+
+/**
+ * Where the first stop sits vertically.
+ *
+ * A whole fade band below the top of the view, so the first stop is at full
+ * strength when the route is scrolled to the top rather than half dissolved
+ * into the heading. The same clearance is left at the other end, in
+ * routeScrollRange - a route whose two ends are the only stops that can never
+ * be seen properly has them the wrong way round.
+ */
+export const ROUTE_FIRST_Y = ROUTE_VIEW_TOP + ROUTE_FADE_BAND;
+
+/**
+ * How far apart two stops sit down the route.
+ *
+ * The route no longer fits on a screen. Twenty stops at a spacing that keeps
+ * two beads from touching is longer than a phone is tall, so the whole thing
+ * scrolls - which is the honest answer, and a better one than shrinking every
+ * stop until the numbers stop being readable.
+ */
+export const ROUTE_STEP_Y = 64;
+
+export const ROUTE_LAST_Y = ROUTE_FIRST_Y + (ROUTE_STEP_Y * 19);
+
+
+/** How far a drag has to travel before it counts as a scroll and not a tap. */
+export const ROUTE_DRAG_SLOP = 8;
 
 /**
  * The wave the route runs along: how far it swings either side of centre, how
@@ -1050,7 +1086,16 @@ export const ROUTE_SWING = 92;
  * the pair that separates the *worst* pair the most: this one leaves every pair
  * a full swing apart horizontally, and 108px apart in all.
  */
-export const ROUTE_CYCLES = 2.25;
+/**
+ * How many times the route waves from side to side over its whole length.
+ *
+ * Searched rather than chosen, for the value that maximises the smallest
+ * sideways step between two neighbouring stops - two stops at the same x with
+ * a curve between them read as a straight line with beads threaded on it. At
+ * twenty stops this puts every neighbour a full swing apart, which is as far
+ * as the shape allows.
+ */
+export const ROUTE_CYCLES = 4.75;
 export const ROUTE_PHASE = 0;
 
 /** The stop itself, and the ring drawn around the one you would play next. */
@@ -1094,7 +1139,7 @@ export const ROUTE_MOTE_SECONDS = 7.5;
 
 /** How the stops arrive: staggered down the route, in the order they are walked. */
 export const ROUTE_ENTER_MS = 420;
-export const ROUTE_ENTER_STAGGER = 46;
+export const ROUTE_ENTER_STAGGER = 26;
 export const ROUTE_ENTER_FROM = 0.55;
 
 /** The dip a stop takes when it is pressed, before the screen washes out. */

@@ -263,18 +263,58 @@ describe('rowHasSafeLane', () => {
 
 describe('the shipped levels', () => {
 
-    it('are ten, in order', () => {
+    it('are twenty, in order', () => {
 
-        expect(LEVELS).toHaveLength(10);
-        expect(LEVELS.map((level) => level.name)).toEqual([ '1', '2', '3', '4', '5', '6', '7', '8', '9', '10' ]);
+        expect(LEVELS).toHaveLength(20);
+        expect(LEVELS.map((level) => level.name))
+            .toEqual(Array.from({ length: 20 }, (_, i) => String(i + 1)));
 
     });
 
-    it('each have their own world', () => {
+    //  Ten worlds and twenty levels, so every world is played exactly twice -
+    //  once by day and once, much later and much harder, after dark. Twice and
+    //  no more: a third visit is a place the game has run out of ideas about.
+    it('visit each world at most twice, and never twice by the same light', () => {
 
-        const worlds = LEVELS.map((level) => level.world);
+        const seen = new Map<string, string[]>();
 
-        expect(new Set(worlds).size).toBe(LEVELS.length);
+        for (const level of LEVELS)
+        {
+            const key = level.world;
+            const visits = seen.get(key) ?? [];
+
+            visits.push(level.variant ?? 'day');
+            seen.set(key, visits);
+        }
+
+        for (const [ world, visits ] of seen)
+        {
+            expect(visits.length, `world ${world}`).toBeLessThanOrEqual(2);
+            expect(new Set(visits).size, `world ${world} lighting`).toBe(visits.length);
+        }
+
+    });
+
+    //  And far apart. Two visits three levels apart is a repeat; the whole
+    //  point is that the second one arrives long after the first is a memory.
+    it('leave a long way between the two visits to a world', () => {
+
+        const first = new Map<string, number>();
+
+        LEVELS.forEach((level, index) => {
+
+            const seen = first.get(level.world);
+
+            if (seen === undefined)
+            {
+                first.set(level.world, index);
+
+                return;
+            }
+
+            expect(index - seen, `world ${level.world}`).toBeGreaterThanOrEqual(8);
+
+        });
 
     });
 

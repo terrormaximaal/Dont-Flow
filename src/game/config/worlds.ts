@@ -255,4 +255,14 @@ export interface WorldSpec
 
     /** The colours levels in this world draw from. */
     palette: ColorId[];
+
+    /**
+     * The colours the same world draws from after dark.
+     *
+     * A second visit is a harder level, and a harder level carries more colours
+     * - so the night set is always five, where a first visit may be two. Still
+     * the world's own set rather than an arbitrary one: the ice at night is
+     * colder colours, the desert warmer.
+     */
+    nightPalette?: ColorId[];
 }

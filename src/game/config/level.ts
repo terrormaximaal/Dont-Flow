@@ -1,5 +1,6 @@
 import { ColorId, DEFAULT_LANES } from './constants';
 import { WorldId } from './worlds';
+import { WorldVariant } from './worldVariant';
 
 //  The shape of a course, and how an authored level is expanded into one.
 //  The levels themselves live in `levels.ts` - this file is the format, not the
@@ -139,6 +140,14 @@ export interface LevelSpec
 
     /** Which environment this level is played in. */
     world: WorldId;
+
+    /**
+     * The world seen under different light, for a level that revisits one.
+     *
+     * Twenty levels across ten worlds, so every world is played twice. The
+     * second visit is always the harder one, and always after dark.
+     */
+    variant?: WorldVariant;
 
     /**
      * How many lanes the road carries, and so how many characters each of this

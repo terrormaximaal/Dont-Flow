@@ -5,13 +5,13 @@ import {
     GAME_HEIGHT,
     GAME_WIDTH,
     ROUTE_DETAIL_OFFSET,
-    ROUTE_LAST_Y,
     ROUTE_NODE_RADIUS
 } from '../src/game/config/constants';
 import { LEVELS } from '../src/game/config/levels';
 import { WORLDS } from '../src/game/config/worldData';
+import { applyVariant } from '../src/game/config/worldVariant';
 import { WorldId } from '../src/game/config/worlds';
-import { stopAt } from '../src/game/ui/route';
+import { ROUTE_BACK_Y, scrollToShow, stopAt } from '../src/game/ui/route';
 
 /** Roughly how wide 'NOT PLAYED' sets, which is the longest label here. */
 const LABEL_REACH = 66;
@@ -183,7 +183,11 @@ describe('level palettes', () => {
 
         for (const level of LEVELS)
         {
-            expect(level.palette, `level ${level.name}`).toEqual(WORLDS[level.world].palette);
+            //  Against the world as this level sees it: a night visit draws
+            //  from its world's night set, which is the same claim - a level's
+            //  colours come from its world - asked of the right list.
+            expect(level.palette, `level ${level.name}`)
+                .toEqual(applyVariant(WORLDS[level.world], level.variant).palette);
         }
 
     });
@@ -232,20 +236,26 @@ describe('the level select route', () => {
 
     //  The grid this replaced once ran off the bottom of the screen and took
     //  the BACK button with it, leaving a touch device with no way out. The
-    //  shape changed; the way it can fail did not.
-    it('fits every stop, and the way back, on screen', () => {
+    //  route is longer than the screen now and scrolls, so the stops are
+    //  allowed past the frame - the way out is not, and never moves.
+    it('keeps the way back on screen however far the route runs', () => {
+
+        const backBottom = ROUTE_BACK_Y + (BUTTON_HEIGHT / 2);
+
+        expect(backBottom, 'back button').toBeLessThan(GAME_HEIGHT);
+
+    });
+
+    it('brings every stop into view at some scroll position', () => {
 
         for (let i = 0; i < LEVELS.length; i++)
         {
             const stop = stopAt(i, LEVELS.length);
+            const scrolled = stop.y - scrollToShow(i, LEVELS.length);
 
-            expect(stop.y + ROUTE_NODE_RADIUS, `stop ${i}`).toBeLessThan(GAME_HEIGHT);
-            expect(stop.y - ROUTE_NODE_RADIUS, `stop ${i}`).toBeGreaterThan(0);
+            expect(scrolled - ROUTE_NODE_RADIUS, `stop ${i}`).toBeGreaterThan(0);
+            expect(scrolled + ROUTE_NODE_RADIUS, `stop ${i}`).toBeLessThan(GAME_HEIGHT);
         }
-
-        const backBottom = ROUTE_LAST_Y + BUTTON_HEIGHT + 24 + (BUTTON_HEIGHT / 2);
-
-        expect(backBottom, 'back button').toBeLessThan(GAME_HEIGHT);
 
     });
 

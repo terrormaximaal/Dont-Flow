@@ -54,7 +54,17 @@ const BANDS: Array<{ level: number; from: number; to: number }> = [
     { level: 6, from: 50, to: 60 },
     { level: 7, from: 50, to: 60 },
     { level: 8, from: 50, to: 60 },
-    { level: 9, from: 60, to: 75 }
+    { level: 9, from: 60, to: 75 },
+    { level: 10, from: 60, to: 75 },
+    { level: 11, from: 60, to: 75 },
+    { level: 12, from: 60, to: 75 },
+    { level: 13, from: 60, to: 75 },
+    { level: 14, from: 60, to: 75 },
+    { level: 15, from: 75, to: 90 },
+    { level: 16, from: 75, to: 90 },
+    { level: 17, from: 75, to: 90 },
+    { level: 18, from: 75, to: 90 },
+    { level: 19, from: 75, to: 90 }
 ];
 
 describe('how long a level lasts', () => {

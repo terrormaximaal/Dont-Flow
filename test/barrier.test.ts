@@ -139,19 +139,22 @@ describe('every level', () => {
             const crossing = (Math.log(((laneCount() - 1) * laneWidth()) / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000;
             const dragged = SWIPE_REPEAT_DELAY + ((Math.log(laneWidth() / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000);
 
-            //  The tightest the level ever gets, not the level's own default.
-            //  Finales pack their rows closer and the fast stretches run their
-            //  road past faster, and both of those shorten exactly this window
-            //  - so measuring the default would be measuring the easiest part
-            //  of the level and calling it the level.
-            const spacing = Math.min(
-                spec.rowSpacing ?? ORB_ROW_SPACING,
-                ...spec.sections.map((section) => section.rowSpacing ?? spec.rowSpacing ?? ORB_ROW_SPACING)
-            );
+            //  Per section, not per level. The old version took the level's
+            //  tightest spacing and its fastest zone and put them together -
+            //  but those live in different movements and never co-occur, so it
+            //  was rejecting levels for a stretch of road that does not exist.
+            for (const section of spec.sections)
+            {
+                const spacing = section.rowSpacing ?? spec.rowSpacing ?? ORB_ROW_SPACING;
+                const speed = (spec.forwardSpeed ?? FORWARD_SPEED) * (section.speed ?? 1);
+                const available = (spacing / speed) * 1000;
 
-            const speed = (spec.forwardSpeed ?? FORWARD_SPEED)
-                * Math.max(1, ...spec.sections.map((section) => section.speed ?? 1));
+                expect(available, `level ${spec.name}, a section, separate swipes`).toBeGreaterThan(crossing);
+                expect(available, `level ${spec.name}, a section, one drag`).toBeGreaterThan(dragged);
+            }
 
+            const spacing = spec.rowSpacing ?? ORB_ROW_SPACING;
+            const speed = spec.forwardSpeed ?? FORWARD_SPEED;
             const available = (spacing / speed) * 1000;
 
             expect(available, `level ${spec.name}, separate swipes`).toBeGreaterThan(crossing);

@@ -9,13 +9,26 @@ import {
     ROUTE_DETAIL_OFFSET,
     ROUTE_ENTER_MS,
     ROUTE_ENTER_STAGGER,
+    ROUTE_FADE_BAND,
     ROUTE_FIRST_Y,
     ROUTE_LAST_Y,
     ROUTE_NODE_RADIUS,
-    ROUTE_SWING
+    ROUTE_SWING,
+    ROUTE_VIEW_BOTTOM,
+    ROUTE_VIEW_TOP
 } from '../src/game/config/constants';
 import { LEVELS } from '../src/game/config/levels';
-import { isReached, isStartable, routePoint, stopAt, stopState } from '../src/game/ui/route';
+import {
+    edgeFade,
+    isReached,
+    isStartable,
+    ROUTE_BACK_Y,
+    routePoint,
+    routeScrollRange,
+    scrollToShow,
+    stopAt,
+    stopState
+} from '../src/game/ui/route';
 
 const STOPS = LEVELS.map((_, index) => stopAt(index, LEVELS.length));
 
@@ -151,19 +164,34 @@ describe('the screen the route sits on', () => {
 
     //  A screen a touch device cannot leave is the worst bug this layout can
     //  have, and it has happened here once already with the grid this replaces.
-    it('keeps the way out on the screen, clear of the last stop', () => {
+    //  The route is longer than the screen now, so the way out cannot sit
+    //  under the last stop - it is fixed to the frame while the route moves
+    //  behind it. What matters is that it is on the screen and clear of the
+    //  band the route is seen through.
+    it('keeps the way out on the screen, clear of the route', () => {
 
-        const backY = ROUTE_LAST_Y + BUTTON_HEIGHT + 24;
+        const backY = ROUTE_BACK_Y;
 
-        expect(backY - (BUTTON_HEIGHT / 2)).toBeGreaterThan(ROUTE_LAST_Y + ROUTE_NODE_RADIUS);
+        expect(backY - (BUTTON_HEIGHT / 2)).toBeGreaterThanOrEqual(ROUTE_VIEW_BOTTOM);
         expect(backY + (BUTTON_HEIGHT / 2)).toBeLessThan(GAME_HEIGHT);
 
     });
 
-    it('keeps the first and last stops on the screen', () => {
+    it('starts with the first stop in view', () => {
 
-        expect(ROUTE_FIRST_Y - ROUTE_NODE_RADIUS).toBeGreaterThan(0);
-        expect(ROUTE_LAST_Y + ROUTE_NODE_RADIUS).toBeLessThan(GAME_HEIGHT);
+        expect(ROUTE_FIRST_Y - ROUTE_NODE_RADIUS).toBeGreaterThan(ROUTE_VIEW_TOP - ROUTE_NODE_RADIUS);
+        expect(ROUTE_FIRST_Y + ROUTE_NODE_RADIUS).toBeLessThan(ROUTE_VIEW_BOTTOM);
+
+    });
+
+    //  A route that runs past the frame has to be reachable, and the scroll is
+    //  what makes it so - the range must actually cover the overhang.
+    it('scrolls far enough to reach the last stop', () => {
+
+        const overhang = (ROUTE_LAST_Y + ROUTE_NODE_RADIUS) - ROUTE_VIEW_BOTTOM;
+
+        expect(overhang, 'the route runs past the frame').toBeGreaterThan(0);
+        expect(routeScrollRange(), 'the scroll covers it').toBeGreaterThanOrEqual(overhang);
 
     });
 
@@ -264,6 +292,97 @@ describe('what a stop is', () => {
                 expect(isReached(stopState(index, furthest, true)), `stop ${index}`)
                     .toBe(index <= furthest);
             }
+        }
+
+    });
+
+});
+
+describe('a stop reaching the edge of the view', () => {
+
+    //  The heading and the BACK button own the screen outside the band. The
+    //  clip enforces that, but the clip is a Phaser object and cannot be
+    //  checked here - what can be checked is that nothing is asked to be drawn
+    //  out there in the first place.
+    it('is invisible outside the band the route is seen through', () => {
+
+        expect(edgeFade(ROUTE_VIEW_TOP), 'at the top edge').toBe(0);
+        expect(edgeFade(ROUTE_VIEW_TOP - 40), 'above it').toBe(0);
+        expect(edgeFade(ROUTE_VIEW_BOTTOM), 'at the bottom edge').toBe(0);
+        expect(edgeFade(ROUTE_VIEW_BOTTOM + 40), 'below it').toBe(0);
+
+    });
+
+    it('is fully drawn through the middle of it', () => {
+
+        const middle = (ROUTE_VIEW_TOP + ROUTE_VIEW_BOTTOM) / 2;
+
+        expect(edgeFade(middle)).toBe(1);
+
+    });
+
+    //  The whole point of the band: a bead is a disc, and a disc that meets the
+    //  clip with anything left to clip is sliced flat against open sky. The
+    //  fade has to be finished before the bead's near edge reaches the cut.
+    it('has finished fading before a bead can be sliced', () => {
+
+        expect(ROUTE_FADE_BAND).toBeGreaterThan(ROUTE_NODE_RADIUS * 2);
+
+        for (const edge of [ ROUTE_VIEW_TOP, ROUTE_VIEW_BOTTOM ])
+        {
+            const towards = edge === ROUTE_VIEW_TOP ? 1 : -1;
+
+            //  The furthest the centre can be from the edge while any of the
+            //  bead is over it.
+            const touching = edge + (towards * ROUTE_NODE_RADIUS);
+
+            expect(edgeFade(touching), `edge at ${edge}`).toBeLessThan(0.5);
+        }
+
+    });
+
+    it('never jumps, so the fade is read as a fade', () => {
+
+        let last = edgeFade(0);
+
+        for (let y = 0; y <= GAME_HEIGHT; y++)
+        {
+            const now = edgeFade(y);
+
+            expect(Math.abs(now - last), `at ${y}`).toBeLessThan(0.05);
+            last = now;
+        }
+
+    });
+
+});
+
+describe('the two ends of the route', () => {
+
+    //  The stops most likely to be got wrong, because they are the only two
+    //  that sit against a limit rather than in open space. Both were: the last
+    //  one settled half faded into the bottom edge, and the first one sat
+    //  inside the top band and opened dimmed.
+    it('are at full strength when the route is scrolled to reach them', () => {
+
+        const first = stopAt(0, LEVELS.length);
+        const last = stopAt(LEVELS.length - 1, LEVELS.length);
+
+        //  Scrolled to the top is scroll 0; scrolled to the bottom is the full
+        //  range, which moves the route up by that much.
+        expect(edgeFade(first.y), 'the first stop').toBe(1);
+        expect(edgeFade(last.y - routeScrollRange()), 'the last stop').toBe(1);
+
+    });
+
+    it('can both be brought into view from where the screen opens', () => {
+
+        for (const index of [ 0, LEVELS.length - 1 ])
+        {
+            const stop = stopAt(index, LEVELS.length);
+            const seen = edgeFade(stop.y - scrollToShow(index, LEVELS.length));
+
+            expect(seen, `stop ${index}`).toBe(1);
         }
 
     });

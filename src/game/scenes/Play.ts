@@ -34,6 +34,7 @@ import { buildLevel, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { WORLDS } from '../config/worldData';
+import { applyVariant } from '../config/worldVariant';
 import { paintPageBackdrop } from '../systems/PageBackdrop';
 import { Course } from '../systems/Course';
 import { Environment } from '../systems/Environment';
@@ -192,7 +193,9 @@ export class Play extends Scene
         //  them ask where a lane is.
         useLanes(level.lanes ?? DEFAULT_LANES);
 
-        const world = WORLDS[level.world];
+        //  The world as this level asks to see it: by day for a first visit,
+        //  after dark for a second.
+        const world = applyVariant(WORLDS[level.world], level.variant);
 
         paintPageBackdrop(world);
 
