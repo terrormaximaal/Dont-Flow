@@ -30,10 +30,13 @@ import {
     SHAKE_DURATION,
     SHAKE_INTENSITY
 } from '../config/constants';
-import { buildLevel, drainAt, HazardZone, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
+import { buildLevel, drainAt, HazardZone, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
+import { batchAt, BATCH_AHEAD, BATCH_CHUNKS, generateRun, paceAt, SURVIVAL_PALETTE, tierAt } from '../config/survival';
+import { loseLife, isSheltered, SURVIVAL_LIVES } from '../systems/lives';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { WORLDS } from '../config/worldData';
+import { WorldId } from '../config/worlds';
 import { applyVariant } from '../config/worldVariant';
 import { paintPageBackdrop } from '../systems/PageBackdrop';
 import { Course } from '../systems/Course';
@@ -107,6 +110,20 @@ export class Play extends Scene
     /** Which level of LEVELS is being played. Carried across restarts as scene data. */
     private levelIndex = 0;
 
+    /** Whether this is an endless run rather than one of the twenty levels. */
+    private survival = false;
+
+    /** The seed this run was generated from, so it could be replayed. */
+    private seed = 0;
+
+    /** How many chunks have been generated, and how far the road is built to. */
+    private chunksBuilt = 0;
+    private builtTo = 0;
+
+    /** Chances left, and where the last one was spent. */
+    private lives = SURVIVAL_LIVES;
+    private lastLifeAt: number | null = null;
+
     /** This level's forward speed, which may override the global default. */
     private forwardSpeed = FORWARD_SPEED;
 
@@ -163,9 +180,11 @@ export class Play extends Scene
      * Restarting passes the level to play back in, so the same scene serves
      * every level.
      */
-    init (data: { levelIndex?: number })
+    init (data: { levelIndex?: number; survival?: boolean })
     {
         this.save = new SaveSystem();
+
+        this.survival = data?.survival === true;
 
         //  An explicit level wins; without one this is a fresh load, which
         //  resumes wherever the player left off.
@@ -189,6 +208,10 @@ export class Play extends Scene
         this.hazards = [];
         this.owed = 0;
         this.finishDistance = 1;
+        this.lives = SURVIVAL_LIVES;
+        this.lastLifeAt = null;
+        this.chunksBuilt = 0;
+        this.builtTo = 0;
 
         //  Charged per level start, retries included. The menus already gate
         //  this, so failing here means Play was reached some other way - fall
@@ -200,7 +223,9 @@ export class Play extends Scene
             return;
         }
 
-        const level = LEVELS[this.levelIndex];
+        //  An endless run is an ordinary LevelSpec built a batch at a time, so
+        //  everything downstream treats it exactly like one of the twenty.
+        const level = this.survival ? this.beginRun() : LEVELS[this.levelIndex];
 
         this.forwardSpeed = level.forwardSpeed ?? FORWARD_SPEED;
 
@@ -240,6 +265,11 @@ export class Play extends Scene
         //  player cannot miss: it happens where they are already looking.
         this.drop.setScore(this.scoring.getScore());
         this.hud.setScore(this.scoring.getScore());
+
+        if (this.survival)
+        {
+            this.hud.setLives(this.lives);
+        }
 
         //  Every level now begins one mistake from the end, so the warning is
         //  on from the first frame rather than waiting for the first orb to
@@ -343,6 +373,13 @@ export class Play extends Scene
 
             showFloatingScore(this, x, y, gained);
         }
+        else if (isSheltered(this.distance, this.lastLifeAt))
+        {
+            //  A run just put back on its feet is not charged for the row it
+            //  was put back in front of. Without this a life can be spent in
+            //  the moment it is granted.
+            this.drop.flash(COLOR_FLASH, FLASH_DURATION);
+        }
         else
         {
             const lost = this.scoring.penalise();
@@ -367,7 +404,7 @@ export class Play extends Scene
         //  hit that emptied the bank and not on the frame after it - which is
         //  the difference between the fail landing on the thing that caused it
         //  and landing on whatever happened to be under the drop next.
-        if (this.scoring.isOut())
+        if (this.scoring.isOut() && !this.rescue())
         {
             this.onFailed(x, y);
 
@@ -376,6 +413,43 @@ export class Play extends Scene
 
         this.lowVignette.setLow(this.scoring.isLow());
         this.hud.setLow(this.scoring.isLow());
+    }
+
+    /**
+     * Spend a life, if this is a run that has any.
+     *
+     * @returns whether the run carries on. False in the levels, where going
+     *          under is simply the end, and false on the last life.
+     */
+    private rescue (): boolean
+    {
+        if (!this.survival)
+        {
+            return false;
+        }
+
+        const spent = loseLife(this.lives);
+
+        this.lives = spent.lives;
+
+        if (spent.score === null)
+        {
+            return false;
+        }
+
+        this.scoring.setScore(spent.score);
+        this.lastLifeAt = this.distance;
+
+        this.hud.setLives(this.lives);
+        this.hud.setScore(this.scoring.getScore());
+        this.drop.setScore(this.scoring.getScore());
+
+        //  Loud, because a life going is the most important thing that happens
+        //  in a run and it happens while the player is reading the road.
+        this.cameras.main.shake(SHAKE_DURATION * 2, SHAKE_INTENSITY * 1.6);
+        this.effects.haptic(HAPTIC_MISS_MS * 2);
+
+        return true;
     }
 
     /**
@@ -453,8 +527,35 @@ export class Play extends Scene
 
                 this.hud.setVisible(false);
 
-                //  A failed run banks nothing - not the score, which is zero,
-                //  and not the level after it, which has to be finished for.
+                //  An endless run banks its score, because the score is the
+                //  whole point of it - there is nothing else to take away from
+                //  a mode with no finish line. A failed level banks nothing:
+                //  not the score, which is zero, and not the level after it,
+                //  which has to be finished for.
+                if (this.survival)
+                {
+                    //  The peak, not the score at the end. A run ends because
+                    //  it went under, so the final figure is always negative -
+                    //  banking that would file every run in the game as worse
+                    //  than nothing.
+                    const score = this.scoring.getPeak();
+                    const beaten = this.save.recordSurvival(score);
+
+                    new RunFailed(this, {
+                        levelName: beaten ? 'BEST SURVIVAL RUN' : 'SURVIVAL',
+                        //  There is no finish to be a fraction of.
+                        progress: 1,
+                        scored: score,
+                        bestCombo: this.scoring.getBestCombo(),
+                        bestScore: this.save.getSurvivalBest()
+                    }, {
+                        onRetry: () => leaveTo(this, () => this.scene.restart({ survival: true })),
+                        onMenu: () => leaveTo(this, () => this.scene.start('Title'))
+                    }, new EnergySystem(this.save));
+
+                    return;
+                }
+
                 new RunFailed(this, {
                     levelName: LEVELS[this.levelIndex].name,
                     progress: this.distance / this.finishDistance,
@@ -617,10 +718,74 @@ export class Play extends Scene
         //  out. A zone long enough to take a run is the whole point of one.
         //  Marked at the drop rather than at an impact, because there was no
         //  impact - the road simply cost more than the run had.
-        if (this.scoring.isOut())
+        if (this.scoring.isOut() && !this.rescue())
         {
             this.onFailed(this.drop.getX(), DROP_SCREEN_Y);
         }
+    }
+
+    /**
+     * The first batch of an endless run.
+     *
+     * Only the spec comes back here. The course is built from it in the usual
+     * place, and topped up later by extendRun - which is why builtTo is
+     * recorded rather than the batch being laid down twice.
+     */
+    private beginRun (): LevelSpec
+    {
+        this.seed = Math.floor(Math.random() * 0xffffffff);
+        this.chunksBuilt = BATCH_CHUNKS;
+
+        //  A world drawn at random, so two runs in a row do not look the same.
+        const worlds = Object.keys(WORLDS) as WorldId[];
+        const world = worlds[Math.floor(Math.random() * worlds.length)];
+
+        const run = generateRun(this.seed, BATCH_CHUNKS, SURVIVAL_PALETTE, world);
+
+        this.builtTo = buildLevel(run.spec).finishDistance;
+
+        return run.spec;
+    }
+
+    /**
+     * More road, when the run is getting close to the end of what it has.
+     *
+     * Generated from the same seed but a different starting chunk, so the run
+     * keeps climbing tiers across batches rather than restarting its
+     * progression every time it is topped up.
+     */
+    private extendRun (): void
+    {
+        const worlds = Object.keys(WORLDS) as WorldId[];
+
+        const run = generateRun(
+            this.seed + this.chunksBuilt,
+            BATCH_CHUNKS,
+            SURVIVAL_PALETTE,
+            worlds[0]
+        );
+
+        //  The tier the run has actually reached, applied to the batch: the
+        //  generator counts chunks from zero every call, and a run four batches
+        //  in must not be handed tier-zero road again.
+        const tier = tierAt(this.chunksBuilt);
+        const pace = paceAt(tier);
+
+        for (const section of run.spec.sections)
+        {
+            section.rowSpacing = pace.spacing;
+        }
+
+        const batch = batchAt(run.spec, this.builtTo);
+
+        this.course.extend(batch);
+        this.hazardField.setZones([ ...this.hazards, ...batch.hazards ]);
+        this.hazards = [ ...this.hazards, ...batch.hazards ];
+        this.zones = [ ...this.zones, ...batch.zones ];
+
+        this.chunksBuilt += BATCH_CHUNKS;
+        this.builtTo = batch.finishDistance;
+        this.forwardSpeed = pace.speed;
     }
 
     private startLevel (levelIndex: number): void
@@ -646,6 +811,12 @@ export class Play extends Scene
         this.distance += moved;
 
         this.chargeForGround(moved);
+
+        //  Road is laid well before the player could see where it starts.
+        if (this.survival && this.distance > this.builtTo - BATCH_AHEAD)
+        {
+            this.extendRun();
+        }
 
         //  The camera pulls back a little when the road speeds up, which is the
         //  oldest trick there is for making speed felt rather than measured.

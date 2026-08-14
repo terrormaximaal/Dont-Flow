@@ -26,8 +26,9 @@ export interface MenuLayout
 
     taglineY: number;
 
-    /** Centres of the two buttons. */
+    /** Centres of the three buttons. */
     playY: number;
+    survivalY: number;
     levelsY: number;
 
     /** The energy meter, which sits in the reflection rather than above it. */
@@ -37,17 +38,25 @@ export interface MenuLayout
 export const MENU_LAYOUT: MenuLayout = {
     //  High, and with real air under it. The drop used to sit at 0.30 with the
     //  title immediately beneath, which read as an icon with a caption.
-    dropY: GAME_HEIGHT * 0.205,
+    //
+    //  The whole identity then lifted again to make room for a third button.
+    //  Two fit under the wordmark's reflection and three do not - the
+    //  arithmetic is in bandsOf, and it was the layout test rather than a
+    //  screenshot that said so. The choice was between lifting the title and
+    //  crowding the buttons into each other, and a menu is judged on its title.
+    dropY: GAME_HEIGHT * 0.170,
 
-    markTopY: GAME_HEIGHT * 0.320,
-    markMainY: GAME_HEIGHT * 0.418,
+    markTopY: GAME_HEIGHT * 0.285,
+    markMainY: GAME_HEIGHT * 0.383,
 
-    //  Clear of the wordmark's reflection, which hangs below the big word and
-    //  is part of the composition rather than an effect painted over it.
-    taglineY: GAME_HEIGHT * 0.555,
+    //  As low as it can sit without touching the reflection above it, which
+    //  hangs below the big word and is part of the composition rather than an
+    //  effect painted over it.
+    taglineY: GAME_HEIGHT * 0.513,
 
-    playY: GAME_HEIGHT * 0.635,
-    levelsY: (GAME_HEIGHT * 0.635) + BUTTON_HEIGHT + BUTTON_GAP,
+    playY: GAME_HEIGHT * 0.565,
+    survivalY: (GAME_HEIGHT * 0.565) + BUTTON_HEIGHT + BUTTON_GAP,
+    levelsY: (GAME_HEIGHT * 0.565) + ((BUTTON_HEIGHT + BUTTON_GAP) * 2),
 
     meterY: GAME_HEIGHT * 0.875
 };
@@ -91,6 +100,7 @@ export function bandsOf (heights: {
         { name: 'mark reflection', top: reflectionTop, bottom: reflectionTop + (heights.markMain * TITLE_REFLECT_SQUASH) },
         { name: 'tagline', top: MENU_LAYOUT.taglineY - half(heights.tagline), bottom: MENU_LAYOUT.taglineY + half(heights.tagline) },
         { name: 'play', top: MENU_LAYOUT.playY - half(BUTTON_HEIGHT), bottom: MENU_LAYOUT.playY + half(BUTTON_HEIGHT) },
+        { name: 'survival', top: MENU_LAYOUT.survivalY - half(BUTTON_HEIGHT), bottom: MENU_LAYOUT.survivalY + half(BUTTON_HEIGHT) },
         { name: 'levels', top: MENU_LAYOUT.levelsY - half(BUTTON_HEIGHT), bottom: MENU_LAYOUT.levelsY + half(BUTTON_HEIGHT) }
     ];
 }

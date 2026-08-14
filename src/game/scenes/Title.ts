@@ -115,6 +115,21 @@ export class Title extends Scene
 
         play.container.setDepth(DEPTH_HUD);
 
+        //  The second mode, and deliberately the second button. An endless run
+        //  is what a player comes back for once the twenty are done, not what
+        //  they should meet first.
+        const survival = new Button(this, {
+            x: GAME_WIDTH / 2,
+            y: MENU_LAYOUT.survivalY,
+            label: canPlay ? 'SURVIVAL' : 'NO ENERGY',
+            variant: canPlay ? 'ghost' : 'locked',
+            radius: BUTTON_HEIGHT / 2,
+            width: BUTTON_WIDTH + 26,
+            onPress: () => leaveTo(this, () => this.scene.start('Play', { survival: true }))
+        });
+
+        survival.container.setDepth(DEPTH_HUD);
+
         const levels = new Button(this, {
             x: GAME_WIDTH / 2,
             y: MENU_LAYOUT.levelsY,
@@ -129,7 +144,7 @@ export class Title extends Scene
 
         this.meter = new EnergyMeter(this, MENU_LAYOUT.meterY, energy);
 
-        this.enter(mark, tagline, play, levels);
+        this.enter(mark, tagline, play, survival, levels);
 
         arrive(this);
 
@@ -155,6 +170,7 @@ export class Title extends Scene
         mark: TitleMark,
         tagline: Phaser.GameObjects.Text,
         play: Button,
+        survival: Button,
         levels: Button
     ): void
     {
@@ -208,7 +224,7 @@ export class Title extends Scene
             ease: 'Quad.Out'
         });
 
-        [ play, levels ].forEach((button, index) => {
+        [ play, survival, levels ].forEach((button, index) => {
 
             const restingY = button.container.y;
 

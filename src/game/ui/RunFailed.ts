@@ -35,6 +35,16 @@ export interface RunFailedResult
 
     /** Best score stored for this level, or null if it has never been finished. */
     bestScore: number | null;
+
+    /**
+     * What this run scored, when there is no level to have got a fraction of.
+     *
+     * An endless run has no finish, so a percentage is not merely useless but
+     * actively wrong: reporting one meant the panel congratulated every dead
+     * run on being a hundred percent through. Set this and the panel leads on
+     * the score instead, which is the only thing an endless run is for.
+     */
+    scored?: number;
 }
 
 export interface RunFailedActions
@@ -89,12 +99,16 @@ export class RunFailed
         title.setOrigin(0.5);
         layer.add(title);
 
-        //  How far, as a percentage. The one number a failed run has that is
+        //  How far, as a percentage - or what it scored, where there is no
+        //  finish to be a fraction of. The one number a failed run has that is
         //  worth looking at, and the one that makes the next attempt a
         //  comparison rather than a fresh start.
+        const endless = result.scored !== undefined;
         const percent = Math.round(Math.min(1, Math.max(0, result.progress)) * 100);
 
-        const reached = scene.add.text(GAME_WIDTH / 2, centerY - 24, `${percent}%`, {
+        const headline = endless ? `${result.scored}` : `${percent}%`;
+
+        const reached = scene.add.text(GAME_WIDTH / 2, centerY - 24, headline, {
             fontFamily: HUD_FONT,
             fontSize: OVERLAY_TITLE_SIZE * 2,
             color: COLOR_HUD_TEXT
@@ -103,7 +117,9 @@ export class RunFailed
         reached.setOrigin(0.5);
         layer.add(reached);
 
-        const through = scene.add.text(GAME_WIDTH / 2, centerY + 30, `THROUGH LEVEL ${result.levelName}`, {
+        const caption = endless ? result.levelName : `THROUGH LEVEL ${result.levelName}`;
+
+        const through = scene.add.text(GAME_WIDTH / 2, centerY + 30, caption, {
             fontFamily: HUD_FONT,
             fontSize: OVERLAY_DETAIL_SIZE,
             color: COLOR_HUD_DIM

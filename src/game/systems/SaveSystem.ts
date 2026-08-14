@@ -28,6 +28,14 @@ interface SaveData
 
     /** When the current refill interval started, as epoch ms. */
     energyAt: number;
+
+    /**
+     * Best endless run, or null if none has been finished.
+     *
+     * Optional on the stored shape rather than a version bump: an older save
+     * simply has not got one, which reads as "no run yet" and is exactly true.
+     */
+    survivalBest?: number | null;
 }
 
 function emptySave (): SaveData
@@ -38,7 +46,8 @@ function emptySave (): SaveData
         furthestLevel: 0,
         bestScores: new Array(LEVEL_COUNT).fill(null),
         energy: MAX_ENERGY,
-        energyAt: Date.now()
+        energyAt: Date.now(),
+        survivalBest: null
     };
 }
 
@@ -191,6 +200,32 @@ export class SaveSystem
     }
 
     /** @returns the best score, or null if the level has never been finished. */
+    /** The best endless run so far, or null if there has not been one. */
+    getSurvivalBest (): number | null
+    {
+        return this.data.survivalBest ?? null;
+    }
+
+    /**
+     * Records an endless run.
+     *
+     * @returns whether it beat what was there, so the panel can say so.
+     */
+    recordSurvival (score: number): boolean
+    {
+        const best = this.getSurvivalBest();
+
+        if (best !== null && score <= best)
+        {
+            return false;
+        }
+
+        this.data.survivalBest = score;
+        this.persist();
+
+        return true;
+    }
+
     getBestScore (levelIndex: number): number | null
     {
         return this.data.bestScores[clampLevelIndex(levelIndex)] ?? null;

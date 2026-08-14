@@ -1453,6 +1453,18 @@ export const HAZARD_SLASH_THICKNESS = 2;
  */
 export const HAZARD_PLAIN_COLOR = 0xff9b3d;
 
+/**
+ * Where the chances left are drawn, in an endless run.
+ *
+ * Top left, opposite the pause button, and beside the score rather than under
+ * it - the score and the lives are the two things that say how a run is going,
+ * and a player checking one should see the other without moving their eyes.
+ */
+export const HUD_LIVES_X = 30;
+export const HUD_LIVES_Y = 44;
+export const HUD_LIVES_STEP = 26;
+export const HUD_LIVES_RADIUS = 6;
+
 // ---------------------------------------------------------------------------
 //  Feedback
 // ---------------------------------------------------------------------------

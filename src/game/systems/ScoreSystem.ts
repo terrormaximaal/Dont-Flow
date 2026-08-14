@@ -26,6 +26,16 @@ export class ScoreSystem
     private bestCombo = 0;
 
     /**
+     * The highest the score ever reached.
+     *
+     * What an endless run is worth. The score at the end is not: a run ends
+     * *because* it went below zero, so recording that would file every run in
+     * the game as negative, and the better the run the more invisible it would
+     * be. The peak is the thing the player actually achieved.
+     */
+    private peak = SCORE_START;
+
+    /**
      * A matching colour: combo up, then paid at whatever that combo is now
      * worth. Counted first on purpose, so the orb that reaches a new step is
      * itself paid at the new rate - the reward lands on the hit that earned it.
@@ -40,6 +50,7 @@ export class ScoreSystem
         const gained = SCORE_PER_ORB * this.getMultiplier();
 
         this.score += gained;
+        this.peak = Math.max(this.peak, this.score);
 
         return gained;
     }
@@ -88,6 +99,19 @@ export class ScoreSystem
         this.score -= points;
     }
 
+    /**
+     * Put the score back to a given figure.
+     *
+     * Only an endless run uses this, when a life is spent: the run carries on
+     * from a fixed footing rather than from wherever it fell to. The combo goes
+     * with it - a run that has just been rescued is not on a streak.
+     */
+    setScore (score: number): void
+    {
+        this.score = score;
+        this.combo = 0;
+    }
+
     getScore (): number
     {
         return this.score;
@@ -122,6 +146,12 @@ export class ScoreSystem
     getCombo (): number
     {
         return this.combo;
+    }
+
+    /** The highest the score reached. See `peak`. */
+    getPeak (): number
+    {
+        return this.peak;
     }
 
     getBestCombo (): number

@@ -4,6 +4,10 @@ import {
     COLOR_HUD_STROKE,
     COLOR_HUD_TEXT,
     DEPTH_HUD,
+    HUD_LIVES_RADIUS,
+    HUD_LIVES_STEP,
+    HUD_LIVES_X,
+    HUD_LIVES_Y,
     GAME_WIDTH,
     HUD_COMBO_SIZE,
     HUD_FONT,
@@ -29,6 +33,7 @@ import {
     SCORE_TINT_SHIFT
 } from '../config/constants';
 import { WorldSpec } from '../config/worlds';
+import { SURVIVAL_LIVES } from '../systems/lives';
 import { shiftCss } from '../utils/color';
 import { BankMeter } from './BankMeter';
 
@@ -42,6 +47,15 @@ export class Hud
     private readonly levelText: Phaser.GameObjects.Text;
     private readonly scoreText: Phaser.GameObjects.Text;
     private readonly comboText: Phaser.GameObjects.Text;
+
+    /**
+     * The chances left, drawn only in an endless run.
+     *
+     * Built on demand rather than always and hidden: a level has no lives, so a
+     * meter reading three on every level would be promising something the mode
+     * does not offer.
+     */
+    private livesGfx: Phaser.GameObjects.Graphics | null = null;
 
     /**
      * How many mistakes the run can still absorb.
@@ -77,6 +91,12 @@ export class Hud
      */
     private low = false;
 
+    /**
+     * @param levelName What to call this run. Prefixed with LEVEL unless it
+     *                  already reads as a name on its own - an endless run is
+     *                  not level anything, and "LEVEL SURVIVAL" says the mode
+     *                  is one of the twenty.
+     */
     constructor (scene: Scene, levelName: string, world?: WorldSpec)
     {
         this.scene = scene;
@@ -95,7 +115,7 @@ export class Hud
         this.gainColor = shiftCss(text, COLOR_SCORE_GAIN, SCORE_TINT_SHIFT);
         this.lossColor = shiftCss(text, COLOR_SCORE_LOSS, SCORE_TINT_SHIFT);
 
-        this.levelText = scene.add.text(GAME_WIDTH / 2, HUD_LEVEL_MARGIN_TOP, `LEVEL ${levelName}`, {
+        this.levelText = scene.add.text(GAME_WIDTH / 2, HUD_LEVEL_MARGIN_TOP, (/^\d+$/.test(levelName) ? `LEVEL ${levelName}` : levelName), {
             fontFamily: HUD_FONT,
             fontSize: HUD_LEVEL_SIZE,
             color: dim,
@@ -271,6 +291,46 @@ export class Hud
         this.scoreText.setVisible(visible);
         this.comboText.setVisible(visible);
         this.bank.setVisible(visible);
+    }
+
+    /**
+     * How many chances are left.
+     *
+     * Drops rather than a number, and drawn where the eye already is - beside
+     * the score, which is the other thing that says how a run is going. Spent
+     * ones stay as outlines: three of five is a different feeling from three,
+     * and the outline is what carries it.
+     */
+    setLives (lives: number): void
+    {
+        this.livesGfx ??= this.scene.add.graphics().setDepth(DEPTH_HUD);
+
+        const gfx = this.livesGfx;
+
+        gfx.clear();
+
+        for (let i = 0; i < SURVIVAL_LIVES; i++)
+        {
+            const x = HUD_LIVES_X + (i * HUD_LIVES_STEP);
+            const held = i < lives;
+
+            //  A drop, not a heart: it is the thing the player is.
+            if (held)
+            {
+                gfx.fillStyle(0xff5d73, 1);
+                gfx.fillCircle(x, HUD_LIVES_Y + 2, HUD_LIVES_RADIUS);
+                gfx.fillTriangle(
+                    x - HUD_LIVES_RADIUS, HUD_LIVES_Y + 1,
+                    x + HUD_LIVES_RADIUS, HUD_LIVES_Y + 1,
+                    x, HUD_LIVES_Y - (HUD_LIVES_RADIUS * 2)
+                );
+
+                continue;
+            }
+
+            gfx.lineStyle(1.5, 0xff5d73, 0.35);
+            gfx.strokeCircle(x, HUD_LIVES_Y + 2, HUD_LIVES_RADIUS);
+        }
     }
 
     setMultiplier (multiplier: number): void
