@@ -22,10 +22,23 @@ import { LevelSpec } from './level';
 //  combined with anything else.
 //
 //  Levels are authored as sequences of movements rather than as a list of
-//  similar stretches, and they get longer as they get harder: the early ones
-//  run half a minute, the middle ones closer to a minute. `test/pacing.test.ts`
-//  holds each restructured level to its band and guards the ramp - a later
-//  level must never be shorter than the one before it.
+//  similar stretches, and they get longer as they get harder: thirty to forty
+//  seconds for the first three, forty to fifty for the next three, fifty to
+//  sixty for the three after that. `test/pacing.test.ts` holds every level to
+//  its band and guards the ramp - a later level must never be shorter than the
+//  one before it.
+//
+//  Every level opens the same way, and it is not decoration. A run starts at
+//  nothing and ends below zero, so the first wrong colour a player touches is
+//  fatal - which means the opening cannot be a test of anything. It is the
+//  stretch that buys the rest of the level.
+//
+//  The construction is always this: each lane carries only the colour of the
+//  portal it sits behind. Whichever side of the gate the player took, every
+//  orb in front of them is theirs, the colour they are not carrying is never in
+//  a lane they are standing in, and there is no hazard of any kind. A player
+//  who does nothing but hold still comes out of it with three mistakes' worth
+//  banked. `test/opening.test.ts` holds all of that.
 
 export const LEVELS: LevelSpec[] = [
     {
@@ -46,13 +59,14 @@ export const LEVELS: LevelSpec[] = [
         //    5  the gift    - a rainbow, and a dense run to spend it on.
         //    6  the finale  - everything at once, tighter, and then the line.
         sections: [
-            //  1. Intro. One orb at a time with room around it. The first
-            //  thirty seconds of a game teach it, and this teaches exactly one
-            //  thing: that colour is yours.
+            //  1. Intro. The opening every level now has: one colour per lane,
+            //  matching the portal in front of it, so the first thing a player
+            //  learns is that the colour they took is the colour that pays -
+            //  and they learn it while it is impossible to get wrong.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1.', '..', '.2', '..', '1.', '..', '.2', '1.' ]
+                rows: [ '12', '1.', '.2', '12', '1.', '.2', '12', '12' ]
             },
             //  2. The choice. Same pace, but the colours now alternate faster
             //  than a single gate can serve - so which side of the gate you
@@ -125,12 +139,13 @@ export const LEVELS: LevelSpec[] = [
         //    5  the gift   - a feast, generous to whichever colour is carried.
         //    6  the finale - tightest rows in the level, then the line.
         sections: [
-            //  1. Straight in. No settling-in row: a second level can assume
-            //  the first one happened.
+            //  1. Straight in, but still safe. The gate is the other way round
+            //  from level one's, so the lane that pays has swapped sides - the
+            //  same lesson asked again with the answer moved.
             {
                 splitAfterLane: 0,
                 gate: [ 1, 0 ],
-                rows: [ '.1', '2.', '.2', '1.', '.1', '1.', '.2', '2.', '.1', '1.' ]
+                rows: [ '21', '2.', '.1', '21', '2.', '.1', '21', '21', '2.', '.1' ]
             },
             //  2. The switch. The colour that pays moves side on nearly every
             //  row, which is the whole skill of this level introduced on its
@@ -187,19 +202,21 @@ export const LEVELS: LevelSpec[] = [
         //    5  the gift   - a feast down the middle and both shoulders.
         //    6  the finale - the full width, tightly packed, then the line.
         sections: [
-            //  1. The middle. Every orb in the new lane, so the first thing
-            //  the level does is put the player there.
+            //  1. The opening. Three lanes now, and the split still falls after
+            //  the first - so one lane carries the left portal's colour and two
+            //  carry the right's, and whichever was taken there is somewhere to
+            //  stand that pays every time.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '.1.', '...', '.2.', '...', '.1.', '.2.', '.1.', '.2.', '.1.', '.2.' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22' ]
             },
             //  2. The edges. Out to the sides and back, so all three lanes are
             //  used before any of them is asked for quickly.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
-                rows: [ '2..', '..2', '1..', '..1', '.2.', '2..', '..2', '.1.', '1..', '..1', '.2.', '2..', '..1', '1..', '.2.', '..2' ]
+                rows: [ '2..', '..2', '1..', '..1', '.2.', '2..', '..2', '.1.', '1..', '..1', '.2.', '2..', '..1', '1..', '..1' ]
             },
             //  3. Rhythm. A figure that crosses the whole road and repeats -
             //  three lanes make a longer pattern than two, which is most of
@@ -207,7 +224,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.1.', '..1', '.1.', '1..', '.1.', '..1', '.1.', '2..', '.2.', '..2', '.2.', '2..', '.2.', '..2', '.2.' ]
+                rows: [ '1..', '.1.', '..1', '.1.', '1..', '.1.', '..1', '.1.', '2..', '.2.', '..2', '.2.', '2..', '.2.' ]
             },
             //  4. The sweep. One continuous crossing rather than a repeating
             //  figure: the road asks for a single long movement, which is a
@@ -215,7 +232,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
-                rows: [ '2..', '.2.', '..2', '..2', '.2.', '2..', '1..', '.1.', '..1', '..1', '.1.', '1..', '.1.', '..1', '.2.', '2..' ]
+                rows: [ '2..', '.2.', '..2', '..2', '.2.', '2..', '1..', '.1.', '..1', '..1', '.1.', '1..', '.1.', '..1' ]
             },
             //  5. The gift. Three lanes fed at once - wherever the player is,
             //  something pays, and the colour they are not carrying is never in
@@ -223,7 +240,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 0, 1 ],
-                rows: [ '...', '1..', '.1.', '..2', '1.2', '.1.', '..2', '1.2', '.1.', '..2' ]
+                rows: [ '...', '1..', '.1.', '..2', '1.2', '.1.', '..2', '1.2', '.1.' ]
             },
             //  6. The finale. Full width, packed tighter than anything before
             //  it, finishing on a clean run at the line.
@@ -231,7 +248,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
                 rowSpacing: 146,
-                rows: [ '2..', '..1', '.2.', '1..', '..2', '.1.', '2..', '..1', '.2.', '1..', '..2', '.1.', '2..', '..2' ]
+                rows: [ '2..', '..1', '.2.', '1..', '..2', '.1.', '2..', '..1', '.2.', '1..', '..2', '.1.', '2..' ]
             }
         ]
     },
@@ -254,7 +271,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 2 ],
-                rows: [ '..3', '...', '.3.', '...', '3..', '...', '.3.', '..3', '3..', '.3.', '..3', '3..', '.3.', '..3' ]
+                rows: [ '133', '1..', '.33', '133', '1..', '.33', '133', '133', '1..', '.33', '133', '133' ]
             },
             {
                 splitAfterLane: 1,
@@ -304,7 +321,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '.2.', '1..', '..3', '.1.', '2..', '..2', '.3.', '1..', '..1', '.2.', '3..' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             {
                 splitAfterLane: 1,
@@ -377,14 +394,13 @@ export const LEVELS: LevelSpec[] = [
         //  two is unclearable, and `test/hurdles.test.ts` keeps every level out
         //  of it.
         sections: [
-            //  1. Settle. No new idea at all - the level opens on the hazard
-            //  the last one ended on, so the jump arrives into a stretch the
-            //  player already knows how to read.
+            //  1. Settle. The safe opening, and this level needs it more than
+            //  most: the jump arrives a movement later, and meeting a wall you
+            //  cannot steer round with nothing banked is not a lesson.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                obstacles: 'static',
-                rows: [ '1..', '.b.', '..1', '2..', '.a.', '..2', '1.b', '..1', 'a..', '.2.', '..b', '1..', '.1.', 'b..', '..2', '.a.', '3..', '..3', '.c.', '1..' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             //  2. The hurdle. A clear run at each one, with the road empty
             //  either side, so the first thing the player ever does with the
@@ -420,7 +436,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 2 ],
-                rows: [ '...', '1..', '.2.', '..3', '1.3', '.2.', '..3', '1.3', '.2.', '1..', '..3', '.2.', '1.3', '.2.', '..3', '1..', '.2.', '1.3' ]
+                rows: [ '...', '1..', '.2.', '..3', '1.3', '.2.', '..3', '1.3', '.2.', '1..', '..3', '.2.', '1.3', '.2.', '..3' ]
             },
             //  6. Pairs. Two walls on a row leaves one lane rather than two, so
             //  the sideways answer stops being a choice and starts being a
@@ -467,7 +483,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..4', '1.2', '.4.', '2..', '..1', '.2.', '4..', '..2', '1.4', '.1.', '..4', '2..', '.1.', '..2', '4..', '.4.', '1..' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             //  2. The slider. Alone, and slowly: a wall that moves is read
             //  differently from one that does not, and the difference is the
@@ -561,7 +577,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '..1', '2..', '.2.', '..3', '1.3', '.1.', '3..', '..2', '.3.', '1..', '..1', '.2.', '3..' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             //  2. The hole, introduced the way the hurdle was: one at a time,
             //  in a lane you can simply not be in, before any of them asks to
@@ -580,7 +596,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'pulse',
-                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..' ]
+                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.' ]
             },
             //  4. Breathing room. Orbs beside the pulses, so sitting at the far
             //  edge of the road until it passes costs something.
@@ -588,7 +604,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 2, 3 ],
                 obstacles: 'pulse',
-                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'a..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.a.', '3..', '..4' ]
+                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'a..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.a.', '3..' ]
             },
             //  5. The crossing. One continuous movement across the road rather
             //  than a figure that repeats, with walls placed to set the line
@@ -597,13 +613,13 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 2, 0 ],
                 obstacles: 'static',
-                rows: [ '..3', '.3.', '1..', 'b..', '.1.', '..3', '..b', '.3.', '1..', 'd..', '.1.', '..1', '.d.', '3..', '..3', 'b..', '.3.', '..1', '.b.', '1..' ]
+                rows: [ '..3', '.3.', '1..', 'b..', '.1.', '..3', '..b', '.3.', '1..', 'd..', '.1.', '..1', '.d.', '3..', '..3', 'b..', '.3.', '..1', '.b.' ]
             },
             //  6. The gift.
             {
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
-                rows: [ '...', '4..', '.1.', '..3', '4.3', '.1.', '.*.', '..3', '4.1', '.3.', '..1', '4..', '.3.', '4.1', '..3', '.1.', '4..', '..1', '.3.' ]
+                rows: [ '...', '4..', '.1.', '..3', '4.3', '.1.', '.*.', '..3', '4.1', '.3.', '..1', '4..', '.3.', '4.1', '..3', '.1.', '4..', '..1' ]
             },
             //  7. Holes and walls. The two hazards that look nothing alike and
             //  want opposite answers - a wall is a lane to leave, a hole is a
@@ -613,7 +629,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 0, 2 ],
                 obstacles: 'static',
-                rows: [ '1..', '..3', '.b.', '0..', '..1', 'd..', '.0.', '..3', '1..', '.d.', '..0', '3..', '.1.', 'b..', '..0', '.3.', '0..', '..1', '.b.' ]
+                rows: [ '1..', '..3', '.b.', '0..', '..1', 'd..', '.0.', '..3', '1..', '.d.', '..0', '3..', '.1.', 'b..', '..0', '.3.', '0..', '..1' ]
             },
             //  8. The drum. Full-width holes on a beat, evenly enough that the
             //  jumps become a rhythm rather than four separate reactions.
@@ -629,7 +645,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 1, 3 ],
                 obstacles: 'pulse',
-                rows: [ '.2.', 'a.a', '..4', '.2.', 'd.d', '..2', '.4.', 'b.b', '2..', '..4', 'a.a', '.2.', '..4', 'd.d', '.4.', '2..', 'b.b', '..2', '.4.' ]
+                rows: [ '.2.', 'a.a', '..4', '.2.', 'd.d', '..2', '.4.', 'b.b', '2..', '..4', 'a.a', '.2.', '..4', 'd.d', '.4.', '2..', 'b.b', '..2' ]
             },
             //  10. The finale.
             {
@@ -666,7 +682,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '..1', '2..', '.2.', '..3', '1.3', '.1.', '3..', '..2', '.3.', '1..', '..1', '.2.', '3..', '..3', '1.2', '.4.', '..4' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             {
                 splitAfterLane: 0,
@@ -678,25 +694,25 @@ export const LEVELS: LevelSpec[] = [
                 //  being asked about here, and asking two things at once would
                 //  make it a difficulty spike rather than a change of gear.
                 speed: 1.34,
-                rows: [ '.1.', '..2', '.2.', '1..', '.1.', '..1', '.2.', '2..', '.1.', '..2', '.2.', '1..', '.4.', '..1', '.2.', '4..', '.1.', '..4', '.2.', '1..', '.4.', '..2' ]
+                rows: [ '.1.', '..2', '.2.', '1..', '.1.', '..1', '.2.', '2..', '.1.', '..2', '.2.', '1..', '.4.', '..1' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'slider',
-                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.3.', '..2', 'a..', '.2.', '..3', 'd..', '.3.', '..2', 'a..', '.3.' ]
+                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.3.', '..2' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 2, 3 ],
                 obstacles: 'pulse',
-                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.c.', '3..', '..4', '.b.', '4..', '..3' ]
+                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.' ]
             },
             {
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
                 obstacles: 'static',
-                rows: [ '4..', '..1', '.b.', '4..', '..4', 'b.b', '.1.', '..4', 'c.c', '1..', '..1', 'b..', '.4.', '..1', 'd.d', '.4.', '..4', 'b.b', '.1.', '..4', 'c.c', '.1.' ]
+                rows: [ '4..', '..1', '.b.', '4..', '..4', 'b.b', '.1.', '..4', 'c.c', '1..', '..1', 'b..', '.4.', '..1' ]
             },
             //  6. The hurdles, evenly spaced for the first time in the game.
             //  Level six taught that the jump exists; this asks for it on a
@@ -710,7 +726,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 2, 1 ],
-                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2', '..4', '.2.', '3..', '..2', '.4.', '3.4', '.2.', '..3' ]
+                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2' ]
             },
             //  8. The sweep. Sliders alternating sides with the orbs placed
             //  across from them, so the road asks for a crossing that the wall
@@ -725,7 +741,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 3, 1 ],
                 obstacles: 'slider',
-                rows: [ '4..', '..2', 'a..', '.4.', '..4', '..d', '2..', '.2.', 'a..', '..4', '.4.', '..b', '2..', '..2', 'a..', '.4.', '..4', '..d', '.2.', '2..', 'b..', '..4' ]
+                rows: [ '4..', '..2', 'a..', '.4.', '..4', '..d', '2..', '.2.', 'a..', '..4', '.4.', '..b', '2..', '..2', 'a..' ]
             },
             //  9. The two hazards colour cannot answer, alternating - a hole
             //  and a hurdle want the same input and look nothing alike, so this
@@ -750,13 +766,13 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 0,
                 gate: [ 1, 2 ],
                 gateSwap: true,
-                rows: [ '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..', '.3.', '..2', '3..', '.3.', '..2', '2..', '.3.' ]
+                rows: [ '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..' ]
             },
             {
                 splitAfterLane: 0,
                 gate: [ 0, 3 ],
                 obstacles: 'pulse',
-                rows: [ '1..', '..4', 'a.a', '.1.', '..1', 'd.d', '4..', '.4.', 'a.a', '..1', '.1.', 'd.d', '4..', '..4', 'a.a', '.1.', '..1', 'd.d', '.4.', '4..', 'a.a', '..1' ]
+                rows: [ '1..', '..4', 'a.a', '.1.', '..1', 'd.d', '4..', '.4.', 'a.a', '..1', '.1.', 'd.d', '4..', '..4', 'a.a' ]
             },
             {
                 splitAfterLane: 1,
@@ -797,25 +813,25 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '..4', '2..', '.5.', '..3', '1.3', '.1.', '3..', '..2', '.4.', '1..', '..5', '.2.', '3..', '..3', '1.2', '.4.', '..4', '5..', '.1.', '..5', '.3.' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'slider',
-                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'e..', '.3.', '..2', 'a..', '.2.', '..3', 'd..', '.3.', '..2', 'e..', '.2.', '..3', 'a..', '.3.', '..2' ]
+                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'e..', '.3.', '..2', 'a..', '.2.', '..3', 'd..', '.3.', '..2', 'e..', '.2.' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 2, 3 ],
                 obstacles: 'pulse',
-                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.c.', '3..', '..4', '.b.', '4..', '..3', 'c..', '.4.', '..3', '.b.' ]
+                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.c.', '3..', '..4', '.b.', '4..', '..3' ]
             },
             {
                 splitAfterLane: 0,
                 gate: [ 3, 4 ],
                 obstacles: 'static',
-                rows: [ '4..', '..5', '.c.', '4..', '..4', 'b.b', '.5.', '..4', 'c.c', '5..', '..5', 'b..', '.4.', '..5', 'd.d', '.4.', '..4', 'e.e', '.5.', '..4', 'c.c', '.5.', '4..', '..5', 'b.b', '.4.' ]
+                rows: [ '4..', '..5', '.c.', '4..', '..4', 'b.b', '.5.', '..4', 'c.c', '5..', '..5', 'b..', '.4.', '..5', 'd.d', '.4.', '..4', 'e.e', '.5.', '..4', 'c.c', '.5.' ]
             },
             {
                 splitAfterLane: 1,
@@ -832,7 +848,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 2, 1 ],
-                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2', '..4', '.2.', '3..', '..2', '.4.', '3.4', '.2.', '..3', '5..', '.5.', '..5', '3.5' ]
+                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2', '..4', '.2.', '3..', '..2', '.4.', '3.4', '.2.', '..3', '5..' ]
             },
             {
                 splitAfterLane: 1,
@@ -840,7 +856,7 @@ export const LEVELS: LevelSpec[] = [
                 obstacles: 'slider',
                 //  One slider to a row - see level nine's eighth movement for
                 //  why a pair of them is not a narrow gap but a closed one.
-                rows: [ '4..', '..2', 'a..', '.4.', '..4', 'd..', '2..', '.2.', '..a', '..4', '.4.', 'b..', '2..', '..2', 'e..', '.4.', '..4', '..d', '.2.', '2..', 'b..', '..4', '.2.', 'a..', '..2', '.4.' ]
+                rows: [ '4..', '..2', 'a..', '.4.', '..4', 'd..', '2..', '.2.', '..a', '..4', '.4.', 'b..', '2..', '..2', 'e..', '.4.', '..4', '..d', '.2.', '2..', 'b..', '..4', '.2.' ]
             },
             //  9. The two hazards that share no answer at all: a breathing wall
             //  is a lane to leave, a hole is a lane to leave the ground in, and
@@ -849,7 +865,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
                 obstacles: 'pulse',
-                rows: [ '4..', '..1', '.b.', '0..', '..4', 'd..', '.0.', '..1', '4..', '.d.', '..0', '1..', '.4.', 'b..', '..0', '.1.', '0..', '..4', '.b.', '1..', '..0', 'd..', '.4.', '..1', '.0.', '4..' ]
+                rows: [ '4..', '..1', '.b.', '0..', '..4', 'd..', '.0.', '..1', '4..', '.d.', '..0', '1..', '.4.', 'b..', '..0', '.1.', '0..', '..4', '.b.', '1..', '..0', 'd..', '.4.' ]
             },
             //  10. The run home. The level opens up one last time before the
             //  two hardest stretches in the game, so the ending has somewhere
@@ -858,7 +874,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 0,
                 gate: [ 0, 4 ],
                 speed: 1.28,
-                rows: [ '.1.', '..5', '.5.', '1..', '.1.', '..1', '.5.', '5..', '.1.', '..5', '.5.', '1..', '.5.', '..1', '.1.', '5..', '.5.', '..5', '.1.', '1..', '.5.', '..1', '.1.', '5..', '.5.', '..5' ]
+                rows: [ '.1.', '..5', '.5.', '1..', '.1.', '..1', '.5.', '5..', '.1.', '..5', '.5.', '1..', '.5.', '..1', '.1.', '5..', '.5.', '..5', '.1.', '1..', '.5.', '..1', '.1.' ]
             },
             //  The one place in the game the switch is asked for on top of
             //  something else. It is the exam, and by here it has been met on

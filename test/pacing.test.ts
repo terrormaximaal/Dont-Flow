@@ -32,22 +32,29 @@ export function durationOf (index: number): number
 /**
  * What each level should run to.
  *
- * Three bands, and every level is in one of them: the early levels are short
- * enough to want another straight away, the middle ones long enough to have a
- * middle, and the late ones long enough that finishing is an achievement rather
- * than a formality.
+ * Three bands, widening as the game goes on: the early levels are short enough
+ * to want another straight away, the middle ones long enough to have a middle,
+ * and the late ones long enough that finishing is an achievement rather than a
+ * formality.
+ *
+ * These are the durations the rework asks for rather than the ones the levels
+ * happened to have. Several were over rather than under - the restructuring
+ * that came before this had already made the back half longer than the brief
+ * now wants it - so bringing them into band meant taking rows out, not adding
+ * them, and the rows came out of the middle of movements rather than out of
+ * whole movements, so every level keeps its shape.
  */
 const BANDS: Array<{ level: number; from: number; to: number }> = [
-    { level: 0, from: 30, to: 45 },
-    { level: 1, from: 30, to: 45 },
-    { level: 2, from: 30, to: 45 },
-    { level: 3, from: 45, to: 60 },
-    { level: 4, from: 45, to: 60 },
-    { level: 5, from: 45, to: 60 },
-    { level: 6, from: 45, to: 60 },
-    { level: 7, from: 60, to: 90 },
-    { level: 8, from: 60, to: 90 },
-    { level: 9, from: 60, to: 90 }
+    { level: 0, from: 30, to: 40 },
+    { level: 1, from: 30, to: 40 },
+    { level: 2, from: 30, to: 40 },
+    { level: 3, from: 40, to: 50 },
+    { level: 4, from: 40, to: 50 },
+    { level: 5, from: 40, to: 50 },
+    { level: 6, from: 50, to: 60 },
+    { level: 7, from: 50, to: 60 },
+    { level: 8, from: 50, to: 60 },
+    { level: 9, from: 60, to: 75 }
 ];
 
 describe('how long a level lasts', () => {
