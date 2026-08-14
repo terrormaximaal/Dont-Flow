@@ -518,6 +518,18 @@ export const GATE_SWAP_FLASH_ALPHA = 0.85;
  * doorway is drawn twice, and the player learns what a double frame means the
  * first time one of them swaps.
  */
+/**
+ * The grille across a barred doorway.
+ *
+ * Drawn in the doorway's own colour: the point of a sealed gate is that it is
+ * still a gate. It says what colour it would have given and it still gives it,
+ * so going through is a decision rather than an accident. Heavy enough to read
+ * as shut from as far off as the doorway reads as a doorway.
+ */
+export const GATE_BARS = 5;
+export const GATE_BAR_THICKNESS = 5;
+export const GATE_BAR_ALPHA = 0.85;
+
 export const GATE_SWAP_FRAME_INSET = 7;
 export const PORTAL_REACT_GAIN = 0.7;
 

@@ -11,6 +11,9 @@ import {
     PORTAL_GLOW_ALPHA,
     PORTAL_GLOW_LAYERS,
     PORTAL_GLOW_SPREAD,
+    GATE_BAR_ALPHA,
+    GATE_BAR_THICKNESS,
+    GATE_BARS,
     PORTAL_HEIGHT,
     PORTAL_INNER_ALPHA,
     PORTAL_MOTE_ALPHA,
@@ -61,6 +64,9 @@ export class GatePair
     private readonly splitAfterLane: 0 | 1;
     private readonly colors: [ ColorId, ColorId ];
     private readonly swap: boolean;
+
+    /** The barred doorway, if either is. See GatePairSpec.sealed. */
+    private readonly sealed: 0 | 1 | undefined;
     private readonly gfx: Phaser.GameObjects.Graphics;
 
     constructor (scene: Scene, spec: GatePairSpec)
@@ -68,6 +74,7 @@ export class GatePair
         this.distance = spec.distance;
         this.colors = spec.colors;
         this.swap = spec.swap ?? false;
+        this.sealed = spec.sealed;
         this.splitAfterLane = spec.splitAfterLane;
         this.splitX = gateSplitX(spec.splitAfterLane);
 
@@ -89,6 +96,19 @@ export class GatePair
         const colors = gateColorsAt(this.colors, this.distance, travelled, this.swap);
 
         return colors[gateSideAt(x, this.splitAfterLane)];
+    }
+
+    /**
+     * Whether the doorway this x is heading for is barred.
+     *
+     * A side rather than a colour. The bars are welded to the doorway, so a
+     * pair that also traded its colours would move the seal off the thing it is
+     * drawn on - which is why a gate is never given both at once, and why there
+     * is a test saying so.
+     */
+    isSealed (x: number): boolean
+    {
+        return this.sealed !== undefined && gateSideAt(x, this.splitAfterLane) === this.sealed;
     }
 
     /**
@@ -150,7 +170,58 @@ export class GatePair
         this.portal(gfx, TRACK_LEFT, this.splitX, shown(0), y, scale, travelled, life(0));
         this.portal(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, shown(1), y, scale, travelled, life(1));
 
+        if (this.sealed !== undefined)
+        {
+            this.bars(
+                gfx,
+                this.sealed === 0 ? TRACK_LEFT : this.splitX,
+                this.sealed === 0 ? this.splitX : TRACK_LEFT + TRACK_WIDTH,
+                shown(this.sealed),
+                y,
+                scale
+            );
+        }
+
         return y;
+    }
+
+    /**
+     * The bars across a doorway that has been closed off.
+     *
+     * Drawn in the doorway's own colour rather than in a warning one, because
+     * the point of a sealed gate is that it is still a gate: it says what
+     * colour it would have given, and it will still give it, and going through
+     * anyway is a decision rather than an accident. Enough of them, and heavy
+     * enough, that the doorway reads as shut from as far off as it reads as a
+     * doorway at all.
+     */
+    private bars (
+        gfx: Phaser.GameObjects.Graphics,
+        left: number,
+        right: number,
+        value: number,
+        y: number,
+        scale: number
+    ): void
+    {
+        const top = y - (PORTAL_HEIGHT * scale);
+        const thickness = Math.max(1, GATE_BAR_THICKNESS * scale);
+
+        for (let i = 0; i < GATE_BARS; i++)
+        {
+            const t = (i + 0.5) / GATE_BARS;
+            const at = y - ((y - top) * t);
+
+            gfx.lineStyle(thickness, value, GATE_BAR_ALPHA);
+            gfx.lineBetween(projectX(left, at), at, projectX(right, at), at);
+        }
+
+        //  Two uprights, so it reads as a grille rather than as a ladder.
+        for (const x of [ left + ((right - left) / 3), left + ((right - left) * 2 / 3) ])
+        {
+            gfx.lineStyle(thickness, value, GATE_BAR_ALPHA);
+            gfx.lineBetween(projectX(x, y), y, projectX(x, top), top);
+        }
     }
 
     /**

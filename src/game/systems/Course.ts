@@ -111,6 +111,16 @@ export class Course
             {
                 gate.triggered = true;
 
+                //  A barred doorway costs what a wall costs and repaints the
+                //  drop anyway. Charging without repainting would leave the
+                //  player carrying the last section's colour into this one,
+                //  which turns one missed reading into a section of unmatchable
+                //  orbs - a mistake should cost what it costs and then be over.
+                if (gate.isSealed(dropX))
+                {
+                    this.events.onBlocked(dropX, y);
+                }
+
                 this.events.onGate(gate.colorAt(dropX, travelled));
             }
 

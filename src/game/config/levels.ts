@@ -1650,10 +1650,18 @@ export const LEVELS: LevelSpec[] = [
                 gate: [ 2, 4 ],
                 rows: [ '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.' ]
             },
-            //  8. The drum.
+            //  8. The door that is not one.
+            //
+            //  Two doorways, and the wide one is barred. Sealing the
+            //  narrow half would reward doing nothing; sealing the half
+            //  that covers two of the three lanes asks the player to
+            //  have looked. Forcing it costs what a wall costs and still
+            //  repaints the drop, so a missed reading is a price rather
+            //  than the end of the run.
             {
                 splitAfterLane: 0,
                 gate: [ 4, 1 ],
+                gateSealed: 1,
                 obstacles: 'static',
                 rows: [ '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2' ]
             },

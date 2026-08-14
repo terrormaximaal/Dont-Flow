@@ -131,6 +131,18 @@ export interface SectionSpec
      */
     gateSwap?: boolean;
 
+    /**
+     * Which half of this section's gate is barred, if either is.
+     *
+     * A pair that looks at a glance like any other and is not: one of the two
+     * doorways has been closed off. Fair rather than cruel, and deliberately
+     * not the obvious version of a fake gate - a doorway that showed one colour
+     * and gave another would be a lie, and the whole gate mechanic rests on
+     * being a twist rather than one (see GatePair.colorAt). This one tells the
+     * complete truth and asks whether the player is reading or remembering.
+     */
+    gateSealed?: 0 | 1;
+
     /** How obstacles in this section behave. Defaults to static. */
     obstacles?: ObstacleKind;
 
@@ -220,6 +232,16 @@ export interface GatePairSpec
 
     /** Whether this pair trades its two colours on the way in. */
     swap?: boolean;
+
+    /**
+     * A doorway that is barred, if one of them is.
+     *
+     * The bars are real and drawn from as far off as the doorway is. Forcing
+     * one costs what a wrong colour costs, and still repaints the drop - the
+     * player comes out the other side poorer rather than stranded, which is
+     * what keeps a missed reading a mistake instead of the end of the run.
+     */
+    sealed?: 0 | 1;
 }
 
 export interface OrbSpec
@@ -412,7 +434,8 @@ export function buildLevel (spec: LevelSpec): Level
             distance: cursor,
             splitAfterLane: section.splitAfterLane,
             colors: [ colorAt(section.gate[0]), colorAt(section.gate[1]) ],
-            swap: section.gateSwap
+            swap: section.gateSwap,
+            sealed: section.gateSealed
         });
 
         let rowDistance = cursor + GATE_TO_ORBS;
