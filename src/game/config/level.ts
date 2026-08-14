@@ -135,6 +135,23 @@ export interface SectionSpec
     obstacles?: ObstacleKind;
 
     /**
+     * Score this section costs per thousand pixels crossed, if it costs any.
+     *
+     * A place rather than an object: nothing to steer around, and the only
+     * answers are to cross it quickly and to have arrived with enough score to
+     * pay. See HazardZone.
+     */
+    drain?: number;
+
+    /**
+     * The palette colour the drain applies to, if it applies to only one.
+     *
+     * Left out, the section costs whatever the drop is carrying. Set, it is the
+     * colour rule asked backwards: the one colour here that must not be worn.
+     */
+    drainColor?: number;
+
+    /**
      * One string per row, one character per lane:
      *
      *   '.'      empty
@@ -238,6 +255,9 @@ export interface Level
     /** Stretches of road the drop moves through faster or slower than usual. */
     zones: SpeedZone[];
 
+    /** Stretches of road that cost score to be in. */
+    hazards: HazardZone[];
+
     finishDistance: number;
 }
 
@@ -256,6 +276,76 @@ export interface SpeedZone
 
     /** Multiplier on the level's own forward speed. */
     speed: number;
+}
+
+/**
+ * A stretch of course that costs the player score to be in.
+ *
+ * The first hazard that is not a thing to steer around or jump over: it is a
+ * place, and the only answers to it are to cross it quickly and to be carrying
+ * enough score to afford it. Score is the survival condition, so a long enough
+ * drain is fatal on its own - which is what makes a stretch of empty road worth
+ * being afraid of.
+ *
+ * Held as distances for the same reason a speed zone is: what the game asks at
+ * any moment is "what is this costing me *here*".
+ */
+export interface HazardZone
+{
+    from: number;
+    to: number;
+
+    /**
+     * Score lost per thousand track pixels crossed.
+     *
+     * A rate over distance rather than over time, so a zone costs the same on
+     * every level and cannot be made cheap by a section that runs fast. It is
+     * also the only figure that makes a zone's total cost knowable while
+     * authoring: a nine hundred pixel zone at 20 costs eighteen points.
+     */
+    drain: number;
+
+    /**
+     * The colour this zone objects to, if it objects to only one.
+     *
+     * Without it the zone drains whatever the drop is carrying, which is a
+     * place that is simply expensive. With it the zone is a question about
+     * colour again, but asked backwards: every other coloured thing in the game
+     * wants to be matched, and this one wants to be avoided.
+     */
+    color?: ColorId;
+}
+
+/**
+ * What a point on the course costs per thousand pixels, for a drop carrying
+ * `color`.
+ *
+ * Pure and total, like speedAt: any distance has an answer, and a level with no
+ * zones answers zero everywhere. Zones add rather than override - a coloured
+ * hazard laid inside a plain one should cost both, and taking the first match
+ * would silently make the second free.
+ *
+ * A null colour is a drop between gates, carrying nothing. A plain drain still
+ * charges it; a coloured one has nothing to object to.
+ */
+export function drainAt (zones: HazardZone[], distance: number, color: ColorId | null): number
+{
+    let rate = 0;
+
+    for (const zone of zones)
+    {
+        if (distance < zone.from || distance >= zone.to)
+        {
+            continue;
+        }
+
+        if (zone.color === undefined || zone.color === color)
+        {
+            rate += zone.drain;
+        }
+    }
+
+    return rate;
 }
 
 /**
@@ -308,6 +398,7 @@ export function buildLevel (spec: LevelSpec): Level
     const colorAt = (index: number): ColorId => spec.palette[index] ?? spec.palette[0];
 
     const zones: SpeedZone[] = [];
+    const hazards: HazardZone[] = [];
 
     let cursor = LEAD_IN;
     let lastRowDistance = cursor;
@@ -420,6 +511,19 @@ export function buildLevel (spec: LevelSpec): Level
             zones.push({ from: sectionStart, to: lastRowDistance, speed: section.speed });
         }
 
+        //  A drain claims the same road its rows do, and never the gate: a
+        //  player cannot be charged for the doorway they were made to walk
+        //  through, and the gate is where the colour is chosen.
+        if (section.drain !== undefined && section.drain > 0)
+        {
+            hazards.push({
+                from: sectionStart,
+                to: lastRowDistance,
+                drain: section.drain,
+                color: section.drainColor === undefined ? undefined : colorAt(section.drainColor)
+            });
+        }
+
         cursor = lastRowDistance + SECTION_GAP;
     }
 
@@ -429,6 +533,7 @@ export function buildLevel (spec: LevelSpec): Level
         obstacles,
         powerUps,
         zones,
+        hazards,
         finishDistance: lastRowDistance + FINISH_GAP
     };
 }

@@ -25,6 +25,7 @@ function runPastOrb (targetLane: number, height: number): number
         obstacles: [],
         powerUps: [],
         zones: [],
+        hazards: [],
         finishDistance: 100000
     };
 
@@ -56,6 +57,7 @@ function courseWith (profile: 'full' | 'low' | 'gap', onBlocked: () => void): Co
         obstacles: [ { distance: 1000, lane: 1, color: 'red', kind: 'static', profile } ],
         powerUps: [],
         zones: [],
+        hazards: [],
         finishDistance: 100000
     };
 

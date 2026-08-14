@@ -1405,6 +1405,42 @@ export const BLINK_OPEN = 0.42;
  */
 export const BLINK_GHOST_ALPHA = 0.22;
 
+/**
+ * How a drain zone is drawn.
+ *
+ * A drain the player cannot see is not a hazard but a bug they will report as
+ * one. The wash is the ground being tinted; the bands are bars across it, held
+ * at fixed points along the course so they sit still on the road rather than
+ * crawling with the camera; the edges are where it starts and stops.
+ *
+ * Faint. A zone covers a long stretch of road and everything that matters -
+ * orbs, gates, barriers - still has to be read through it.
+ */
+export const HAZARD_WASH_ALPHA = 0.17;
+export const HAZARD_BAND_ALPHA = 0.13;
+export const HAZARD_BAND_SPACING = 130;
+export const HAZARD_EDGE_ALPHA = 0.75;
+export const HAZARD_EDGE_THICKNESS = 3;
+
+/**
+ * Marks leaning against the direction of travel, across each band.
+ *
+ * The part of a zone that means "do not" without relying on hue. A coloured
+ * hazard has to say which colour it objects to, so its wash is that colour -
+ * and a green zone washed green would otherwise read as a place to go.
+ */
+export const HAZARD_SLASHES = 6;
+export const HAZARD_SLASH_ALPHA = 0.3;
+export const HAZARD_SLASH_THICKNESS = 2;
+
+/**
+ * What a zone with no colour of its own is drawn in: a hostile amber.
+ *
+ * Also the colour of every zone's edges, coloured or not, so the frame always
+ * means hazard even when the fill inside it is inviting.
+ */
+export const HAZARD_PLAIN_COLOR = 0xff9b3d;
+
 // ---------------------------------------------------------------------------
 //  Feedback
 // ---------------------------------------------------------------------------

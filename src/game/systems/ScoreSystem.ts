@@ -74,6 +74,20 @@ export class ScoreSystem
         return -SCORE_PENALTY;
     }
 
+    /**
+     * Score bled away by being somewhere expensive.
+     *
+     * Not a mistake, so it leaves the combo alone: a player crossing a drain
+     * zone cleanly is still collecting cleanly, and taking their run away from
+     * them for walking a road the level put in front of them would be reading
+     * the wrong thing as an error. It can still kill - score below zero is
+     * still out, and that is the whole threat of a long zone.
+     */
+    drain (points: number): void
+    {
+        this.score -= points;
+    }
+
     getScore (): number
     {
         return this.score;

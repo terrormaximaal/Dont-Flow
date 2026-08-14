@@ -193,11 +193,18 @@ describe('every level', () => {
 
                 for (const row of section.rows)
                 {
-                    //  Full-height sliders only. A sliding hurdle is answered
-                    //  by leaving the ground rather than by finding the lane
-                    //  between them, so a row of those is not relying on a gap
-                    //  and cannot be robbed of one.
-                    const sliders = [ ...row ].filter((c) => 'abcde'.includes(c)).length;
+                    //  Walls and holes, not hurdles. A sliding hurdle is
+                    //  answered by leaving the ground rather than by finding
+                    //  the lane between them, so a row of those is not relying
+                    //  on a gap and cannot be robbed of one.
+                    //
+                    //  A sliding hole counts. It used to be impossible to
+                    //  author one and this rule was written when it was, so it
+                    //  looked only at 'abcde' - but a hole travels on the same
+                    //  clock as a wall and shuts the lane between a pair in
+                    //  exactly the same way, and now that a hole can move the
+                    //  omission is a trap rather than a simplification.
+                    const sliders = [ ...row ].filter((c) => 'abcde0'.includes(c)).length;
 
                     expect(sliders, `level ${spec.name} row "${row}"`).toBeLessThanOrEqual(1);
                 }

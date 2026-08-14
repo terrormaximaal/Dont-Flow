@@ -30,7 +30,7 @@ import {
     SHAKE_DURATION,
     SHAKE_INTENSITY
 } from '../config/constants';
-import { buildLevel, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
+import { buildLevel, drainAt, HazardZone, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { WORLDS } from '../config/worldData';
@@ -49,6 +49,7 @@ import { OrientationGuard } from '../systems/OrientationGuard';
 import { PowerUps } from '../systems/PowerUps';
 import { SaveSystem } from '../systems/SaveSystem';
 import { ScoreSystem } from '../systems/ScoreSystem';
+import { HazardField } from '../systems/HazardField';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Trail } from '../systems/Trail';
 import { rainbowAt } from '../utils/color';
@@ -113,7 +114,23 @@ export class Play extends Scene
     private distance = 0;
 
     /** Stretches of this level that run at their own pace. */
+    private hazardField: HazardField;
+
     private zones: SpeedZone[] = [];
+
+    /** Stretches of road that cost score to be in. */
+    private hazards: HazardZone[] = [];
+
+    /**
+     * Score owed to a drain zone but not yet taken, below a whole point.
+     *
+     * Drain is a rate over distance, so all but the shortest frames owe a
+     * fraction. Kept and carried rather than rounded each frame: rounding down
+     * would make a zone free on a fast machine and rounding up would make it
+     * cost several times its rate, and either way the price would depend on the
+     * frame rate rather than on the road.
+     */
+    private owed = 0;
 
     /**
      * The pace actually being run at, easing towards whatever the course asks
@@ -169,6 +186,8 @@ export class Play extends Scene
         this.rainbowUntil = 0;
         this.pace = 1;
         this.zones = [];
+        this.hazards = [];
+        this.owed = 0;
         this.finishDistance = 1;
 
         //  Charged per level start, retries included. The menus already gate
@@ -201,6 +220,7 @@ export class Play extends Scene
 
         this.environment = new Environment(this, world);
         this.track = new TrackScroller(this, world);
+        this.hazardField = new HazardField(this);
         this.roadside = world.roadside ? new Roadside(this, world.roadside, world.hazeColor, world.hazeAlpha) : null;
         this.floaters = world.floaters ? new Floaters(this, world.floaters) : null;
         this.slipstream = new Slipstream(this, world.trackEdge);
@@ -232,6 +252,8 @@ export class Play extends Scene
         const course = buildLevel(level);
 
         this.zones = course.zones;
+        this.hazards = course.hazards;
+        this.hazardField.setZones(course.hazards);
         this.finishDistance = course.finishDistance;
 
         //  Nine rows' worth, whatever this level's rows are spaced at.
@@ -558,6 +580,49 @@ export class Play extends Scene
         });
     }
 
+    /**
+     * Takes what the road under the drop costs to be on.
+     *
+     * Charged over the distance actually covered, so a zone costs the same
+     * whatever the frame rate did and whatever pace the section runs at. The
+     * fraction left over is carried to the next frame rather than rounded.
+     */
+    private chargeForGround (moved: number): void
+    {
+        const rate = drainAt(this.hazards, this.distance, this.drop.getColorId());
+
+        if (rate <= 0)
+        {
+            return;
+        }
+
+        this.owed += (rate * moved) / 1000;
+
+        const points = Math.floor(this.owed);
+
+        if (points <= 0)
+        {
+            return;
+        }
+
+        this.owed -= points;
+        this.scoring.drain(points);
+
+        this.hud.setScore(this.scoring.getScore());
+        this.drop.setScore(this.scoring.getScore());
+        this.hud.setLow(this.scoring.isLow());
+        this.lowVignette.setLow(this.scoring.isLow());
+
+        //  The same end a wrong colour reaches, by the same rule: below zero is
+        //  out. A zone long enough to take a run is the whole point of one.
+        //  Marked at the drop rather than at an impact, because there was no
+        //  impact - the road simply cost more than the run had.
+        if (this.scoring.isOut())
+        {
+            this.onFailed(this.drop.getX(), DROP_SCREEN_Y);
+        }
+    }
+
     private startLevel (levelIndex: number): void
     {
         leaveTo(this, () => this.scene.restart({ levelIndex }));
@@ -576,7 +641,11 @@ export class Play extends Scene
         //  The course's own pace here, eased into rather than stepped to.
         this.pace = easeTowards(this.pace, speedAt(this.zones, this.distance), PACE_SMOOTHING, dt);
 
-        this.distance += this.forwardSpeed * this.speed.scale * this.pace * dt;
+        const moved = this.forwardSpeed * this.speed.scale * this.pace * dt;
+
+        this.distance += moved;
+
+        this.chargeForGround(moved);
 
         //  The camera pulls back a little when the road speeds up, which is the
         //  oldest trick there is for making speed felt rather than measured.
@@ -588,6 +657,7 @@ export class Play extends Scene
 
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);
+        this.hazardField.update(this.distance);
         this.floaters?.update(this.distance);
         this.roadside?.update(this.distance);
         this.slipstream.update(this.distance);
