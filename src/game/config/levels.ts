@@ -349,11 +349,18 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
-                obstacles: 'static',
-                //  6. Pairs. Two barriers on a row for the first time, which
-                //  leaves exactly one lane rather than two - the same rule
-                //  asking for precision instead of a choice.
-                rows: [ '.2.', 'a.a', '..1', 'b.b', '.3.', 'a.a', '1..', 'c.c', '..2', 'a.a', '.1.', 'b.b', '..3', 'a.a', '.2.', 'c.c' ]
+                obstacles: 'slider',
+                //  6. The sweep. The first wall in the game that moves, and it
+                //  arrives here rather than two levels later because a moving
+                //  blocker is what the middle of the game is for: the answer is
+                //  still "be somewhere else", but where else is no longer
+                //  standing still while you decide.
+                //
+                //  One slider to a row, never two. Every slider runs off the
+                //  same clock and so sways the same way at the same moment,
+                //  which means a pair does not leave a moving gap between them -
+                //  it leaves one that closes.
+                rows: [ '.2.', '..1', 'a..', '.3.', '..2', '..c', '.1.', '..3', 'a..', '.2.', '..1', '..c', '.3.', '..2', 'a..', '.1.' ]
             },
             {
                 splitAfterLane: 0,
@@ -374,25 +381,19 @@ export const LEVELS: LevelSpec[] = [
         rowSpacing: 152,
         //  Static barriers, now regularly, and orbs tucked in beside them.
         //
-        //  Also where the jump is taught. A hurdle spans the whole road, so
-        //  there is no lane to steer into and the only way through is over -
-        //  which is the lesson, and it is taught by a wall the player cannot
-        //  misread rather than by a line of text. Introduced alone, in the
-        //  quietest part of the level, before it is ever mixed with anything.
+        //  And the first barrier that moves without going anywhere. A pulsing
+        //  wall never reaches the lane next door, so what it costs is nerve
+        //  rather than room - which makes it the gentlest timing question the
+        //  game has, and the right one for the level where a player is learning
+        //  to control the road rather than to survive it.
         //
-        //    1  settle      - walls and orbs, exactly where level five left off.
-        //    2  the hurdle  - a wall across the whole road. The jump, alone.
-        //    3  doubles     - two hurdles back to back: one jump clears both.
-        //    4  which is it - walls and hurdles together. Steer, or go over.
-        //    5  the gift    - nothing to hit, and a feast. A breath.
-        //    6  pairs       - two walls a row leaving one lane, hurdles between.
+        //    1  settle      - the safe opening every level has.
+        //    2  the breath  - a wall that swells and shrinks, alone.
+        //    3  walls       - the static ones, on a beat.
+        //    4  which is it - both kinds together for the first time.
+        //    5  the gift    - nothing to hit. A breath of the other sort.
+        //    6  pairs       - two walls a row leaving one lane, not two.
         //    7  the finale  - everything, packed tighter than it was taught at.
-        //
-        //  Hurdle rows are spaced deliberately: a jump covers a fixed length of
-        //  road, so two full-width rows are either close enough to take in one
-        //  arc or far enough apart to land and go again. The band between those
-        //  two is unclearable, and `test/hurdles.test.ts` keeps every level out
-        //  of it.
         sections: [
             //  1. Settle. The safe opening, and this level needs it more than
             //  most: the jump arrives a movement later, and meeting a wall you
@@ -402,35 +403,35 @@ export const LEVELS: LevelSpec[] = [
                 gate: [ 0, 1 ],
                 rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
-            //  2. The hurdle. A clear run at each one, with the road empty
-            //  either side, so the first thing the player ever does with the
-            //  jump is a jump they cannot get wrong. Then orbs beside the
-            //  third, so it is worth timing rather than just surviving.
+            //  2. The breath. A pulsing wall, alone, with the road open either
+            //  side of it. It never reaches the next lane along, so a player
+            //  who simply moves over is safe - the question it asks is whether
+            //  they trust that, which is the whole of what a timing hazard is
+            //  before anything is asked on top of it.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
-                obstacles: 'static',
-                rows: [ '...', '.2.', '...', 'AAA', '...', '.1.', '...', '2.2', 'AAA', '...', '.1.', '...', '2.2', 'AAA', '...', '.3.', '...', '.2.' ]
+                obstacles: 'pulse',
+                rows: [ '.2.', '..2', 'a..', '.2.', '..1', 'a..', '.1.', '..2', 'c..', '.2.', '..1', 'c..', '.1.', '..2', 'a..', '.2.', '..1', 'c..' ]
             },
-            //  3. Doubles. Two hurdles back to back, close enough that one arc
-            //  carries the drop over both - which teaches that the jump has a
-            //  length rather than being a single beat, and is the first thing
-            //  the level asks that could be got wrong by jumping too early.
+            //  3. Walls. The static ones the last level ended on, on a beat, so
+            //  the two kinds are met one at a time before they are met
+            //  together.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'static',
-                rows: [ '.3.', '..3', 'AAA', 'AAA', '...', '.2.', '3..', '..3', 'BBB', 'BBB', '...', '.3.', '2..', '..2', 'AAA', 'AAA', '...', '.3.' ]
+                rows: [ '.3.', '..3', '...', '...', '...', '.2.', '3..', '..3', '...', '...', '...', '.3.', '2..', '..2', '...', '...', '...', '.3.' ]
             },
-            //  4. Which is it. A wall and a hurdle look alike at a distance and
-            //  want opposite answers - one is a lane to leave, the other is a
-            //  lane you cannot leave. Alternated here so the two have to be
-            //  told apart rather than reacted to the same way.
+            //  4. Which is it. A wall that holds still and one that breathes
+            //  look alike at a distance and want different amounts of nerve.
+            //  Alternated here so the two have to be told apart rather than
+            //  answered the same way.
             {
                 splitAfterLane: 1,
                 gate: [ 2, 0 ],
                 obstacles: 'static',
-                rows: [ '..3', '.a.', '1..', 'AAA', '..1', 'c..', '.3.', '.*.', 'AAA', '1..', '.1.', '..c', '3..', 'AAA', '.a.', '..3', '1..', '.c.', 'AAA', '..1', '.3.', 'a..' ]
+                rows: [ '..3', '.a.', '1..', '...', '..1', 'c..', '.3.', '.*.', '...', '1..', '.1.', '..c', '3..', '...', '.a.', '..3', '1..', '.c.', '...', '..1', '.3.', 'a..' ]
             },
             //  5. The gift. No barriers of any kind, and every row paying.
             {
@@ -440,22 +441,21 @@ export const LEVELS: LevelSpec[] = [
             },
             //  6. Pairs. Two walls on a row leaves one lane rather than two, so
             //  the sideways answer stops being a choice and starts being a
-            //  place you have to be - with a hurdle every fifth row to keep the
-            //  other answer live.
+            //  place you have to be.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
                 obstacles: 'static',
-                rows: [ '.2.', 'a.a', '..1', 'b.b', '.3.', 'AAA', '1..', 'c.c', '..2', 'a.a', 'AAA', '.1.', 'b.b', '..3', 'c.c', 'AAA', '.2.', '..1' ]
+                rows: [ '.2.', 'a.a', '..1', 'b.b', '.3.', '...', '1..', 'c.c', '..2', 'a.a', '...', '.1.', 'b.b', '..3', 'c.c', '...', '.2.', '..1' ]
             },
-            //  7. The finale. Walls, pairs and hurdles at the level's tightest
-            //  spacing, finishing on a clean run at the line.
+            //  7. The finale. Walls and pairs at the level's tightest spacing,
+            //  finishing on a clean run at the line.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 2 ],
                 obstacles: 'static',
                 rowSpacing: 136,
-                rows: [ 'a.1', '.2.', 'b..', '..3', '.a.', 'AAA', '1..', '..b', '.3.', 'c..', 'AAA', '.1.', '..2', 'a..', '.3.', 'AAA', '..1', '.b.', '2..', '..3', 'AAA', '.1.', '..2', 'c..', '.3.' ]
+                rows: [ 'a.1', '.2.', 'b..', '..3', '.a.', '...', '1..', '..b', '.3.', 'c..', '...', '.1.', '..2', 'a..', '.3.', '...', '..1', '.b.', '2..', '..3', '...', '.1.', '..2', 'c..', '.3.' ]
             }
         ]
     },
@@ -465,17 +465,30 @@ export const LEVELS: LevelSpec[] = [
         palette: [ 'blue', 'red', 'green', 'yellow' ],
         forwardSpeed: 505,
         rowSpacing: 147,
-        //  Sliding barriers, first on their own so the movement can be read,
-        //  then beside the static ones already known.
+        //  Where the jump is taught, and the first level that asks for
+        //  pressure rather than control.
         //
-        //    1  the opening  - four colours, clean road. Read the wider palette.
-        //    2  the slider   - one moving wall at a time, with room around it.
-        //    3  the read     - sliders with orbs beside them: go, but go on time.
-        //    4  the statics  - the known hazard at the new pace, then in pairs.
+        //  A hurdle spans the whole road, so there is no lane to steer into and
+        //  the only way through is over - which is the lesson, and it is taught
+        //  by a wall the player cannot misread rather than by a line of text.
+        //  It arrives here rather than a level earlier because jumping is a
+        //  second verb, and a player still learning where the lanes are does not
+        //  need one.
+        //
+        //    1  the opening  - four colours, clean road.
+        //    2  the slider   - a moving wall, at this level's pace.
+        //    3  the read     - sliders with orbs beside them.
+        //    4  the hurdle   - a wall across the whole road. The jump, alone.
         //    5  over the sweep - a sliding hurdle. Dodge it, or go over it.
         //    6  the gift     - no barriers, and a feast. A breath.
-        //    7  the squeeze  - full-width hurdles return, among walls.
-        //    8  the finale   - sliding hurdles at the level's tightest spacing.
+        //    7  the squeeze  - full-width hurdles among walls.
+        //    8  the finale   - sliding hurdles at the tightest spacing.
+        //
+        //  Hurdle rows are spaced deliberately: a jump covers a fixed length of
+        //  road, so two full-width rows are either close enough to take in one
+        //  arc or far enough apart to land and go again. The band between those
+        //  two is unclearable, and `test/hurdles.test.ts` keeps every level out
+        //  of it.
         sections: [
             //  1. The opening. A fourth colour arrives and nothing is in the
             //  way, because two new things at once is a spike rather than a
@@ -503,14 +516,15 @@ export const LEVELS: LevelSpec[] = [
                 obstacles: 'slider',
                 rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'a..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.a.', '3..', '..4' ]
             },
-            //  4. The statics. The hazard the player already knows, at a pace
-            //  they do not - and then in pairs, which leaves one lane instead
-            //  of two.
+            //  4. The hurdle. A clear run at each one, with the road empty
+            //  either side, so the first thing a player ever does with the jump
+            //  is a jump they cannot get wrong. Then orbs beside the later ones,
+            //  so it becomes worth timing rather than merely surviving.
             {
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
                 obstacles: 'static',
-                rows: [ '4..', '..1', '.b.', '4..', '.*.', 'c..', '.1.', '..4', '.c.', '1..', '..1', 'b..', '.4.', '..1', 'b.b', '.4.', 'c.c', '.1.', 'a.a', '..4' ]
+                rows: [ '...', '.2.', '...', 'AAA', '...', '.1.', '...', '2.2', 'AAA', '...', '.1.', '...', '2.2', 'AAA', '...', '.4.', '...', '.2.', '...', 'AAA' ]
             },
             //  5. Over the sweep. A hurdle that slides: the first hazard with
             //  two right answers at once, because it can be dodged like a

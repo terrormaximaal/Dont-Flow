@@ -151,27 +151,28 @@ describe('the forced jumps in the shipped levels', () => {
 
     });
 
-    //  Level six is where the jump is taught, so it is the one level that has
-    //  to actually contain the thing. A guard against the lesson quietly going
-    //  missing in a rewrite of the level's shape.
-    it('teach the jump on level six, after it has settled', () => {
+    //  Level seven is where the jump is taught. It moved there from level six
+    //  when the difficulty curve was set out properly: the first three levels
+    //  learn, the next three take control, and jumping belongs with the levels
+    //  that apply pressure rather than with the ones still teaching lanes.
+    it('teach the jump on level seven, after it has settled', () => {
 
-        const distances = forcedJumps(5);
+        const distances = forcedJumps(6);
 
-        expect(distances.length, 'level 6').toBeGreaterThan(0);
+        expect(distances.length, 'level 7').toBeGreaterThan(0);
 
         //  Not in the opening section: the first hurdle a player ever meets
         //  should arrive after a stretch of road they already know how to read,
         //  not on the first gate.
-        expect(distances[0]).toBeGreaterThan(buildLevel(LEVELS[5]).gates[1].distance);
+        expect(distances[0]).toBeGreaterThan(buildLevel(LEVELS[6]).gates[1].distance);
 
     });
 
-    //  Nothing before level six may demand one, because nothing before level
-    //  six has been shown how.
+    //  Nothing before level seven may demand one, because nothing before level
+    //  seven has been shown how.
     it('never demand one before the jump has been taught', () => {
 
-        for (let index = 0; index < 5; index++)
+        for (let index = 0; index < 6; index++)
         {
             expect(forcedJumps(index), `level ${LEVELS[index].name}`).toEqual([]);
         }
