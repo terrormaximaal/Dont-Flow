@@ -31,6 +31,7 @@ import {
     SHAKE_INTENSITY
 } from '../config/constants';
 import { buildLevel, drainAt, HazardZone, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
+import { formOf } from '../config/form';
 import { batchAt, BATCH_AHEAD, BATCH_CHUNKS, generateRun, paceAt, SURVIVAL_PALETTE, tierAt } from '../config/survival';
 import { loseLife, isSheltered, SURVIVAL_LIVES } from '../systems/lives';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
@@ -124,6 +125,9 @@ export class Play extends Scene
     private lives = SURVIVAL_LIVES;
     private lastLifeAt: number | null = null;
 
+    /** How the run was going when the last batch of road was laid. */
+    private form = 0;
+
     /** This level's forward speed, which may override the global default. */
     private forwardSpeed = FORWARD_SPEED;
 
@@ -210,6 +214,7 @@ export class Play extends Scene
         this.finishDistance = 1;
         this.lives = SURVIVAL_LIVES;
         this.lastLifeAt = null;
+        this.form = 0;
         this.chunksBuilt = 0;
         this.builtTo = 0;
 
@@ -758,18 +763,25 @@ export class Play extends Scene
     {
         const worlds = Object.keys(WORLDS) as WorldId[];
 
+        //  Read once, here, and applied to the whole batch. Reading it per row
+        //  would make the road twitch with every orb taken; a batch is about
+        //  fifteen seconds of play, which is long enough to be a judgement
+        //  about how the run is going rather than a reaction to one moment.
+        this.form = formOf(this.scoring.getScore(), this.lives);
+
         const run = generateRun(
             this.seed + this.chunksBuilt,
             BATCH_CHUNKS,
             SURVIVAL_PALETTE,
-            worlds[0]
+            worlds[0],
+            this.form,
+            this.chunksBuilt
         );
 
-        //  The tier the run has actually reached, applied to the batch: the
-        //  generator counts chunks from zero every call, and a run four batches
-        //  in must not be handed tier-zero road again.
-        const tier = tierAt(this.chunksBuilt);
-        const pace = paceAt(tier);
+        //  Pace comes from distance alone, never from how the run is going.
+        //  A road that slowed down for a struggling player would be the most
+        //  visible possible way of telling them so.
+        const pace = paceAt(tierAt(this.chunksBuilt));
 
         for (const section of run.spec.sections)
         {

@@ -1,5 +1,6 @@
 import { ColorId } from './constants';
 import { Chunk, CHUNKS, MAX_TIER } from './chunks';
+import { drawWindow, restEveryFor } from './form';
 import { buildLevel, Level, LevelSpec, SectionSpec } from './level';
 import { WorldId } from './worlds';
 
@@ -99,7 +100,8 @@ export function pickChunk (
     random: () => number,
     tier: number,
     sinceRest: number,
-    last: Chunk | null
+    last: Chunk | null,
+    form = 0
 ): Chunk
 {
     const eligible = CHUNKS.filter((chunk) => {
@@ -109,7 +111,7 @@ export function pickChunk (
             return false;
         }
 
-        if (sinceRest >= REST_EVERY)
+        if (sinceRest >= restEveryFor(form))
         {
             return chunk.recovery === true;
         }
@@ -120,9 +122,21 @@ export function pickChunk (
     //  Never twice running, unless the tier offers nothing else - which only
     //  happens at tier zero on the very first chunks.
     const choices = eligible.filter((chunk) => chunk !== last);
-    const from = choices.length > 0 ? choices : eligible;
+    const pool = choices.length > 0 ? choices : eligible;
 
-    return from[Math.floor(random() * from.length)];
+    //  Which end of what is unlocked to draw from. The ceiling is untouched -
+    //  a run going well never meets a piece early - but a run in trouble draws
+    //  from the gentler half of what it has already been shown, and one going
+    //  well from the harder half.
+    const ordered = [ ...pool ].sort((a, b) => a.tier - b.tier);
+    const window = drawWindow(form);
+
+    const from = Math.floor(ordered.length * window.from);
+    const to = Math.max(from + 1, Math.ceil(ordered.length * window.to));
+
+    const narrowed = ordered.slice(from, to);
+
+    return narrowed[Math.floor(random() * narrowed.length)];
 }
 
 /**
@@ -190,7 +204,9 @@ export function generateRun (
     seed: number,
     count: number,
     palette: ColorId[],
-    world: WorldId
+    world: WorldId,
+    form = 0,
+    startChunk = 0
 ): SurvivalCourse
 {
     const random = randomFrom(seed);
@@ -203,8 +219,10 @@ export function generateRun (
 
     for (let at = 0; at < count; at++)
     {
-        const tier = tierAt(at);
-        const chunk = pickChunk(random, tier, sinceRest, last);
+        //  Counted from where the run actually is rather than from zero, so a
+        //  batch four deep is not handed opening-tier road again.
+        const tier = tierAt(startChunk + at);
+        const chunk = pickChunk(random, tier, sinceRest, last, form);
 
         //  The two colours on offer walk through the palette rather than being
         //  drawn, so consecutive gates never offer the same pair and the run

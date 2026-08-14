@@ -4,7 +4,8 @@ import { buildLevel, LevelSpec, ObstacleSpec } from '../src/game/config/level';
 import { CHUNKS, MAX_TIER } from '../src/game/config/chunks';
 import { generateRun, paceAt, pickChunk, randomFrom, REST_EVERY, tierAt } from '../src/game/config/survival';
 import { shapeOf } from '../src/game/config/shape';
-import { isSheltered, loseLife, SURVIVAL_GRACE, SURVIVAL_REVIVE } from '../src/game/systems/lives';
+import { FORM_CRUISING, FORM_STRUGGLING, formOf, restEveryFor } from '../src/game/config/form';
+import { isSheltered, loseLife, SURVIVAL_GRACE, SURVIVAL_LIVES, SURVIVAL_REVIVE } from '../src/game/systems/lives';
 import { barrierCentre, barrierHalfWidth } from '../src/game/systems/barrier';
 import { laneCenterX, laneCount, laneWidth, useLanes } from '../src/game/systems/Lanes';
 
@@ -390,6 +391,162 @@ describe('the chances an endless run gets', () => {
     it('lasts longer than the tightest row spacing', () => {
 
         expect(SURVIVAL_GRACE).toBeGreaterThan(paceAt(MAX_TIER).spacing * 3);
+
+    });
+
+});
+
+describe('how a run reads its own health', () => {
+
+    it('is in trouble on nothing and cruising on plenty', () => {
+
+        expect(formOf(0, 1), 'no score, last life').toBeLessThanOrEqual(FORM_STRUGGLING);
+        expect(formOf(1000, SURVIVAL_LIVES), 'rich and whole').toBeGreaterThanOrEqual(FORM_CRUISING);
+
+    });
+
+    it('never leaves its range, whatever it is handed', () => {
+
+        for (const score of [ -9999, -1, 0, 1, 19, 20, 500, 1e9 ])
+        {
+            for (const lives of [ -3, 0, 1, 2, 3, 99 ])
+            {
+                const form = formOf(score, lives);
+
+                expect(form, `score ${score}, lives ${lives}`).toBeGreaterThanOrEqual(-1);
+                expect(form, `score ${score}, lives ${lives}`).toBeLessThanOrEqual(1);
+            }
+        }
+
+    });
+
+    it('reads better with more score and with more lives', () => {
+
+        expect(formOf(200, 2)).toBeGreaterThan(formOf(0, 2));
+        expect(formOf(200, 3)).toBeGreaterThan(formOf(200, 1));
+
+    });
+
+    //  Score is the immediate question - lives are what happens after the score
+    //  has already gone - so a full bank on the last life must read better than
+    //  an empty one on a full set.
+    it('weighs the score above the lives behind it', () => {
+
+        expect(formOf(1000, 1)).toBeGreaterThan(formOf(0, SURVIVAL_LIVES));
+
+    });
+
+    it('brings rests sooner when in trouble and later when cruising', () => {
+
+        expect(restEveryFor(-1)).toBeLessThan(restEveryFor(0));
+        expect(restEveryFor(1)).toBeGreaterThan(restEveryFor(0));
+
+    });
+
+});
+
+describe('what dynamic difficulty is allowed to touch', () => {
+
+    //  The two things it must not. A road that slowed down because the player
+    //  was struggling would be the most visible possible way of saying so, and
+    //  a player who has never seen a turning bar should not meet one in their
+    //  first minute for being good at the game.
+    //  Written as behaviour after a first attempt that was not. Asserting
+    //  paceAt.length === 1 looked like it pinned the signature and pinned
+    //  nothing: a defaulted parameter does not count towards a function's
+    //  length, so adding `form = 0` and using it sailed straight through. What
+    //  matters is not the signature but the road, so the road is what is
+    //  checked - the same point in a run, at every form, must feel the same.
+    it('never changes the pace, however the run is going', () => {
+
+        for (const chunk of [ 0, 5, 12, 30 ])
+        {
+            const speeds = new Set<number>();
+            const spacings = new Set<string>();
+
+            for (const form of [ -1, -0.5, 0, 0.5, 1 ])
+            {
+                const run = generateRun(1, 4, [ ...PALETTE ], 'sky', form, chunk);
+
+                speeds.add(run.spec.forwardSpeed!);
+                spacings.add(run.spec.sections.map((s) => s.rowSpacing).join(','));
+            }
+
+            expect(speeds.size, `speed at chunk ${chunk}`).toBe(1);
+            expect(spacings.size, `spacing at chunk ${chunk}`).toBe(1);
+        }
+
+    });
+
+    it('never lifts a piece above the tier the distance has unlocked', () => {
+
+        //  At every form, including the most generous, nothing may arrive early.
+        for (const form of [ -1, -0.5, 0, 0.5, 1 ])
+        {
+            const random = randomFrom(99);
+
+            for (let at = 0; at < 60; at++)
+            {
+                const chunk = pickChunk(random, tierAt(at), 0, null, form);
+
+                expect(chunk.tier, `form ${form} at chunk ${at}`).toBeLessThanOrEqual(tierAt(at));
+            }
+        }
+
+    });
+
+    //  And the thing it is for: the same point in a run, played badly and
+    //  played well, must not draw the same road.
+    it('draws gentler pieces for a struggling run than for a cruising one', () => {
+
+        const meanTier = (form: number): number => {
+            const random = randomFrom(7);
+            let total = 0;
+
+            for (let i = 0; i < 400; i++)
+            {
+                total += pickChunk(random, MAX_TIER, 0, null, form).tier;
+            }
+
+            return total / 400;
+        };
+
+        expect(meanTier(-1), 'struggling').toBeLessThan(meanTier(0));
+        expect(meanTier(1), 'cruising').toBeGreaterThan(meanTier(0));
+
+    });
+
+    //  Eased, not switched off. A run in trouble should meet gentler road, not
+    //  a different game.
+    it('still gives a struggling run something to do', () => {
+
+        const random = randomFrom(11);
+        let hardest = 0;
+
+        for (let i = 0; i < 400; i++)
+        {
+            hardest = Math.max(hardest, pickChunk(random, MAX_TIER, 0, null, -1).tier);
+        }
+
+        expect(hardest, 'the hardest thing a struggling run still meets').toBeGreaterThan(0);
+
+    });
+
+    //  A forced rest outranks the draw at every form, including the one that
+    //  biases towards the hard end.
+    it('still forces a rest when one is overdue, at any form', () => {
+
+        for (const form of [ -1, 0, 1 ])
+        {
+            const random = randomFrom(3);
+
+            for (let i = 0; i < 100; i++)
+            {
+                const chunk = pickChunk(random, MAX_TIER, restEveryFor(form), null, form);
+
+                expect(chunk.recovery, `form ${form}, draw ${i}`).toBe(true);
+            }
+        }
 
     });
 
