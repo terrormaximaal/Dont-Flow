@@ -9,11 +9,14 @@ import { jumpHeight } from '../../src/game/systems/jump';
 //  shorter than the jump itself, which is the fact every level has to be
 //  authored around and the fact that is easiest to forget.
 
-/** How far apart two hurdles can be and still both fit under one arc. */
-export function oneJumpWindow (): number
+/**
+ * Where in an arc the drop is high enough to clear something, from takeoff.
+ *
+ * Scanned rather than solved, so this stays honest if the arc stops being a
+ * parabola. A pixel of resolution is far finer than any row spacing.
+ */
+function clearingRange (): { from: number; to: number }
 {
-    //  Scanned rather than solved, so this stays honest if the arc stops being
-    //  a parabola. A pixel of resolution is far finer than any row spacing.
     let first: number | null = null;
     let last = 0;
 
@@ -26,21 +29,49 @@ export function oneJumpWindow (): number
         }
     }
 
-    return first === null ? 0 : last - first;
+    return first === null ? { from: 0, to: 0 } : { from: first, to: last };
+}
+
+/** How far apart two hurdles can be and still both fit under one arc. */
+export function oneJumpWindow (): number
+{
+    const { from, to } = clearingRange();
+
+    return to - from;
+}
+
+/**
+ * The closest two hurdles can be and still be taken as two separate jumps.
+ *
+ * The drop has to clear the first, come down, and be high enough again by the
+ * second. Landing is a full span after takeoff, so the most road that can be
+ * put between the landing and the second hurdle is won by clearing the first
+ * one as late as the arc allows - and even then the second still has to be far
+ * enough past the landing for the drop to have climbed.
+ *
+ * This is only reachable because a jump can be asked for before the landing
+ * and honoured at it. Without that buffer the player had to swipe on the exact
+ * frame of touchdown, so nothing under a full span could be relied on.
+ */
+export function twoJumpMinimum (): number
+{
+    const { from, to } = clearingRange();
+
+    return (JUMP_SPAN - to) + from;
 }
 
 /**
  * Whether two things that must both be jumped can both be jumped, given the
  * distance between them.
  *
- * True in two separate cases, and false between them:
- *   - one arc covers both, when they are closer together than the window;
- *   - there is room to land and take off again, when they are a full span
- *     apart or more.
+ * Two ways through: one arc covers both, or the drop clears the first, lands,
+ * and leaves again for the second. Anything past the second threshold is
+ * clearable however far away it is, because a grounded drop can wait for the
+ * right moment to go.
  */
 export function canClear (gap: number): boolean
 {
-    return gap <= oneJumpWindow() || gap >= JUMP_SPAN;
+    return gap <= oneJumpWindow() || gap >= twoJumpMinimum();
 }
 
 /**

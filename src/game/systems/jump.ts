@@ -1,4 +1,4 @@
-import { JUMP_SPAN } from '../config/constants';
+import { JUMP_BUFFER, JUMP_SPAN } from '../config/constants';
 
 //  The jump, as pure maths.
 //
@@ -48,4 +48,27 @@ export function jumpHeight (travelled: number, takeoff: number | null): number
 export function hasLanded (travelled: number, takeoff: number | null): boolean
 {
     return takeoff === null || travelled - takeoff >= JUMP_SPAN;
+}
+
+/**
+ * Where a jump asked for in mid-air lands, or null if it is too old to honour.
+ *
+ * The answer is the landing point rather than the frame the landing was
+ * noticed on. A frame can overrun the landing by any amount - fourteen pixels
+ * at thirty frames a second, more on a stalled one - and taking off from where
+ * the drop actually touched down keeps the second arc in the same place
+ * whatever the frame rate did, which is the rule the rest of the game is built
+ * on.
+ *
+ * @param landedAt    Distance at which the first jump ended.
+ * @param requestedAt Distance at which the player asked, or null if they did not.
+ */
+export function bufferedTakeoff (landedAt: number, requestedAt: number | null): number | null
+{
+    if (requestedAt === null || landedAt - requestedAt > JUMP_BUFFER)
+    {
+        return null;
+    }
+
+    return landedAt;
 }

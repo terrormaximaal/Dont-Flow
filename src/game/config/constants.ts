@@ -598,6 +598,26 @@ export const JUMP_SPAN = 460;
 export const JUMP_LIFT = 96;
 
 /**
+ * How long before landing a jump can be asked for and still be honoured.
+ *
+ * A swipe made just before touching down used to be thrown away, and the
+ * player who needs it most is the one it failed: two groups of hurdles sit a
+ * span apart, so a drop that left the ground as late as it could lands with
+ * about forty pixels of road left to ask for the next one. Forty pixels is a
+ * tenth of a second. Missing that window is not a mistake worth punishing -
+ * the player read the road correctly and swiped, and the game dropped it.
+ *
+ * Short on purpose. The argument against queueing a jump is a real one - a
+ * request honoured long after it was made fires at a moment the player has
+ * forgotten asking for - and it applies to an unbounded queue, not to a window
+ * this size. At the base pace this is under a fifth of a second.
+ *
+ * A distance rather than a duration, like the arc it belongs to, so it means
+ * the same thing on the slowest level and the fastest.
+ */
+export const JUMP_BUFFER = 80;
+
+/**
  * How high the drop must be to clear a low obstacle, 0 to 1.
  *
  * Well inside the arc at both ends, so clearing one is a matter of jumping at

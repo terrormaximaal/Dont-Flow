@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LANES, JUMP_SPAN } from '../src/game/config/constants';
+import { DEFAULT_LANES, JUMP_BUFFER, JUMP_SPAN } from '../src/game/config/constants';
 import { buildLevel } from '../src/game/config/level';
 import { LEVELS } from '../src/game/config/levels';
-import { canClear, oneJumpWindow, ROW_MARGIN } from './helpers/jumpReach';
+import { bufferedTakeoff } from '../src/game/systems/jump';
+import { canClear, oneJumpWindow, ROW_MARGIN, twoJumpMinimum } from './helpers/jumpReach';
 
 /**
  * The distances at which a level's road is blocked all the way across by things
@@ -99,18 +100,43 @@ describe('how far a jump reaches', () => {
     });
 
     //  The whole reason this file exists. Between "one arc covers both" and
-    //  "there is time to land and go again" is a band of spacings that cannot
-    //  be cleared at all - not by playing better, not at any speed, because the
-    //  drop is still coming down when the second one arrives. A level that
-    //  spaces two full-width hurdles into that band is unfinishable, and
-    //  nothing else in the suite would notice.
-    it('cannot clear two things spaced into the dead band', () => {
+    //  "there is time to land and go again" there used to be a band of
+    //  spacings that could not be cleared at all - not by playing better, not
+    //  at any speed - and level six shipped two hurdles inside it.
+    //
+    //  The jump buffer closed that band. Leaving the ground again on the frame
+    //  the drop lands is now something a player can ask for in advance rather
+    //  than something they have to hit exactly, so the spacings that needed it
+    //  are reachable. This is the guard that the band really is closed, and it
+    //  is written as a scan rather than as one sample: a band that reopened
+    //  anywhere would be just as unfinishable as the old one.
+    it('leaves no spacing between the two ways through that cannot be cleared', () => {
 
-        const middle = (oneJumpWindow() + JUMP_SPAN) / 2;
+        for (let gap = 0; gap <= JUMP_SPAN * 2; gap += 1)
+        {
+            expect(canClear(gap), `hurdles ${gap} apart`).toBe(true);
+        }
 
-        expect(middle).toBeGreaterThan(oneJumpWindow());
-        expect(middle).toBeLessThan(JUMP_SPAN);
-        expect(canClear(middle)).toBe(false);
+    });
+
+    //  And why it is closed, which is the part that could quietly stop being
+    //  true. The band is gone because the two ways through now overlap: the
+    //  closest spacing that can be taken as two jumps is nearer than the
+    //  furthest that fits under one. Shortening the arc or raising the height
+    //  needed to clear a hurdle would pull them apart again and reopen it,
+    //  and this is the guard that would say so.
+    it('closes it by overlapping the two ways through, not by luck', () => {
+
+        expect(twoJumpMinimum(), 'the closest spacing two jumps can take')
+            .toBeLessThanOrEqual(oneJumpWindow());
+
+    });
+
+    //  The check would pass everything if the second threshold collapsed to
+    //  zero, so this is the guard that it is a real threshold.
+    it('still needs the drop to have climbed by the second one', () => {
+
+        expect(twoJumpMinimum()).toBeGreaterThan(0);
 
     });
 
@@ -133,6 +159,11 @@ describe('the forced jumps in the shipped levels', () => {
 
     });
 
+    //  Comfort rather than possibility. Since the buffer, two groups only
+    //  eighty-odd pixels apart can be taken as two jumps - but barely possible
+    //  is not the same as worth playing, and a full span between groups is
+    //  what gives the drop time to land, settle and be sent again. The levels
+    //  are held to the comfortable figure on purpose.
     it('leave room to land and take off again between groups', () => {
 
         for (const [ index, spec ] of LEVELS.entries())
@@ -176,6 +207,58 @@ describe('the forced jumps in the shipped levels', () => {
         {
             expect(forcedJumps(index), `level ${LEVELS[index].name}`).toEqual([]);
         }
+
+    });
+
+});
+
+describe('a jump asked for just before landing', () => {
+
+    it('is honoured, and from the landing rather than from the frame', () => {
+
+        //  Asked for a little before touchdown: the second arc starts exactly
+        //  where the first ended, not wherever the frame happened to notice.
+        expect(bufferedTakeoff(1000, 1000 - (JUMP_BUFFER / 2))).toBe(1000);
+        expect(bufferedTakeoff(1000, 1000)).toBe(1000);
+
+    });
+
+    it('is dropped when it was asked for too long ago', () => {
+
+        expect(bufferedTakeoff(1000, 1000 - JUMP_BUFFER - 1)).toBeNull();
+        expect(bufferedTakeoff(1000, 0)).toBeNull();
+
+    });
+
+    it('does nothing at all when none was asked for', () => {
+
+        expect(bufferedTakeoff(1000, null)).toBeNull();
+
+    });
+
+    //  The reason the buffer exists, stated as the case it was added for. Two
+    //  groups of hurdles sit a span apart plus the authoring margin. A player
+    //  who left the ground as late as the arc allows lands with only that
+    //  margin of road left to ask for the next jump - so the buffer has to
+    //  cover the margin, or the latest possible jump is punished for being
+    //  legal.
+    it('covers the window left by taking off as late as the arc allows', () => {
+
+        const clearedFrom = (JUMP_SPAN - oneJumpWindow()) / 2;
+
+        //  Hurdle at 0, taking off as late as still clears it.
+        const latest = -clearedFrom;
+        const landed = latest + JUMP_SPAN;
+
+        //  The next group, and the last moment a jump can start and still
+        //  clear it.
+        const next = JUMP_SPAN + ROW_MARGIN;
+        const mustLeaveBy = next - clearedFrom;
+
+        const window = mustLeaveBy - landed;
+
+        expect(window, 'the window this exists to cover').toBeLessThan(JUMP_BUFFER);
+        expect(window, 'and it is a real window, not a negative one').toBeGreaterThan(0);
 
     });
 
