@@ -1460,6 +1460,16 @@ export const HAZARD_PLAIN_COLOR = 0xff9b3d;
  * it - the score and the lives are the two things that say how a run is going,
  * and a player checking one should see the other without moving their eyes.
  */
+/**
+ * How many endless runs the table keeps.
+ *
+ * Five stored, three shown. Keeping more than are shown means a run that drops
+ * off the visible table has not been forgotten - beat the third-best twice and
+ * the fourth is still there underneath.
+ */
+export const SURVIVAL_TABLE = 5;
+export const SURVIVAL_TABLE_SHOWN = 3;
+
 export const HUD_LIVES_X = 30;
 export const HUD_LIVES_Y = 44;
 export const HUD_LIVES_STEP = 26;

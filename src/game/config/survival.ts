@@ -88,6 +88,41 @@ export function paceAt (tier: number): { speed: number; spacing: number }
 }
 
 /**
+ * How much the pace keeps rising once the tiers have run out, per chunk, and
+ * where it finally stops.
+ *
+ * The content plateaus after twenty chunks - about seventy seconds - because a
+ * run that kept meeting new things forever would only ever end one way. But
+ * the pace plateauing with it left a run that stopped getting harder at all,
+ * so the score measured endurance rather than skill: nothing after the first
+ * minute was any different, only longer.
+ *
+ * So the road keeps speeding up, slowly, long after it has stopped changing.
+ * That is what gives an endless run an ending it earns.
+ *
+ * The ceiling has real margin in it. At the tightest spacing the tiers reach,
+ * a lane change needs 123ms and the road allows one until about 1080 - so this
+ * sits far enough below that the last stretch is hard rather than a test of
+ * whether the input happens to land on the right frame.
+ */
+export const SURVIVAL_CREEP_PER_CHUNK = 6;
+export const SURVIVAL_SPEED_CEILING = 950;
+
+/**
+ * The pace at a given point in a run, tiers and creep together.
+ *
+ * A function of how far the run has come and nothing else - see form.ts for
+ * why the road's speed is never allowed to be a comment on the player.
+ */
+export function speedAtChunk (chunk: number): number
+{
+    const base = paceAt(tierAt(chunk)).speed;
+    const past = Math.max(0, chunk - (MAX_TIER * TIER_EVERY));
+
+    return Math.min(SURVIVAL_SPEED_CEILING, base + (past * SURVIVAL_CREEP_PER_CHUNK));
+}
+
+/**
  * Which chunk comes next.
  *
  * Two rules on top of the draw. A rest is forced when one is overdue, because

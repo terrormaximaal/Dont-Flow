@@ -1,4 +1,4 @@
-import { ColorId, DEFAULT_LANES } from './constants';
+import { ColorId, DEFAULT_LANES, FORWARD_SPEED } from './constants';
 import { LevelSpec, ORB_ROW_SPACING, SectionSpec } from './level';
 
 //  What a section asks of the player, and what it gives back.
@@ -194,6 +194,40 @@ export function isRecovery (spec: LevelSpec, index: number): boolean
  */
 export const RECOVERY_PRESSURE = 0.5;
 export const RECOVERY_ORB_ROWS = 5;
+
+/**
+ * How much a level asks of the player per second.
+ *
+ * Two loads, added. Reading is one: every row has to be looked at and answered
+ * whether or not there is anything on it, so rows per second is the floor of
+ * what a level demands. Avoiding is the other: hazards per second is what has
+ * to be done about the rows that are not empty.
+ *
+ * This exists because the two move independently and looking at either alone
+ * is misleading. Hazard density dips at levels nine and thirteen - by fifteen
+ * to twenty per cent, which looks like a curve inverting - and the levels are
+ * still harder than the ones before them, because the road is arriving faster.
+ * Neither number says that on its own; the sum does.
+ */
+export function demandOf (spec: LevelSpec): number
+{
+    const speed = spec.forwardSpeed ?? FORWARD_SPEED;
+    const spacing = spec.rowSpacing ?? ORB_ROW_SPACING;
+
+    let pressure = 0;
+
+    for (let at = 0; at < spec.sections.length; at++)
+    {
+        pressure += shapeOf(spec, at).pressure;
+    }
+
+    pressure /= spec.sections.length;
+
+    const reading = speed / spacing;
+    const avoiding = (pressure * speed) / 1000;
+
+    return reading + avoiding;
+}
 
 /**
  * Whether a level puts anything in the player's way at all.

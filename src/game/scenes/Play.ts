@@ -32,7 +32,7 @@ import {
 } from '../config/constants';
 import { buildLevel, drainAt, HazardZone, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
 import { formOf } from '../config/form';
-import { batchAt, BATCH_AHEAD, BATCH_CHUNKS, generateRun, paceAt, SURVIVAL_PALETTE, tierAt } from '../config/survival';
+import { batchAt, BATCH_AHEAD, BATCH_CHUNKS, generateRun, paceAt, speedAtChunk, SURVIVAL_PALETTE, tierAt } from '../config/survival';
 import { loseLife, isSheltered, SURVIVAL_LIVES } from '../systems/lives';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
@@ -544,13 +544,15 @@ export class Play extends Scene
                     //  banking that would file every run in the game as worse
                     //  than nothing.
                     const score = this.scoring.getPeak();
-                    const beaten = this.save.recordSurvival(score);
+                    const placed = this.save.recordSurvival(score);
 
                     new RunFailed(this, {
-                        levelName: beaten ? 'BEST SURVIVAL RUN' : 'SURVIVAL',
+                        levelName: placed === 1 ? 'BEST SURVIVAL RUN' : 'SURVIVAL',
                         //  There is no finish to be a fraction of.
                         progress: 1,
                         scored: score,
+                        placed,
+                        table: this.save.getSurvivalScores(),
                         bestCombo: this.scoring.getBestCombo(),
                         bestScore: this.save.getSurvivalBest()
                     }, {
@@ -797,7 +799,10 @@ export class Play extends Scene
 
         this.chunksBuilt += BATCH_CHUNKS;
         this.builtTo = batch.finishDistance;
-        this.forwardSpeed = pace.speed;
+
+        //  Keeps rising after the content has stopped changing, which is what
+        //  gives an endless run an ending it earns rather than one it waits for.
+        this.forwardSpeed = speedAtChunk(this.chunksBuilt);
     }
 
     private startLevel (levelIndex: number): void

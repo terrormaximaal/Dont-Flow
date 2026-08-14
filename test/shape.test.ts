@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../src/game/config/levels';
-import { hasPressure, isRecovery, RECOVERY_PRESSURE, routeOf, shapeOf } from '../src/game/config/shape';
+import { demandOf, hasPressure, isRecovery, RECOVERY_PRESSURE, routeOf, shapeOf } from '../src/game/config/shape';
 
 describe('what a doorway is worth', () => {
 
@@ -168,6 +168,42 @@ describe('the pressure across a level', () => {
                 `level ${index + 1}`
             ).toBeGreaterThan(mean(0, middle));
         }
+
+    });
+
+});
+
+describe('the curve across the twenty', () => {
+
+    //  Written after measuring, because measuring said something surprising.
+    //  Hazard density is *not* monotonic: it dips nineteen per cent from level
+    //  eight to nine and fifteen from twelve to thirteen, which read at first
+    //  like the difficulty curve inverting the way the durations once did.
+    //
+    //  It is not inverting. Those levels arrive faster than the ones before
+    //  them, and the road coming at you quicker is a demand whether or not
+    //  there is anything on it. Neither figure says that alone, so the guard
+    //  is on the sum - and no level was rebalanced to make it pass, because
+    //  once the right thing was measured there was nothing wrong.
+    it('asks more of the player at every step, all twenty of them', () => {
+
+        for (let at = 1; at < LEVELS.length; at++)
+        {
+            expect(
+                demandOf(LEVELS[at]),
+                `level ${at + 1} against level ${at}`
+            ).toBeGreaterThan(demandOf(LEVELS[at - 1]));
+        }
+
+    });
+
+    //  And it must climb rather than creep: the last level should be a
+    //  markedly different proposition from the first, not a slightly busier
+    //  one.
+    it('ends up asking several times what it started with', () => {
+
+        expect(demandOf(LEVELS[LEVELS.length - 1]) / demandOf(LEVELS[0]))
+            .toBeGreaterThan(3);
 
     });
 

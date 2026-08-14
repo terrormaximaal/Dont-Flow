@@ -11,6 +11,7 @@ import {
     GAME_WIDTH,
     HUD_FONT,
     OVERLAY_BEST_SIZE,
+    SURVIVAL_TABLE_SHOWN,
     OVERLAY_DETAIL_SIZE,
     OVERLAY_DIM_ALPHA,
     OVERLAY_ENERGY_TICK_MS,
@@ -45,6 +46,18 @@ export interface RunFailedResult
      * the score instead, which is the only thing an endless run is for.
      */
     scored?: number;
+
+    /**
+     * The best endless runs, highest first, for a run that was one.
+     *
+     * Shown as a table because the question a player has the moment a run ends
+     * is not "have I ever done well" but "was that any good", and only a table
+     * answers it.
+     */
+    table?: number[];
+
+    /** Where this run placed, from 1, or 0 if it did not make the table. */
+    placed?: number;
 }
 
 export interface RunFailedActions
@@ -117,7 +130,14 @@ export class RunFailed
         reached.setOrigin(0.5);
         layer.add(reached);
 
-        const caption = endless ? result.levelName : `THROUGH LEVEL ${result.levelName}`;
+        //  The streak rides on the caption for an endless run, so the line
+        //  below it is free for the table. Given its own line the table sat
+        //  against the top of the RETRY button with ten pixels between them,
+        //  and moving it up put it into the caption instead - there is only
+        //  room here for two lines, so two is what it gets.
+        const caption = endless
+            ? `${result.levelName}   STREAK ${result.bestCombo}`
+            : `THROUGH LEVEL ${result.levelName}`;
 
         const through = scene.add.text(GAME_WIDTH / 2, centerY + 30, caption, {
             fontFamily: HUD_FONT,
@@ -128,14 +148,25 @@ export class RunFailed
         through.setOrigin(0.5);
         layer.add(through);
 
+        //  The table, for an endless run: the three best, with this one marked
+        //  where it landed. A run that missed the table is simply not marked,
+        //  which says what happened without saying anything about it.
+        const ranking = (result.table ?? [])
+            .slice(0, SURVIVAL_TABLE_SHOWN)
+            .map((score, at) => (at + 1 === result.placed ? `[${score}]` : `${score}`))
+            .join('   ');
+
         const detail = scene.add.text(
             GAME_WIDTH / 2,
             centerY + 62,
-            result.bestScore === null ? `STREAK ${result.bestCombo}` : `STREAK ${result.bestCombo}   BEST ${result.bestScore}`,
+            endless
+                ? ranking
+                : (result.bestScore === null ? `STREAK ${result.bestCombo}` : `STREAK ${result.bestCombo}   BEST ${result.bestScore}`),
             {
                 fontFamily: HUD_FONT,
                 fontSize: OVERLAY_BEST_SIZE,
-                color: COLOR_HUD_DIM
+                color: COLOR_HUD_DIM,
+                align: 'center'
             }
         );
 

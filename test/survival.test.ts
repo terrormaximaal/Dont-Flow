@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_LANES, DROP_CONTACT_RADIUS, SCORE_PENALTY, LANE_CHANGE_SPEED, ORB_CATCH_RADIUS, SWIPE_REPEAT_DELAY } from '../src/game/config/constants';
 import { buildLevel, LevelSpec, ObstacleSpec } from '../src/game/config/level';
 import { CHUNKS, MAX_TIER } from '../src/game/config/chunks';
-import { generateRun, paceAt, pickChunk, randomFrom, REST_EVERY, tierAt } from '../src/game/config/survival';
+import { generateRun, paceAt, pickChunk, randomFrom, REST_EVERY, speedAtChunk, SURVIVAL_SPEED_CEILING, TIER_EVERY, tierAt } from '../src/game/config/survival';
 import { shapeOf } from '../src/game/config/shape';
 import { FORM_CRUISING, FORM_STRUGGLING, formOf, restEveryFor } from '../src/game/config/form';
 import { isSheltered, loseLife, SURVIVAL_GRACE, SURVIVAL_LIVES, SURVIVAL_REVIVE } from '../src/game/systems/lives';
@@ -547,6 +547,63 @@ describe('what dynamic difficulty is allowed to touch', () => {
                 expect(chunk.recovery, `form ${form}, draw ${i}`).toBe(true);
             }
         }
+
+    });
+
+});
+
+describe('the end an endless run earns', () => {
+
+    //  The content plateaus so nothing arrives forever. The pace does not, or
+    //  a run stops getting harder at all after the first minute and the score
+    //  measures endurance rather than skill.
+    it('keeps speeding up long after it has stopped changing', () => {
+
+        const plateau = MAX_TIER * TIER_EVERY;
+
+        expect(speedAtChunk(plateau + 10), 'ten chunks past the plateau')
+            .toBeGreaterThan(speedAtChunk(plateau));
+
+        expect(speedAtChunk(plateau + 40), 'forty past')
+            .toBeGreaterThan(speedAtChunk(plateau + 10));
+
+    });
+
+    it('never slows down, anywhere in a run', () => {
+
+        for (let at = 1; at < 300; at++)
+        {
+            expect(speedAtChunk(at), `chunk ${at}`).toBeGreaterThanOrEqual(speedAtChunk(at - 1));
+        }
+
+    });
+
+    it('stops rising eventually rather than running away', () => {
+
+        expect(speedAtChunk(10000)).toBe(SURVIVAL_SPEED_CEILING);
+
+    });
+
+    //  The rule that decides whether the last stretch is hard or unfair: at the
+    //  fastest the road ever runs and the tightest it ever packs, a lane change
+    //  still has to fit between two rows - with room, not by a frame.
+    it('leaves room for a lane change even at its fastest and tightest', () => {
+
+        useLanes(DEFAULT_LANES);
+
+        const crossing = (Math.log((2 * laneWidth()) / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000;
+        const dragged = SWIPE_REPEAT_DELAY + ((Math.log(laneWidth() / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000);
+
+        const spacing = paceAt(MAX_TIER).spacing;
+        const available = (spacing / SURVIVAL_SPEED_CEILING) * 1000;
+
+        expect(available, 'separate swipes at the ceiling').toBeGreaterThan(crossing);
+        expect(available, 'one drag at the ceiling').toBeGreaterThan(dragged);
+
+        //  And not merely greater. A ceiling sitting a millisecond inside the
+        //  limit would be a run that ends on input latency rather than on
+        //  anything the player did.
+        expect(available / dragged, 'margin over the tightest case').toBeGreaterThan(1.1);
 
     });
 
