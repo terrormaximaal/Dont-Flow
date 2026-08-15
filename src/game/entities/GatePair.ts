@@ -14,6 +14,8 @@ import {
     GATE_BAR_ALPHA,
     GATE_BAR_THICKNESS,
     GATE_BARS,
+    PORTAL_GLYPH_ALPHA,
+    PORTAL_GLYPH_HEIGHT,
     PORTAL_HEIGHT,
     PORTAL_INNER_ALPHA,
     PORTAL_MOTE_ALPHA,
@@ -34,6 +36,9 @@ import {
     TRACK_WIDTH
 } from '../config/constants';
 import { GatePairSpec } from '../config/level';
+import { Glyph, GLYPHS } from '../config/glyphs';
+import { drawGlyph } from '../ui/glyph';
+import { areMarksOn } from '../systems/marks';
 import { gateSideAt, gateSplitX } from '../systems/contact';
 import { gateColorsAt, gateSwapFlash } from '../systems/gates';
 import { mixColor } from '../utils/color';
@@ -167,8 +172,8 @@ export class GatePair
         this.spill(gfx, TRACK_LEFT, this.splitX, shown(0), y, travelled, life(0));
         this.spill(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, shown(1), y, travelled, life(1));
 
-        this.portal(gfx, TRACK_LEFT, this.splitX, shown(0), y, scale, travelled, life(0));
-        this.portal(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, shown(1), y, scale, travelled, life(1));
+        this.portal(gfx, TRACK_LEFT, this.splitX, shown(0), y, scale, travelled, life(0), GLYPHS[colors[0]]);
+        this.portal(gfx, this.splitX, TRACK_LEFT + TRACK_WIDTH, shown(1), y, scale, travelled, life(1), GLYPHS[colors[1]]);
 
         if (this.sealed !== undefined)
         {
@@ -264,7 +269,8 @@ export class GatePair
         y: number,
         scale: number,
         travelled: number,
-        life: number
+        life: number,
+        glyph: Glyph
     ): void
     {
         const baseLeft = projectX(left, y);
@@ -322,6 +328,23 @@ export class GatePair
 
                 this.strokeArch(gfx, baseLeft + inset, baseRight - inset, top + inset, rise * 0.8);
             }
+        }
+
+        //  The colour's mark, hung in the middle of the doorway. A gate is the
+        //  one moment the game asks the player to choose a colour, so it is the
+        //  one place a mark matters most - and it is drawn large here because
+        //  there is room, unlike on an orb.
+        if (areMarksOn())
+        {
+            drawGlyph(
+                gfx,
+                glyph,
+                (baseLeft + baseRight) / 2,
+                top + (height * PORTAL_GLYPH_HEIGHT),
+                Math.min(width * 0.16, height * 0.15),
+                value,
+                PORTAL_GLYPH_ALPHA
+            );
         }
 
         this.motes(gfx, baseLeft, baseRight, y, height, value, scale, travelled);

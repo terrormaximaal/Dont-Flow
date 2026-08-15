@@ -44,6 +44,14 @@ interface SaveData
 
     /** Whether the player has turned the sound off. */
     muted?: boolean;
+
+    /**
+     * Whether the colours wear their marks. On unless turned off.
+     *
+     * Stored as "off" rather than "on" so a save written before this existed
+     * reads as marks being on, which is the default and the safe answer.
+     */
+    marksOff?: boolean;
 }
 
 function emptySave (): SaveData
@@ -170,6 +178,11 @@ export class SaveSystem
             save.muted = candidate.muted;
         }
 
+        if (typeof candidate.marksOff === 'boolean')
+        {
+            save.marksOff = candidate.marksOff;
+        }
+
         //  The endless table, which was written to storage and then thrown away
         //  on every load until a test asked for it back. Everything here is
         //  rebuilt field by field from an empty save, which is what makes a
@@ -259,6 +272,24 @@ export class SaveSystem
     setMuted (muted: boolean): void
     {
         this.data.muted = muted;
+        this.persist();
+    }
+
+    /**
+     * Whether the colours wear their marks.
+     *
+     * Stored the other way up - as "off" - so a save written before this
+     * existed reads as marks being on, which is both the default and the safe
+     * answer for a player who has not been asked.
+     */
+    hasMarks (): boolean
+    {
+        return this.data.marksOff !== true;
+    }
+
+    setMarks (on: boolean): void
+    {
+        this.data.marksOff = !on;
         this.persist();
     }
 

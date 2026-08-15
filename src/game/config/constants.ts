@@ -1467,8 +1467,22 @@ export const HAZARD_PLAIN_COLOR = 0xff9b3d;
  * off the visible table has not been forgotten - beat the third-best twice and
  * the fourth is still there underneath.
  */
+/**
+ * Where a colour's mark hangs in its doorway, and how strongly.
+ *
+ * High in the arch rather than centred, so it sits above the orbs seen through
+ * the gate rather than among them. Faint, because it is a second way of reading
+ * something the colour has already said - a player who does not need it should
+ * barely notice it is there.
+ */
+export const PORTAL_GLYPH_HEIGHT = 0.3;
+export const PORTAL_GLYPH_ALPHA = 0.5;
+
 /** The sound toggle: a corner label rather than a button. */
 export const MUTE_MARGIN = 18;
+
+/** Line spacing for the switches stacked in the corner. */
+export const MUTE_LINE = 20;
 export const MUTE_SIZE = '13px';
 export const MUTE_ALPHA = 0.55;
 

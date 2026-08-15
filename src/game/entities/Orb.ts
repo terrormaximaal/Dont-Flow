@@ -1,4 +1,7 @@
 import { Scene } from 'phaser';
+import { Glyph, GLYPHS } from '../config/glyphs';
+import { drawGlyph } from '../ui/glyph';
+import { areMarksOn } from '../systems/marks';
 import {
     BLOB_RIPPLE_PER_PIXEL,
     COLOR_VALUES,
@@ -68,6 +71,9 @@ export class Orb
     private readonly phase: number;
 
     private readonly value: number;
+
+    /** The mark this colour wears, so it can be told apart without hue. */
+    private readonly glyph: Glyph;
     private readonly gfx: Phaser.GameObjects.Graphics;
 
     constructor (scene: Scene, spec: OrbSpec)
@@ -76,6 +82,7 @@ export class Orb
         this.color = spec.color;
         this.x = laneCenterX(spec.lane);
         this.value = COLOR_VALUES[spec.color];
+        this.glyph = GLYPHS[spec.color];
         this.phase = (spec.distance * 0.017) + (spec.lane * 1.9);
 
         this.gfx = scene.add.graphics();
@@ -133,9 +140,21 @@ export class Orb
         this.gfx.fillStyle(this.value, 1);
         fillOutline(this.gfx, blobOutline(ORB_RADIUS, travelled * BLOB_RIPPLE_PER_PIXEL, this.phase));
 
-        //  A lighter core keeps the orb readable against the dark track.
-        this.gfx.fillStyle(0xffffff, ORB_CORE_ALPHA + (near * 0.2));
-        this.gfx.fillCircle(0, 0, ORB_RADIUS * 0.45);
+        //  A lighter core keeps the orb readable against the dark track - and
+        //  carries the colour's mark, so the core is doing two jobs rather than
+        //  the mark being one more thing painted on. Turned off, it is the
+        //  plain disc it always was.
+        const core = ORB_CORE_ALPHA + (near * 0.2);
+
+        if (areMarksOn())
+        {
+            drawGlyph(this.gfx, this.glyph, 0, 0, ORB_RADIUS * 0.52, 0xffffff, core);
+        }
+        else
+        {
+            this.gfx.fillStyle(0xffffff, core);
+            this.gfx.fillCircle(0, 0, ORB_RADIUS * 0.45);
+        }
 
         this.motes(travelled, near);
 

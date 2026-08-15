@@ -7,6 +7,7 @@ import {
     GAME_WIDTH,
     HUD_FONT,
     MUTE_ALPHA,
+    MUTE_LINE,
     MUTE_MARGIN,
     MUTE_SIZE,
     RESUME_AT_LAST_LEVEL,
@@ -34,6 +35,7 @@ import { SaveSystem } from '../systems/SaveSystem';
 import { Button } from '../ui/Button';
 //  Aliased: this scene already has a local called play - the PLAY button.
 import { play as playCue, setMuted, wakeAudio } from '../systems/Audio';
+import { setMarks } from '../systems/marks';
 import { EnergyMeter } from '../ui/EnergyMeter';
 import { MENU_LAYOUT } from '../ui/menuLayout';
 import { TAGLINE } from '../ui/taglines';
@@ -175,6 +177,42 @@ export class Title extends Scene
             save.setMuted(next);
             setMuted(next);
             speaker.setText(next ? 'SOUND OFF' : 'SOUND ON');
+
+            playCue('press');
+
+        });
+
+        //  The other switch, under the sound. Named for what it does rather
+        //  than for who it is for: "colour blind mode" is a label a player has
+        //  to identify with before they will touch it, and plenty of people who
+        //  would benefit do not think of themselves that way.
+        setMarks(save.hasMarks());
+
+        const marks = this.add.text(
+            GAME_WIDTH - MUTE_MARGIN,
+            MUTE_MARGIN + MUTE_LINE,
+            save.hasMarks() ? 'SHAPES ON' : 'SHAPES OFF',
+            {
+                fontFamily: HUD_FONT,
+                fontSize: MUTE_SIZE,
+                color: COLOR_HUD_DIM
+            }
+        );
+
+        marks.setOrigin(1, 0);
+        marks.setDepth(DEPTH_HUD);
+        marks.setAlpha(MUTE_ALPHA);
+        marks.setInteractive({ useHandCursor: true });
+
+        marks.on('pointerdown', () => {
+
+            wakeAudio();
+
+            const next = !save.hasMarks();
+
+            save.setMarks(next);
+            setMarks(next);
+            marks.setText(next ? 'SHAPES ON' : 'SHAPES OFF');
 
             playCue('press');
 
