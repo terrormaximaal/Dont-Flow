@@ -30,8 +30,10 @@ import {
     SHAKE_DURATION,
     SHAKE_INTENSITY
 } from '../config/constants';
-import { buildLevel, drainAt, HazardZone, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
+import { buildLevel, drainAt, HazardZone, LEAD_IN, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
 import { play, wakeAudio } from '../systems/Audio';
+import { Coach } from '../ui/Coach';
+import { firstForcedJump, isPrompting } from '../systems/coach';
 import { formOf } from '../config/form';
 import { batchAt, BATCH_AHEAD, BATCH_CHUNKS, generateRun, paceAt, speedAtChunk, SURVIVAL_PALETTE, tierAt } from '../config/survival';
 import { loseLife, isSheltered, SURVIVAL_LIVES } from '../systems/lives';
@@ -128,6 +130,16 @@ export class Play extends Scene
 
     /** How the run was going when the last batch of road was laid. */
     private form = 0;
+
+    /**
+     * The one thing the game ever says, and where it is due.
+     *
+     * Null where this run has nothing to teach - which is every run after the
+     * player has been told once, and every level that never asks for a jump.
+     */
+    private coach: Coach;
+    private teachJumpAt: number | null = null;
+    private teachMove = false;
 
     /** This level's forward speed, which may override the global default. */
     private forwardSpeed = FORWARD_SPEED;
@@ -311,6 +323,17 @@ export class Play extends Scene
             (direction) => this.drop.moveLane(direction),
             () => { play('jump'); this.drop.jump(this.distance); }
         );
+
+        this.coach = new Coach(this);
+
+        //  Nothing is taught twice, and nothing is taught in survival: an
+        //  endless run is not where anybody meets this game for the first time,
+        //  and it has no fixed first hurdle to warn about.
+        this.teachMove = !this.survival && !this.save.hasLearned('move');
+
+        this.teachJumpAt = this.survival || this.save.hasLearned('jump')
+            ? null
+            : firstForcedJump(course, level.lanes ?? DEFAULT_LANES);
 
         this.pauseButton = new PauseButton(this, () => this.setPaused(true));
 
@@ -822,6 +845,48 @@ export class Play extends Scene
         this.forwardSpeed = speedAtChunk(this.chunksBuilt);
     }
 
+    /**
+     * Says the one thing, if now is when it needs saying.
+     *
+     * Asked every frame rather than scheduled, because isPrompting is total and
+     * a run can be restarted, paused or teleported through without this having
+     * to know about any of it.
+     */
+    private teach (): void
+    {
+        //  The lane prompt rides the quiet road before the first gate, which is
+        //  exactly what that stretch is there for.
+        if (this.teachMove && this.distance < LEAD_IN)
+        {
+            this.coach.set('move');
+
+            return;
+        }
+
+        if (this.teachMove && this.distance >= LEAD_IN)
+        {
+            this.teachMove = false;
+            this.save.recordLesson('move');
+        }
+
+        if (this.teachJumpAt !== null && isPrompting(this.distance, this.teachJumpAt))
+        {
+            this.coach.set('jump');
+
+            return;
+        }
+
+        //  Recorded once the row it was about is behind the drop, so a player
+        //  who quits before reaching it is told again next time.
+        if (this.teachJumpAt !== null && this.distance > this.teachJumpAt)
+        {
+            this.teachJumpAt = null;
+            this.save.recordLesson('jump');
+        }
+
+        this.coach.set(null);
+    }
+
     private startLevel (levelIndex: number): void
     {
         leaveTo(this, () => this.scene.restart({ levelIndex }));
@@ -859,6 +924,8 @@ export class Play extends Scene
         const target = 1 - ((1 - BOOST_ZOOM) * Math.max(0, this.pace - 1));
 
         this.cameras.main.setZoom(easeTowards(this.cameras.main.zoom, target, BOOST_ZOOM_SMOOTHING, dt));
+
+        this.teach();
 
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);

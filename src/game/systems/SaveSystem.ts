@@ -52,6 +52,14 @@ interface SaveData
      * reads as marks being on, which is the default and the safe answer.
      */
     marksOff?: boolean;
+
+    /**
+     * Which lessons the player has already been given.
+     *
+     * Once each, ever. A prompt that came back would be the game shouting at
+     * somebody who has known how to play for an hour.
+     */
+    taught?: string[];
 }
 
 function emptySave (): SaveData
@@ -64,7 +72,8 @@ function emptySave (): SaveData
         energy: MAX_ENERGY,
         energyAt: Date.now(),
         survivalScores: [],
-        muted: false
+        muted: false,
+        taught: []
     };
 }
 
@@ -183,6 +192,11 @@ export class SaveSystem
             save.marksOff = candidate.marksOff;
         }
 
+        if (Array.isArray(candidate.taught))
+        {
+            save.taught = candidate.taught.filter((name): name is string => typeof name === 'string');
+        }
+
         //  The endless table, which was written to storage and then thrown away
         //  on every load until a test asked for it back. Everything here is
         //  rebuilt field by field from an empty save, which is what makes a
@@ -290,6 +304,24 @@ export class SaveSystem
     setMarks (on: boolean): void
     {
         this.data.marksOff = !on;
+        this.persist();
+    }
+
+    /** Whether a lesson has already been given. */
+    hasLearned (lesson: string): boolean
+    {
+        return (this.data.taught ?? []).includes(lesson);
+    }
+
+    /** Remember that it has, so it is never given twice. */
+    recordLesson (lesson: string): void
+    {
+        if (this.hasLearned(lesson))
+        {
+            return;
+        }
+
+        this.data.taught = [ ...(this.data.taught ?? []), lesson ];
         this.persist();
     }
 

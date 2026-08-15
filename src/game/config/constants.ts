@@ -1478,6 +1478,18 @@ export const HAZARD_PLAIN_COLOR = 0xff9b3d;
 export const PORTAL_GLYPH_HEIGHT = 0.3;
 export const PORTAL_GLYPH_ALPHA = 0.5;
 
+/**
+ * Where the game tells a player what to do, and how loudly.
+ *
+ * Low, just above the drop, because that is where the eye already is - a prompt
+ * at the top would be read after the row it was about had gone past. Pale,
+ * because it is help rather than an alarm and the player is trying to read the
+ * road behind it.
+ */
+export const COACH_Y = GAME_HEIGHT * 0.64;
+export const COACH_SIZE = '20px';
+export const COACH_ALPHA = 0.82;
+
 /** The sound toggle: a corner label rather than a button. */
 export const MUTE_MARGIN = 18;
 
