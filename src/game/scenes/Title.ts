@@ -158,7 +158,19 @@ export class Title extends Scene
         //  - no browser will start audio before the page has been touched - so
         //  it waits for the first touch instead of being dropped.
         listenForGesture();
-        onWake(() => playCue('title'));
+
+        //  Only if this screen is still the one being looked at. On a cold
+        //  load the gesture that wakes the audio is usually PLAY itself, and
+        //  the theme arriving over the first bars of a level is the menu
+        //  talking over the game.
+        onWake(() => {
+
+            if (this.scene.isActive())
+            {
+                playCue('title');
+            }
+
+        });
 
         const speaker = this.add.text(GAME_WIDTH - MUTE_MARGIN, MUTE_MARGIN, save.isMuted() ? 'SOUND OFF' : 'SOUND ON', {
             fontFamily: HUD_FONT,

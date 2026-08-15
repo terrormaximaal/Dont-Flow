@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { SOUND_MASTER } from '../src/game/config/constants';
+import { ORB_MAX_SEMITONES, SOUND_MASTER } from '../src/game/config/constants';
 import {
+    CROWN_FROM,
     Cue,
     CUES,
     DETUNE_CENTS,
@@ -43,11 +44,69 @@ describe('the note an orb is worth', () => {
 
     });
 
-    it('never falls as a streak grows', () => {
+    it('never falls while it is still climbing', () => {
 
-        for (let combo = 1; combo < 60; combo++)
+        for (let combo = 1; combo <= CROWN_FROM; combo++)
         {
             expect(pitchFor(combo), `combo ${combo}`).toBeGreaterThanOrEqual(pitchFor(combo - 1));
+        }
+
+    });
+
+    //  What a long streak sounds like, which is the thing worth getting right:
+    //  a player who is doing well hears this note more than any other sound in
+    //  the game. Holding the ceiling was the honest reading of "it stops
+    //  climbing" and it made the reward for playing well the most monotonous
+    //  sound in it.
+    it('turns around the top rather than repeating one note', () => {
+
+        const played = new Set<number>();
+
+        for (let combo = CROWN_FROM; combo < CROWN_FROM + 12; combo++)
+        {
+            played.add(semitonesFor(combo));
+        }
+
+        expect(played.size, 'notes heard at full streak').toBeGreaterThan(2);
+
+    });
+
+    //  And it stays up there: the figure is a turn around the ceiling, not a
+    //  slide back down the scale, which would sound like the streak breaking.
+    it('keeps every note of that figure inside the top fifth', () => {
+
+        for (let combo = CROWN_FROM; combo < CROWN_FROM + 40; combo++)
+        {
+            const above = semitonesFor(combo) - semitonesFor(0);
+
+            expect(above, `combo ${combo}`).toBeGreaterThanOrEqual(ORB_MAX_SEMITONES - 7);
+            expect(above, `combo ${combo}`).toBeLessThanOrEqual(ORB_MAX_SEMITONES);
+        }
+
+    });
+
+    //  It has to come back to the ceiling often, or the ceiling stops being
+    //  where the streak sounds like it is.
+    it('lands on the ceiling more than any other note up there', () => {
+
+        const counts = new Map<number, number>();
+
+        for (let combo = CROWN_FROM; combo < CROWN_FROM + 60; combo++)
+        {
+            const note = semitonesFor(combo);
+
+            counts.set(note, (counts.get(note) ?? 0) + 1);
+        }
+
+        const top = semitonesFor(0) + ORB_MAX_SEMITONES;
+        const onTop = counts.get(top) ?? 0;
+
+        for (const [ note, count ] of counts)
+        {
+            if (note !== top)
+            {
+                expect(onTop, `${note}`).toBeGreaterThanOrEqual(count);
+            }
         }
 
     });
@@ -172,14 +231,17 @@ describe('what each moment sounds like', () => {
     });
 
     //  The ones that mark the end of something are the exception, and even they
-    //  have to be over before the panel that follows them arrives.
-    it('finishes every phrase inside a second and a half', () => {
+    //  have to be over before the panel that follows them arrives. The title is
+    //  the exception to the exception: it is the game's tune, and a tune that
+    //  has to be over in a second is a jingle nobody can hum back.
+    it('finishes every phrase before what follows it arrives', () => {
 
         for (const cue of CUES)
         {
             const notes = voiceFor(cue);
+            const room = cue === 'title' ? 4 : 1.5;
 
-            expect(notes[notes.length - 1].at, cue).toBeLessThan(1.5);
+            expect(notes[notes.length - 1].at, cue).toBeLessThan(room);
         }
 
     });

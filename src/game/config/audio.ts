@@ -1,4 +1,5 @@
 import { ORB_BASE_SEMITONES, ORB_MAX_SEMITONES, PIANO_ROOT_HZ } from './constants';
+import { THEME } from './music';
 
 //  What the game sounds like.
 //
@@ -77,6 +78,17 @@ export type Cue =
 const PENTATONIC = [ 0, 2, 4, 7, 9 ];
 
 /**
+ * The figure a streak plays once it has climbed as far as it may.
+ *
+ * All of it inside the top fifth and landing on the ceiling twice, so it reads
+ * as arriving rather than as slipping back down the scale.
+ */
+const CROWN = [ 24, 21, 24, 19, 21, 24 ];
+
+/** The step the climb reaches the ceiling on, after which the figure takes over. */
+export const CROWN_FROM = 10;
+
+/**
  * The note an orb is worth, from the combo it lands on, in semitones.
  *
  * Capped two octaves up. Past that it stops being a reward and starts being a
@@ -95,7 +107,24 @@ export function semitonesFor (combo: number): number
     const note = PENTATONIC[step % PENTATONIC.length];
     const octave = Math.floor(step / PENTATONIC.length);
 
-    return ORB_BASE_SEMITONES + Math.min(ORB_MAX_SEMITONES, note + (octave * 12));
+    const climbed = note + (octave * 12);
+
+    if (climbed < ORB_MAX_SEMITONES)
+    {
+        return ORB_BASE_SEMITONES + climbed;
+    }
+
+    //  At the top it turns around the top rather than repeating the top note.
+    //
+    //  Holding one note was the honest reading of "it stops climbing", and it
+    //  is what a long streak actually sounds like: the same note, once an orb,
+    //  for as long as the player keeps playing well. Rewarding a good run with
+    //  the most monotonous sound in the game is exactly backwards. This keeps
+    //  it up there and keeps it moving - a small figure that always comes back
+    //  to the top note, so the ceiling is still heard as a ceiling.
+    const turned = step - CROWN_FROM;
+
+    return ORB_BASE_SEMITONES + CROWN[((turned % CROWN.length) + CROWN.length) % CROWN.length];
 }
 
 export function frequencyOf (semitones: number): number
@@ -183,32 +212,25 @@ export function voiceFor (cue: Cue, combo = 0): Strike[]
                 { semitones: -12, at: 0.30, gain: 0.9 }
             ];
 
-        //  Reaching the finish: up, and landing on top.
+        //  Reaching the finish: the theme's arch, taken up instead of down, so
+        //  a level ends on the tune it was played to.
         case 'finish':
             return [
                 { semitones: 12, at: 0, gain: 0.8 },
-                { semitones: 16, at: 0.11, gain: 0.8 },
-                { semitones: 19, at: 0.22, gain: 0.9 },
-                { semitones: 24, at: 0.34, gain: 1 }
+                { semitones: 16, at: 0.13, gain: 0.8 },
+                { semitones: 19, at: 0.26, gain: 0.85 },
+                { semitones: 24, at: 0.39, gain: 0.9 },
+                { semitones: 28, at: 0.62, gain: 1 }
             ];
 
         //  Barely there. A menu that clicks loudly is a menu people turn off.
         case 'press':
             return [ { semitones: 19, at: 0, gain: 0.22 } ];
 
-        //  The title's phrase: open fifths and octaves rather than thirds, so
-        //  it states the key without saying whether the game is happy or sad
-        //  about it - and it ends on the same note it started, two octaves up,
-        //  which is the most final way a phrase can end without a chord under
-        //  it.
+        //  The game's tune, whole. It is also what the backing quotes under a
+        //  run, so the title is where the player learns it.
         case 'title':
-            return [
-                { semitones: 0, at: 0, gain: 0.9 },
-                { semitones: 7, at: 0.16, gain: 0.8 },
-                { semitones: 12, at: 0.32, gain: 0.85 },
-                { semitones: 16, at: 0.50, gain: 0.7 },
-                { semitones: 24, at: 0.76, gain: 1 }
-            ];
+            return THEME;
     }
 }
 

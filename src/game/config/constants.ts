@@ -1777,3 +1777,26 @@ export const REVERB_DRY = 0.45;
 
 /** Seed for the room's noise, so the reverb is identical on every device. */
 export const REVERB_SEED = 8317;
+
+//  The music under the run.
+//
+//  Slow, because it plays for as long as the level does and anything with a
+//  pulse the player can tap along to becomes a metronome they are trying to
+//  collect in time with.
+export const MUSIC_BPM = 76;
+export const MUSIC_BEATS_PER_BAR = 4;
+
+/**
+ * How loud the backing is against the game's own sounds.
+ *
+ * Well under them. The tune is there to keep the run company, not to be
+ * listened to - and everything that matters to the player is a cue over the
+ * top of it.
+ */
+export const MUSIC_GAIN = 0.3;
+
+//  Scheduled a little ahead of the sound card and topped up on a timer, which
+//  is the only way to get music in time out of a browser: notes are handed to
+//  the audio clock before they are due, so a busy frame cannot delay one.
+export const MUSIC_LOOKAHEAD = 1.5;
+export const MUSIC_TICK_MS = 250;

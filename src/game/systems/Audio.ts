@@ -1,4 +1,4 @@
-import { Cue, DETUNE_CENTS, variesOnRepeat, voiceFor } from '../config/audio';
+import { Cue, DETUNE_CENTS, Strike, variesOnRepeat, voiceFor } from '../config/audio';
 import { PIANO_GAIN } from '../config/constants';
 import { buildMixer, Mixer } from './mixer';
 import { strike } from './voice';
@@ -169,7 +169,6 @@ export function play (cue: Cue, combo = 0): void
 
     try
     {
-        const chain = mixer ??= buildMixer(ctx, ctx.destination);
 
         //  A fraction of a semitone either way, so a sound repeating hundreds
         //  of times a run is never byte-for-byte the same twice. Not applied to
@@ -179,18 +178,85 @@ export function play (cue: Cue, combo = 0): void
             ? (((Math.random() * 2) - 1) * DETUNE_CENTS) / 100
             : 0;
 
-        for (const note of voiceFor(cue, combo))
-        {
-            //  Twice over: once straight out, once into the room. The room is
-            //  the loud half, which is why the note is sent there rather than
-            //  passed through it.
-            strike(ctx, chain.dry, note.semitones + drift, note.at, note.gain * PIANO_GAIN);
-            strike(ctx, chain.send, note.semitones + drift, note.at, note.gain * PIANO_GAIN);
-        }
+        schedule(ctx, voiceFor(cue, combo), ctx.currentTime, PIANO_GAIN, drift);
     }
     catch
     {
         //  A sound that will not play is not worth interrupting a run for.
+    }
+}
+
+/**
+ * The audio clock, or null when there is nothing running to read it from.
+ *
+ * Music has to be handed to the sound card before it is due, so the thing
+ * writing it needs to know what time the card thinks it is - which is not the
+ * same clock as the game's.
+ */
+export function audioTime (): number | null
+{
+    return context !== null && context.state === 'running' ? context.currentTime : null;
+}
+
+/**
+ * Notes at a given moment on that clock, rather than now.
+ *
+ * The backing is written ahead of itself, which is the only way a browser
+ * plays anything in time: a note handed over a second early lands exactly when
+ * it was asked to, however busy the frame that asked is.
+ */
+export function playAt (notes: Strike[], when: number, gain = 1): void
+{
+    if (muted)
+    {
+        return;
+    }
+
+    const ctx = audio();
+
+    if (ctx === null || ctx.state !== 'running')
+    {
+        return;
+    }
+
+    try
+    {
+        schedule(ctx, notes, when, gain * PIANO_GAIN, 0);
+    }
+    catch
+    {
+        //  As above: a sound that will not play is not worth a broken run.
+    }
+}
+
+/**
+ * Hands a set of notes to the clock, twice over: once straight out, once into
+ * the room. The room is the loud half, which is why a note is sent there
+ * rather than passed through it.
+ */
+function schedule (
+    ctx: AudioContext,
+    notes: Strike[],
+    from: number,
+    gain: number,
+    drift: number
+): void
+{
+    const chain = mixer ??= buildMixer(ctx, ctx.destination);
+    const offset = from - ctx.currentTime;
+
+    for (const note of notes)
+    {
+        //  Anything already in the past is dropped rather than played late: a
+        //  phone that was asleep comes back with a backlog, and a bar's worth
+        //  of music arriving at once is worse than a missing bar.
+        if (note.at + offset < -0.05)
+        {
+            continue;
+        }
+
+        strike(ctx, chain.dry, note.semitones + drift, note.at + offset, note.gain * gain);
+        strike(ctx, chain.send, note.semitones + drift, note.at + offset, note.gain * gain);
     }
 }
 

@@ -32,6 +32,7 @@ import {
 } from '../config/constants';
 import { buildLevel, drainAt, HazardZone, LEAD_IN, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
 import { listenForGesture, play, wakeAudio } from '../systems/Audio';
+import { startMusic, stopMusic } from '../systems/Music';
 import { Coach } from '../ui/Coach';
 import { firstForcedJump, isPrompting } from '../systems/coach';
 import { formOf } from '../config/form';
@@ -319,6 +320,10 @@ export class Play extends Scene
         this.input.on('pointerdown', wakeAudio);
         listenForGesture();
 
+        //  From the top with the level, and stopped with it: the backing is
+        //  this run's music rather than something the game leaves playing.
+        startMusic();
+
         this.input_ = new InputSystem(
             this,
             (direction) => this.drop.moveLane(direction),
@@ -351,7 +356,12 @@ export class Play extends Scene
         //  pause: that gates the update loop, this pauses the whole scene.
         new OrientationGuard(this);
 
-        this.events.once('shutdown', () => this.input_.destroy());
+        this.events.once('shutdown', () => {
+
+            this.input_.destroy();
+            stopMusic();
+
+        });
 
         arrive(this);
     }
@@ -533,6 +543,10 @@ export class Play extends Scene
         this.effects.bloom(x, y, COLOR_FAIL_FLASH);
         play('fail');
 
+        //  The backing stops with the run, so the phrase that ends it is the
+        //  only thing playing when it lands.
+        stopMusic();
+
         //  Creeping in as it stops. The camera has pulled *back* for speed all
         //  game, so coming forward is the opposite gesture and reads as the
         //  world closing rather than as another boost.
@@ -663,6 +677,17 @@ export class Play extends Scene
         this.input_.setEnabled(!paused);
         this.pauseButton.setVisible(!paused);
 
+        //  Music under a paused game is the game carrying on without the
+        //  player, which is exactly what pausing is for stopping.
+        if (paused)
+        {
+            stopMusic();
+        }
+        else
+        {
+            startMusic();
+        }
+
         if (paused)
         {
             this.pauseOverlay = new PauseOverlay(this, {
@@ -707,6 +732,7 @@ export class Play extends Scene
     private onFinish (): void
     {
         play('finish');
+        stopMusic();
 
         if (this.finished)
         {
