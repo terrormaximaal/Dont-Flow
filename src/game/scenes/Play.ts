@@ -660,8 +660,32 @@ export class Play extends Scene
         {
             this.pauseOverlay = new PauseOverlay(this, {
                 onResume: () => this.setPaused(false),
-                onRetry: () => this.startLevel(this.levelIndex),
-                onMenu: () => leaveTo(this, () => this.scene.start('Title'))
+
+                //  Retrying an endless run means another endless run. It used
+                //  to mean level twelve, because survival leaves levelIndex on
+                //  whatever the player last played and startLevel believed it.
+                onRetry: () => {
+
+                    this.abandon();
+
+                    if (this.survival)
+                    {
+                        leaveTo(this, () => this.scene.restart({ survival: true }));
+
+                        return;
+                    }
+
+                    this.startLevel(this.levelIndex);
+
+                },
+
+                onMenu: () => {
+
+                    this.abandon();
+
+                    leaveTo(this, () => this.scene.start('Title'));
+
+                }
             }, new EnergySystem(this.save));
 
             return;
@@ -885,6 +909,25 @@ export class Play extends Scene
         }
 
         this.coach.set(null);
+    }
+
+    /**
+     * Walking away from a run that is still going.
+     *
+     * An endless run banks what it reached. It has no finish line, so leaving
+     * *is* how a run ends when the player does not want to lose it - and
+     * throwing the score away for quitting would make deliberately crashing the
+     * best way to keep one, which is a strange thing to teach.
+     *
+     * A level banks nothing, and should not: it has a finish, and the score is
+     * for reaching it.
+     */
+    private abandon (): void
+    {
+        if (this.survival && !this.finished)
+        {
+            this.save.recordSurvival(this.scoring.getPeak());
+        }
     }
 
     private startLevel (levelIndex: number): void
