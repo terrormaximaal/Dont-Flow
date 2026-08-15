@@ -103,6 +103,7 @@ function barStrikes (index: number): Strike[]
     return barNotes(index).map((note) => ({
         semitones: note.semitones,
         at: note.beat * BEAT_SECONDS,
-        gain: note.gain
+        gain: note.gain,
+        timbre: note.timbre
     }));
 }

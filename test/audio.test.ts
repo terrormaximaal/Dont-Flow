@@ -217,15 +217,18 @@ describe('what each moment sounds like', () => {
 
     });
 
-    //  Everything in play happens while the player is reading the road. The
-    //  instrument rings on its own, so what has to stay short is the *phrase*:
-    //  more than one note, and a cue stops being a sound and starts being
-    //  something to listen to.
-    it('keeps every in-play cue to a single note', () => {
+    //  Everything in play happens while the player is reading the road, so
+    //  each of those cues has to be one event. Not one note - a chord is one
+    //  event and sounds fuller than a note does - but everything in it has to
+    //  arrive together, or the cue becomes something to listen to.
+    it('lands every in-play cue as a single event', () => {
 
-        for (const cue of [ 'orb', 'gate', 'jump', 'land', 'press' ] as Cue[])
+        for (const cue of [ 'orb', 'gate', 'wrong', 'jump', 'land', 'press' ] as Cue[])
         {
-            expect(voiceFor(cue), cue).toHaveLength(1);
+            const notes = voiceFor(cue);
+            const spread = notes[notes.length - 1].at - notes[0].at;
+
+            expect(spread, cue).toBeLessThanOrEqual(0.05);
         }
 
     });

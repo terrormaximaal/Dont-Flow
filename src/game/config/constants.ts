@@ -1734,17 +1734,46 @@ export const SOUND_COMPRESSOR_RELEASE = 0.25;
 /** Middle C. Every note in the game is a number of semitones from here. */
 export const PIANO_ROOT_HZ = 261.63;
 
-/** Where a streak starts: the G above the root, which is where it sits best. */
-export const ORB_BASE_SEMITONES = 7;
+/**
+ * Where a streak starts.
+ *
+ * A fifth below the root, which puts a collected orb in the middle of the
+ * piano rather than at the top of it. It used to be an octave higher: bright,
+ * easy to hear over everything - and a bright note repeated once a second with
+ * three seconds of room behind it is not a reward, it is a smoke alarm.
+ */
+export const ORB_BASE_SEMITONES = -5;
 
-/** How far above that a streak may climb. Two octaves. */
-export const ORB_MAX_SEMITONES = 24;
+/**
+ * How far above that a streak may climb. One octave.
+ *
+ * Two was too far. The top of it was where the sound stopped being musical,
+ * and a streak long enough to get there is exactly the run that should sound
+ * best rather than worst.
+ */
+export const ORB_MAX_SEMITONES = 12;
 
 //  The voice, as three sine partials: the note, its octave, and the twelfth
 //  above that. A real string is far richer, but the first three partials in
 //  falling proportions are what makes a sine read as struck rather than as a
 //  test tone.
 export const PIANO_PARTIALS = [ 1, 0.34, 0.12 ];
+
+//  Where the top is taken off a struck note, as a multiple of its own pitch.
+//  Following the note rather than sitting at a fixed frequency is what keeps a
+//  low note from being left untouched while a high one is hollowed out.
+export const PIANO_TONE = 6;
+
+//  The held voice: the same note with the hammer taken off, which is what a
+//  chord is built from. Fewer partials, a slow fade in, and a darker filter -
+//  everything that makes a note sit under the game rather than announce
+//  itself.
+export const PAD_PARTIALS = [ 1, 0.22, 0.05 ];
+export const PAD_ATTACK = 0.45;
+//  A little longer than a bar, so one chord is still fading as the next
+//  arrives and the backing never has a seam in it.
+export const PAD_DECAY = 3.9;
+export const PAD_TONE = 3;
 
 /** Cents each partial above the first is stretched by, as a real string is. */
 export const PIANO_STRETCH = 5;
@@ -1772,8 +1801,11 @@ export const REVERB_DECAY = 2.2;
 /** Silence between the note and its room, in seconds. */
 export const REVERB_PREDELAY = 0.035;
 
-export const REVERB_WET = 0.62;
-export const REVERB_DRY = 0.45;
+//  Less than it was. A big room under single bright notes is atmosphere; the
+//  same room under chords that are already holding is a smear, and the two
+//  together were most of why the game sounded busy.
+export const REVERB_WET = 0.42;
+export const REVERB_DRY = 0.6;
 
 /** Seed for the room's noise, so the reverb is identical on every device. */
 export const REVERB_SEED = 8317;

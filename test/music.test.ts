@@ -8,7 +8,7 @@ import {
     ORB_BASE_SEMITONES
 } from '../src/game/config/constants';
 import { semitonesFor, voiceFor } from '../src/game/config/audio';
-import { barNotes, beatsOf, HOOK, LOOP_BARS, THEME } from '../src/game/config/music';
+import { barNotes, beatsOf, LOOP_BARS, THEME } from '../src/game/config/music';
 import { decayOf } from '../src/game/systems/voice';
 
 /** Every note the backing can play, anywhere in its loop. */
@@ -74,12 +74,6 @@ describe('the theme', () => {
     it('is what the title plays', () => {
 
         expect(voiceFor('title')).toEqual(THEME);
-
-    });
-
-    it('opens with the hook the backing quotes', () => {
-
-        expect(HOOK).toEqual(THEME.slice(0, HOOK.length));
 
     });
 
@@ -155,41 +149,40 @@ describe('the backing under a run', () => {
 
     });
 
-    //  A bass note that has died before the next one arrives leaves a hole
-    //  under the music, and the floor is meant to be continuous. Low notes on
-    //  this instrument ring for about two and a half seconds, which is less
-    //  than a bar - so the answer is how often it is struck, not how long it
-    //  is held.
-    it('strikes its bass again before the last one has died', () => {
+    //  A chord that has died before the next one arrives leaves a hole in the
+    //  backing, and a hole is heard as the music stopping. One that outlasts
+    //  the next by a long way is two harmonies at once, which is the other way
+    //  of being muddy. It has to be a little longer than a bar and no more.
+    it('holds each chord just past the next one', () => {
 
-        const beat = 60 / MUSIC_BPM;
-        const bass = barNotes(0).filter((note) => note.semitones === barNotes(0)[0].semitones);
+        const barSeconds = (60 / MUSIC_BPM) * MUSIC_BEATS_PER_BAR;
 
-        expect(bass.length, 'bass notes in a bar').toBeGreaterThan(1);
-        expect(bass[0].beat, 'on the downbeat').toBe(0);
-
-        for (let i = 1; i < bass.length; i++)
+        for (const note of barNotes(0))
         {
-            expect((bass[i].beat - bass[i - 1].beat) * beat, `gap ${i}`)
-                .toBeLessThan(decayOf(bass[i - 1].semitones));
+            const ring = decayOf(note.semitones, 'held');
+
+            expect(ring, 'reaches the next chord').toBeGreaterThan(barSeconds);
+            expect(ring, 'and does not outstay it').toBeLessThan(barSeconds * 2);
         }
-
-        //  And across the join into the next bar, which is the gap that is
-        //  easiest to leave open.
-        const last = bass[bass.length - 1];
-        const wrap = (MUSIC_BEATS_PER_BAR - last.beat) * beat;
-
-        expect(wrap, 'into the next bar').toBeLessThan(decayOf(last.semitones));
 
     });
 
-    it('quotes the theme now and then rather than every bar', () => {
+    //  Nothing under a run has a rhythm of its own. The backing used to pluck
+    //  its way across the bar and quote the theme every eight of them, and
+    //  underneath a game that already makes a sound every time an orb goes
+    //  past, that was the mess: two things playing patterns at each other.
+    it('lays down a chord rather than a pattern', () => {
 
-        const quoting = [ ...Array(LOOP_BARS).keys() ]
-            .filter((bar) => barNotes(bar).length > barNotes(1).length);
+        for (let bar = 0; bar < LOOP_BARS; bar++)
+        {
+            const notes = barNotes(bar);
 
-        expect(quoting, 'bars carrying the hook').toHaveLength(1);
-        expect(quoting[0], 'at the top of the loop').toBe(0);
+            for (const note of notes)
+            {
+                expect(note.timbre, `bar ${bar}`).toBe('held');
+                expect(note.beat, `bar ${bar}`).toBeLessThan(1);
+            }
+        }
 
     });
 

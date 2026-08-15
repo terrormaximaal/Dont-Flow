@@ -1,5 +1,6 @@
 import { MUSIC_BEATS_PER_BAR, MUSIC_BPM, ORB_BASE_SEMITONES } from './constants';
 import { Strike } from './audio';
+import { Timbre } from '../systems/voice';
 
 //  The tune, and the music under a run.
 //
@@ -48,10 +49,7 @@ export const THEME: Strike[] = [
     { semitones: HOME, at: 2.72, gain: 1 }
 ];
 
-/** The theme's opening, which is the part anybody would hum back. */
-export const HOOK = THEME.slice(0, 4);
-
-/** Seconds as beats, so the hook keeps the theme's own speed inside a bar. */
+/** Seconds as beats, for anything written in one that is played in the other. */
 export function beatsOf (seconds: number): number
 {
     return (seconds * MUSIC_BPM) / 60;
@@ -75,9 +73,6 @@ const CHORDS: Array<{ root: number; shape: number[] }> = [
     { root: HOME - 3, shape: [ 0, 3, 7 ] }
 ];
 
-/** Where in the bar the three chord notes fall, in beats. */
-const ARPEGGIO = [ 1, 2.5, 3.5 ];
-
 /** How many bars before the whole thing comes round again. */
 export const LOOP_BARS = 8;
 
@@ -90,15 +85,16 @@ export interface Beat
     beat: number;
 
     gain: number;
+
+    /** Held unless it says otherwise - the backing is chords, not a part. */
+    timbre?: Timbre;
 }
 
+/** How far apart the notes of one chord are laid down, in beats. */
+const SPREAD = 0.06;
+
 /**
- * One bar of the backing.
- *
- * Bass on the downbeat, three chord notes spread across the rest of it, and
- * the theme's opening over the top once every eight bars - often enough that
- * the run has a tune in it, rarely enough that it is never the thing being
- * listened to.
+ * One bar of the backing: a chord, and the floor under it.
  *
  * @param bar Which bar of the run, counted from the first. Loops on its own.
  */
@@ -107,30 +103,27 @@ export function barNotes (bar: number): Beat[]
     const step = ((bar % LOOP_BARS) + LOOP_BARS) % LOOP_BARS;
     const chord = CHORDS[step % CHORDS.length];
 
-    //  An octave down, and quiet: this is the floor the rest stands on rather
-    //  than something to be heard on its own. Struck twice a bar because a low
-    //  note on this instrument has stopped ringing before the bar is out, and
-    //  a floor with a hole in it is heard as the music stopping.
-    const notes: Beat[] = [
-        { semitones: chord.root - 12, beat: 0, gain: 0.75 },
-        { semitones: chord.root - 12, beat: MUSIC_BEATS_PER_BAR / 2, gain: 0.45 }
-    ];
+    //  The whole chord, held, arriving together on the downbeat.
+    //
+    //  It used to be a bass note and three plucked ones spread across the bar,
+    //  which is a pattern rather than a chord: four more events a bar under a
+    //  game that is already making one every time an orb goes past, and the
+    //  two of them together were the mess. A held chord has no rhythm to get in
+    //  the way of - it is a colour the run happens over, and it changes once a
+    //  bar without ever asking to be listened to.
+    const notes: Beat[] = chord.shape.map((interval, i) => ({
+        semitones: chord.root + interval,
 
-    chord.shape.forEach((interval, i) => {
+        //  Barely spread, so the chord is heard as one thing that has been
+        //  laid down rather than as three notes that happen to agree.
+        beat: i * SPREAD,
+        gain: i === 0 ? 0.9 : 0.55,
+        timbre: 'held' as Timbre
+    }));
 
-        notes.push({ semitones: chord.root + interval, beat: ARPEGGIO[i], gain: 0.4 });
-
-    });
-
-    //  The hook, an octave up, on the first bar of every loop. Its own timing
-    //  is in seconds, so it is placed by the bar it starts on and left alone.
-    if (step === 0)
-    {
-        for (const note of HOOK)
-        {
-            notes.push({ semitones: note.semitones + 12, beat: beatsOf(note.at), gain: 0.3 });
-        }
-    }
+    //  And the floor under it, an octave below the chord's own root, held for
+    //  as long as the chord it carries.
+    notes.push({ semitones: chord.root - 12, beat: 0, gain: 0.7, timbre: 'held' });
 
     return notes.filter((note) => note.beat < MUSIC_BEATS_PER_BAR);
 }

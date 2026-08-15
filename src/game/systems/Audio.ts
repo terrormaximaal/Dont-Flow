@@ -255,8 +255,8 @@ function schedule (
             continue;
         }
 
-        strike(ctx, chain.dry, note.semitones + drift, note.at + offset, note.gain * gain);
-        strike(ctx, chain.send, note.semitones + drift, note.at + offset, note.gain * gain);
+        strike(ctx, chain.dry, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre);
+        strike(ctx, chain.send, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre);
     }
 }
 
