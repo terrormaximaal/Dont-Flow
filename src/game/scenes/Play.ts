@@ -23,6 +23,7 @@ import {
     HAPTIC_MISS_MS,
     MAX_DELTA,
     PACE_SMOOTHING,
+    PIANO_MISS_GAIN,
     BOOST_ZOOM,
     BOOST_ZOOM_SMOOTHING,
     RAINBOW_ROWS,
@@ -47,6 +48,8 @@ import { useLanes } from '../systems/Lanes';
 import { OrientationGuard } from '../systems/OrientationGuard';
 import { PowerUps } from '../systems/PowerUps';
 import { SaveSystem } from '../systems/SaveSystem';
+import { sound } from '../systems/SoundSystem';
+import { collectSemitones, FAIL_JINGLE, FINISH_JINGLE, GATE_SEMITONES, missSemitones } from '../systems/piano';
 import { ScoreSystem } from '../systems/ScoreSystem';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Trail } from '../systems/Trail';
@@ -205,6 +208,12 @@ export class Play extends Scene
         this.drop = new Drop(this);
         this.effects = new Effects(this);
         this.scoring = new ScoreSystem();
+
+        //  Play can be reached without passing the title - a reload drops
+        //  straight back into the level being played - so the preference is
+        //  applied here too rather than only where it is set.
+        sound().setMuted(this.save.isMuted());
+        sound().listen();
         this.hud = new Hud(this, level.name, world);
 
         addVignette(this);
@@ -270,6 +279,10 @@ export class Play extends Scene
         //  and two things saying the same thing at once say it half as clearly.
         const previous = this.drop.getColorId();
 
+        //  A gate is the run's ground note: low, quiet, and under whatever the
+        //  streak is doing above it.
+        sound().note(GATE_SEMITONES, 0.5);
+
         this.drop.setColorId(color);
 
         const shed = previous ? COLOR_VALUES[previous] : COLOR_VALUES[color];
@@ -305,6 +318,12 @@ export class Play extends Scene
 
             this.effects.swallow(x, y, colorId ? COLOR_VALUES[colorId] : COLOR_FLASH);
             this.effects.haptic(HAPTIC_COLLECT_MS);
+
+            //  A step further up the scale for every orb in the streak, so the
+            //  run's own playing is what writes the tune. The note is taken
+            //  from the streak *after* this orb has been counted, which is what
+            //  makes the orb that raises the multiplier the one you hear rise.
+            sound().note(collectSemitones(this.scoring.getCombo()));
             this.drop.pulse();
             this.trail.boost(this.distance);
 
@@ -319,6 +338,8 @@ export class Play extends Scene
             this.drop.flash(COLOR_FLASH, FLASH_DURATION);
             this.cameras.main.shake(SHAKE_DURATION, SHAKE_INTENSITY);
             this.effects.haptic(HAPTIC_MISS_MS);
+
+            sound().note(missSemitones(), PIANO_MISS_GAIN);
 
             showFloatingScore(this, x, y, lost);
         }
@@ -362,6 +383,9 @@ export class Play extends Scene
         }
 
         this.finished = true;
+
+        //  Under the miss that caused it, which is still ringing.
+        sound().phrase(FAIL_JINGLE);
 
         this.pauseButton.setVisible(false);
         this.input_.setEnabled(false);
@@ -482,7 +506,8 @@ export class Play extends Scene
             this.pauseOverlay = new PauseOverlay(this, {
                 onResume: () => this.setPaused(false),
                 onRetry: () => this.startLevel(this.levelIndex),
-                onMenu: () => leaveTo(this, () => this.scene.start('Title'))
+                onMenu: () => leaveTo(this, () => this.scene.start('Title')),
+                onToggleSound: () => this.setMuted(!sound().isMuted())
             }, new EnergySystem(this.save));
 
             return;
@@ -494,6 +519,13 @@ export class Play extends Scene
         this.pauseOverlay = null;
     }
 
+    /** Both halves of the switch: what is heard now, and what is heard next time. */
+    private setMuted (muted: boolean): void
+    {
+        sound().setMuted(muted);
+        this.save.setMuted(muted);
+    }
+
     private onFinish (): void
     {
         if (this.finished)
@@ -502,6 +534,8 @@ export class Play extends Scene
         }
 
         this.finished = true;
+
+        sound().phrase(FINISH_JINGLE);
 
         this.pauseButton.setVisible(false);
         this.input_.setEnabled(false);

@@ -28,6 +28,9 @@ interface SaveData
 
     /** When the current refill interval started, as epoch ms. */
     energyAt: number;
+
+    /** Whether the player has turned the sound off. */
+    muted: boolean;
 }
 
 function emptySave (): SaveData
@@ -38,7 +41,8 @@ function emptySave (): SaveData
         furthestLevel: 0,
         bestScores: new Array(LEVEL_COUNT).fill(null),
         energy: MAX_ENERGY,
-        energyAt: Date.now()
+        energyAt: Date.now(),
+        muted: false
     };
 }
 
@@ -147,6 +151,13 @@ export class SaveSystem
             save.energyAt = Math.floor(candidate.energyAt);
         }
 
+        //  Added later still, and read the same forgiving way: a save written
+        //  before there was any sound simply has it on.
+        if (typeof candidate.muted === 'boolean')
+        {
+            save.muted = candidate.muted;
+        }
+
         return save;
     }
 
@@ -221,6 +232,18 @@ export class SaveSystem
     }
 
     /** Called as a level begins, so a reload comes back to the same place. */
+    isMuted (): boolean
+    {
+        return this.data.muted;
+    }
+
+    setMuted (muted: boolean): void
+    {
+        this.data.muted = muted;
+
+        this.persist();
+    }
+
     setCurrentLevel (levelIndex: number): void
     {
         const index = clampLevelIndex(levelIndex);

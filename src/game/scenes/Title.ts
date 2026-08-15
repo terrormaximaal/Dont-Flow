@@ -28,6 +28,8 @@ import { paintPageColors } from '../systems/PageBackdrop';
 import { EnergySystem } from '../systems/EnergySystem';
 import { MenuSky } from '../systems/MenuSky';
 import { SaveSystem } from '../systems/SaveSystem';
+import { sound } from '../systems/SoundSystem';
+import { TITLE_JINGLE } from '../systems/piano';
 import { Button } from '../ui/Button';
 import { EnergyMeter } from '../ui/EnergyMeter';
 import { MENU_LAYOUT } from '../ui/menuLayout';
@@ -72,6 +74,13 @@ export class Title extends Scene
         const save = new SaveSystem();
         const energy = new EnergySystem(save);
         const resumeLevel = save.getResumeLevel();
+
+        //  The whole page has one voice and this is the first screen every
+        //  session passes through, so this is where it is woken and told what
+        //  the player decided about it last time.
+        sound().setMuted(save.isMuted());
+        sound().listen();
+        sound().whenAwake(() => sound().phrase(TITLE_JINGLE));
 
         //  "Continue" only means something if there is somewhere to continue to.
         const canContinue = RESUME_AT_LAST_LEVEL && resumeLevel > 0;

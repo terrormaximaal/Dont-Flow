@@ -1467,3 +1467,74 @@ export const DEPTH_DROP = 20;
 export const DEPTH_FX = 25;
 export const DEPTH_HUD = 40;
 export const DEPTH_OVERLAY = 50;
+
+// ---------------------------------------------------------------------------
+//  Sound
+// ---------------------------------------------------------------------------
+//  Every sound the game makes is built from oscillators at the moment it
+//  plays: no files, the same way every picture in it is drawn rather than
+//  loaded. One instrument, a piano-ish struck tone, in a large room.
+
+export const SOUND_ENABLED = true;
+
+/** Everything the game plays passes through this. */
+export const SOUND_MASTER = 0.9;
+
+//  The limiter across the master. Notes are triggered by how the player is
+//  doing rather than by an arrangement, so a good run overlaps half a dozen of
+//  them and their tails - which without this adds up past what the speaker can
+//  give and is heard as a crackle. Set gently: it holds the peaks of a busy
+//  moment down, and does nothing at all to a single note.
+export const SOUND_COMPRESSOR_THRESHOLD = -14;
+export const SOUND_COMPRESSOR_KNEE = 12;
+export const SOUND_COMPRESSOR_RATIO = 6;
+export const SOUND_COMPRESSOR_ATTACK = 0.004;
+export const SOUND_COMPRESSOR_RELEASE = 0.25;
+
+/** Middle C. Every note in the game is a number of semitones from here. */
+export const PIANO_ROOT_HZ = 261.63;
+
+//  The voice, as three sine partials: the note, its octave, and the twelfth
+//  above that. A real string is far richer, but the first three partials in
+//  falling proportions are what makes a sine read as struck rather than as a
+//  test tone.
+export const PIANO_PARTIALS = [ 1, 0.34, 0.12 ];
+
+/** Cents each partial above the first is stretched by, as a real string is. */
+export const PIANO_STRETCH = 5;
+
+/** Struck, not blown: the note is at full volume almost immediately. */
+export const PIANO_ATTACK = 0.006;
+
+/** How long a note at the root takes to fall away, in seconds. */
+export const PIANO_DECAY = 1.9;
+
+//  High notes ring shorter than low ones. 0 would give every note the same
+//  length, which is the single thing that most gives a synth away as one.
+export const PIANO_DECAY_TILT = 0.45;
+
+export const PIANO_GAIN = 0.7;
+
+//  How far up the scale a streak climbs before it holds. Fourteen steps is
+//  just under three octaves, which is as high as the voice stays warm.
+export const PIANO_STREAK_CAP = 14;
+
+/** Where a wrong colour lands: below the root, so a miss is heard as down. */
+export const PIANO_MISS_SEMITONES = -17;
+export const PIANO_MISS_GAIN = 0.7;
+
+//  The room. Long and wide - the tail is most of the sound, and a note landing
+//  in it is what makes a streak feel like one phrase rather than a row of beeps.
+export const REVERB_SECONDS = 3.4;
+
+/** How sharply the tail falls away. Higher is a smaller, deader room. */
+export const REVERB_DECAY = 2.2;
+
+/** Silence between the note and its room, in seconds. */
+export const REVERB_PREDELAY = 0.035;
+
+export const REVERB_WET = 0.62;
+export const REVERB_DRY = 0.45;
+
+/** Seed for the room's noise, so the reverb is identical on every device. */
+export const REVERB_SEED = 8317;

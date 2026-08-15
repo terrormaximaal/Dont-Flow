@@ -16,6 +16,13 @@ const config: Phaser.Types.Core.GameConfig = {
         mode: Scale.FIT,
         autoCenter: Scale.CENTER_BOTH
     },
+    //  The game owns its own audio: every sound in it is synthesised on the
+    //  spot by `systems/SoundSystem`, and there is not a single file for
+    //  Phaser's sound manager to play. Left on, it opens a second audio context
+    //  the game never uses, and browsers allow only a handful of them.
+    audio: {
+        noAudio: true
+    },
     //  First in the list is the scene the game boots into.
     scene: [
         Title,

@@ -14,6 +14,7 @@ import {
     OVERLAY_TITLE_SIZE
 } from '../config/constants';
 import { EnergySystem } from '../systems/EnergySystem';
+import { sound } from '../systems/SoundSystem';
 import { Button, ButtonVariant } from './Button';
 import { EnergyMeter } from './EnergyMeter';
 
@@ -22,6 +23,15 @@ export interface PauseActions
     onResume: () => void;
     onRetry: () => void;
     onMenu: () => void;
+
+    /** Flips the sound and remembers the answer. */
+    onToggleSound: () => void;
+}
+
+/** The switch says what pressing it does, not what the state is. */
+function soundLabel (): string
+{
+    return sound().isMuted() ? 'SOUND ON' : 'SOUND OFF';
 }
 
 /**
@@ -91,6 +101,25 @@ export class PauseOverlay
             this.layer.add(button.container);
 
         });
+
+        //  Pause is the only screen every player reaches from anywhere, so it
+        //  is where the sound switch lives - a game that cannot be silenced on
+        //  a phone is a game that gets closed rather than muted.
+        const toggle = new Button(scene, {
+            x: GAME_WIDTH / 2,
+            y: centerY + 30 + (buttons.length * step),
+            label: soundLabel(),
+            variant: 'ghost',
+            onPress: () => {
+
+                actions.onToggleSound();
+
+                toggle.labelText.setText(soundLabel());
+
+            }
+        });
+
+        this.layer.add(toggle.container);
 
         //  What is left for another run, and the only thing on this screen that
         //  explains a locked Retry.
