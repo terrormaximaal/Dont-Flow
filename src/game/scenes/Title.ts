@@ -6,6 +6,9 @@ import {
     DEPTH_HUD,
     GAME_WIDTH,
     HUD_FONT,
+    MUTE_ALPHA,
+    MUTE_MARGIN,
+    MUTE_SIZE,
     RESUME_AT_LAST_LEVEL,
     TITLE_DROP_RADIUS,
     TITLE_TAGLINE_SIZE
@@ -29,6 +32,8 @@ import { EnergySystem } from '../systems/EnergySystem';
 import { MenuSky } from '../systems/MenuSky';
 import { SaveSystem } from '../systems/SaveSystem';
 import { Button } from '../ui/Button';
+//  Aliased: this scene already has a local called play - the PLAY button.
+import { play as playCue, setMuted, wakeAudio } from '../systems/Audio';
 import { EnergyMeter } from '../ui/EnergyMeter';
 import { MENU_LAYOUT } from '../ui/menuLayout';
 import { TAGLINE } from '../ui/taglines';
@@ -141,6 +146,39 @@ export class Title extends Scene
         });
 
         levels.container.setDepth(DEPTH_HUD);
+
+        //  Sound on or off, remembered. Small and in a corner: it is the one
+        //  control here that is not about playing, and a player looking for it
+        //  knows to look in a corner.
+        setMuted(save.isMuted());
+
+        const speaker = this.add.text(GAME_WIDTH - MUTE_MARGIN, MUTE_MARGIN, save.isMuted() ? 'SOUND OFF' : 'SOUND ON', {
+            fontFamily: HUD_FONT,
+            fontSize: MUTE_SIZE,
+            color: COLOR_HUD_DIM
+        });
+
+        speaker.setOrigin(1, 0);
+        speaker.setDepth(DEPTH_HUD);
+        speaker.setAlpha(MUTE_ALPHA);
+        speaker.setInteractive({ useHandCursor: true });
+
+        speaker.on('pointerdown', () => {
+
+            //  Woken here as well as in Button: this is a real gesture, and a
+            //  player who turns the sound *on* should hear the next thing that
+            //  happens rather than having to press something else first.
+            wakeAudio();
+
+            const next = !save.isMuted();
+
+            save.setMuted(next);
+            setMuted(next);
+            speaker.setText(next ? 'SOUND OFF' : 'SOUND ON');
+
+            playCue('press');
+
+        });
 
         this.meter = new EnergyMeter(this, MENU_LAYOUT.meterY, energy);
 

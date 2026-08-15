@@ -31,6 +31,7 @@ import {
     SHAKE_INTENSITY
 } from '../config/constants';
 import { buildLevel, drainAt, HazardZone, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
+import { play, wakeAudio } from '../systems/Audio';
 import { formOf } from '../config/form';
 import { batchAt, BATCH_AHEAD, BATCH_CHUNKS, generateRun, paceAt, speedAtChunk, SURVIVAL_PALETTE, tierAt } from '../config/survival';
 import { loseLife, isSheltered, SURVIVAL_LIVES } from '../systems/lives';
@@ -303,10 +304,12 @@ export class Play extends Scene
 
         this.powerUps = new PowerUps(this, course.powerUps, (x, y) => this.onRainbow(x, y));
 
+        this.input.on('pointerdown', wakeAudio);
+
         this.input_ = new InputSystem(
             this,
             (direction) => this.drop.moveLane(direction),
-            () => this.drop.jump(this.distance)
+            () => { play('jump'); this.drop.jump(this.distance); }
         );
 
         this.pauseButton = new PauseButton(this, () => this.setPaused(true));
@@ -332,6 +335,8 @@ export class Play extends Scene
         {
             return;
         }
+
+        play('gate');
 
         //  Thrown off in the colour being left behind rather than the one
         //  arriving: the new one is already flooding through the drop itself,
@@ -369,6 +374,10 @@ export class Play extends Scene
         {
             const gained = this.scoring.collect();
 
+            //  Pitched off the combo *after* it rose, so the first orb of a
+            //  streak is the first note rather than a repeat of the last one.
+            play('orb', this.scoring.getCombo());
+
             const colorId = this.drop.getColorId();
 
             this.effects.swallow(x, y, colorId ? COLOR_VALUES[colorId] : COLOR_FLASH);
@@ -388,6 +397,8 @@ export class Play extends Scene
         else
         {
             const lost = this.scoring.penalise();
+
+            play('wrong');
 
             //  Three signals at once, because a penalty has to land: the drop
             //  flashes, the screen kicks, and the points lost float off the hit.
@@ -453,6 +464,7 @@ export class Play extends Scene
         //  in a run and it happens while the player is reading the road.
         this.cameras.main.shake(SHAKE_DURATION * 2, SHAKE_INTENSITY * 1.6);
         this.effects.haptic(HAPTIC_MISS_MS * 2);
+        play('life');
 
         return true;
     }
@@ -489,6 +501,7 @@ export class Play extends Scene
 
         this.effects.haptic(HAPTIC_MISS_MS * 3);
         this.effects.bloom(x, y, COLOR_FAIL_FLASH);
+        play('fail');
 
         //  Creeping in as it stops. The camera has pulled *back* for speed all
         //  game, so coming forward is the opposite gesture and reads as the
@@ -582,6 +595,8 @@ export class Play extends Scene
      */
     private onRainbow (x: number, y: number): void
     {
+        play('rainbow');
+
         if (this.finished)
         {
             return;
@@ -637,6 +652,8 @@ export class Play extends Scene
 
     private onFinish (): void
     {
+        play('finish');
+
         if (this.finished)
         {
             return;

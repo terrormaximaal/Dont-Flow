@@ -1467,6 +1467,11 @@ export const HAZARD_PLAIN_COLOR = 0xff9b3d;
  * off the visible table has not been forgotten - beat the third-best twice and
  * the fourth is still there underneath.
  */
+/** The sound toggle: a corner label rather than a button. */
+export const MUTE_MARGIN = 18;
+export const MUTE_SIZE = '13px';
+export const MUTE_ALPHA = 0.55;
+
 export const SURVIVAL_TABLE = 5;
 export const SURVIVAL_TABLE_SHOWN = 3;
 

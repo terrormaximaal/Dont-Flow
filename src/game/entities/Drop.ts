@@ -25,6 +25,7 @@ import {
     RAINBOW_WARNING,
     RAINBOW_WARNING_SPEED
 } from '../config/constants';
+import { play } from '../systems/Audio';
 import { bufferedTakeoff, hasLanded, jumpHeight } from '../systems/jump';
 import { clampLane, laneCenterX, startLane } from '../systems/Lanes';
 import { drawWaterDrop } from '../ui/shapes';
@@ -279,6 +280,14 @@ export class Drop
             this.takeoff = bufferedTakeoff(landedAt, this.requested);
             this.requested = null;
             this.juice.pulse();
+
+            //  Only when it stays down. A buffered jump leaves the ground on
+            //  the same frame it touched it, and a landing sound under a
+            //  take-off sound is two noises for one gesture.
+            if (this.takeoff === null)
+            {
+                play('land');
+            }
         }
 
         this.height = jumpHeight(travelled, this.takeoff);

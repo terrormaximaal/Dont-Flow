@@ -41,6 +41,9 @@ interface SaveData
      * simply has not got one, which reads as "no runs yet" and is exactly true.
      */
     survivalScores?: number[];
+
+    /** Whether the player has turned the sound off. */
+    muted?: boolean;
 }
 
 function emptySave (): SaveData
@@ -52,7 +55,8 @@ function emptySave (): SaveData
         bestScores: new Array(LEVEL_COUNT).fill(null),
         energy: MAX_ENERGY,
         energyAt: Date.now(),
-        survivalScores: []
+        survivalScores: [],
+        muted: false
     };
 }
 
@@ -161,6 +165,11 @@ export class SaveSystem
             save.energyAt = Math.floor(candidate.energyAt);
         }
 
+        if (typeof candidate.muted === 'boolean')
+        {
+            save.muted = candidate.muted;
+        }
+
         //  The endless table, which was written to storage and then thrown away
         //  on every load until a test asked for it back. Everything here is
         //  rebuilt field by field from an empty save, which is what makes a
@@ -239,6 +248,18 @@ export class SaveSystem
             .filter((score): score is number => typeof score === 'number' && Number.isFinite(score))
             .sort((a, b) => b - a)
             .slice(0, SURVIVAL_TABLE);
+    }
+
+    /** Whether the player has turned the sound off. */
+    isMuted (): boolean
+    {
+        return this.data.muted === true;
+    }
+
+    setMuted (muted: boolean): void
+    {
+        this.data.muted = muted;
+        this.persist();
     }
 
     /** The best endless run so far, or null if there has not been one. */
