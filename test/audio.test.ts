@@ -10,6 +10,8 @@ import {
     pitchFor,
     semitonesFor,
     Strike,
+    thinned,
+    CROWD_SECONDS,
     variesOnRepeat,
     voiceFor
 } from '../src/game/config/audio';
@@ -335,6 +337,67 @@ describe('what each moment sounds like', () => {
         {
             expect(loudest(cue) * SOUND_MASTER, `${cue}`).toBeLessThanOrEqual(1);
         }
+
+    });
+
+});
+
+describe('a stretch of road that is asking for a lot at once', () => {
+
+    //  Measured from the shipped levels: the calm ones leave half a second
+    //  between sounds, and the last few ask for eight a second with gaps of an
+    //  eighth. The threshold sits between the two, so an easy level is never
+    //  thinned and a hard one always is.
+    it('leaves a cue alone when there is room around it', () => {
+
+        expect(thinned(voiceFor('orb', 3), 0.5)).toEqual(voiceFor('orb', 3));
+        expect(thinned(voiceFor('orb', 3), CROWD_SECONDS)).toEqual(voiceFor('orb', 3));
+
+    });
+
+    //  The held note under a collect is there to give one of them a body. A
+    //  stretch of them does not need one: eight a second are already holding
+    //  each other up, and played in full they stop being collects and become a
+    //  wash.
+    it('drops the body of a cue that lands in a crowd', () => {
+
+        const crowded = thinned(voiceFor('orb', 3), 0.1);
+
+        expect(crowded.length).toBeLessThan(voiceFor('orb', 3).length);
+        expect(crowded.every((note) => note.timbre !== 'held')).toBe(true);
+
+    });
+
+    it('ducks what is left rather than only thinning it', () => {
+
+        const crowded = thinned(voiceFor('orb', 3), 0.1);
+
+        expect(crowded[0].gain).toBeLessThan(voiceFor('orb', 3)[0].gain);
+
+    });
+
+    //  A cue made entirely of held notes - a gate is one - must still be heard
+    //  when it lands in a crowd, or a doorway would silently go by exactly on
+    //  the levels where reading one matters most.
+    it('never thins a cue away to nothing', () => {
+
+        for (const cue of CUES)
+        {
+            expect(thinned(voiceFor(cue), 0.02).length, cue).toBeGreaterThan(0);
+        }
+
+    });
+
+    //  Every note keeps its pitch and its place. Thinning is about how much is
+    //  playing, and a cue that changed pitch under pressure would be a cue the
+    //  player cannot learn.
+    it('changes what is played rather than what it says', () => {
+
+        const full = voiceFor('wrong');
+        const crowded = thinned(full, 0.05);
+
+        expect(crowded[0].semitones).toBe(full[0].semitones);
+        expect(crowded[0].at).toBe(full[0].at);
 
     });
 

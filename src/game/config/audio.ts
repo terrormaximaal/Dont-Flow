@@ -251,6 +251,47 @@ export function voiceFor (cue: Cue, combo = 0): Strike[]
     }
 }
 
+/**
+ * How close two cues have to be before the game starts thinning them.
+ *
+ * The shipped levels ask for up to eight sounds a second on their busiest
+ * stretches, with gaps of an eighth of a second - and every one of those
+ * sounds rings for two seconds and is copied into a room that holds it for
+ * three. Played in full, a hard stretch is two dozen notes sounding at once:
+ * twice the loudness of a calm one, and a wash rather than a run of collects.
+ *
+ * A little over an eighth of a second, so an ordinary level never trips it and
+ * only the stretches that are genuinely crowded are thinned.
+ */
+export const CROWD_SECONDS = 0.3;
+
+/** How much a cue gives up when it lands in a crowd. */
+export const CROWD_DUCK = 0.72;
+
+/**
+ * A cue as it is played when the last one was `sinceLast` seconds ago.
+ *
+ * Crowded, it keeps the note that has to be heard and drops the held ones
+ * underneath it. Those are there to give a single collect a body, and a body
+ * is exactly what a stretch of them does not need - eight of them a second
+ * are already holding each other up.
+ *
+ * The phrases that mark an ending are never thinned; they are handed here
+ * unchanged because nothing that plays once a run is what makes it crowded.
+ */
+export function thinned (notes: Strike[], sinceLast: number): Strike[]
+{
+    if (sinceLast >= CROWD_SECONDS)
+    {
+        return notes;
+    }
+
+    const struck = notes.filter((note) => note.timbre !== 'held');
+    const kept = struck.length > 0 ? struck : notes.slice(0, 1);
+
+    return kept.map((note) => ({ ...note, gain: note.gain * CROWD_DUCK }));
+}
+
 /** Every cue there is, so a test can hold the table to being complete. */
 export const CUES: Cue[] = [
     'orb', 'wrong', 'gate', 'jump', 'land', 'rainbow', 'life', 'fail', 'finish', 'press', 'title'

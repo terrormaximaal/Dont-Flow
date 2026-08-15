@@ -1,4 +1,5 @@
-import { Cue, DETUNE_CENTS, Strike, variesOnRepeat, voiceFor } from '../config/audio';
+import { Cue, DETUNE_CENTS, Strike, thinned, variesOnRepeat, voiceFor } from '../config/audio';
+import { CROWD_SECONDS } from '../config/audio';
 import { PIANO_GAIN } from '../config/constants';
 import { buildMixer, Mixer } from './mixer';
 import { strike } from './voice';
@@ -19,6 +20,9 @@ let mixer: Mixer | null = null;
 let unavailable = false;
 let muted = false;
 let listening = false;
+
+/** When the last cue was played, on the audio clock, to hear a crowd coming. */
+let lastCueAt = -1;
 
 /** Asked for before the browser would allow it, and owed once it does. */
 let owed: (() => void) | null = null;
@@ -178,7 +182,18 @@ export function play (cue: Cue, combo = 0): void
             ? (((Math.random() * 2) - 1) * DETUNE_CENTS) / 100
             : 0;
 
-        schedule(ctx, voiceFor(cue, combo), ctx.currentTime, PIANO_GAIN, drift);
+        //  Thinned when they are arriving on top of each other, and the copy
+        //  into the room dropped with them: the room is where a busy stretch
+        //  turns into a wash, because every note is held there for three
+        //  seconds after the note itself has gone.
+        const now = ctx.currentTime;
+        const gap = lastCueAt < 0 ? Infinity : now - lastCueAt;
+        const crowded = variesOnRepeat(cue) && gap < CROWD_SECONDS;
+        const notes = crowded ? thinned(voiceFor(cue, combo), gap) : voiceFor(cue, combo);
+
+        lastCueAt = now;
+
+        schedule(ctx, notes, now, PIANO_GAIN, drift, !crowded);
     }
     catch
     {
@@ -221,7 +236,7 @@ export function playAt (notes: Strike[], when: number, gain = 1): void
 
     try
     {
-        schedule(ctx, notes, when, gain * PIANO_GAIN, 0);
+        schedule(ctx, notes, when, gain * PIANO_GAIN, 0, true);
     }
     catch
     {
@@ -239,7 +254,8 @@ function schedule (
     notes: Strike[],
     from: number,
     gain: number,
-    drift: number
+    drift: number,
+    room: boolean
 ): void
 {
     const chain = mixer ??= buildMixer(ctx, ctx.destination);
@@ -256,7 +272,11 @@ function schedule (
         }
 
         strike(ctx, chain.dry, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre);
-        strike(ctx, chain.send, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre);
+
+        if (room)
+        {
+            strike(ctx, chain.send, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre);
+        }
     }
 }
 
@@ -269,4 +289,5 @@ export function resetAudioForTest (): void
     muted = false;
     owed = null;
     listening = false;
+    lastCueAt = -1;
 }
