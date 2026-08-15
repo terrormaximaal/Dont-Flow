@@ -1,4 +1,4 @@
-import { MAX_ENERGY, SAVE_VERSION, STORAGE_KEY } from '../config/constants';
+import { MAX_ENERGY, SAVE_VERSION, STORAGE_KEY, SURVIVAL_TABLE } from '../config/constants';
 import { clampLevelIndex, LEVEL_COUNT } from '../config/levels';
 import { clamp } from '../utils/math';
 
@@ -29,8 +29,37 @@ interface SaveData
     /** When the current refill interval started, as epoch ms. */
     energyAt: number;
 
+    /**
+     * The best endless runs, highest first.
+     *
+     * A table rather than a single figure. One best answers "have I ever done
+     * well"; a table answers "was that run any good", which is the question a
+     * player actually has the moment one ends - and it is the difference
+     * between a number that changes twice and a thing worth chasing.
+     *
+     * Optional on the stored shape rather than a version bump: an older save
+     * simply has not got one, which reads as "no runs yet" and is exactly true.
+     */
+    survivalScores?: number[];
+
     /** Whether the player has turned the sound off. */
-    muted: boolean;
+    muted?: boolean;
+
+    /**
+     * Whether the colours wear their marks. On unless turned off.
+     *
+     * Stored as "off" rather than "on" so a save written before this existed
+     * reads as marks being on, which is the default and the safe answer.
+     */
+    marksOff?: boolean;
+
+    /**
+     * Which lessons the player has already been given.
+     *
+     * Once each, ever. A prompt that came back would be the game shouting at
+     * somebody who has known how to play for an hour.
+     */
+    taught?: string[];
 }
 
 function emptySave (): SaveData
@@ -42,7 +71,9 @@ function emptySave (): SaveData
         bestScores: new Array(LEVEL_COUNT).fill(null),
         energy: MAX_ENERGY,
         energyAt: Date.now(),
-        muted: false
+        survivalScores: [],
+        muted: false,
+        taught: []
     };
 }
 
@@ -151,11 +182,33 @@ export class SaveSystem
             save.energyAt = Math.floor(candidate.energyAt);
         }
 
-        //  Added later still, and read the same forgiving way: a save written
-        //  before there was any sound simply has it on.
         if (typeof candidate.muted === 'boolean')
         {
             save.muted = candidate.muted;
+        }
+
+        if (typeof candidate.marksOff === 'boolean')
+        {
+            save.marksOff = candidate.marksOff;
+        }
+
+        if (Array.isArray(candidate.taught))
+        {
+            save.taught = candidate.taught.filter((name): name is string => typeof name === 'string');
+        }
+
+        //  The endless table, which was written to storage and then thrown away
+        //  on every load until a test asked for it back. Everything here is
+        //  rebuilt field by field from an empty save, which is what makes a
+        //  corrupt file harmless - and it is also what silently drops any field
+        //  somebody forgets to add here, however carefully the writing end was
+        //  done. A player's best runs vanished on reload for exactly that long.
+        if (Array.isArray(candidate.survivalScores))
+        {
+            save.survivalScores = candidate.survivalScores
+                .filter((score): score is number => typeof score === 'number' && Number.isFinite(score))
+                .sort((a, b) => b - a)
+                .slice(0, SURVIVAL_TABLE);
         }
 
         return save;
@@ -202,6 +255,104 @@ export class SaveSystem
     }
 
     /** @returns the best score, or null if the level has never been finished. */
+    /**
+     * The best endless runs, highest first.
+     *
+     * Defensive about what comes back from storage, like everything else here:
+     * a stored value can be missing, the wrong type, or full of things that are
+     * not numbers, and the game has to start anyway.
+     */
+    getSurvivalScores (): number[]
+    {
+        const stored = this.data.survivalScores;
+
+        if (!Array.isArray(stored))
+        {
+            return [];
+        }
+
+        return stored
+            .filter((score): score is number => typeof score === 'number' && Number.isFinite(score))
+            .sort((a, b) => b - a)
+            .slice(0, SURVIVAL_TABLE);
+    }
+
+    /** Whether the player has turned the sound off. */
+    isMuted (): boolean
+    {
+        return this.data.muted === true;
+    }
+
+    setMuted (muted: boolean): void
+    {
+        this.data.muted = muted;
+        this.persist();
+    }
+
+    /**
+     * Whether the colours wear their marks.
+     *
+     * Stored the other way up - as "off" - so a save written before this
+     * existed reads as marks being on, which is both the default and the safe
+     * answer for a player who has not been asked.
+     */
+    hasMarks (): boolean
+    {
+        return this.data.marksOff !== true;
+    }
+
+    setMarks (on: boolean): void
+    {
+        this.data.marksOff = !on;
+        this.persist();
+    }
+
+    /** Whether a lesson has already been given. */
+    hasLearned (lesson: string): boolean
+    {
+        return (this.data.taught ?? []).includes(lesson);
+    }
+
+    /** Remember that it has, so it is never given twice. */
+    recordLesson (lesson: string): void
+    {
+        if (this.hasLearned(lesson))
+        {
+            return;
+        }
+
+        this.data.taught = [ ...(this.data.taught ?? []), lesson ];
+        this.persist();
+    }
+
+    /** The best endless run so far, or null if there has not been one. */
+    getSurvivalBest (): number | null
+    {
+        return this.getSurvivalScores()[0] ?? null;
+    }
+
+    /**
+     * Records an endless run.
+     *
+     * @returns where it placed, from 1, or 0 if it did not make the table. The
+     *          panel says "best run" for a first place and nothing for a miss,
+     *          so it needs the position rather than a yes or no.
+     */
+    recordSurvival (score: number): number
+    {
+        const table = [ ...this.getSurvivalScores(), score ]
+            .sort((a, b) => b - a)
+            .slice(0, SURVIVAL_TABLE);
+
+        this.data.survivalScores = table;
+        this.persist();
+
+        //  indexOf finds the first entry equal to this score, which is the
+        //  right answer when a run ties one already there: a run that matched
+        //  the best has equalled it, not come second to it.
+        return table.indexOf(score) + 1;
+    }
+
     getBestScore (levelIndex: number): number | null
     {
         return this.data.bestScores[clampLevelIndex(levelIndex)] ?? null;
@@ -232,18 +383,6 @@ export class SaveSystem
     }
 
     /** Called as a level begins, so a reload comes back to the same place. */
-    isMuted (): boolean
-    {
-        return this.data.muted;
-    }
-
-    setMuted (muted: boolean): void
-    {
-        this.data.muted = muted;
-
-        this.persist();
-    }
-
     setCurrentLevel (levelIndex: number): void
     {
         const index = clampLevelIndex(levelIndex);

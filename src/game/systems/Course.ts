@@ -39,29 +39,49 @@ export class Course
     private orbs: Orb[] = [];
     private obstacles: Obstacle[] = [];
 
-    private readonly finish: FinishGate;
+    private readonly finish: FinishGate | null;
     private readonly events: CourseEvents;
+    private readonly scene: Scene;
 
-    constructor (scene: Scene, level: Level, events: CourseEvents)
+    /**
+     * @param endless Whether the course has an end at all. An endless one gets
+     *                no finish gate and is topped up by `extend` as the drop
+     *                works through it - a run that cannot be completed must
+     *                not have a finish line drawn somewhere in front of it.
+     */
+    constructor (scene: Scene, level: Level, events: CourseEvents, endless = false)
     {
+        this.scene = scene;
         this.events = events;
-        this.finish = new FinishGate(scene, level.finishDistance);
+        this.finish = endless ? null : new FinishGate(scene, level.finishDistance);
 
-        //  The whole course is only a few dozen objects, so it is built up
-        //  front and culled behind the drop rather than streamed in.
+        this.extend(level);
+    }
+
+    /**
+     * Adds more course in front of what is already there.
+     *
+     * A level's worth is only a few dozen objects, which is why the whole thing
+     * used to be built at once. An endless run cannot be: the pieces arrive a
+     * batch at a time and the ones behind the drop are culled, so the number
+     * standing at any moment stays about what a level costs however long the
+     * run goes on.
+     */
+    extend (level: Level): void
+    {
         for (const spec of level.gates)
         {
-            this.gates.push(new GatePair(scene, spec));
+            this.gates.push(new GatePair(this.scene, spec));
         }
 
         for (const spec of level.orbs)
         {
-            this.orbs.push(new Orb(scene, spec));
+            this.orbs.push(new Orb(this.scene, spec));
         }
 
         for (const spec of level.obstacles)
         {
-            this.obstacles.push(new Obstacle(scene, spec));
+            this.obstacles.push(new Obstacle(this.scene, spec));
         }
     }
 
@@ -90,6 +110,11 @@ export class Course
         this.updateObstacles(travelled, dropX, dropColor, wild, cullY, dropHeight);
         this.updateOrbs(travelled, dropX, targetX, dropColor, wild, cullY, dropHeight);
 
+        if (this.finish === null)
+        {
+            return;
+        }
+
         this.finish.update(travelled);
 
         if (!this.finish.triggered && travelled >= this.finish.distance)
@@ -110,6 +135,16 @@ export class Course
             if (!gate.triggered && travelled >= gate.distance)
             {
                 gate.triggered = true;
+
+                //  A barred doorway costs what a wall costs and repaints the
+                //  drop anyway. Charging without repainting would leave the
+                //  player carrying the last section's colour into this one,
+                //  which turns one missed reading into a section of unmatchable
+                //  orbs - a mistake should cost what it costs and then be over.
+                if (gate.isSealed(dropX))
+                {
+                    this.events.onBlocked(dropX, y);
+                }
 
                 this.events.onGate(gate.colorAt(dropX, travelled));
             }
@@ -144,7 +179,11 @@ export class Course
                 //  itself with, so what is hit is what was on screen.
                 const centre = obstacle.trackXAt(travelled);
 
-                const blocked = isBlockedBy(
+                //  A disappearing floor that is shut right now is road, and
+                //  road is not an obstacle. Asked here rather than inside
+                //  isBlockedBy because it is not a question about where the
+                //  drop is: the barrier is not there to be hit.
+                const blocked = obstacle.presentAt(travelled) && isBlockedBy(
                     dropX,
                     centre,
                     obstacle.halfWidthAt(travelled),

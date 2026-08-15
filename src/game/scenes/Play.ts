@@ -23,7 +23,6 @@ import {
     HAPTIC_MISS_MS,
     MAX_DELTA,
     PACE_SMOOTHING,
-    PIANO_MISS_GAIN,
     BOOST_ZOOM,
     BOOST_ZOOM_SMOOTHING,
     RAINBOW_ROWS,
@@ -31,10 +30,18 @@ import {
     SHAKE_DURATION,
     SHAKE_INTENSITY
 } from '../config/constants';
-import { buildLevel, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
+import { buildLevel, drainAt, HazardZone, LEAD_IN, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
+import { listenForGesture, play, wakeAudio } from '../systems/Audio';
+import { Coach } from '../ui/Coach';
+import { firstForcedJump, isPrompting } from '../systems/coach';
+import { formOf } from '../config/form';
+import { batchAt, BATCH_AHEAD, BATCH_CHUNKS, generateRun, paceAt, speedAtChunk, SURVIVAL_PALETTE, tierAt } from '../config/survival';
+import { loseLife, isSheltered, SURVIVAL_LIVES } from '../systems/lives';
 import { clampLevelIndex, hasNextLevel, LEVELS } from '../config/levels';
 import { Drop } from '../entities/Drop';
 import { WORLDS } from '../config/worldData';
+import { WorldId } from '../config/worlds';
+import { applyVariant } from '../config/worldVariant';
 import { paintPageBackdrop } from '../systems/PageBackdrop';
 import { Course } from '../systems/Course';
 import { Environment } from '../systems/Environment';
@@ -48,9 +55,8 @@ import { useLanes } from '../systems/Lanes';
 import { OrientationGuard } from '../systems/OrientationGuard';
 import { PowerUps } from '../systems/PowerUps';
 import { SaveSystem } from '../systems/SaveSystem';
-import { sound } from '../systems/SoundSystem';
-import { collectSemitones, FAIL_JINGLE, FINISH_JINGLE, GATE_SEMITONES, missSemitones } from '../systems/piano';
 import { ScoreSystem } from '../systems/ScoreSystem';
+import { HazardField } from '../systems/HazardField';
 import { TrackScroller } from '../systems/TrackScroller';
 import { Trail } from '../systems/Trail';
 import { rainbowAt } from '../utils/color';
@@ -108,6 +114,33 @@ export class Play extends Scene
     /** Which level of LEVELS is being played. Carried across restarts as scene data. */
     private levelIndex = 0;
 
+    /** Whether this is an endless run rather than one of the twenty levels. */
+    private survival = false;
+
+    /** The seed this run was generated from, so it could be replayed. */
+    private seed = 0;
+
+    /** How many chunks have been generated, and how far the road is built to. */
+    private chunksBuilt = 0;
+    private builtTo = 0;
+
+    /** Chances left, and where the last one was spent. */
+    private lives = SURVIVAL_LIVES;
+    private lastLifeAt: number | null = null;
+
+    /** How the run was going when the last batch of road was laid. */
+    private form = 0;
+
+    /**
+     * The one thing the game ever says, and where it is due.
+     *
+     * Null where this run has nothing to teach - which is every run after the
+     * player has been told once, and every level that never asks for a jump.
+     */
+    private coach: Coach;
+    private teachJumpAt: number | null = null;
+    private teachMove = false;
+
     /** This level's forward speed, which may override the global default. */
     private forwardSpeed = FORWARD_SPEED;
 
@@ -115,7 +148,23 @@ export class Play extends Scene
     private distance = 0;
 
     /** Stretches of this level that run at their own pace. */
+    private hazardField: HazardField;
+
     private zones: SpeedZone[] = [];
+
+    /** Stretches of road that cost score to be in. */
+    private hazards: HazardZone[] = [];
+
+    /**
+     * Score owed to a drain zone but not yet taken, below a whole point.
+     *
+     * Drain is a rate over distance, so all but the shortest frames owe a
+     * fraction. Kept and carried rather than rounded each frame: rounding down
+     * would make a zone free on a fast machine and rounding up would make it
+     * cost several times its rate, and either way the price would depend on the
+     * frame rate rather than on the road.
+     */
+    private owed = 0;
 
     /**
      * The pace actually being run at, easing towards whatever the course asks
@@ -148,9 +197,11 @@ export class Play extends Scene
      * Restarting passes the level to play back in, so the same scene serves
      * every level.
      */
-    init (data: { levelIndex?: number })
+    init (data: { levelIndex?: number; survival?: boolean })
     {
         this.save = new SaveSystem();
+
+        this.survival = data?.survival === true;
 
         //  An explicit level wins; without one this is a fresh load, which
         //  resumes wherever the player left off.
@@ -171,7 +222,14 @@ export class Play extends Scene
         this.rainbowUntil = 0;
         this.pace = 1;
         this.zones = [];
+        this.hazards = [];
+        this.owed = 0;
         this.finishDistance = 1;
+        this.lives = SURVIVAL_LIVES;
+        this.lastLifeAt = null;
+        this.form = 0;
+        this.chunksBuilt = 0;
+        this.builtTo = 0;
 
         //  Charged per level start, retries included. The menus already gate
         //  this, so failing here means Play was reached some other way - fall
@@ -183,7 +241,9 @@ export class Play extends Scene
             return;
         }
 
-        const level = LEVELS[this.levelIndex];
+        //  An endless run is an ordinary LevelSpec built a batch at a time, so
+        //  everything downstream treats it exactly like one of the twenty.
+        const level = this.survival ? this.beginRun() : LEVELS[this.levelIndex];
 
         this.forwardSpeed = level.forwardSpeed ?? FORWARD_SPEED;
 
@@ -195,12 +255,15 @@ export class Play extends Scene
         //  them ask where a lane is.
         useLanes(level.lanes ?? DEFAULT_LANES);
 
-        const world = WORLDS[level.world];
+        //  The world as this level asks to see it: by day for a first visit,
+        //  after dark for a second.
+        const world = applyVariant(WORLDS[level.world], level.variant);
 
         paintPageBackdrop(world);
 
         this.environment = new Environment(this, world);
         this.track = new TrackScroller(this, world);
+        this.hazardField = new HazardField(this);
         this.roadside = world.roadside ? new Roadside(this, world.roadside, world.hazeColor, world.hazeAlpha) : null;
         this.floaters = world.floaters ? new Floaters(this, world.floaters) : null;
         this.slipstream = new Slipstream(this, world.trackEdge);
@@ -208,12 +271,6 @@ export class Play extends Scene
         this.drop = new Drop(this);
         this.effects = new Effects(this);
         this.scoring = new ScoreSystem();
-
-        //  Play can be reached without passing the title - a reload drops
-        //  straight back into the level being played - so the preference is
-        //  applied here too rather than only where it is set.
-        sound().setMuted(this.save.isMuted());
-        sound().listen();
         this.hud = new Hud(this, level.name, world);
 
         addVignette(this);
@@ -227,9 +284,24 @@ export class Play extends Scene
         this.drop.setScore(this.scoring.getScore());
         this.hud.setScore(this.scoring.getScore());
 
+        if (this.survival)
+        {
+            this.hud.setLives(this.lives);
+        }
+
+        //  Every level now begins one mistake from the end, so the warning is
+        //  on from the first frame rather than waiting for the first orb to
+        //  arrive and tell it. Saying it here rather than in onOrb is the
+        //  difference between a rule the player is warned about and a rule they
+        //  discover by dying to it.
+        this.hud.setLow(this.scoring.isLow());
+        this.lowVignette.setLow(this.scoring.isLow());
+
         const course = buildLevel(level);
 
         this.zones = course.zones;
+        this.hazards = course.hazards;
+        this.hazardField.setZones(course.hazards);
         this.finishDistance = course.finishDistance;
 
         //  Nine rows' worth, whatever this level's rows are spaced at.
@@ -244,11 +316,31 @@ export class Play extends Scene
 
         this.powerUps = new PowerUps(this, course.powerUps, (x, y) => this.onRainbow(x, y));
 
+        this.input.on('pointerdown', wakeAudio);
+        listenForGesture();
+
         this.input_ = new InputSystem(
             this,
             (direction) => this.drop.moveLane(direction),
-            () => this.drop.jump(this.distance)
+            () => { play('jump'); this.drop.jump(this.distance); }
         );
+
+        this.coach = new Coach(this);
+
+        //  Nothing is taught twice - and it is taught in survival too. The
+        //  endless run used to be exempt on the grounds that nobody meets the
+        //  game there first, which is simply not true: SURVIVAL is the second
+        //  button on the title screen, unlocked from the very first launch, and
+        //  three of its chunks contain a row blocked across every lane by
+        //  things that can only be jumped. A player who pressed it first met
+        //  that row with nothing ever having mentioned the input.
+        this.teachMove = !this.save.hasLearned('move');
+
+        //  An endless run has no fixed first hurdle, so this is asked again of
+        //  each batch as it is built rather than answered once here.
+        this.teachJumpAt = this.save.hasLearned('jump')
+            ? null
+            : firstForcedJump(course, level.lanes ?? DEFAULT_LANES);
 
         this.pauseButton = new PauseButton(this, () => this.setPaused(true));
 
@@ -274,14 +366,12 @@ export class Play extends Scene
             return;
         }
 
+        play('gate');
+
         //  Thrown off in the colour being left behind rather than the one
         //  arriving: the new one is already flooding through the drop itself,
         //  and two things saying the same thing at once say it half as clearly.
         const previous = this.drop.getColorId();
-
-        //  A gate is the run's ground note: low, quiet, and under whatever the
-        //  streak is doing above it.
-        sound().note(GATE_SEMITONES, 0.5);
 
         this.drop.setColorId(color);
 
@@ -314,32 +404,37 @@ export class Play extends Scene
         {
             const gained = this.scoring.collect();
 
+            //  Pitched off the combo *after* it rose, so the first orb of a
+            //  streak is the first note rather than a repeat of the last one.
+            play('orb', this.scoring.getCombo());
+
             const colorId = this.drop.getColorId();
 
             this.effects.swallow(x, y, colorId ? COLOR_VALUES[colorId] : COLOR_FLASH);
             this.effects.haptic(HAPTIC_COLLECT_MS);
-
-            //  A step further up the scale for every orb in the streak, so the
-            //  run's own playing is what writes the tune. The note is taken
-            //  from the streak *after* this orb has been counted, which is what
-            //  makes the orb that raises the multiplier the one you hear rise.
-            sound().note(collectSemitones(this.scoring.getCombo()));
             this.drop.pulse();
             this.trail.boost(this.distance);
 
             showFloatingScore(this, x, y, gained);
         }
+        else if (isSheltered(this.distance, this.lastLifeAt))
+        {
+            //  A run just put back on its feet is not charged for the row it
+            //  was put back in front of. Without this a life can be spent in
+            //  the moment it is granted.
+            this.drop.flash(COLOR_FLASH, FLASH_DURATION);
+        }
         else
         {
             const lost = this.scoring.penalise();
+
+            play('wrong');
 
             //  Three signals at once, because a penalty has to land: the drop
             //  flashes, the screen kicks, and the points lost float off the hit.
             this.drop.flash(COLOR_FLASH, FLASH_DURATION);
             this.cameras.main.shake(SHAKE_DURATION, SHAKE_INTENSITY);
             this.effects.haptic(HAPTIC_MISS_MS);
-
-            sound().note(missSemitones(), PIANO_MISS_GAIN);
 
             showFloatingScore(this, x, y, lost);
         }
@@ -355,7 +450,7 @@ export class Play extends Scene
         //  hit that emptied the bank and not on the frame after it - which is
         //  the difference between the fail landing on the thing that caused it
         //  and landing on whatever happened to be under the drop next.
-        if (this.scoring.isOut())
+        if (this.scoring.isOut() && !this.rescue())
         {
             this.onFailed(x, y);
 
@@ -364,6 +459,44 @@ export class Play extends Scene
 
         this.lowVignette.setLow(this.scoring.isLow());
         this.hud.setLow(this.scoring.isLow());
+    }
+
+    /**
+     * Spend a life, if this is a run that has any.
+     *
+     * @returns whether the run carries on. False in the levels, where going
+     *          under is simply the end, and false on the last life.
+     */
+    private rescue (): boolean
+    {
+        if (!this.survival)
+        {
+            return false;
+        }
+
+        const spent = loseLife(this.lives);
+
+        this.lives = spent.lives;
+
+        if (spent.score === null)
+        {
+            return false;
+        }
+
+        this.scoring.setScore(spent.score);
+        this.lastLifeAt = this.distance;
+
+        this.hud.setLives(this.lives);
+        this.hud.setScore(this.scoring.getScore());
+        this.drop.setScore(this.scoring.getScore());
+
+        //  Loud, because a life going is the most important thing that happens
+        //  in a run and it happens while the player is reading the road.
+        this.cameras.main.shake(SHAKE_DURATION * 2, SHAKE_INTENSITY * 1.6);
+        this.effects.haptic(HAPTIC_MISS_MS * 2);
+        play('life');
+
+        return true;
     }
 
     /**
@@ -384,9 +517,6 @@ export class Play extends Scene
 
         this.finished = true;
 
-        //  Under the miss that caused it, which is still ringing.
-        sound().phrase(FAIL_JINGLE);
-
         this.pauseButton.setVisible(false);
         this.input_.setEnabled(false);
 
@@ -401,6 +531,7 @@ export class Play extends Scene
 
         this.effects.haptic(HAPTIC_MISS_MS * 3);
         this.effects.bloom(x, y, COLOR_FAIL_FLASH);
+        play('fail');
 
         //  Creeping in as it stops. The camera has pulled *back* for speed all
         //  game, so coming forward is the opposite gesture and reads as the
@@ -444,8 +575,37 @@ export class Play extends Scene
 
                 this.hud.setVisible(false);
 
-                //  A failed run banks nothing - not the score, which is zero,
-                //  and not the level after it, which has to be finished for.
+                //  An endless run banks its score, because the score is the
+                //  whole point of it - there is nothing else to take away from
+                //  a mode with no finish line. A failed level banks nothing:
+                //  not the score, which is zero, and not the level after it,
+                //  which has to be finished for.
+                if (this.survival)
+                {
+                    //  The peak, not the score at the end. A run ends because
+                    //  it went under, so the final figure is always negative -
+                    //  banking that would file every run in the game as worse
+                    //  than nothing.
+                    const score = this.scoring.getPeak();
+                    const placed = this.save.recordSurvival(score);
+
+                    new RunFailed(this, {
+                        levelName: placed === 1 ? 'BEST SURVIVAL RUN' : 'SURVIVAL',
+                        //  There is no finish to be a fraction of.
+                        progress: 1,
+                        scored: score,
+                        placed,
+                        table: this.save.getSurvivalScores(),
+                        bestCombo: this.scoring.getBestCombo(),
+                        bestScore: this.save.getSurvivalBest()
+                    }, {
+                        onRetry: () => leaveTo(this, () => this.scene.restart({ survival: true })),
+                        onMenu: () => leaveTo(this, () => this.scene.start('Title'))
+                    }, new EnergySystem(this.save));
+
+                    return;
+                }
+
                 new RunFailed(this, {
                     levelName: LEVELS[this.levelIndex].name,
                     progress: this.distance / this.finishDistance,
@@ -465,6 +625,8 @@ export class Play extends Scene
      */
     private onRainbow (x: number, y: number): void
     {
+        play('rainbow');
+
         if (this.finished)
         {
             return;
@@ -505,9 +667,32 @@ export class Play extends Scene
         {
             this.pauseOverlay = new PauseOverlay(this, {
                 onResume: () => this.setPaused(false),
-                onRetry: () => this.startLevel(this.levelIndex),
-                onMenu: () => leaveTo(this, () => this.scene.start('Title')),
-                onToggleSound: () => this.setMuted(!sound().isMuted())
+
+                //  Retrying an endless run means another endless run. It used
+                //  to mean level twelve, because survival leaves levelIndex on
+                //  whatever the player last played and startLevel believed it.
+                onRetry: () => {
+
+                    this.abandon();
+
+                    if (this.survival)
+                    {
+                        leaveTo(this, () => this.scene.restart({ survival: true }));
+
+                        return;
+                    }
+
+                    this.startLevel(this.levelIndex);
+
+                },
+
+                onMenu: () => {
+
+                    this.abandon();
+
+                    leaveTo(this, () => this.scene.start('Title'));
+
+                }
             }, new EnergySystem(this.save));
 
             return;
@@ -519,23 +704,16 @@ export class Play extends Scene
         this.pauseOverlay = null;
     }
 
-    /** Both halves of the switch: what is heard now, and what is heard next time. */
-    private setMuted (muted: boolean): void
-    {
-        sound().setMuted(muted);
-        this.save.setMuted(muted);
-    }
-
     private onFinish (): void
     {
+        play('finish');
+
         if (this.finished)
         {
             return;
         }
 
         this.finished = true;
-
-        sound().phrase(FINISH_JINGLE);
 
         this.pauseButton.setVisible(false);
         this.input_.setEnabled(false);
@@ -581,6 +759,194 @@ export class Play extends Scene
         });
     }
 
+    /**
+     * Takes what the road under the drop costs to be on.
+     *
+     * Charged over the distance actually covered, so a zone costs the same
+     * whatever the frame rate did and whatever pace the section runs at. The
+     * fraction left over is carried to the next frame rather than rounded.
+     */
+    private chargeForGround (moved: number): void
+    {
+        const rate = drainAt(this.hazards, this.distance, this.drop.getColorId());
+
+        if (rate <= 0)
+        {
+            return;
+        }
+
+        this.owed += (rate * moved) / 1000;
+
+        const points = Math.floor(this.owed);
+
+        if (points <= 0)
+        {
+            return;
+        }
+
+        this.owed -= points;
+        this.scoring.drain(points);
+
+        this.hud.setScore(this.scoring.getScore());
+        this.drop.setScore(this.scoring.getScore());
+        this.hud.setLow(this.scoring.isLow());
+        this.lowVignette.setLow(this.scoring.isLow());
+
+        //  The same end a wrong colour reaches, by the same rule: below zero is
+        //  out. A zone long enough to take a run is the whole point of one.
+        //  Marked at the drop rather than at an impact, because there was no
+        //  impact - the road simply cost more than the run had.
+        if (this.scoring.isOut() && !this.rescue())
+        {
+            this.onFailed(this.drop.getX(), DROP_SCREEN_Y);
+        }
+    }
+
+    /**
+     * The first batch of an endless run.
+     *
+     * Only the spec comes back here. The course is built from it in the usual
+     * place, and topped up later by extendRun - which is why builtTo is
+     * recorded rather than the batch being laid down twice.
+     */
+    private beginRun (): LevelSpec
+    {
+        this.seed = Math.floor(Math.random() * 0xffffffff);
+        this.chunksBuilt = BATCH_CHUNKS;
+
+        //  A world drawn at random, so two runs in a row do not look the same.
+        const worlds = Object.keys(WORLDS) as WorldId[];
+        const world = worlds[Math.floor(Math.random() * worlds.length)];
+
+        const run = generateRun(this.seed, BATCH_CHUNKS, SURVIVAL_PALETTE, world);
+
+        this.builtTo = buildLevel(run.spec).finishDistance;
+
+        return run.spec;
+    }
+
+    /**
+     * More road, when the run is getting close to the end of what it has.
+     *
+     * Generated from the same seed but a different starting chunk, so the run
+     * keeps climbing tiers across batches rather than restarting its
+     * progression every time it is topped up.
+     */
+    private extendRun (): void
+    {
+        const worlds = Object.keys(WORLDS) as WorldId[];
+
+        //  Read once, here, and applied to the whole batch. Reading it per row
+        //  would make the road twitch with every orb taken; a batch is about
+        //  fifteen seconds of play, which is long enough to be a judgement
+        //  about how the run is going rather than a reaction to one moment.
+        this.form = formOf(this.scoring.getScore(), this.lives);
+
+        const run = generateRun(
+            this.seed + this.chunksBuilt,
+            BATCH_CHUNKS,
+            SURVIVAL_PALETTE,
+            worlds[0],
+            this.form,
+            this.chunksBuilt
+        );
+
+        //  Pace comes from distance alone, never from how the run is going.
+        //  A road that slowed down for a struggling player would be the most
+        //  visible possible way of telling them so.
+        const pace = paceAt(tierAt(this.chunksBuilt));
+
+        for (const section of run.spec.sections)
+        {
+            section.rowSpacing = pace.spacing;
+        }
+
+        const batch = batchAt(run.spec, this.builtTo);
+
+        this.course.extend(batch);
+        this.hazardField.setZones([ ...this.hazards, ...batch.hazards ]);
+        this.hazards = [ ...this.hazards, ...batch.hazards ];
+        this.zones = [ ...this.zones, ...batch.zones ];
+
+        //  Whether this batch is the one that first asks for a jump. A run can
+        //  go a long way before a forced row turns up - the chunks that carry
+        //  one are not the ones a run opens with - so the question has to be
+        //  asked of every batch, not just the first. Once the lesson has been
+        //  given it is recorded, and this stops asking.
+        if (this.teachJumpAt === null && !this.save.hasLearned('jump'))
+        {
+            this.teachJumpAt = firstForcedJump(batch, run.spec.lanes ?? DEFAULT_LANES);
+        }
+
+        this.chunksBuilt += BATCH_CHUNKS;
+        this.builtTo = batch.finishDistance;
+
+        //  Keeps rising after the content has stopped changing, which is what
+        //  gives an endless run an ending it earns rather than one it waits for.
+        this.forwardSpeed = speedAtChunk(this.chunksBuilt);
+    }
+
+    /**
+     * Says the one thing, if now is when it needs saying.
+     *
+     * Asked every frame rather than scheduled, because isPrompting is total and
+     * a run can be restarted, paused or teleported through without this having
+     * to know about any of it.
+     */
+    private teach (): void
+    {
+        //  The lane prompt rides the quiet road before the first gate, which is
+        //  exactly what that stretch is there for.
+        if (this.teachMove && this.distance < LEAD_IN)
+        {
+            this.coach.set('move');
+
+            return;
+        }
+
+        if (this.teachMove && this.distance >= LEAD_IN)
+        {
+            this.teachMove = false;
+            this.save.recordLesson('move');
+        }
+
+        if (this.teachJumpAt !== null && isPrompting(this.distance, this.teachJumpAt))
+        {
+            this.coach.set('jump');
+
+            return;
+        }
+
+        //  Recorded once the row it was about is behind the drop, so a player
+        //  who quits before reaching it is told again next time.
+        if (this.teachJumpAt !== null && this.distance > this.teachJumpAt)
+        {
+            this.teachJumpAt = null;
+            this.save.recordLesson('jump');
+        }
+
+        this.coach.set(null);
+    }
+
+    /**
+     * Walking away from a run that is still going.
+     *
+     * An endless run banks what it reached. It has no finish line, so leaving
+     * *is* how a run ends when the player does not want to lose it - and
+     * throwing the score away for quitting would make deliberately crashing the
+     * best way to keep one, which is a strange thing to teach.
+     *
+     * A level banks nothing, and should not: it has a finish, and the score is
+     * for reaching it.
+     */
+    private abandon (): void
+    {
+        if (this.survival && !this.finished)
+        {
+            this.save.recordSurvival(this.scoring.getPeak());
+        }
+    }
+
     private startLevel (levelIndex: number): void
     {
         leaveTo(this, () => this.scene.restart({ levelIndex }));
@@ -599,7 +965,17 @@ export class Play extends Scene
         //  The course's own pace here, eased into rather than stepped to.
         this.pace = easeTowards(this.pace, speedAt(this.zones, this.distance), PACE_SMOOTHING, dt);
 
-        this.distance += this.forwardSpeed * this.speed.scale * this.pace * dt;
+        const moved = this.forwardSpeed * this.speed.scale * this.pace * dt;
+
+        this.distance += moved;
+
+        this.chargeForGround(moved);
+
+        //  Road is laid well before the player could see where it starts.
+        if (this.survival && this.distance > this.builtTo - BATCH_AHEAD)
+        {
+            this.extendRun();
+        }
 
         //  The camera pulls back a little when the road speeds up, which is the
         //  oldest trick there is for making speed felt rather than measured.
@@ -609,8 +985,11 @@ export class Play extends Scene
 
         this.cameras.main.setZoom(easeTowards(this.cameras.main.zoom, target, BOOST_ZOOM_SMOOTHING, dt));
 
+        this.teach();
+
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);
+        this.hazardField.update(this.distance);
         this.floaters?.update(this.distance);
         this.roadside?.update(this.distance);
         this.slipstream.update(this.distance);

@@ -22,10 +22,23 @@ import { LevelSpec } from './level';
 //  combined with anything else.
 //
 //  Levels are authored as sequences of movements rather than as a list of
-//  similar stretches, and they get longer as they get harder: the early ones
-//  run half a minute, the middle ones closer to a minute. `test/pacing.test.ts`
-//  holds each restructured level to its band and guards the ramp - a later
-//  level must never be shorter than the one before it.
+//  similar stretches, and they get longer as they get harder: thirty to forty
+//  seconds for the first three, forty to fifty for the next three, fifty to
+//  sixty for the three after that. `test/pacing.test.ts` holds every level to
+//  its band and guards the ramp - a later level must never be shorter than the
+//  one before it.
+//
+//  Every level opens the same way, and it is not decoration. A run starts at
+//  nothing and ends below zero, so the first wrong colour a player touches is
+//  fatal - which means the opening cannot be a test of anything. It is the
+//  stretch that buys the rest of the level.
+//
+//  The construction is always this: each lane carries only the colour of the
+//  portal it sits behind. Whichever side of the gate the player took, every
+//  orb in front of them is theirs, the colour they are not carrying is never in
+//  a lane they are standing in, and there is no hazard of any kind. A player
+//  who does nothing but hold still comes out of it with three mistakes' worth
+//  banked. `test/opening.test.ts` holds all of that.
 
 export const LEVELS: LevelSpec[] = [
     {
@@ -46,13 +59,14 @@ export const LEVELS: LevelSpec[] = [
         //    5  the gift    - a rainbow, and a dense run to spend it on.
         //    6  the finale  - everything at once, tighter, and then the line.
         sections: [
-            //  1. Intro. One orb at a time with room around it. The first
-            //  thirty seconds of a game teach it, and this teaches exactly one
-            //  thing: that colour is yours.
+            //  1. Intro. The opening every level now has: one colour per lane,
+            //  matching the portal in front of it, so the first thing a player
+            //  learns is that the colour they took is the colour that pays -
+            //  and they learn it while it is impossible to get wrong.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1.', '..', '.2', '..', '1.', '..', '.2', '1.' ]
+                rows: [ '12', '1.', '.2', '12', '1.', '.2', '12', '12' ]
             },
             //  2. The choice. Same pace, but the colours now alternate faster
             //  than a single gate can serve - so which side of the gate you
@@ -125,12 +139,13 @@ export const LEVELS: LevelSpec[] = [
         //    5  the gift   - a feast, generous to whichever colour is carried.
         //    6  the finale - tightest rows in the level, then the line.
         sections: [
-            //  1. Straight in. No settling-in row: a second level can assume
-            //  the first one happened.
+            //  1. Straight in, but still safe. The gate is the other way round
+            //  from level one's, so the lane that pays has swapped sides - the
+            //  same lesson asked again with the answer moved.
             {
                 splitAfterLane: 0,
                 gate: [ 1, 0 ],
-                rows: [ '.1', '2.', '.2', '1.', '.1', '1.', '.2', '2.', '.1', '1.' ]
+                rows: [ '21', '2.', '.1', '21', '2.', '.1', '21', '21', '2.', '.1' ]
             },
             //  2. The switch. The colour that pays moves side on nearly every
             //  row, which is the whole skill of this level introduced on its
@@ -187,19 +202,21 @@ export const LEVELS: LevelSpec[] = [
         //    5  the gift   - a feast down the middle and both shoulders.
         //    6  the finale - the full width, tightly packed, then the line.
         sections: [
-            //  1. The middle. Every orb in the new lane, so the first thing
-            //  the level does is put the player there.
+            //  1. The opening. Three lanes now, and the split still falls after
+            //  the first - so one lane carries the left portal's colour and two
+            //  carry the right's, and whichever was taken there is somewhere to
+            //  stand that pays every time.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '.1.', '...', '.2.', '...', '.1.', '.2.', '.1.', '.2.', '.1.', '.2.' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22' ]
             },
             //  2. The edges. Out to the sides and back, so all three lanes are
             //  used before any of them is asked for quickly.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
-                rows: [ '2..', '..2', '1..', '..1', '.2.', '2..', '..2', '.1.', '1..', '..1', '.2.', '2..', '..1', '1..', '.2.', '..2' ]
+                rows: [ '2..', '..2', '1..', '..1', '.2.', '2..', '..2', '.1.', '1..', '..1', '.2.', '2..', '..1', '1..', '..1' ]
             },
             //  3. Rhythm. A figure that crosses the whole road and repeats -
             //  three lanes make a longer pattern than two, which is most of
@@ -207,7 +224,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.1.', '..1', '.1.', '1..', '.1.', '..1', '.1.', '2..', '.2.', '..2', '.2.', '2..', '.2.', '..2', '.2.' ]
+                rows: [ '1..', '.1.', '..1', '.1.', '1..', '.1.', '..1', '.1.', '2..', '.2.', '..2', '.2.', '2..', '.2.' ]
             },
             //  4. The sweep. One continuous crossing rather than a repeating
             //  figure: the road asks for a single long movement, which is a
@@ -215,7 +232,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
-                rows: [ '2..', '.2.', '..2', '..2', '.2.', '2..', '1..', '.1.', '..1', '..1', '.1.', '1..', '.1.', '..1', '.2.', '2..' ]
+                rows: [ '2..', '.2.', '..2', '..2', '.2.', '2..', '1..', '.1.', '..1', '..1', '.1.', '1..', '.1.', '..1' ]
             },
             //  5. The gift. Three lanes fed at once - wherever the player is,
             //  something pays, and the colour they are not carrying is never in
@@ -223,7 +240,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 0, 1 ],
-                rows: [ '...', '1..', '.1.', '..2', '1.2', '.1.', '..2', '1.2', '.1.', '..2' ]
+                rows: [ '...', '1..', '.1.', '..2', '1.2', '.1.', '..2', '1.2', '.1.' ]
             },
             //  6. The finale. Full width, packed tighter than anything before
             //  it, finishing on a clean run at the line.
@@ -231,7 +248,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
                 rowSpacing: 146,
-                rows: [ '2..', '..1', '.2.', '1..', '..2', '.1.', '2..', '..1', '.2.', '1..', '..2', '.1.', '2..', '..2' ]
+                rows: [ '2..', '..1', '.2.', '1..', '..2', '.1.', '2..', '..1', '.2.', '1..', '..2', '.1.', '2..' ]
             }
         ]
     },
@@ -254,12 +271,12 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 2 ],
-                rows: [ '..3', '...', '.3.', '...', '3..', '...', '.3.', '..3', '3..', '.3.', '..3', '3..', '.3.', '..3' ]
+                rows: [ '133', '1..', '.33', '133', '1..', '.33', '133', '133', '1..', '.33', '133', '133' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 2, 1 ],
-                rows: [ '1.3', '3.1', '.1.', '1.3', '3.1', '.3.', '1.3', '3.1', '.1.', '3.1', '1.3', '.3.', '1.3', '3.1', '.1.' ]
+                rows: [ '1.3', '3.2', '.1.', '2.3', '3.1', '.2.', '1.3', '3.2', '.1.', '3.1', '2.3', '.3.', '1.2', '3.1', '.1.' ]
             },
             {
                 splitAfterLane: 1,
@@ -304,7 +321,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '.2.', '1..', '..3', '.1.', '2..', '..2', '.3.', '1..', '..1', '.2.', '3..' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             {
                 splitAfterLane: 1,
@@ -332,11 +349,18 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
-                obstacles: 'static',
-                //  6. Pairs. Two barriers on a row for the first time, which
-                //  leaves exactly one lane rather than two - the same rule
-                //  asking for precision instead of a choice.
-                rows: [ '.2.', 'a.a', '..1', 'b.b', '.3.', 'a.a', '1..', 'c.c', '..2', 'a.a', '.1.', 'b.b', '..3', 'a.a', '.2.', 'c.c' ]
+                obstacles: 'slider',
+                //  6. The sweep. The first wall in the game that moves, and it
+                //  arrives here rather than two levels later because a moving
+                //  blocker is what the middle of the game is for: the answer is
+                //  still "be somewhere else", but where else is no longer
+                //  standing still while you decide.
+                //
+                //  One slider to a row, never two. Every slider runs off the
+                //  same clock and so sways the same way at the same moment,
+                //  which means a pair does not leave a moving gap between them -
+                //  it leaves one that closes.
+                rows: [ '.2.', '..1', 'a..', '.3.', '..2', '..c', '.1.', '..3', 'a..', '.2.', '..1', '..c', '.3.', '..2', 'a..', '.1.' ]
             },
             {
                 splitAfterLane: 0,
@@ -357,89 +381,81 @@ export const LEVELS: LevelSpec[] = [
         rowSpacing: 152,
         //  Static barriers, now regularly, and orbs tucked in beside them.
         //
-        //  Also where the jump is taught. A hurdle spans the whole road, so
-        //  there is no lane to steer into and the only way through is over -
-        //  which is the lesson, and it is taught by a wall the player cannot
-        //  misread rather than by a line of text. Introduced alone, in the
-        //  quietest part of the level, before it is ever mixed with anything.
+        //  And the first barrier that moves without going anywhere. A pulsing
+        //  wall never reaches the lane next door, so what it costs is nerve
+        //  rather than room - which makes it the gentlest timing question the
+        //  game has, and the right one for the level where a player is learning
+        //  to control the road rather than to survive it.
         //
-        //    1  settle      - walls and orbs, exactly where level five left off.
-        //    2  the hurdle  - a wall across the whole road. The jump, alone.
-        //    3  doubles     - two hurdles back to back: one jump clears both.
-        //    4  which is it - walls and hurdles together. Steer, or go over.
-        //    5  the gift    - nothing to hit, and a feast. A breath.
-        //    6  pairs       - two walls a row leaving one lane, hurdles between.
+        //    1  settle      - the safe opening every level has.
+        //    2  the breath  - a wall that swells and shrinks, alone.
+        //    3  walls       - the static ones, on a beat.
+        //    4  which is it - both kinds together for the first time.
+        //    5  the gift    - nothing to hit. A breath of the other sort.
+        //    6  pairs       - two walls a row leaving one lane, not two.
         //    7  the finale  - everything, packed tighter than it was taught at.
-        //
-        //  Hurdle rows are spaced deliberately: a jump covers a fixed length of
-        //  road, so two full-width rows are either close enough to take in one
-        //  arc or far enough apart to land and go again. The band between those
-        //  two is unclearable, and `test/hurdles.test.ts` keeps every level out
-        //  of it.
         sections: [
-            //  1. Settle. No new idea at all - the level opens on the hazard
-            //  the last one ended on, so the jump arrives into a stretch the
-            //  player already knows how to read.
+            //  1. Settle. The safe opening, and this level needs it more than
+            //  most: the jump arrives a movement later, and meeting a wall you
+            //  cannot steer round with nothing banked is not a lesson.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                obstacles: 'static',
-                rows: [ '1..', '.b.', '..1', '2..', '.a.', '..2', '1.b', '..1', 'a..', '.2.', '..b', '1..', '.1.', 'b..', '..2', '.a.', '3..', '..3', '.c.', '1..' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
-            //  2. The hurdle. A clear run at each one, with the road empty
-            //  either side, so the first thing the player ever does with the
-            //  jump is a jump they cannot get wrong. Then orbs beside the
-            //  third, so it is worth timing rather than just surviving.
+            //  2. The breath. A pulsing wall, alone, with the road open either
+            //  side of it. It never reaches the next lane along, so a player
+            //  who simply moves over is safe - the question it asks is whether
+            //  they trust that, which is the whole of what a timing hazard is
+            //  before anything is asked on top of it.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
-                obstacles: 'static',
-                rows: [ '...', '.2.', '...', 'AAA', '...', '.1.', '...', '2.2', 'AAA', '...', '.1.', '...', '2.2', 'AAA', '...', '.3.', '...', '.2.' ]
+                obstacles: 'pulse',
+                rows: [ '.2.', '..2', 'a..', '.2.', '..1', 'a..', '.1.', '..2', 'c..', '.2.', '..1', 'c..', '.1.', '..2', 'a..', '.2.', '..1', 'c..' ]
             },
-            //  3. Doubles. Two hurdles back to back, close enough that one arc
-            //  carries the drop over both - which teaches that the jump has a
-            //  length rather than being a single beat, and is the first thing
-            //  the level asks that could be got wrong by jumping too early.
+            //  3. Walls. The static ones the last level ended on, on a beat, so
+            //  the two kinds are met one at a time before they are met
+            //  together.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'static',
-                rows: [ '.3.', '..3', 'AAA', 'AAA', '...', '.2.', '3..', '..3', 'BBB', 'BBB', '...', '.3.', '2..', '..2', 'AAA', 'AAA', '...', '.3.' ]
+                rows: [ '.3.', '..3', '...', '...', '...', '.2.', '3..', '..3', '...', '...', '...', '.3.', '2..', '..2', '...', '...', '...', '.3.' ]
             },
-            //  4. Which is it. A wall and a hurdle look alike at a distance and
-            //  want opposite answers - one is a lane to leave, the other is a
-            //  lane you cannot leave. Alternated here so the two have to be
-            //  told apart rather than reacted to the same way.
+            //  4. Which is it. A wall that holds still and one that breathes
+            //  look alike at a distance and want different amounts of nerve.
+            //  Alternated here so the two have to be told apart rather than
+            //  answered the same way.
             {
                 splitAfterLane: 1,
                 gate: [ 2, 0 ],
                 obstacles: 'static',
-                rows: [ '..3', '.a.', '1..', 'AAA', '..1', 'c..', '.3.', '.*.', 'AAA', '1..', '.1.', '..c', '3..', 'AAA', '.a.', '..3', '1..', '.c.', 'AAA', '..1', '.3.', 'a..' ]
+                rows: [ '..3', '.a.', '1..', '...', '..1', 'c..', '.3.', '.*.', '...', '1..', '.1.', '..c', '3..', '...', '.a.', '..3', '1..', '.c.', '...', '..1', '.3.', 'a..' ]
             },
             //  5. The gift. No barriers of any kind, and every row paying.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 2 ],
-                rows: [ '...', '1..', '.2.', '..3', '1.3', '.2.', '..3', '1.3', '.2.', '1..', '..3', '.2.', '1.3', '.2.', '..3', '1..', '.2.', '1.3' ]
+                rows: [ '...', '1..', '.2.', '..3', '1.3', '.2.', '..3', '1.3', '.2.', '1..', '..3', '.2.', '1.3', '.2.', '..3' ]
             },
             //  6. Pairs. Two walls on a row leaves one lane rather than two, so
             //  the sideways answer stops being a choice and starts being a
-            //  place you have to be - with a hurdle every fifth row to keep the
-            //  other answer live.
+            //  place you have to be.
             {
                 splitAfterLane: 1,
                 gate: [ 1, 0 ],
                 obstacles: 'static',
-                rows: [ '.2.', 'a.a', '..1', 'b.b', '.3.', 'AAA', '1..', 'c.c', '..2', 'a.a', 'AAA', '.1.', 'b.b', '..3', 'c.c', 'AAA', '.2.', '..1' ]
+                rows: [ '.2.', 'a.a', '..1', 'b.b', '.3.', '...', '1..', 'c.c', '..2', 'a.a', '...', '.1.', 'b.b', '..3', 'c.c', '...', '.2.', '..1' ]
             },
-            //  7. The finale. Walls, pairs and hurdles at the level's tightest
-            //  spacing, finishing on a clean run at the line.
+            //  7. The finale. Walls and pairs at the level's tightest spacing,
+            //  finishing on a clean run at the line.
             {
                 splitAfterLane: 0,
                 gate: [ 0, 2 ],
                 obstacles: 'static',
                 rowSpacing: 136,
-                rows: [ 'a.1', '.2.', 'b..', '..3', '.a.', 'AAA', '1..', '..b', '.3.', 'c..', 'AAA', '.1.', '..2', 'a..', '.3.', 'AAA', '..1', '.b.', '2..', '..3', 'AAA', '.1.', '..2', 'c..', '.3.' ]
+                rows: [ 'a.1', '.2.', 'b..', '..3', '.a.', '...', '1..', '..b', '.3.', 'c..', '...', '.1.', '..2', 'a..', '.3.', '...', '..1', '.b.', '2..', '..3', '...', '.1.', '..2', 'c..', '.3.' ]
             }
         ]
     },
@@ -449,17 +465,30 @@ export const LEVELS: LevelSpec[] = [
         palette: [ 'blue', 'red', 'green', 'yellow' ],
         forwardSpeed: 505,
         rowSpacing: 147,
-        //  Sliding barriers, first on their own so the movement can be read,
-        //  then beside the static ones already known.
+        //  Where the jump is taught, and the first level that asks for
+        //  pressure rather than control.
         //
-        //    1  the opening  - four colours, clean road. Read the wider palette.
-        //    2  the slider   - one moving wall at a time, with room around it.
-        //    3  the read     - sliders with orbs beside them: go, but go on time.
-        //    4  the statics  - the known hazard at the new pace, then in pairs.
+        //  A hurdle spans the whole road, so there is no lane to steer into and
+        //  the only way through is over - which is the lesson, and it is taught
+        //  by a wall the player cannot misread rather than by a line of text.
+        //  It arrives here rather than a level earlier because jumping is a
+        //  second verb, and a player still learning where the lanes are does not
+        //  need one.
+        //
+        //    1  the opening  - four colours, clean road.
+        //    2  the slider   - a moving wall, at this level's pace.
+        //    3  the read     - sliders with orbs beside them.
+        //    4  the hurdle   - a wall across the whole road. The jump, alone.
         //    5  over the sweep - a sliding hurdle. Dodge it, or go over it.
         //    6  the gift     - no barriers, and a feast. A breath.
-        //    7  the squeeze  - full-width hurdles return, among walls.
-        //    8  the finale   - sliding hurdles at the level's tightest spacing.
+        //    7  the squeeze  - full-width hurdles among walls.
+        //    8  the finale   - sliding hurdles at the tightest spacing.
+        //
+        //  Hurdle rows are spaced deliberately: a jump covers a fixed length of
+        //  road, so two full-width rows are either close enough to take in one
+        //  arc or far enough apart to land and go again. The band between those
+        //  two is unclearable, and `test/hurdles.test.ts` keeps every level out
+        //  of it.
         sections: [
             //  1. The opening. A fourth colour arrives and nothing is in the
             //  way, because two new things at once is a spike rather than a
@@ -467,7 +496,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..4', '1.2', '.4.', '2..', '..1', '.2.', '4..', '..2', '1.4', '.1.', '..4', '2..', '.1.', '..2', '4..', '.4.', '1..' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             //  2. The slider. Alone, and slowly: a wall that moves is read
             //  differently from one that does not, and the difference is the
@@ -487,14 +516,15 @@ export const LEVELS: LevelSpec[] = [
                 obstacles: 'slider',
                 rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'a..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.a.', '3..', '..4' ]
             },
-            //  4. The statics. The hazard the player already knows, at a pace
-            //  they do not - and then in pairs, which leaves one lane instead
-            //  of two.
+            //  4. The hurdle. A clear run at each one, with the road empty
+            //  either side, so the first thing a player ever does with the jump
+            //  is a jump they cannot get wrong. Then orbs beside the later ones,
+            //  so it becomes worth timing rather than merely surviving.
             {
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
                 obstacles: 'static',
-                rows: [ '4..', '..1', '.b.', '4..', '.*.', 'c..', '.1.', '..4', '.c.', '1..', '..1', 'b..', '.4.', '..1', 'b.b', '.4.', 'c.c', '.1.', 'a.a', '..4' ]
+                rows: [ '...', '.2.', '...', 'AAA', '...', '.1.', '...', '2.2', 'AAA', '...', '.1.', '...', '2.2', 'AAA', '...', '.4.', '...', '.2.', '...', 'AAA' ]
             },
             //  5. Over the sweep. A hurdle that slides: the first hazard with
             //  two right answers at once, because it can be dodged like a
@@ -528,7 +558,7 @@ export const LEVELS: LevelSpec[] = [
                 gate: [ 2, 0 ],
                 obstacles: 'slider',
                 rowSpacing: 134,
-                rows: [ '1..', '..4', '.c.', '2..', 'AAA', '..1', 'd..', '.4.', '..2', 'AAA', '1..', '.d.', '..4', '2..', 'CCC', '.1.', '..4', 'c..', '.2.', 'CCC', '..1', '.4.', '2..', '..1' ]
+                rows: [ '1..', '..4', '.c.', '3..', 'AAA', '..1', 'd..', '.4.', '..3', 'AAA', '1..', '.d.', '..4', '3..', 'CCC', '.1.', '..4', 'c..', '.3.', 'CCC', '..1', '.4.', '3..', '..1' ]
             }
         ]
     },
@@ -561,7 +591,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '..1', '2..', '.2.', '..3', '1.3', '.1.', '3..', '..2', '.3.', '1..', '..1', '.2.', '3..' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             //  2. The hole, introduced the way the hurdle was: one at a time,
             //  in a lane you can simply not be in, before any of them asks to
@@ -580,7 +610,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'pulse',
-                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..' ]
+                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.' ]
             },
             //  4. Breathing room. Orbs beside the pulses, so sitting at the far
             //  edge of the road until it passes costs something.
@@ -588,7 +618,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 2, 3 ],
                 obstacles: 'pulse',
-                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'a..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.a.', '3..', '..4' ]
+                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'a..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.a.', '3..' ]
             },
             //  5. The crossing. One continuous movement across the road rather
             //  than a figure that repeats, with walls placed to set the line
@@ -597,13 +627,13 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 2, 0 ],
                 obstacles: 'static',
-                rows: [ '..3', '.3.', '1..', 'b..', '.1.', '..3', '..b', '.3.', '1..', 'd..', '.1.', '..1', '.d.', '3..', '..3', 'b..', '.3.', '..1', '.b.', '1..' ]
+                rows: [ '..3', '.3.', '1..', 'b..', '.1.', '..3', '..b', '.3.', '1..', 'd..', '.1.', '..1', '.d.', '3..', '..3', 'b..', '.3.', '..1', '.b.' ]
             },
             //  6. The gift.
             {
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
-                rows: [ '...', '4..', '.1.', '..3', '4.3', '.1.', '.*.', '..3', '4.1', '.3.', '..1', '4..', '.3.', '4.1', '..3', '.1.', '4..', '..1', '.3.' ]
+                rows: [ '...', '4..', '.1.', '..3', '4.3', '.1.', '.*.', '..3', '4.1', '.3.', '..1', '4..', '.3.', '4.1', '..3', '.1.', '4..', '..1' ]
             },
             //  7. Holes and walls. The two hazards that look nothing alike and
             //  want opposite answers - a wall is a lane to leave, a hole is a
@@ -613,7 +643,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 0, 2 ],
                 obstacles: 'static',
-                rows: [ '1..', '..3', '.b.', '0..', '..1', 'd..', '.0.', '..3', '1..', '.d.', '..0', '3..', '.1.', 'b..', '..0', '.3.', '0..', '..1', '.b.' ]
+                rows: [ '1..', '..3', '.b.', '0..', '..1', 'd..', '.0.', '..3', '1..', '.d.', '..0', '3..', '.1.', 'b..', '..0', '.3.', '0..', '..1' ]
             },
             //  8. The drum. Full-width holes on a beat, evenly enough that the
             //  jumps become a rhythm rather than four separate reactions.
@@ -629,7 +659,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 1, 3 ],
                 obstacles: 'pulse',
-                rows: [ '.2.', 'a.a', '..4', '.2.', 'd.d', '..2', '.4.', 'b.b', '2..', '..4', 'a.a', '.2.', '..4', 'd.d', '.4.', '2..', 'b.b', '..2', '.4.' ]
+                rows: [ '.2.', 'a.a', '..4', '.2.', 'd.d', '..2', '.4.', 'b.b', '2..', '..4', 'a.a', '.2.', '..4', 'd.d', '.4.', '2..', 'b.b', '..2' ]
             },
             //  10. The finale.
             {
@@ -666,7 +696,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '..1', '2..', '.2.', '..3', '1.3', '.1.', '3..', '..2', '.3.', '1..', '..1', '.2.', '3..', '..3', '1.2', '.4.', '..4' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             {
                 splitAfterLane: 0,
@@ -678,25 +708,25 @@ export const LEVELS: LevelSpec[] = [
                 //  being asked about here, and asking two things at once would
                 //  make it a difficulty spike rather than a change of gear.
                 speed: 1.34,
-                rows: [ '.1.', '..2', '.2.', '1..', '.1.', '..1', '.2.', '2..', '.1.', '..2', '.2.', '1..', '.4.', '..1', '.2.', '4..', '.1.', '..4', '.2.', '1..', '.4.', '..2' ]
+                rows: [ '.1.', '..2', '.2.', '1..', '.1.', '..1', '.2.', '2..', '.1.', '..2', '.2.', '1..', '.4.', '..1' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'slider',
-                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.3.', '..2', 'a..', '.2.', '..3', 'd..', '.3.', '..2', 'a..', '.3.' ]
+                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.3.', '..2' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 2, 3 ],
                 obstacles: 'pulse',
-                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.c.', '3..', '..4', '.b.', '4..', '..3' ]
+                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.' ]
             },
             {
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
                 obstacles: 'static',
-                rows: [ '4..', '..1', '.b.', '4..', '..4', 'b.b', '.1.', '..4', 'c.c', '1..', '..1', 'b..', '.4.', '..1', 'd.d', '.4.', '..4', 'b.b', '.1.', '..4', 'c.c', '.1.' ]
+                rows: [ '4..', '..1', '.b.', '4..', '..4', 'b.b', '.1.', '..4', 'c.c', '1..', '..1', 'b..', '.4.', '..1' ]
             },
             //  6. The hurdles, evenly spaced for the first time in the game.
             //  Level six taught that the jump exists; this asks for it on a
@@ -710,7 +740,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 2, 1 ],
-                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2', '..4', '.2.', '3..', '..2', '.4.', '3.4', '.2.', '..3' ]
+                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2' ]
             },
             //  8. The sweep. Sliders alternating sides with the orbs placed
             //  across from them, so the road asks for a crossing that the wall
@@ -725,7 +755,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 1,
                 gate: [ 3, 1 ],
                 obstacles: 'slider',
-                rows: [ '4..', '..2', 'a..', '.4.', '..4', '..d', '2..', '.2.', 'a..', '..4', '.4.', '..b', '2..', '..2', 'a..', '.4.', '..4', '..d', '.2.', '2..', 'b..', '..4' ]
+                rows: [ '4..', '..2', 'a..', '.4.', '..4', '..d', '2..', '.2.', 'a..', '..4', '.4.', '..b', '2..', '..2', 'a..' ]
             },
             //  9. The two hazards colour cannot answer, alternating - a hole
             //  and a hurdle want the same input and look nothing alike, so this
@@ -750,13 +780,13 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 0,
                 gate: [ 1, 2 ],
                 gateSwap: true,
-                rows: [ '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..', '.3.', '..2', '3..', '.3.', '..2', '2..', '.3.' ]
+                rows: [ '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..', '.3.', '..2', '3..', '.2.', '..3', '2..' ]
             },
             {
                 splitAfterLane: 0,
                 gate: [ 0, 3 ],
                 obstacles: 'pulse',
-                rows: [ '1..', '..4', 'a.a', '.1.', '..1', 'd.d', '4..', '.4.', 'a.a', '..1', '.1.', 'd.d', '4..', '..4', 'a.a', '.1.', '..1', 'd.d', '.4.', '4..', 'a.a', '..1' ]
+                rows: [ '1..', '..4', 'a.a', '.1.', '..1', 'd.d', '4..', '.4.', 'a.a', '..1', '.1.', 'd.d', '4..', '..4', 'a.a' ]
             },
             {
                 splitAfterLane: 1,
@@ -797,25 +827,25 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 0,
                 gate: [ 0, 1 ],
-                rows: [ '1..', '.2.', '..3', '1.2', '.3.', '..4', '2..', '.5.', '..3', '1.3', '.1.', '3..', '..2', '.4.', '1..', '..5', '.2.', '3..', '..3', '1.2', '.4.', '..4', '5..', '.1.', '..5', '.3.' ]
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '1..', '.22', '122', '122' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 1, 2 ],
                 obstacles: 'slider',
-                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'e..', '.3.', '..2', 'a..', '.2.', '..3', 'd..', '.3.', '..2', 'e..', '.2.', '..3', 'a..', '.3.', '..2' ]
+                rows: [ '.2.', '..3', 'a..', '.3.', '..2', 'd..', '.2.', '..3', 'a..', '.3.', '..2', 'e..', '.3.', '..2', 'a..' ]
             },
             {
                 splitAfterLane: 1,
                 gate: [ 2, 3 ],
                 obstacles: 'pulse',
-                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.', 'b..', '..4', '.c.', '3..', '..4', '.b.', '4..', '..3', 'c..', '.4.', '..3', '.b.' ]
+                rows: [ '..3', '.4.', 'b..', '3.4', '.3.', '..b', '4..', '.4.', 'c..', '..3', '.b.', '4..', '3.4', '.3.', 'b..' ]
             },
             {
                 splitAfterLane: 0,
                 gate: [ 3, 4 ],
                 obstacles: 'static',
-                rows: [ '4..', '..5', '.c.', '4..', '..4', 'b.b', '.5.', '..4', 'c.c', '5..', '..5', 'b..', '.4.', '..5', 'd.d', '.4.', '..4', 'e.e', '.5.', '..4', 'c.c', '.5.', '4..', '..5', 'b.b', '.4.' ]
+                rows: [ '4..', '..5', '.c.', '4..', '..4', 'b.b', '.5.', '..4', 'c.c', '5..', '..5', 'b..', '.4.', '..5', 'd.d' ]
             },
             {
                 splitAfterLane: 1,
@@ -832,7 +862,7 @@ export const LEVELS: LevelSpec[] = [
             {
                 splitAfterLane: 1,
                 gate: [ 2, 1 ],
-                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2', '..4', '.2.', '3..', '..2', '.4.', '3.4', '.2.', '..3', '5..', '.5.', '..5', '3.5' ]
+                rows: [ '...', '3..', '.2.', '..4', '3.4', '.2.', '.*.', '..4', '3.2', '.4.', '..2', '3..', '.4.', '3.2', '..4', '.2.' ]
             },
             {
                 splitAfterLane: 1,
@@ -840,7 +870,7 @@ export const LEVELS: LevelSpec[] = [
                 obstacles: 'slider',
                 //  One slider to a row - see level nine's eighth movement for
                 //  why a pair of them is not a narrow gap but a closed one.
-                rows: [ '4..', '..2', 'a..', '.4.', '..4', 'd..', '2..', '.2.', '..a', '..4', '.4.', 'b..', '2..', '..2', 'e..', '.4.', '..4', '..d', '.2.', '2..', 'b..', '..4', '.2.', 'a..', '..2', '.4.' ]
+                rows: [ '4..', '..2', 'a..', '.4.', '..4', 'd..', '2..', '.2.', '..a', '..4', '.4.', 'b..', '2..', '..2', 'e..', '.4.', '..4' ]
             },
             //  9. The two hazards that share no answer at all: a breathing wall
             //  is a lane to leave, a hole is a lane to leave the ground in, and
@@ -849,7 +879,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 0,
                 gate: [ 3, 0 ],
                 obstacles: 'pulse',
-                rows: [ '4..', '..1', '.b.', '0..', '..4', 'd..', '.0.', '..1', '4..', '.d.', '..0', '1..', '.4.', 'b..', '..0', '.1.', '0..', '..4', '.b.', '1..', '..0', 'd..', '.4.', '..1', '.0.', '4..' ]
+                rows: [ '4..', '..1', '.b.', '0..', '..4', 'd..', '.0.', '..1', '4..', '.d.', '..0', '1..', '.4.', 'b..', '..0', '.1.', '0..' ]
             },
             //  10. The run home. The level opens up one last time before the
             //  two hardest stretches in the game, so the ending has somewhere
@@ -858,7 +888,7 @@ export const LEVELS: LevelSpec[] = [
                 splitAfterLane: 0,
                 gate: [ 0, 4 ],
                 speed: 1.28,
-                rows: [ '.1.', '..5', '.5.', '1..', '.1.', '..1', '.5.', '5..', '.1.', '..5', '.5.', '1..', '.5.', '..1', '.1.', '5..', '.5.', '..5', '.1.', '1..', '.5.', '..1', '.1.', '5..', '.5.', '..5' ]
+                rows: [ '.1.', '..5', '.5.', '1..', '.1.', '..1', '.5.', '5..', '.1.', '..5', '.5.', '1..', '.5.', '..1', '.1.', '5..', '.5.' ]
             },
             //  The one place in the game the switch is asked for on top of
             //  something else. It is the exam, and by here it has been met on
@@ -876,6 +906,1020 @@ export const LEVELS: LevelSpec[] = [
                 obstacles: 'static',
                 rowSpacing: 118,
                 rows: [ '3..', '..1', '.c.', '3..', '000', '..3', 'b..', '.1.', 'c.c', '..1', 'AAA', '3..', '.b.', '..3', 'e.e', '.1.', '000', '..3', 'c..', '.1.', 'b.b', '..1', 'CCC', '.3.', '1..', '..3', '.1.', '..1' ]
+            }
+        ]
+    },
+    {
+        name: '11',
+        world: 'sky',
+        variant: 'night',
+        palette: [ 'cyan', 'magenta', 'yellow', 'purple', 'blue' ],
+        forwardSpeed: 610,
+        rowSpacing: 131,
+        //  Advanced movement. The clouds after dark, and the first level that
+        //  asks for two things at once: a lane and a jump.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22' ]
+            },
+            //  2. The sweep.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                rows: [ '1..', '.2.', '..3', '..3', '.2.', '1..', '1..', '.2.', '..3', '..3', '.2.', '1..', '1..', '.2.', '..3', '..3', '.2.', '1..', '1..', '.2.', '..3' ]
+            },
+            //  3. Walls.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                obstacles: 'static',
+                rows: [ '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4' ]
+            },
+            //  4. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                obstacles: 'static',
+                rows: [ '.4.', '..1', '4..', 'AAA', '..4', '...', '.4.', '..1', '4..', 'AAA', '..4', '...', '.4.', '..1', '4..', 'AAA', '..4', '...', '.4.', '..1', '4..', 'AAA' ]
+            },
+            //  5. Sliders.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'slider',
+                rows: [ '.1.', '..3', 'a..', '.3.', '..1', '..d', '.1.', '..3', 'a..', '.3.', '..1', '..d', '.1.', '..3', 'a..', '.3.', '..1', '..d', '.1.', '..3', 'a..' ]
+            },
+            //  6. The gift.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                rows: [ '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.' ]
+            },
+            //  7. Jump and choose.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                obstacles: 'static',
+                rows: [ '5..', '..5', '.b.', '2..', 'CCC', '..5', '5..', '..2', '.b.', '5..', 'CCC', '..5', '2..', '..5', '.b.', '5..', 'CCC', '..2', '5..', '..5', '.b.', '2..' ]
+            },
+            //  8. The run.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                speed: 1.25,
+                rows: [ '.2.', '..4', '.4.', '2..', '.2.', '..2', '.2.', '..4', '.4.', '2..', '.2.', '..2', '.2.', '..4', '.4.', '2..', '.2.', '..2', '.2.', '..4', '.4.' ]
+            },
+            //  9. Pairs.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 2 ],
+                obstacles: 'static',
+                rows: [ '.4.', 'a.a', '..4', 'e.e', '3..', '.4.', '.4.', 'a.a', '..3', 'e.e', '4..', '.4.', '.3.', 'a.a', '..4', 'e.e', '4..', '.3.', '.4.', 'a.a', '..4' ]
+            },
+            //  10. The drum.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 0 ],
+                obstacles: 'static',
+                rows: [ '.3.', '..1', '3..', 'BBB', '..3', '...', '.3.', '..1', '3..', 'BBB', '..3', '...', '.3.', '..1', '3..', 'BBB', '..3', '...', '.3.', '..1', '3..', 'BBB' ]
+            },
+            //  11. Pressure.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 4 ],
+                obstacles: 'pulse',
+                rows: [ '.1.', 'c..', '..5', '.1.', '..e', '5..', '.1.', 'c..', '..5', '.1.', '..e', '5..', '.1.', 'c..', '..5', '.1.', '..e', '5..', '.1.', 'c..', '..5' ]
+            },
+            //  12. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 2 ],
+                obstacles: 'static',
+                rowSpacing: 118,
+                rows: [ '5..', '..3', '.a.', '5..', 'AAA', '..3', '.5.', '5..', '..3', '.a.', 'AAA', 'c.c', '..3', '.5.', '5..', '..3', 'AAA', '5..', 'c.c', '..3', '.5.', '5..', 'AAA' ]
+            }
+        ]
+    },
+    {
+        name: '12',
+        world: 'mountains',
+        variant: 'night',
+        palette: [ 'blue', 'orange', 'cyan', 'purple', 'yellow' ],
+        forwardSpeed: 630,
+        rowSpacing: 128,
+        //  The pass at night. Obstacles arrive straight out of the gates rather
+        //  than after a settling stretch.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22', '122' ]
+            },
+            //  2. Straight in.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                obstacles: 'static',
+                rows: [ '.2.', 'b..', '..3', '.2.', '..d', '3..', '.2.', 'b..', '..3', '.2.', '..d', '3..', '.2.', 'b..', '..3', '.2.', '..d', '3..', '.2.', 'b..', '..3', '.2.', '..d', '3..' ]
+            },
+            //  3. The sweep.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                rows: [ '3..', '.4.', '..1', '..1', '.4.', '3..', '3..', '.4.', '..1', '..1', '.4.', '3..', '3..', '.4.', '..1', '..1', '.4.', '3..', '3..', '.4.', '..1', '..1', '.4.', '3..' ]
+            },
+            //  4. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 4 ],
+                obstacles: 'static',
+                rows: [ '.4.', '..5', '4..', 'CCC', '..4', '...', '.4.', '..5', '4..', 'CCC', '..4', '...', '.4.', '..5', '4..', 'CCC', '..4', '...', '.4.', '..5', '4..', 'CCC', '..4', '...', '.4.' ]
+            },
+            //  5. Bars.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                obstacles: 'rotor',
+                rows: [ '.5.', '..1', 'a..', '.1.', '..5', '..e', '.5.', '..1', 'a..', '.1.', '..5', '..e', '.5.', '..1', 'a..', '.1.', '..5', '..e', '.5.', '..1', 'a..', '.1.', '..5', '..e' ]
+            },
+            //  6. The gift.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                rows: [ '1..', '.3.', '..5', '1.5', '.3.', '1.5', '1..', '.3.', '..5', '1.5', '.3.', '1.5', '1..', '.3.', '..5', '1.5', '.3.', '1.5', '1..', '.3.', '..5', '1.5' ]
+            },
+            //  7. Holes.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'static',
+                rows: [ '.3.', '..5', '3..', '000', '..3', '...', '.3.', '..5', '3..', '000', '..3', '...', '.3.', '..5', '3..', '000', '..3', '...', '.3.', '..5', '3..', '000', '..3', '...', '.3.' ]
+            },
+            //  8. The run.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                speed: 1.28,
+                rows: [ '.5.', '..2', '.2.', '5..', '.5.', '..5', '.5.', '..2', '.2.', '5..', '.5.', '..5', '.5.', '..2', '.2.', '5..', '.5.', '..5', '.5.', '..2', '.2.', '5..', '.5.', '..5' ]
+            },
+            //  9. Pairs.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                obstacles: 'static',
+                rows: [ '.2.', 'b.b', '..2', 'd.d', '4..', '.2.', '.2.', 'b.b', '..4', 'd.d', '2..', '.2.', '.4.', 'b.b', '..2', 'd.d', '2..', '.4.', '.2.', 'b.b', '..2', 'd.d', '4..', '.2.' ]
+            },
+            //  10. Breathing.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                obstacles: 'pulse',
+                rows: [ '.4.', 'c..', '..1', '.4.', '..e', '1..', '.4.', 'c..', '..1', '.4.', '..e', '1..', '.4.', 'c..', '..1', '.4.', '..e', '1..', '.4.', 'c..', '..1', '.4.', '..e', '1..' ]
+            },
+            //  11. The gauntlet.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'static',
+                rows: [ '1..', '..1', '.a.', '3..', 'DDD', '..1', '1..', '..3', '.a.', '1..', 'DDD', '..1', '3..', '..1', '.a.', '1..', 'DDD', '..3', '1..', '..1', '.a.', '3..', 'DDD', '..1', '1..', '..3' ]
+            },
+            //  12. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'static',
+                rowSpacing: 116,
+                rows: [ '3..', '..5', '.b.', '3..', 'BBB', '..5', '.3.', '3..', '..5', '.b.', 'BBB', 'd.d', '..5', '.3.', '3..', '..5', 'BBB', '3..', 'd.d', '..5', '.3.', '3..', 'BBB', '.b.', '3..', 'd.d' ]
+            }
+        ]
+    },
+    {
+        name: '13',
+        world: 'canyon',
+        variant: 'night',
+        palette: [ 'orange', 'purple', 'cyan', 'green', 'blue' ],
+        forwardSpeed: 650,
+        rowSpacing: 125,
+        //  Deception begins. The gate changes its mind twice in this level, and
+        //  after the first one nothing on the road can be taken on trust.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22', '122', '1..' ]
+            },
+            //  2. The read.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                rows: [ '2..', '.2.', '..2', '.3.', '3..', '.3.', '2..', '.2.', '..2', '.3.', '3..', '.3.', '2..', '.2.', '..2', '.3.', '3..', '.3.', '2..', '.2.', '..2', '.3.', '3..', '.3.', '2..', '.2.' ]
+            },
+            //  3. The switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                gateSwap: true,
+                rows: [ '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4' ]
+            },
+            //  4. Walls.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 4 ],
+                obstacles: 'static',
+                rows: [ '.4.', 'a..', '..5', '.4.', '..d', '5..', '.4.', 'a..', '..5', '.4.', '..d', '5..', '.4.', 'a..', '..5', '.4.', '..d', '5..', '.4.', 'a..', '..5', '.4.', '..d', '5..', '.4.', 'a..' ]
+            },
+            //  5. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                obstacles: 'static',
+                rows: [ '.5.', '..1', '5..', 'BBB', '..5', '...', '.5.', '..1', '5..', 'BBB', '..5', '...', '.5.', '..1', '5..', 'BBB', '..5', '...', '.5.', '..1', '5..', 'BBB', '..5', '...', '.5.', '..1', '5..' ]
+            },
+            //  6. The gift.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '1..', '.2.', '..3', '1.3', '.2.', '1.3', '1..', '.2.', '..3', '1.3', '.2.', '1.3', '1..', '.2.', '..3', '1.3', '.2.', '1.3', '1..', '.2.', '..3', '1.3', '.2.', '1.3' ]
+            },
+            //  7. The second switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                gateSwap: true,
+                obstacles: 'static',
+                rows: [ '.2.', 'c..', '..4', '.2.', '..e', '4..', '.2.', 'c..', '..4', '.2.', '..e', '4..', '.2.', 'c..', '..4', '.2.', '..e', '4..', '.2.', 'c..', '..4', '.2.', '..e', '4..', '.2.', 'c..' ]
+            },
+            //  8. Sliders.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                obstacles: 'slider',
+                rows: [ '.4.', '..1', 'b..', '.1.', '..4', '..d', '.4.', '..1', 'b..', '.1.', '..4', '..d', '.4.', '..1', 'b..', '.1.', '..4', '..d', '.4.', '..1', 'b..', '.1.', '..4', '..d', '.4.', '..1' ]
+            },
+            //  9. Holes.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'static',
+                rows: [ '.1.', '..3', '1..', '000', '..1', '...', '.1.', '..3', '1..', '000', '..1', '...', '.1.', '..3', '1..', '000', '..1', '...', '.1.', '..3', '1..', '000', '..1', '...', '.1.', '..3', '1..' ]
+            },
+            //  10. The run.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                speed: 1.3,
+                rows: [ '.3.', '..5', '.5.', '3..', '.3.', '..3', '.3.', '..5', '.5.', '3..', '.3.', '..3', '.3.', '..5', '.5.', '3..', '.3.', '..3', '.3.', '..5', '.5.', '3..', '.3.', '..3', '.3.', '..5' ]
+            },
+            //  11. The gauntlet.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                obstacles: 'pulse',
+                rows: [ '5..', '..5', '.a.', '2..', 'CCC', '..5', '5..', '..2', '.a.', '5..', 'CCC', '..5', '2..', '..5', '.a.', '5..', 'CCC', '..2', '5..', '..5', '.a.', '2..', 'CCC', '..5', '5..', '..2', '.a.', '5..' ]
+            },
+            //  12. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                obstacles: 'static',
+                rowSpacing: 114,
+                rows: [ '2..', '..4', '.b.', '2..', 'AAA', '..4', '.2.', '2..', '..4', '.b.', 'AAA', 'd.d', '..4', '.2.', '2..', '..4', 'AAA', '2..', 'd.d', '..4', '.2.', '2..', 'AAA', '.b.', '2..', 'd.d', '..4', '.2.' ]
+            }
+        ]
+    },
+    {
+        name: '14',
+        world: 'forest',
+        variant: 'night',
+        palette: [ 'green', 'yellow', 'purple', 'cyan', 'magenta' ],
+        forwardSpeed: 670,
+        rowSpacing: 123,
+        //  The wood at night, where a lane that looks open is the one being
+        //  closed. Sliders and pulses together for most of the level.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22', '122', '1..', '.22' ]
+            },
+            //  2. The sweep.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                rows: [ '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4' ]
+            },
+            //  3. Bars.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                obstacles: 'rotor',
+                rows: [ '.3.', '..4', 'b..', '.4.', '..3', '..e', '.3.', '..4', 'b..', '.4.', '..3', '..e', '.3.', '..4', 'b..', '.4.', '..3', '..e', '.3.', '..4', 'b..', '.4.', '..3', '..e', '.3.', '..4', 'b..', '.4.' ]
+            },
+            //  4. The switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 4 ],
+                gateSwap: true,
+                obstacles: 'static',
+                rows: [ '.4.', 'a..', '..5', '.4.', '..c', '5..', '.4.', 'a..', '..5', '.4.', '..c', '5..', '.4.', 'a..', '..5', '.4.', '..c', '5..', '.4.', 'a..', '..5', '.4.', '..c', '5..', '.4.', 'a..', '..5', '.4.' ]
+            },
+            //  5. Breathing.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                obstacles: 'pulse',
+                rows: [ '.5.', 'd..', '..1', '.5.', '..e', '1..', '.5.', 'd..', '..1', '.5.', '..e', '1..', '.5.', 'd..', '..1', '.5.', '..e', '1..', '.5.', 'd..', '..1', '.5.', '..e', '1..', '.5.', 'd..', '..1', '.5.' ]
+            },
+            //  6. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'static',
+                rows: [ '.1.', '..3', '1..', 'DDD', '..1', '...', '.1.', '..3', '1..', 'DDD', '..1', '...', '.1.', '..3', '1..', 'DDD', '..1', '...', '.1.', '..3', '1..', 'DDD', '..1', '...', '.1.', '..3', '1..', 'DDD', '..1' ]
+            },
+            //  7. The gift.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                rows: [ '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.' ]
+            },
+            //  8. Pairs.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                obstacles: 'pulse',
+                rows: [ '.5.', 'a.a', '..5', 'c.c', '2..', '.5.', '.5.', 'a.a', '..2', 'c.c', '5..', '.5.', '.2.', 'a.a', '..5', 'c.c', '5..', '.2.', '.5.', 'a.a', '..5', 'c.c', '2..', '.5.', '.5.', 'a.a', '..2', 'c.c' ]
+            },
+            //  9. The floor goes.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                obstacles: 'blinker',
+                rows: [ '.2.', '..4', '2..', '000', '..2', '...', '.2.', '..4', '2..', '000', '..2', '...', '.2.', '..4', '2..', '000', '..2', '...', '.2.', '..4', '2..', '000', '..2', '...', '.2.', '..4', '2..', '000', '..2' ]
+            },
+            //  10. The run.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                speed: 1.28,
+                rows: [ '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..' ]
+            },
+            //  11. The gauntlet.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'slider',
+                rows: [ '1..', '..1', '.b.', '3..', 'EEE', '..1', '1..', '..3', '.b.', '1..', 'EEE', '..1', '3..', '..1', '.b.', '1..', 'EEE', '..3', '1..', '..1', '.b.', '3..', 'EEE', '..1', '1..', '..3', '.b.', '1..', 'EEE', '..1' ]
+            },
+            //  12. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'static',
+                rowSpacing: 112,
+                rows: [ '3..', '..5', '.a.', '3..', 'BBB', '..5', '.3.', '3..', '..5', '.a.', 'BBB', 'e.e', '..5', '.3.', '3..', '..5', 'BBB', '3..', 'e.e', '..5', '.3.', '3..', 'BBB', '.a.', '3..', 'e.e', '..5', '.3.', 'BBB', '..5' ]
+            }
+        ]
+    },
+    {
+        name: '15',
+        world: 'ice',
+        variant: 'night',
+        palette: [ 'cyan', 'blue', 'purple', 'magenta', 'yellow' ],
+        forwardSpeed: 690,
+        rowSpacing: 121,
+        //  The sheet after dark. Nothing here is new; what is new is that three
+        //  things arrive at once and the road never opens up.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22', '122', '1..', '.22', '122' ]
+            },
+            //  2. Walls.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                obstacles: 'static',
+                rows: [ '.2.', 'c..', '..3', '.2.', '..e', '3..', '.2.', 'c..', '..3', '.2.', '..e', '3..', '.2.', 'c..', '..3', '.2.', '..e', '3..', '.2.', 'c..', '..3', '.2.', '..e', '3..', '.2.', 'c..', '..3', '.2.', '..e', '3..', '.2.' ]
+            },
+            //  3. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                obstacles: 'static',
+                rows: [ '.3.', '..4', '3..', 'AAA', '..3', '...', '.3.', '..4', '3..', 'AAA', '..3', '...', '.3.', '..4', '3..', 'AAA', '..3', '...', '.3.', '..4', '3..', 'AAA', '..3', '...', '.3.', '..4', '3..', 'AAA', '..3', '...', '.3.', '..4' ]
+            },
+            //  4. The switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 4 ],
+                gateSwap: true,
+                obstacles: 'slider',
+                rows: [ '.4.', '..5', 'a..', '.5.', '..4', '..d', '.4.', '..5', 'a..', '.5.', '..4', '..d', '.4.', '..5', 'a..', '.5.', '..4', '..d', '.4.', '..5', 'a..', '.5.', '..4', '..d', '.4.', '..5', 'a..', '.5.', '..4', '..d', '.4.' ]
+            },
+            //  5. Breathing.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                obstacles: 'pulse',
+                rows: [ '.5.', 'b..', '..1', '.5.', '..e', '1..', '.5.', 'b..', '..1', '.5.', '..e', '1..', '.5.', 'b..', '..1', '.5.', '..e', '1..', '.5.', 'b..', '..1', '.5.', '..e', '1..', '.5.', 'b..', '..1', '.5.', '..e', '1..', '.5.' ]
+            },
+            //  6. Holes.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                obstacles: 'static',
+                rows: [ '.1.', '..2', '1..', '000', '..1', '...', '.1.', '..2', '1..', '000', '..1', '...', '.1.', '..2', '1..', '000', '..1', '...', '.1.', '..2', '1..', '000', '..1', '...', '.1.', '..2', '1..', '000', '..1', '...', '.1.', '..2' ]
+            },
+            //  7. The toll.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                drain: 12,
+                rows: [ '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.', '..5', '2.5' ]
+            },
+            //  8. Pairs.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 2 ],
+                obstacles: 'static',
+                rows: [ '.4.', 'c.c', '..4', 'd.d', '3..', '.4.', '.4.', 'c.c', '..3', 'd.d', '4..', '.4.', '.3.', 'c.c', '..4', 'd.d', '4..', '.3.', '.4.', 'c.c', '..4', 'd.d', '3..', '.4.', '.4.', 'c.c', '..3', 'd.d', '4..', '.4.', '.3.' ]
+            },
+            //  9. The drum.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'static',
+                rows: [ '.3.', '..5', '3..', 'EEE', '..3', '...', '.3.', '..5', '3..', 'EEE', '..3', '...', '.3.', '..5', '3..', 'EEE', '..3', '...', '.3.', '..5', '3..', 'EEE', '..3', '...', '.3.', '..5', '3..', 'EEE', '..3', '...', '.3.', '..5' ]
+            },
+            //  10. The run.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                speed: 1.26,
+                rows: [ '.5.', '..1', '.1.', '5..', '.5.', '..5', '.5.', '..1', '.1.', '5..', '.5.', '..5', '.5.', '..1', '.1.', '5..', '.5.', '..5', '.5.', '..1', '.1.', '5..', '.5.', '..5', '.5.', '..1', '.1.', '5..', '.5.', '..5', '.5.' ]
+            },
+            //  11. The gauntlet.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 3 ],
+                obstacles: 'pulse',
+                rows: [ '1..', '..1', '.a.', '4..', 'BBB', '..1', '1..', '..4', '.a.', '1..', 'BBB', '..1', '4..', '..1', '.a.', '1..', 'BBB', '..4', '1..', '..1', '.a.', '4..', 'BBB', '..1', '1..', '..4', '.a.', '1..', 'BBB', '..1', '4..', '..1', '.a.' ]
+            },
+            //  12. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 1 ],
+                obstacles: 'static',
+                rowSpacing: 110,
+                rows: [ '4..', '..2', '.b.', '4..', 'DDD', '..2', '.4.', '4..', '..2', '.b.', 'DDD', 'e.e', '..2', '.4.', '4..', '..2', 'DDD', '4..', 'e.e', '..2', '.4.', '4..', 'DDD', '.b.', '4..', 'e.e', '..2', '.4.', 'DDD', '..2', '.b.', '4..', 'e.e', '..2' ]
+            }
+        ]
+    },
+    {
+        name: '16',
+        world: 'desert',
+        variant: 'night',
+        palette: [ 'yellow', 'orange', 'blue', 'purple', 'green' ],
+        forwardSpeed: 710,
+        rowSpacing: 119,
+        //  Mastery. From here every level runs past a minute and combines what
+        //  the previous fifteen taught, one pairing at a time.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22', '122', '1..', '.22', '122' ]
+            },
+            //  2. The sweep.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                rows: [ '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.' ]
+            },
+            //  3. Walls.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                obstacles: 'static',
+                rows: [ '.3.', 'a..', '..4', '.3.', '..d', '4..', '.3.', 'a..', '..4', '.3.', '..d', '4..', '.3.', 'a..', '..4', '.3.', '..d', '4..', '.3.', 'a..', '..4', '.3.', '..d', '4..', '.3.', 'a..', '..4', '.3.', '..d', '4..', '.3.', 'a..' ]
+            },
+            //  4. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 4 ],
+                obstacles: 'static',
+                rows: [ '.4.', '..5', '4..', 'CCC', '..4', '...', '.4.', '..5', '4..', 'CCC', '..4', '...', '.4.', '..5', '4..', 'CCC', '..4', '...', '.4.', '..5', '4..', 'CCC', '..4', '...', '.4.', '..5', '4..', 'CCC', '..4', '...', '.4.', '..5' ]
+            },
+            //  5. Bars.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                obstacles: 'rotor',
+                rows: [ '.5.', '..1', 'b..', '.1.', '..5', '..e', '.5.', '..1', 'b..', '.1.', '..5', '..e', '.5.', '..1', 'b..', '.1.', '..5', '..e', '.5.', '..1', 'b..', '.1.', '..5', '..e', '.5.', '..1', 'b..', '.1.', '..5', '..e', '.5.', '..1' ]
+            },
+            //  6. The switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                gateSwap: true,
+                obstacles: 'pulse',
+                rows: [ '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..' ]
+            },
+            //  7. The gift.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                rows: [ '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.' ]
+            },
+            //  8. The floor goes.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                obstacles: 'blinker',
+                rows: [ '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2' ]
+            },
+            //  9. Pairs.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                obstacles: 'static',
+                rows: [ '.2.', 'a.a', '..2', 'd.d', '4..', '.2.', '.2.', 'a.a', '..4', 'd.d', '2..', '.2.', '.4.', 'a.a', '..2', 'd.d', '2..', '.4.', '.2.', 'a.a', '..2', 'd.d', '4..', '.2.', '.2.', 'a.a', '..4', 'd.d', '2..', '.2.', '.4.', 'a.a' ]
+            },
+            //  10. The run.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                speed: 1.24,
+                rows: [ '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1' ]
+            },
+            //  11. The drum.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'static',
+                rows: [ '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3' ]
+            },
+            //  12. The gauntlet.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'pulse',
+                rows: [ '3..', '..3', '.b.', '5..', 'DDD', '..3', '3..', '..5', '.b.', '3..', 'DDD', '..3', '5..', '..3', '.b.', '3..', 'DDD', '..5', '3..', '..3', '.b.', '5..', 'DDD', '..3', '3..', '..5', '.b.', '3..', 'DDD', '..3', '5..', '..3', '.b.' ]
+            },
+            //  13. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                obstacles: 'static',
+                rowSpacing: 108,
+                rows: [ '5..', '..2', '.a.', '5..', 'EEE', '..2', '.5.', '5..', '..2', '.a.', 'EEE', 'c.c', '..2', '.5.', '5..', '..2', 'EEE', '5..', 'c.c', '..2', '.5.', '5..', 'EEE', '.a.', '5..', 'c.c', '..2', '.5.', 'EEE', '..2', '.a.', '5..', 'c.c', '..2' ]
+            }
+        ]
+    },
+    {
+        name: '17',
+        world: 'storm',
+        variant: 'night',
+        palette: [ 'blue', 'red', 'green', 'yellow', 'purple' ],
+        forwardSpeed: 730,
+        rowSpacing: 117,
+        //  The storm at night. Two switching gates, and the stretch between
+        //  them is the hardest reading in the game so far.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22', '122', '1..', '.22', '122', '122' ]
+            },
+            //  2. The read.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                rows: [ '2..', '.2.', '..2', '.3.', '3..', '.3.', '2..', '.2.', '..2', '.3.', '3..', '.3.', '2..', '.2.', '..2', '.3.', '3..', '.3.', '2..', '.2.', '..2', '.3.', '3..', '.3.', '2..', '.2.', '..2', '.3.', '3..', '.3.', '2..', '.2.', '..2', '.3.', '3..' ]
+            },
+            //  3. The switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                gateSwap: true,
+                obstacles: 'static',
+                rows: [ '.3.', 'b..', '..4', '.3.', '..d', '4..', '.3.', 'b..', '..4', '.3.', '..d', '4..', '.3.', 'b..', '..4', '.3.', '..d', '4..', '.3.', 'b..', '..4', '.3.', '..d', '4..', '.3.', 'b..', '..4', '.3.', '..d', '4..', '.3.', 'b..', '..4', '.3.', '..d' ]
+            },
+            //  4. Bars.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 4 ],
+                obstacles: 'rotor',
+                rows: [ '.4.', '..5', 'a..', '.5.', '..4', '..e', '.4.', '..5', 'a..', '.5.', '..4', '..e', '.4.', '..5', 'a..', '.5.', '..4', '..e', '.4.', '..5', 'a..', '.5.', '..4', '..e', '.4.', '..5', 'a..', '.5.', '..4', '..e', '.4.', '..5', 'a..', '.5.', '..4' ]
+            },
+            //  5. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                obstacles: 'static',
+                rows: [ '.5.', '..1', '5..', 'BBB', '..5', '...', '.5.', '..1', '5..', 'BBB', '..5', '...', '.5.', '..1', '5..', 'BBB', '..5', '...', '.5.', '..1', '5..', 'BBB', '..5', '...', '.5.', '..1', '5..', 'BBB', '..5', '...', '.5.', '..1', '5..', 'BBB', '..5' ]
+            },
+            //  6. Breathing.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'pulse',
+                rows: [ '.1.', 'c..', '..3', '.1.', '..d', '3..', '.1.', 'c..', '..3', '.1.', '..d', '3..', '.1.', 'c..', '..3', '.1.', '..d', '3..', '.1.', 'c..', '..3', '.1.', '..d', '3..', '.1.', 'c..', '..3', '.1.', '..d', '3..', '.1.', 'c..', '..3', '.1.', '..d' ]
+            },
+            //  7. The gift.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                rows: [ '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1' ]
+            },
+            //  8. The second switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                gateSwap: true,
+                obstacles: 'static',
+                rows: [ '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5' ]
+            },
+            //  9. Pairs.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                obstacles: 'pulse',
+                rows: [ '.2.', 'a.a', '..2', 'c.c', '4..', '.2.', '.2.', 'a.a', '..4', 'c.c', '2..', '.2.', '.4.', 'a.a', '..2', 'c.c', '2..', '.4.', '.2.', 'a.a', '..2', 'c.c', '4..', '.2.', '.2.', 'a.a', '..4', 'c.c', '2..', '.2.', '.4.', 'a.a', '..2', 'c.c', '2..' ]
+            },
+            //  10. The wrong colour to wear.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                drain: 12,
+                drainColor: 3,
+                speed: 1.22,
+                rows: [ '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.' ]
+            },
+            //  11. The drum.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'static',
+                rows: [ '.1.', '..3', '1..', 'DDD', '..1', '...', '.1.', '..3', '1..', 'DDD', '..1', '...', '.1.', '..3', '1..', 'DDD', '..1', '...', '.1.', '..3', '1..', 'DDD', '..1', '...', '.1.', '..3', '1..', 'DDD', '..1', '...', '.1.', '..3', '1..', 'DDD', '..1' ]
+            },
+            //  12. The gauntlet.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'slider',
+                rows: [ '3..', '..3', '.b.', '5..', 'AAA', '..3', '3..', '..5', '.b.', '3..', 'AAA', '..3', '5..', '..3', '.b.', '3..', 'AAA', '..5', '3..', '..3', '.b.', '5..', 'AAA', '..3', '3..', '..5', '.b.', '3..', 'AAA', '..3', '5..', '..3', '.b.', '3..', 'AAA', '..5', '3..' ]
+            },
+            //  13. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                obstacles: 'static',
+                rowSpacing: 106,
+                rows: [ '5..', '..2', '.c.', '5..', 'CCC', '..2', '.5.', '5..', '..2', '.c.', 'CCC', 'd.d', '..2', '.5.', '5..', '..2', 'CCC', '5..', 'd.d', '..2', '.5.', '5..', 'CCC', '.c.', '5..', 'd.d', '..2', '.5.', 'CCC', '..2', '.c.', '5..', 'd.d', '..2', 'CCC', '5..', '..2', '.c.' ]
+            }
+        ]
+    },
+    {
+        name: '18',
+        world: 'city',
+        variant: 'night',
+        palette: [ 'cyan', 'magenta', 'yellow', 'green', 'purple' ],
+        forwardSpeed: 750,
+        rowSpacing: 115,
+        //  The towers at night, and the level with the most holes in it. Colour
+        //  cannot answer a hole, so this is the level where reading the road
+        //  matters more than reading the gate.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..' ]
+            },
+            //  2. The floor goes.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                obstacles: 'blinker',
+                rows: [ '.2.', '..3', '2..', '000', '..2', '...', '.2.', '..3', '2..', '000', '..2', '...', '.2.', '..3', '2..', '000', '..2', '...', '.2.', '..3', '2..', '000', '..2', '...', '.2.', '..3', '2..', '000', '..2', '...', '.2.', '..3', '2..', '000', '..2', '...', '.2.', '..3' ]
+            },
+            //  3. Walls.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                obstacles: 'static',
+                rows: [ '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..' ]
+            },
+            //  4. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 4 ],
+                obstacles: 'static',
+                rows: [ '.4.', '..5', '4..', 'EEE', '..4', '...', '.4.', '..5', '4..', 'EEE', '..4', '...', '.4.', '..5', '4..', 'EEE', '..4', '...', '.4.', '..5', '4..', 'EEE', '..4', '...', '.4.', '..5', '4..', 'EEE', '..4', '...', '.4.', '..5', '4..', 'EEE', '..4', '...', '.4.', '..5' ]
+            },
+            //  5. The switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                gateSwap: true,
+                obstacles: 'slider',
+                rows: [ '.5.', '..1', 'b..', '.1.', '..5', '..d', '.5.', '..1', 'b..', '.1.', '..5', '..d', '.5.', '..1', 'b..', '.1.', '..5', '..d', '.5.', '..1', 'b..', '.1.', '..5', '..d', '.5.', '..1', 'b..', '.1.', '..5', '..d', '.5.', '..1', 'b..', '.1.', '..5', '..d', '.5.', '..1' ]
+            },
+            //  6. Breathing.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'pulse',
+                rows: [ '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..', '..3', '.1.', '..e', '3..', '.1.', 'c..' ]
+            },
+            //  7. The gift.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                rows: [ '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.' ]
+            },
+            //  8. The door that is not one.
+            //
+            //  Two doorways, and the wide one is barred. Sealing the
+            //  narrow half would reward doing nothing; sealing the half
+            //  that covers two of the three lanes asks the player to
+            //  have looked. Forcing it costs what a wall costs and still
+            //  repaints the drop, so a missed reading is a price rather
+            //  than the end of the run.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                gateSealed: 1,
+                obstacles: 'static',
+                rows: [ '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2', '5..', '000', '..5', '...', '.5.', '..2' ]
+            },
+            //  9. Pairs.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                obstacles: 'static',
+                rows: [ '.2.', 'a.a', '..2', 'd.d', '4..', '.2.', '.2.', 'a.a', '..4', 'd.d', '2..', '.2.', '.4.', 'a.a', '..2', 'd.d', '2..', '.4.', '.2.', 'a.a', '..2', 'd.d', '4..', '.2.', '.2.', 'a.a', '..4', 'd.d', '2..', '.2.', '.4.', 'a.a', '..2', 'd.d', '2..', '.4.', '.2.', 'a.a' ]
+            },
+            //  10. The run.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                speed: 1.18,
+                rows: [ '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1', '.1.', '4..', '.4.', '..4', '.4.', '..1' ]
+            },
+            //  11. Sliders.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'slider',
+                rows: [ '.1.', '..3', 'b..', '.3.', '..1', '..e', '.1.', '..3', 'b..', '.3.', '..1', '..e', '.1.', '..3', 'b..', '.3.', '..1', '..e', '.1.', '..3', 'b..', '.3.', '..1', '..e', '.1.', '..3', 'b..', '.3.', '..1', '..e', '.1.', '..3', 'b..', '.3.', '..1', '..e', '.1.', '..3' ]
+            },
+            //  12. The gauntlet.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'pulse',
+                rows: [ '3..', '..3', '.a.', '5..', 'BBB', '..3', '3..', '..5', '.a.', '3..', 'BBB', '..3', '5..', '..3', '.a.', '3..', 'BBB', '..5', '3..', '..3', '.a.', '5..', 'BBB', '..3', '3..', '..5', '.a.', '3..', 'BBB', '..3', '5..', '..3', '.a.', '3..', 'BBB', '..5', '3..', '..3', '.a.', '5..' ]
+            },
+            //  13. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                obstacles: 'static',
+                rowSpacing: 104,
+                rows: [ '5..', '..2', '.d.', '5..', 'DDD', '..2', '.5.', '5..', '..2', '.d.', 'DDD', 'e.e', '..2', '.5.', '5..', '..2', 'DDD', '5..', 'e.e', '..2', '.5.', '5..', 'DDD', '.d.', '5..', 'e.e', '..2', '.5.', 'DDD', '..2', '.d.', '5..', 'e.e', '..2', 'DDD', '5..', '..2', '.d.', '5..', 'e.e', 'DDD' ]
+            }
+        ]
+    },
+    {
+        name: '19',
+        world: 'space',
+        variant: 'night',
+        palette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ],
+        forwardSpeed: 770,
+        rowSpacing: 113,
+        //  Deep space. The longest run of jumps in the game, and two speed
+        //  sections rather than one.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22' ]
+            },
+            //  2. The sweep.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                rows: [ '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..' ]
+            },
+            //  3. The first run.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                speed: 1.14,
+                rows: [ '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4', '.4.', '3..', '.3.', '..3', '.3.', '..4', '.4.', '3..', '.3.', '..3' ]
+            },
+            //  4. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 4 ],
+                obstacles: 'static',
+                rows: [ '.4.', '..5', '4..', 'AAA', '..4', '...', '.4.', '..5', '4..', 'AAA', '..4', '...', '.4.', '..5', '4..', 'AAA', '..4', '...', '.4.', '..5', '4..', 'AAA', '..4', '...', '.4.', '..5', '4..', 'AAA', '..4', '...', '.4.', '..5', '4..', 'AAA', '..4', '...', '.4.', '..5', '4..', 'AAA', '..4', '...' ]
+            },
+            //  5. Walls.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                obstacles: 'static',
+                rows: [ '.5.', 'b..', '..1', '.5.', '..d', '1..', '.5.', 'b..', '..1', '.5.', '..d', '1..', '.5.', 'b..', '..1', '.5.', '..d', '1..', '.5.', 'b..', '..1', '.5.', '..d', '1..', '.5.', 'b..', '..1', '.5.', '..d', '1..', '.5.', 'b..', '..1', '.5.', '..d', '1..', '.5.', 'b..', '..1', '.5.', '..d', '1..' ]
+            },
+            //  6. The switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                gateSwap: true,
+                obstacles: 'slider',
+                rows: [ '.1.', '..3', 'a..', '.3.', '..1', '..e', '.1.', '..3', 'a..', '.3.', '..1', '..e', '.1.', '..3', 'a..', '.3.', '..1', '..e', '.1.', '..3', 'a..', '.3.', '..1', '..e', '.1.', '..3', 'a..', '.3.', '..1', '..e', '.1.', '..3', 'a..', '.3.', '..1', '..e', '.1.', '..3', 'a..', '.3.', '..1', '..e' ]
+            },
+            //  7. The gift.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                rows: [ '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1', '3.1', '.5.', '3.1', '3..', '.5.', '..1' ]
+            },
+            //  8. The bridge.
+            //
+            //  The road narrows to a single lane and the lane moves. A
+            //  bridge that held still would be a corridor: there is
+            //  nothing to do on it but wait, and waiting is not a
+            //  skill. Nothing to collect either - it is a held breath
+            //  between two stretches of road, and the orbs are on both
+            //  sides of it rather than on it.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                obstacles: 'static',
+                rows: [ '.5.', '..2', '5..', '.2.', '..5', '...', '0.0', '0.0', '.00', '.00', '0.0', '0.0', '00.', '00.', '0.0', '0.0', '.00', '.00', '0.0', '0.0', '00.', '00.', '0.0', '0.0', '.00', '.00', '0.0', '0.0', '00.', '00.', '.5.', '..2', '5..', '.2.', '..5', '...', '.5.', '..2', '5..', '.2.', '..5', '...' ]
+            },
+            //  9. The drum.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                obstacles: 'static',
+                rows: [ '.2.', '..4', '2..', 'CCC', '..2', '...', '.2.', '..4', '2..', 'CCC', '..2', '...', '.2.', '..4', '2..', 'CCC', '..2', '...', '.2.', '..4', '2..', 'CCC', '..2', '...', '.2.', '..4', '2..', 'CCC', '..2', '...', '.2.', '..4', '2..', 'CCC', '..2', '...', '.2.', '..4', '2..', 'CCC', '..2', '...' ]
+            },
+            //  10. Breathing.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                obstacles: 'pulse',
+                rows: [ '.4.', 'c..', '..1', '.4.', '..d', '1..', '.4.', 'c..', '..1', '.4.', '..d', '1..', '.4.', 'c..', '..1', '.4.', '..d', '1..', '.4.', 'c..', '..1', '.4.', '..d', '1..', '.4.', 'c..', '..1', '.4.', '..d', '1..', '.4.', 'c..', '..1', '.4.', '..d', '1..', '.4.', 'c..', '..1', '.4.', '..d', '1..' ]
+            },
+            //  11. The second run.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                speed: 1.14,
+                rows: [ '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1' ]
+            },
+            //  12. The gauntlet.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'slider',
+                rows: [ '3..', '..3', '.b.', '5..', 'EEE', '..3', '3..', '..5', '.b.', '3..', 'EEE', '..3', '5..', '..3', '.b.', '3..', 'EEE', '..5', '3..', '..3', '.b.', '5..', 'EEE', '..3', '3..', '..5', '.b.', '3..', 'EEE', '..3', '5..', '..3', '.b.', '3..', 'EEE', '..5', '3..', '..3', '.b.', '5..', 'EEE', '..3', '3..', '..5' ]
+            },
+            //  13. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                obstacles: 'static',
+                rowSpacing: 102,
+                rows: [ '5..', '..2', '.a.', '5..', 'BBB', '..2', '.5.', '5..', '..2', '.a.', 'BBB', 'c.c', '..2', '.5.', '5..', '..2', 'BBB', '5..', 'c.c', '..2', '.5.', '5..', 'BBB', '.a.', '5..', 'c.c', '..2', '.5.', 'BBB', '..2', '.a.', '5..', 'c.c', '..2', 'BBB', '5..', '..2', '.a.', '5..', 'c.c', 'BBB', '.5.', '5..', '..2', '.a.' ]
+            }
+        ]
+    },
+    {
+        name: '20',
+        world: 'void',
+        variant: 'night',
+        palette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ],
+        forwardSpeed: 790,
+        rowSpacing: 111,
+        //  The last one. Nothing new is introduced - every mechanic the game
+        //  has, in the order it was taught, at the tightest spacing and the
+        //  highest speed in the game.
+        sections: [
+            //  1. The opening.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 1 ],
+                rows: [ '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22', '122', '1..', '.22', '122', '122', '122', '1..', '.22' ]
+            },
+            //  2. The sweep.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 2 ],
+                rows: [ '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.', '2..', '2..', '.3.', '..4', '..4', '.3.' ]
+            },
+            //  3. Walls.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 3 ],
+                obstacles: 'static',
+                rows: [ '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c', '4..', '.3.', 'a..', '..4', '.3.', '..c' ]
+            },
+            //  4. Sliders.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 4 ],
+                obstacles: 'slider',
+                rows: [ '.4.', '..5', 'b..', '.5.', '..4', '..d', '.4.', '..5', 'b..', '.5.', '..4', '..d', '.4.', '..5', 'b..', '.5.', '..4', '..d', '.4.', '..5', 'b..', '.5.', '..4', '..d', '.4.', '..5', 'b..', '.5.', '..4', '..d', '.4.', '..5', 'b..', '.5.', '..4', '..d', '.4.', '..5', 'b..', '.5.', '..4' ]
+            },
+            //  5. Breathing.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 0 ],
+                obstacles: 'pulse',
+                rows: [ '.5.', 'c..', '..1', '.5.', '..e', '1..', '.5.', 'c..', '..1', '.5.', '..e', '1..', '.5.', 'c..', '..1', '.5.', '..e', '1..', '.5.', 'c..', '..1', '.5.', '..e', '1..', '.5.', 'c..', '..1', '.5.', '..e', '1..', '.5.', 'c..', '..1', '.5.', '..e', '1..', '.5.', 'c..', '..1', '.5.', '..e' ]
+            },
+            //  6. The beat.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                obstacles: 'static',
+                rows: [ '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1', '...', '.1.', '..3', '1..', 'AAA', '..1' ]
+            },
+            //  7. Holes.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'static',
+                rows: [ '.3.', '..5', '3..', '000', '..3', '...', '.3.', '..5', '3..', '000', '..3', '...', '.3.', '..5', '3..', '000', '..3', '...', '.3.', '..5', '3..', '000', '..3', '...', '.3.', '..5', '3..', '000', '..3', '...', '.3.', '..5', '3..', '000', '..3', '...', '.3.', '..5', '3..', '000', '..3' ]
+            },
+            //  8. The switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                gateSwap: true,
+                obstacles: 'static',
+                rows: [ '.5.', 'a..', '..2', '.5.', '..d', '2..', '.5.', 'a..', '..2', '.5.', '..d', '2..', '.5.', 'a..', '..2', '.5.', '..d', '2..', '.5.', 'a..', '..2', '.5.', '..d', '2..', '.5.', 'a..', '..2', '.5.', '..d', '2..', '.5.', 'a..', '..2', '.5.', '..d', '2..', '.5.', 'a..', '..2', '.5.', '..d' ]
+            },
+            //  9. The gift.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                rows: [ '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.', '..5', '2.5', '.4.', '2.5', '2..', '.4.' ]
+            },
+            //  10. Pairs.
+            {
+                splitAfterLane: 0,
+                gate: [ 3, 0 ],
+                obstacles: 'static',
+                rows: [ '.4.', 'b.b', '..4', 'e.e', '1..', '.4.', '.4.', 'b.b', '..1', 'e.e', '4..', '.4.', '.1.', 'b.b', '..4', 'e.e', '4..', '.1.', '.4.', 'b.b', '..4', 'e.e', '1..', '.4.', '.4.', 'b.b', '..1', 'e.e', '4..', '.4.', '.1.', 'b.b', '..4', 'e.e', '4..', '.1.', '.4.', 'b.b', '..4', 'e.e', '1..' ]
+            },
+            //  11. The run.
+            {
+                splitAfterLane: 0,
+                gate: [ 0, 2 ],
+                speed: 1.1,
+                rows: [ '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.', '..1', '.1.', '..3', '.3.', '1..', '.1.' ]
+            },
+            //  12. The drum.
+            {
+                splitAfterLane: 0,
+                gate: [ 2, 4 ],
+                obstacles: 'static',
+                rows: [ '.3.', '..5', '3..', 'DDD', '..3', '...', '.3.', '..5', '3..', 'DDD', '..3', '...', '.3.', '..5', '3..', 'DDD', '..3', '...', '.3.', '..5', '3..', 'DDD', '..3', '...', '.3.', '..5', '3..', 'DDD', '..3', '...', '.3.', '..5', '3..', 'DDD', '..3', '...', '.3.', '..5', '3..', 'DDD', '..3' ]
+            },
+            //  13. The second switch.
+            {
+                splitAfterLane: 0,
+                gate: [ 4, 1 ],
+                gateSwap: true,
+                obstacles: 'pulse',
+                rows: [ '5..', '..5', '.c.', '2..', 'CCC', '..5', '5..', '..2', '.c.', '5..', 'CCC', '..5', '2..', '..5', '.c.', '5..', 'CCC', '..2', '5..', '..5', '.c.', '2..', 'CCC', '..5', '5..', '..2', '.c.', '5..', 'CCC', '..5', '2..', '..5', '.c.', '5..', 'CCC', '..2', '5..', '..5', '.c.', '2..', 'CCC', '..5' ]
+            },
+            //  14. The finale.
+            {
+                splitAfterLane: 0,
+                gate: [ 1, 3 ],
+                obstacles: 'static',
+                rowSpacing: 100,
+                rows: [ '2..', '..4', '.a.', '2..', 'EEE', '..4', '.2.', '2..', '..4', '.a.', 'EEE', 'e.e', '..4', '.2.', '2..', '..4', 'EEE', '2..', 'e.e', '..4', '.2.', '2..', 'EEE', '.a.', '2..', 'e.e', '..4', '.2.', 'EEE', '..4', '.a.', '2..', 'e.e', '..4', 'EEE', '2..', '..4', '.a.', '2..', 'e.e', 'EEE', '.2.', '2..', '..4', '.a.', '2..', 'EEE' ]
             }
         ]
     }

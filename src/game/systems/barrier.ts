@@ -1,7 +1,11 @@
 import {
+    BLINK_OPEN,
+    BLINK_PERIOD,
     OBSTACLE_HALF_WIDTH,
     PULSE_AMOUNT,
     PULSE_PERIOD,
+    ROTOR_PERIOD,
+    ROTOR_REACH,
     SLIDER_AMPLITUDE,
     SLIDER_PERIOD,
     TRACK_LEFT,
@@ -27,17 +31,53 @@ const TAU = Math.PI * 2;
 //  on screen and absent from the rules.
 
 /**
- * Half the width a barrier presents at a given point on the course. Only a
- * pulsing barrier varies.
+ * Half the width a barrier presents at a given point on the course.
+ *
+ * A pulse breathes around its resting width; a rotor opens and closes across a
+ * far wider range as it turns. Everything else is the width it was built at.
  */
 export function barrierHalfWidth (kind: ObstacleKind, travelled: number): number
 {
-    if (kind !== 'pulse')
+    if (kind === 'pulse')
     {
-        return OBSTACLE_HALF_WIDTH;
+        return OBSTACLE_HALF_WIDTH * (1 + (Math.sin((travelled / PULSE_PERIOD) * TAU) * PULSE_AMOUNT));
     }
 
-    return OBSTACLE_HALF_WIDTH * (1 + (Math.sin((travelled / PULSE_PERIOD) * TAU) * PULSE_AMOUNT));
+    //  A bar turning about its lane, seen from above: its width across the road
+    //  is its length foreshortened by how far round it has turned. Broadside it
+    //  reaches ROTOR_REACH either side, edge-on it is the post it pivots on.
+    if (kind === 'rotor')
+    {
+        return ROTOR_REACH * Math.abs(Math.cos((travelled / ROTOR_PERIOD) * TAU));
+    }
+
+    return OBSTACLE_HALF_WIDTH;
+}
+
+/**
+ * Whether a barrier is there at all at a given point on the course.
+ *
+ * Only a disappearing floor is ever absent, and when it is absent the road is
+ * simply road. Kept as its own question rather than folded into the width,
+ * because a width of nothing is not the same as nothing being there: the drop
+ * has a body, so it would still be caught standing exactly on a hole of zero
+ * width.
+ *
+ * A square wave rather than a smooth one. A floor is there or it is not, and
+ * the player has to be able to read which from a glance rather than judge how
+ * far through a fade it is.
+ */
+export function barrierPresent (kind: ObstacleKind, travelled: number): boolean
+{
+    if (kind !== 'blinker')
+    {
+        return true;
+    }
+
+    //  Positive modulo, so the phase is the same on either side of zero.
+    const phase = (((travelled / BLINK_PERIOD) % 1) + 1) % 1;
+
+    return phase < BLINK_OPEN;
 }
 
 /**

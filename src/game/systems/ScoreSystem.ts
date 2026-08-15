@@ -1,6 +1,7 @@
 import {
     COMBO_MAX_MULTIPLIER,
     COMBO_STEP,
+    SCORE_DEATH_BELOW,
     SCORE_PENALTY,
     SCORE_PER_ORB,
     SCORE_START,
@@ -11,14 +12,28 @@ import {
  * Score and combo bookkeeping. Deliberately has no idea what an orb is - it is
  * told that something was collected or missed, and nothing else.
  *
- * The score is a bank rather than a tally: the run starts with something in it
- * and ends when it is empty. Everything below follows from that one decision.
+ * The score is two things at once: what the run was worth, and whether it is
+ * still going. It starts at nothing, everything correct adds to it, everything
+ * wrong takes from it, and the run ends the moment it falls below zero.
+ *
+ * Zero itself is alive. That is the whole rule, and everything below follows
+ * from it.
  */
 export class ScoreSystem
 {
     private score = SCORE_START;
     private combo = 0;
     private bestCombo = 0;
+
+    /**
+     * The highest the score ever reached.
+     *
+     * What an endless run is worth. The score at the end is not: a run ends
+     * *because* it went below zero, so recording that would file every run in
+     * the game as negative, and the better the run the more invisible it would
+     * be. The peak is the thing the player actually achieved.
+     */
+    private peak = SCORE_START;
 
     /**
      * A matching colour: combo up, then paid at whatever that combo is now
@@ -35,6 +50,7 @@ export class ScoreSystem
         const gained = SCORE_PER_ORB * this.getMultiplier();
 
         this.score += gained;
+        this.peak = Math.max(this.peak, this.score);
 
         return gained;
     }
@@ -53,22 +69,47 @@ export class ScoreSystem
     /**
      * A wrong colour: costs double a correct one, and ends the streak.
      *
-     * Charged only as far as there is anything left to charge, so the bank
-     * stops at empty rather than running on into numbers that mean nothing. The
-     * amount returned is the amount actually taken, which makes the last
-     * mistake of a run visibly the one that finished it - a floating "-8"
-     * against a full "-20" says "that was the rest of it" without a word.
+     * Charged in full, every time, and allowed to take the score below zero -
+     * which is the only way the run can end. An earlier version charged only as
+     * far as there was anything left, so the score stopped at zero and a player
+     * could sit on empty forever; under this rule that would have meant nobody
+     * could ever fail.
      *
-     * @returns the points lost, as a negative number.
+     * @returns the points lost, always the full penalty, as a negative number.
      */
     penalise (): number
     {
-        const taken = Math.min(SCORE_PENALTY, this.score);
-
-        this.score -= taken;
+        this.score -= SCORE_PENALTY;
         this.combo = 0;
 
-        return -taken;
+        return -SCORE_PENALTY;
+    }
+
+    /**
+     * Score bled away by being somewhere expensive.
+     *
+     * Not a mistake, so it leaves the combo alone: a player crossing a drain
+     * zone cleanly is still collecting cleanly, and taking their run away from
+     * them for walking a road the level put in front of them would be reading
+     * the wrong thing as an error. It can still kill - score below zero is
+     * still out, and that is the whole threat of a long zone.
+     */
+    drain (points: number): void
+    {
+        this.score -= points;
+    }
+
+    /**
+     * Put the score back to a given figure.
+     *
+     * Only an endless run uses this, when a life is spent: the run carries on
+     * from a fixed footing rather than from wherever it fell to. The combo goes
+     * with it - a run that has just been rescued is not on a streak.
+     */
+    setScore (score: number): void
+    {
+        this.score = score;
+        this.combo = 0;
     }
 
     getScore (): number
@@ -79,29 +120,38 @@ export class ScoreSystem
     /**
      * Whether the run is over.
      *
-     * The whole point of the bank. Asked after every change rather than watched
-     * for, so the run ends on the hit that emptied it and not a frame later.
+     * Strictly below zero. Zero is alive - a player who has spent exactly what
+     * they earned is on the edge, not over it. Asked after every change rather
+     * than watched for, so the run ends on the hit that took it under and not a
+     * frame later.
      */
     isOut (): boolean
     {
-        return this.score <= 0;
+        return this.score < SCORE_DEATH_BELOW;
     }
 
     /**
      * Whether the run is close enough to the end to be told about it.
      *
-     * False once it is actually over: at that point the run has its own, much
-     * louder answer, and a warning still showing underneath it would be reading
-     * the state of a run that no longer exists.
+     * True at zero, which is the most dangerous a live run can be. False once
+     * it is actually over: at that point the run has its own, much louder
+     * answer, and a warning still showing underneath it would be describing a
+     * run that no longer exists.
      */
     isLow (): boolean
     {
-        return this.score > 0 && this.score <= SCORE_WARNING;
+        return !this.isOut() && this.score <= SCORE_WARNING;
     }
 
     getCombo (): number
     {
         return this.combo;
+    }
+
+    /** The highest the score reached. See `peak`. */
+    getPeak (): number
+    {
+        return this.peak;
     }
 
     getBestCombo (): number

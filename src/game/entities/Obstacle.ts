@@ -1,5 +1,9 @@
 import { Scene } from 'phaser';
 import {
+    BLINK_GHOST_ALPHA,
+    ROTOR_BAR_HEIGHT,
+    ROTOR_BAR_THICKNESS,
+    ROTOR_POST_WIDTH,
     COLOR_VALUES,
     GAP_DEPTH,
     GAP_FLOOR_ALPHA,
@@ -21,7 +25,7 @@ import {
     OBSTACLE_STAND_HEIGHT
 } from '../config/constants';
 import { ObstacleKind, ObstacleProfile, ObstacleSpec } from '../config/level';
-import { barrierCentre, barrierHalfWidth } from '../systems/barrier';
+import { barrierCentre, barrierHalfWidth, barrierPresent } from '../systems/barrier';
 import { depthScale, fillProjectedQuad, projectX } from '../systems/Projection';
 import { drawStrength, screenYFor } from '../systems/World';
 
@@ -75,11 +79,17 @@ export class Obstacle
     }
 
     /**
-     * Half-width at a given point on the course. Only pulsing barriers vary.
+     * Half-width at a given point on the course. Pulses and rotors vary.
      */
     halfWidthAt (travelled: number): number
     {
         return barrierHalfWidth(this.kind, travelled);
+    }
+
+    /** Whether it is there at all right now. Only a blinker is ever not. */
+    presentAt (travelled: number): boolean
+    {
+        return barrierPresent(this.kind, travelled);
     }
 
     /**
@@ -99,7 +109,14 @@ export class Obstacle
         const gfx = this.gfx;
 
         gfx.clear();
-        gfx.setAlpha(drawStrength(this.distance, travelled));
+
+        //  A floor that is not there is drawn as the road it has become. The
+        //  ghost it leaves is what makes it readable: a hole that vanished
+        //  without trace would be a hole the player could only learn by dying
+        //  in it, and one drawn at full strength would not read as gone.
+        const present = this.presentAt(travelled);
+
+        gfx.setAlpha(drawStrength(this.distance, travelled) * (present ? 1 : BLINK_GHOST_ALPHA));
 
         if (this.profile === 'gap')
         {
@@ -116,6 +133,13 @@ export class Obstacle
         const baseRight = projectX(right, y);
 
         if (baseRight - baseLeft < 2) { return y; }
+
+        if (this.kind === 'rotor')
+        {
+            this.drawBar(gfx, baseLeft, baseRight, y, value, scale, travelled);
+
+            return y;
+        }
 
         //  The face standing up from it. Flat and facing the camera, so its top
         //  corners sit directly above the base ones. A low one stands a
@@ -158,6 +182,66 @@ export class Obstacle
         void half;
 
         return y;
+    }
+
+    /**
+     * A bar turning about its lane.
+     *
+     * Drawn as a beam on a post rather than as a wall, because it is not one
+     * and the difference is the whole obstacle: a wall of changing width reads
+     * as a pulse with a wide setting, and a player who reads it that way will
+     * stand in the next lane and be swept off the road. A beam that reaches out
+     * from a post says which way it is going and what it is about to cover.
+     *
+     * The post stays put and stays the same width, so there is always something
+     * fixed to read the turn against - edge-on, the post is the only part left,
+     * and a bar that vanished completely would be one the player could not
+     * count the rhythm of.
+     */
+    private drawBar (
+        gfx: Phaser.GameObjects.Graphics,
+        left: number,
+        right: number,
+        y: number,
+        value: number,
+        scale: number,
+        travelled: number
+    ): void
+    {
+        const stand = OBSTACLE_STAND_HEIGHT * ROTOR_BAR_HEIGHT * scale;
+        const beam = Math.max(1, ROTOR_BAR_THICKNESS * scale);
+
+        //  The beam, held at the height it sweeps at.
+        const mid = y - stand;
+
+        gfx.fillStyle(value, OBSTACLE_FILL_ALPHA + 0.2);
+        gfx.fillRect(left, mid - (beam / 2), right - left, beam);
+
+        gfx.lineStyle(Math.max(1, OBSTACLE_EDGE_THICKNESS * scale * 0.7), value, 1);
+        gfx.strokeRect(left, mid - (beam / 2), right - left, beam);
+
+        //  Weights on the ends, which is what makes it read as a thing being
+        //  swung rather than as a line drawn across the road.
+        const cap = Math.max(1, beam * 0.9);
+
+        gfx.fillStyle(value, 1);
+        gfx.fillCircle(left, mid, cap);
+        gfx.fillCircle(right, mid, cap);
+
+        //  The post it turns on. Never moves and never changes width, so the
+        //  turn has something to be read against.
+        const post = Math.max(1, ROTOR_POST_WIDTH * scale);
+        const centre = projectX(barrierCentre(this.kind, this.lane, travelled), y);
+
+        gfx.fillStyle(value, OBSTACLE_FILL_ALPHA);
+        gfx.fillRect(centre - (post / 2), mid, post, y - mid);
+
+        gfx.lineStyle(Math.max(1, 1.5 * scale), value, 0.9);
+        gfx.lineBetween(centre, mid, centre, y);
+
+        //  Its footing, so the post stands on the road rather than floating.
+        gfx.fillStyle(value, OBSTACLE_FOOT_ALPHA * 2);
+        gfx.fillCircle(centre, y, Math.max(1, post * 1.4));
     }
 
     /**

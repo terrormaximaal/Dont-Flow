@@ -43,6 +43,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  wide bright reflection, with none of the light strips a built road
         //  would carry. Level one, and the emptiest road in the game.
         surface: { rungSpacing: 156, rungThickness: 6, rungAlpha: 0.5, stripAlpha: 0, sheenAlpha: 0.10, vergeWidth: 120 },
+        nightPalette: [ 'cyan', 'magenta', 'yellow', 'purple', 'blue' ],
         palette: [ 'red', 'blue' ]
     },
 
@@ -66,6 +67,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  A pass road, marked the way a road is: a broken centre line and
         //  nothing else on the surface at all.
         surface: { rungAlpha: 0, dashSpacing: 240, dashLength: 120, stripAlpha: 0, sheenAlpha: 0.03 },
+        nightPalette: [ 'blue', 'orange', 'cyan', 'purple', 'yellow' ],
         palette: [ 'red', 'blue' ]
     },
 
@@ -88,6 +90,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  Sleepers cut into the rock. Close-set and heavy, with a broad
         //  shoulder of the same stone either side.
         surface: { rungSpacing: 78, rungThickness: 8, stripAlpha: 0, sheenAlpha: 0.02, vergeWidth: 130 },
+        nightPalette: [ 'orange', 'purple', 'cyan', 'green', 'blue' ],
         palette: [ 'orange', 'purple' ]
     },
 
@@ -108,6 +111,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  A boardwalk. Planks close enough together to read as planks, laid
         //  narrow so the trees crowd right up to the edge of it.
         surface: { rungSpacing: 52, rungThickness: 7, rungAlpha: 0.55, stripAlpha: 0, sheenAlpha: 0.02, vergeWidth: 58 },
+        nightPalette: [ 'green', 'yellow', 'purple', 'cyan', 'magenta' ],
         palette: [ 'green', 'yellow', 'purple' ]
     },
 
@@ -132,6 +136,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  surface are the reflection and two faint runners of light, which is
         //  what makes it read as polished rather than as unfinished.
         surface: { rungAlpha: 0, stripAlpha: 0.12, sheenAlpha: 0.15, vergeWidth: 155 },
+        nightPalette: [ 'cyan', 'blue', 'purple', 'magenta', 'yellow' ],
         palette: [ 'cyan', 'blue', 'pink' ]
     },
 
@@ -152,6 +157,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  A highway. Long dashes with long gaps, no cross-bars, and nothing
         //  reflected in it at all: this is the one dry surface in the game.
         surface: { rungAlpha: 0, dashSpacing: 320, dashLength: 170, stripAlpha: 0, sheenAlpha: 0, vergeWidth: 108 },
+        nightPalette: [ 'yellow', 'orange', 'blue', 'purple', 'green' ],
         palette: [ 'yellow', 'orange', 'blue' ]
     },
 
@@ -175,6 +181,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  reflection in the game bar the ice, and the light strips just
         //  visible through the water.
         surface: { rungAlpha: 0, dashSpacing: 170, dashLength: 70, stripAlpha: 0.10, sheenAlpha: 0.12 },
+        nightPalette: [ 'blue', 'red', 'green', 'yellow', 'purple' ],
         palette: [ 'blue', 'red', 'green', 'yellow' ]
     },
 
@@ -200,6 +207,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  strips at full strength, and barely any shoulder - the towers start
         //  where the road stops.
         surface: { rungSpacing: 104, rungAlpha: 1, stripAlpha: 0.26, sheenAlpha: 0.06, vergeWidth: 70 },
+        nightPalette: [ 'cyan', 'magenta', 'yellow', 'green', 'purple' ],
         palette: [ 'cyan', 'magenta', 'yellow', 'green' ]
     },
 
@@ -225,6 +233,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  hardly a shoulder - just two runners of light travelling away, which
         //  is the only thing here that says the road is moving at all.
         surface: { rungAlpha: 0, stripAlpha: 0.34, sheenAlpha: 0, vergeWidth: 34 },
+        nightPalette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ],
         palette: [ 'magenta', 'cyan', 'orange', 'green' ]
     },
 
@@ -250,6 +259,7 @@ export const WORLDS: Record<WorldId, WorldSpec> = {
         //  way apart, dashes between them and strips down both sides - which
         //  is what this world is: pieces of all the others at once.
         surface: { rungSpacing: 168, rungThickness: 9, rungAlpha: 0.9, dashSpacing: 210, dashLength: 60, stripAlpha: 0.28, sheenAlpha: 0.04, vergeWidth: 96 },
+        nightPalette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ],
         palette: [ 'magenta', 'cyan', 'orange', 'green', 'purple' ]
     }
 };

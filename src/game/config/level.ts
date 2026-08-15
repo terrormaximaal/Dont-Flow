@@ -1,5 +1,6 @@
 import { ColorId, DEFAULT_LANES } from './constants';
 import { WorldId } from './worlds';
+import { WorldVariant } from './worldVariant';
 
 //  The shape of a course, and how an authored level is expanded into one.
 //  The levels themselves live in `levels.ts` - this file is the format, not the
@@ -65,7 +66,23 @@ export type ObstacleKind =
     /** Slides across the track, forcing the lane change to be timed. */
     | 'slider'
     /** Holds its lane but breathes in and out, narrowing the safe gap. */
-    | 'pulse';
+    | 'pulse'
+    /**
+     * A bar turning about its lane.
+     *
+     * Wide across the road when broadside and barely there edge-on, so it is
+     * answered by arriving while it is turned away rather than by going round
+     * it. Never covers the whole road: see ROTOR_REACH.
+     */
+    | 'rotor'
+    /**
+     * There, then not there, then there again.
+     *
+     * The only kind that is ever absent. Paired with the 'gap' profile it is a
+     * disappearing floor - the road itself coming and going - which is the one
+     * obstacle in the game that is neither a colour question nor a lane one.
+     */
+    | 'blinker';
 
 // ---------------------------------------------------------------------------
 //  Authored level format
@@ -114,8 +131,37 @@ export interface SectionSpec
      */
     gateSwap?: boolean;
 
+    /**
+     * Which half of this section's gate is barred, if either is.
+     *
+     * A pair that looks at a glance like any other and is not: one of the two
+     * doorways has been closed off. Fair rather than cruel, and deliberately
+     * not the obvious version of a fake gate - a doorway that showed one colour
+     * and gave another would be a lie, and the whole gate mechanic rests on
+     * being a twist rather than one (see GatePair.colorAt). This one tells the
+     * complete truth and asks whether the player is reading or remembering.
+     */
+    gateSealed?: 0 | 1;
+
     /** How obstacles in this section behave. Defaults to static. */
     obstacles?: ObstacleKind;
+
+    /**
+     * Score this section costs per thousand pixels crossed, if it costs any.
+     *
+     * A place rather than an object: nothing to steer around, and the only
+     * answers are to cross it quickly and to have arrived with enough score to
+     * pay. See HazardZone.
+     */
+    drain?: number;
+
+    /**
+     * The palette colour the drain applies to, if it applies to only one.
+     *
+     * Left out, the section costs whatever the drop is carrying. Set, it is the
+     * colour rule asked backwards: the one colour here that must not be worn.
+     */
+    drainColor?: number;
 
     /**
      * One string per row, one character per lane:
@@ -139,6 +185,14 @@ export interface LevelSpec
 
     /** Which environment this level is played in. */
     world: WorldId;
+
+    /**
+     * The world seen under different light, for a level that revisits one.
+     *
+     * Twenty levels across ten worlds, so every world is played twice. The
+     * second visit is always the harder one, and always after dark.
+     */
+    variant?: WorldVariant;
 
     /**
      * How many lanes the road carries, and so how many characters each of this
@@ -178,6 +232,16 @@ export interface GatePairSpec
 
     /** Whether this pair trades its two colours on the way in. */
     swap?: boolean;
+
+    /**
+     * A doorway that is barred, if one of them is.
+     *
+     * The bars are real and drawn from as far off as the doorway is. Forcing
+     * one costs what a wrong colour costs, and still repaints the drop - the
+     * player comes out the other side poorer rather than stranded, which is
+     * what keeps a missed reading a mistake instead of the end of the run.
+     */
+    sealed?: 0 | 1;
 }
 
 export interface OrbSpec
@@ -213,6 +277,9 @@ export interface Level
     /** Stretches of road the drop moves through faster or slower than usual. */
     zones: SpeedZone[];
 
+    /** Stretches of road that cost score to be in. */
+    hazards: HazardZone[];
+
     finishDistance: number;
 }
 
@@ -231,6 +298,76 @@ export interface SpeedZone
 
     /** Multiplier on the level's own forward speed. */
     speed: number;
+}
+
+/**
+ * A stretch of course that costs the player score to be in.
+ *
+ * The first hazard that is not a thing to steer around or jump over: it is a
+ * place, and the only answers to it are to cross it quickly and to be carrying
+ * enough score to afford it. Score is the survival condition, so a long enough
+ * drain is fatal on its own - which is what makes a stretch of empty road worth
+ * being afraid of.
+ *
+ * Held as distances for the same reason a speed zone is: what the game asks at
+ * any moment is "what is this costing me *here*".
+ */
+export interface HazardZone
+{
+    from: number;
+    to: number;
+
+    /**
+     * Score lost per thousand track pixels crossed.
+     *
+     * A rate over distance rather than over time, so a zone costs the same on
+     * every level and cannot be made cheap by a section that runs fast. It is
+     * also the only figure that makes a zone's total cost knowable while
+     * authoring: a nine hundred pixel zone at 20 costs eighteen points.
+     */
+    drain: number;
+
+    /**
+     * The colour this zone objects to, if it objects to only one.
+     *
+     * Without it the zone drains whatever the drop is carrying, which is a
+     * place that is simply expensive. With it the zone is a question about
+     * colour again, but asked backwards: every other coloured thing in the game
+     * wants to be matched, and this one wants to be avoided.
+     */
+    color?: ColorId;
+}
+
+/**
+ * What a point on the course costs per thousand pixels, for a drop carrying
+ * `color`.
+ *
+ * Pure and total, like speedAt: any distance has an answer, and a level with no
+ * zones answers zero everywhere. Zones add rather than override - a coloured
+ * hazard laid inside a plain one should cost both, and taking the first match
+ * would silently make the second free.
+ *
+ * A null colour is a drop between gates, carrying nothing. A plain drain still
+ * charges it; a coloured one has nothing to object to.
+ */
+export function drainAt (zones: HazardZone[], distance: number, color: ColorId | null): number
+{
+    let rate = 0;
+
+    for (const zone of zones)
+    {
+        if (distance < zone.from || distance >= zone.to)
+        {
+            continue;
+        }
+
+        if (zone.color === undefined || zone.color === color)
+        {
+            rate += zone.drain;
+        }
+    }
+
+    return rate;
 }
 
 /**
@@ -283,6 +420,7 @@ export function buildLevel (spec: LevelSpec): Level
     const colorAt = (index: number): ColorId => spec.palette[index] ?? spec.palette[0];
 
     const zones: SpeedZone[] = [];
+    const hazards: HazardZone[] = [];
 
     let cursor = LEAD_IN;
     let lastRowDistance = cursor;
@@ -296,7 +434,8 @@ export function buildLevel (spec: LevelSpec): Level
             distance: cursor,
             splitAfterLane: section.splitAfterLane,
             colors: [ colorAt(section.gate[0]), colorAt(section.gate[1]) ],
-            swap: section.gateSwap
+            swap: section.gateSwap,
+            sealed: section.gateSealed
         });
 
         let rowDistance = cursor + GATE_TO_ORBS;
@@ -357,7 +496,12 @@ export function buildLevel (spec: LevelSpec): Level
                         //  same shape rather than an optional field that only
                         //  one profile ever fills in.
                         color: colorAt(0),
-                        kind: 'static',
+                        //  A hole moves if its section says the obstacles do.
+                        //  It used to be pinned to its lane whatever the
+                        //  section asked for, which quietly made a sliding
+                        //  hole - a hole you have to time rather than step
+                        //  around - impossible to author at all.
+                        kind: section.obstacles ?? 'static',
                         profile: 'gap'
                     });
 
@@ -390,6 +534,19 @@ export function buildLevel (spec: LevelSpec): Level
             zones.push({ from: sectionStart, to: lastRowDistance, speed: section.speed });
         }
 
+        //  A drain claims the same road its rows do, and never the gate: a
+        //  player cannot be charged for the doorway they were made to walk
+        //  through, and the gate is where the colour is chosen.
+        if (section.drain !== undefined && section.drain > 0)
+        {
+            hazards.push({
+                from: sectionStart,
+                to: lastRowDistance,
+                drain: section.drain,
+                color: section.drainColor === undefined ? undefined : colorAt(section.drainColor)
+            });
+        }
+
         cursor = lastRowDistance + SECTION_GAP;
     }
 
@@ -399,6 +556,7 @@ export function buildLevel (spec: LevelSpec): Level
         obstacles,
         powerUps,
         zones,
+        hazards,
         finishDistance: lastRowDistance + FINISH_GAP
     };
 }

@@ -19,7 +19,7 @@ import {
     ROUTE_ENTER_FROM,
     ROUTE_ENTER_MS,
     ROUTE_ENTER_STAGGER,
-    ROUTE_LAST_Y,
+    ROUTE_DRAG_SLOP,
     ROUTE_LINE_GLOW,
     ROUTE_LINE_STEPS,
     ROUTE_LINE_WIDTH,
@@ -38,6 +38,7 @@ import {
 import { LEVELS } from '../config/levels';
 import { MENU_SKY_LOW, MENU_SKY_TOP } from '../config/menuTheme';
 import { WORLDS } from '../config/worldData';
+import { applyVariant } from '../config/worldVariant';
 import { EnergySystem } from '../systems/EnergySystem';
 import { MenuSky } from '../systems/MenuSky';
 import { paintPageColors } from '../systems/PageBackdrop';
@@ -46,7 +47,18 @@ import { mixColor } from '../utils/color';
 import { Button } from '../ui/Button';
 import { arrive, leaveTo } from '../ui/transition';
 import { EnergyMeter } from '../ui/EnergyMeter';
-import { isReached, isStartable, routePoint, stopAt, Stop, stopState } from '../ui/route';
+import {
+    edgeFade,
+    isReached,
+    isStartable,
+    ROUTE_BACK_Y,
+    routePoint,
+    routeScrollRange,
+    scrollToShow,
+    stopAt,
+    Stop,
+    stopState
+} from '../ui/route';
 import { drawPadlock, drawWorldBead } from '../ui/worldBead';
 
 /**
@@ -76,8 +88,34 @@ export class LevelSelect extends Scene
     /** The light travelling along the walked route, redrawn each frame. */
     private motes: Phaser.GameObjects.Graphics;
 
+    /** The line joining the stops, repainted whenever the route scrolls. */
+    private line: Phaser.GameObjects.Graphics;
+
+    /** How far along the route each level's unlock reaches, for repainting. */
+    private furthest = 0;
+
     /** How much of the route has been walked, 0 to 1. */
     private walked = 0;
+
+    /** Everything that moves when the route is dragged. */
+    private scroller: Phaser.GameObjects.Container;
+
+    /**
+     * The stops, with the hit area belonging to each one that has a level to
+     * start. Kept so both can be faded out together as they reach the edge of
+     * the view - a stop that is invisible but still tappable is worse than one
+     * that was never hidden.
+     */
+    private fading: Array<{
+        node: Phaser.GameObjects.Container;
+        hit?: Phaser.GameObjects.Arc;
+    }> = [];
+
+    /** Where the scroll currently sits, and where a drag started from. */
+    private scroll = 0;
+    private dragFrom = 0;
+    private dragAt = 0;
+    private dragging = false;
 
     private elapsed = 0;
 
@@ -94,6 +132,7 @@ export class LevelSelect extends Scene
 
         this.sky = new MenuSky(this);
         this.elapsed = 0;
+        this.fading = [];
 
         const save = new SaveSystem();
         const energy = new EnergySystem(save);
@@ -106,12 +145,24 @@ export class LevelSelect extends Scene
 
         this.meter = new EnergyMeter(this, MENU_ENERGY_Y, energy);
 
+        //  The route is longer than the screen, so it lives in a container that
+        //  moves. The heading and the way out stay fixed to the frame: a BACK
+        //  button that scrolled away with the levels would be a screen a phone
+        //  cannot leave.
+        this.scroller = this.add.container(0, 0);
+        this.scroller.setDepth(DEPTH_HUD - 4);
+
         const stops = LEVELS.map((_, index) => stopAt(index, LEVELS.length));
 
-        this.drawRoute(stops, furthest);
+        this.furthest = furthest;
+
+        this.line = this.add.graphics();
+        this.line.setDepth(DEPTH_HUD - 3);
+        this.scroller.add(this.line);
 
         this.motes = this.add.graphics();
         this.motes.setDepth(DEPTH_HUD - 2);
+        this.scroller.add(this.motes);
 
         LEVELS.forEach((level, index) => {
 
@@ -119,12 +170,18 @@ export class LevelSelect extends Scene
 
         });
 
+        //  Opened on the level the player is up to, not on the first one -
+        //  which after fifteen levels is a long way from where they are.
+        this.scrollTo(-scrollToShow(furthest, LEVELS.length));
+
+        this.enableDrag();
+
         //  The same ghost pill the home screen uses. This screen shares the
         //  menu's sky and is one tap from it, so a grey slab here against a
         //  pill there reads as two different games rather than two screens.
         const back = new Button(this, {
             x: GAME_WIDTH / 2,
-            y: ROUTE_LAST_Y + BUTTON_HEIGHT + 24,
+            y: ROUTE_BACK_Y,
             label: 'BACK',
             variant: 'ghost',
             radius: BUTTON_HEIGHT / 2,
@@ -190,13 +247,12 @@ export class LevelSelect extends Scene
      * its own colour and alpha: the route is lit in the colours of the levels
      * it runs between, and goes dark past the furthest one reached.
      */
-    private drawRoute (stops: Stop[], furthest: number): void
+    private drawRoute (furthest: number): void
     {
-        const gfx = this.add.graphics();
+        const gfx = this.line;
+        const span = LEVELS.length - 1;
 
-        gfx.setDepth(DEPTH_HUD - 3);
-
-        const span = stops.length - 1;
+        gfx.clear();
 
         for (let i = 0; i < span; i++)
         {
@@ -214,7 +270,20 @@ export class LevelSelect extends Scene
                 const b = routePoint((i + ((step + 1) / ROUTE_LINE_STEPS)) / span);
 
                 const color = mixColor(from, to, step / ROUTE_LINE_STEPS);
-                const alpha = walked ? ROUTE_DONE_ALPHA : ROUTE_LOCKED_ALPHA;
+
+                //  Faded towards the edges of the view on the same curve the
+                //  stops are, so the line dissolves into the heading rather
+                //  than running across it. Repainted as the route scrolls,
+                //  because where a segment sits on screen is what decides this
+                //  and that changes with every drag.
+                const seen = edgeFade(((a.y + b.y) / 2) + this.scroll);
+
+                if (seen <= 0)
+                {
+                    continue;
+                }
+
+                const alpha = (walked ? ROUTE_DONE_ALPHA : ROUTE_LOCKED_ALPHA) * seen;
 
                 //  A wide, faint pass under a narrow bright one, which is what
                 //  makes a line read as lit rather than as drawn. The unwalked
@@ -244,7 +313,7 @@ export class LevelSelect extends Scene
     {
         const state = stopState(index, furthest, canPlay);
         const unlocked = isReached(state);
-        const spec = WORLDS[world];
+        const spec = applyVariant(WORLDS[world], LEVELS[index].variant);
 
         //  Everything about one stop lives in a container, so it can be scaled
         //  as a piece - which is what the arrival and the press both need, and
@@ -252,11 +321,21 @@ export class LevelSelect extends Scene
         const node = this.add.container(stop.x, stop.y);
 
         node.setDepth(DEPTH_HUD - 1);
+        this.scroller.add(node);
+
+        //  Two containers, not one. The outer carries the stop's place on the
+        //  route and how far it has faded towards the edge of the view; the
+        //  inner carries the arrival and the press. Held apart because both are
+        //  a scale and an alpha, and a fade recomputed every frame would
+        //  otherwise overwrite the arrival tween mid-flight.
+        const inner = this.add.container(0, 0);
+
+        node.add(inner);
 
         const gfx = this.add.graphics();
 
         drawWorldBead(gfx, 0, 0, ROUTE_NODE_RADIUS, spec, !unlocked);
-        node.add(gfx);
+        inner.add(gfx);
 
         if (unlocked)
         {
@@ -268,14 +347,14 @@ export class LevelSelect extends Scene
 
             number.setOrigin(0.5);
             number.setShadow(0, 0, spec.hudStroke, 6, true, true);
-            node.add(number);
+            inner.add(number);
         }
         else
         {
             const lock = this.add.graphics();
 
             drawPadlock(lock, 0, 0, ROUTE_NODE_RADIUS * 0.52, 0xffffff, 0.34);
-            node.add(lock);
+            inner.add(lock);
         }
 
         //  Only what is worth saying. A best score is information; "NOT PLAYED"
@@ -305,10 +384,12 @@ export class LevelSelect extends Scene
             //  outwards and can never reach across the route.
             label.setOrigin(stop.side < 0 ? 1 : 0, 0.5);
             label.setAlpha(0.85);
-            node.add(label);
+            inner.add(label);
         }
 
-        this.enterStop(node, index);
+        this.enterStop(inner, index);
+
+        this.fading.push({ node });
 
         if (!isStartable(state))
         {
@@ -319,7 +400,7 @@ export class LevelSelect extends Scene
         //  before it is read.
         if (state === 'next')
         {
-            this.markNext(stop, spec.trackEdge);
+            this.markNext(node, spec.trackEdge);
         }
 
         //  A circle carries the press, sized past the disc so a thumb does not
@@ -328,14 +409,29 @@ export class LevelSelect extends Scene
 
         hit.setDepth(DEPTH_HUD);
         hit.setInteractive({ useHandCursor: true });
+        this.scroller.add(hit);
 
-        hit.on('pointerdown', () => {
+        //  The mask hides a stop; it does not stop it being tapped. Without
+        //  pairing the hit area to the fade, the levels scrolled off the top of
+        //  the view would still start from a tap on the heading.
+        this.fading[this.fading.length - 1].hit = hit;
+
+        hit.on('pointerup', () => {
+
+            //  A drag that moved is a scroll, not a tap. Without this the
+            //  level under the thumb starts the moment the player lets go of a
+            //  flick, which is the single most annoying thing a scrolling list
+            //  can do.
+            if (Math.abs(this.dragAt - this.dragFrom) > ROUTE_DRAG_SLOP)
+            {
+                return;
+            }
 
             //  Dips under the thumb before the screen washes out. Without it
             //  the tap has no answer at all until the fade starts, which on a
             //  slow frame reads as a press that did not register.
             this.tweens.add({
-                targets: node,
+                targets: inner,
                 scale: ROUTE_PRESS_SCALE,
                 duration: ROUTE_PRESS_MS,
                 ease: 'Quad.Out'
@@ -346,15 +442,74 @@ export class LevelSelect extends Scene
         });
     }
 
+    /**
+     * Dragging the route up and down.
+     *
+     * Taken on the scene rather than on a background rectangle, so a drag that
+     * starts on a bead scrolls like any other - a list where the gaps scroll
+     * and the items do not is a list that feels broken.
+     */
+    private enableDrag (): void
+    {
+        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+
+            this.dragging = true;
+            this.dragFrom = pointer.y;
+            this.dragAt = pointer.y;
+
+        });
+
+        this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+
+            if (!this.dragging)
+            {
+                return;
+            }
+
+            this.scrollTo(this.scroll + (pointer.y - this.dragAt));
+            this.dragAt = pointer.y;
+
+        });
+
+        this.input.on('pointerup', () => { this.dragging = false; });
+        this.input.on('pointerupoutside', () => { this.dragging = false; });
+    }
+
+    /** Clamped, because scrolling past the last stop into empty space is how a
+     *  list stops feeling like a place. */
+    private scrollTo (y: number): void
+    {
+        this.scroll = Math.max(-routeScrollRange(), Math.min(0, y));
+        this.scroller.y = this.scroll;
+
+        //  Recomputed here rather than every frame: the fade depends on nothing
+        //  but the scroll, and the scroll only moves when this is called.
+        this.drawRoute(this.furthest);
+
+        for (const { node, hit } of this.fading)
+        {
+            const fade = edgeFade(node.y + this.scroll);
+
+            node.setAlpha(fade);
+            hit?.setActive(fade > 0);
+
+            if (hit?.input)
+            {
+                hit.input.enabled = fade > 0;
+            }
+        }
+    }
+
     /** A ring breathing around the stop the player is up to. */
-    private markNext (stop: Stop, color: number): void
+    private markNext (node: Phaser.GameObjects.Container, color: number): void
     {
         const ring = this.add.graphics();
 
-        ring.setDepth(DEPTH_HUD - 1);
+        //  Carried by the stop rather than laid over the route, so it fades
+        //  with its bead instead of pulsing on alone at the edge of the view.
         ring.lineStyle(2.5, mixColor(color, 0xffffff, 0.5), 0.9);
         ring.strokeCircle(0, 0, ROUTE_NODE_RADIUS + ROUTE_NEXT_PULSE);
-        ring.setPosition(stop.x, stop.y);
+        node.add(ring);
 
         this.tweens.add({
             targets: ring,
@@ -448,5 +603,9 @@ export class LevelSelect extends Scene
  */
 function tint (index: number): number
 {
-    return WORLDS[LEVELS[index].world].trackEdge;
+    const level = LEVELS[index];
+
+    //  Through the variant, like the bead it runs into - a night level's road
+    //  is lit brighter than its daytime self, and the route has to agree.
+    return applyVariant(WORLDS[level.world], level.variant).trackEdge;
 }

@@ -1,10 +1,14 @@
 import {
+    GAME_HEIGHT,
     GAME_WIDTH,
     ROUTE_CYCLES,
+    ROUTE_FADE_BAND,
     ROUTE_FIRST_Y,
     ROUTE_LAST_Y,
     ROUTE_PHASE,
-    ROUTE_SWING
+    ROUTE_SWING,
+    ROUTE_VIEW_BOTTOM,
+    ROUTE_VIEW_TOP
 } from '../config/constants';
 
 //  Where the stops on the level route are.
@@ -15,6 +19,64 @@ import {
 //  already with the grid this replaces.
 
 const TAU = Math.PI * 2;
+
+/**
+ * Where the way out sits.
+ *
+ * Fixed to the frame rather than to the end of the route, because the route is
+ * longer than the screen and scrolls behind it. A BACK button that scrolled
+ * away with the levels would be a screen a phone cannot leave.
+ */
+export const ROUTE_BACK_Y = (ROUTE_VIEW_BOTTOM + GAME_HEIGHT) / 2;
+
+/**
+ * How far the route can be dragged.
+ *
+ * Exactly the overhang and no further: scrolling past the last stop into empty
+ * space is the clearest way to make a list feel broken.
+ */
+export function routeScrollRange (): number
+{
+    //  Far enough that the last stop clears the fade band rather than settling
+    //  half dissolved into the bottom edge. The first stop is given the same
+    //  clearance at the other end, by where ROUTE_FIRST_Y is put.
+    return Math.max(0, ROUTE_LAST_Y - (ROUTE_VIEW_BOTTOM - ROUTE_FADE_BAND));
+}
+
+/**
+ * How far to scroll so a given stop is in the middle of the view.
+ *
+ * The screen opens on the level the player is up to rather than on the first
+ * one, which after fifteen levels is a long way from where they are.
+ */
+export function scrollToShow (index: number, count: number): number
+{
+    const middle = (ROUTE_VIEW_TOP + ROUTE_VIEW_BOTTOM) / 2;
+
+    return Math.max(0, Math.min(routeScrollRange(), stopAt(index, count).y - middle));
+}
+
+/**
+ * How visible a stop is at a given position on screen.
+ *
+ * 1 through the middle of the view, easing to 0 as it approaches either edge of
+ * the band, and 0 outside it. Takes a screen position rather than a route
+ * position, so it is the scrolled `y` that goes in, not the stop's own.
+ *
+ * This is the whole of how the route is kept off the heading and off the way
+ * out. A mask would have been the obvious way, and was tried: setMask is a
+ * no-op on a Container in this build of Phaser, and it fails silently, so the
+ * route simply carried on straight over the word SELECT. Fading each piece by
+ * where it sits needs no mask, and is better anyway - a hard clip through a
+ * disc leaves a bead sliced flat against open sky, since the heading has no
+ * bar behind it for the route to disappear under.
+ */
+export function edgeFade (screenY: number): number
+{
+    const into = Math.min(screenY - ROUTE_VIEW_TOP, ROUTE_VIEW_BOTTOM - screenY);
+
+    return Math.max(0, Math.min(1, into / ROUTE_FADE_BAND));
+}
 
 export interface Stop
 {

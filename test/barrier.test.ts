@@ -3,17 +3,21 @@ import {
     DROP_CONTACT_RADIUS,
     FORWARD_SPEED,
     LANE_CHANGE_SPEED,
+    BLINK_OPEN,
+    BLINK_PERIOD,
     OBSTACLE_HALF_WIDTH,
     ORB_CATCH_RADIUS,
+    ROTOR_PERIOD,
+    ROTOR_REACH,
     SLIDER_PERIOD,
     SWIPE_REPEAT_DELAY,
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../src/game/config/constants';
-import { buildLevel, ORB_ROW_SPACING } from '../src/game/config/level';
+import { buildLevel, ObstacleKind, ORB_ROW_SPACING } from '../src/game/config/level';
 import { DEFAULT_LANES } from '../src/game/config/constants';
 import { LEVELS } from '../src/game/config/levels';
-import { barrierCentre, barrierHalfWidth } from '../src/game/systems/barrier';
+import { barrierCentre, barrierHalfWidth, barrierPresent } from '../src/game/systems/barrier';
 import { laneCenterX, laneCount, laneWidth, useLanes } from '../src/game/systems/Lanes';
 
 describe('a moving barrier', () => {
@@ -72,8 +76,13 @@ describe('a moving barrier', () => {
  * The same rule the game collides with, which is what makes this worth
  * asserting: a level that fails here is one a player cannot get through.
  */
-function isClear (lane: number, kind: 'static' | 'slider' | 'pulse', barrierLane: number, distance: number): boolean
+function isClear (lane: number, kind: ObstacleKind, barrierLane: number, distance: number): boolean
 {
+    //  Deliberately blind to whether a blinker is open right now. Contact is
+    //  tested on the first frame past a row's distance, so a row sitting on the
+    //  edge of a blink could be read either way depending on where the frames
+    //  fell - and a level that is passable on some frame rates is not passable.
+    //  Every level guard below therefore assumes the floor is missing.
     const gap = Math.abs(laneCenterX(lane) - barrierCentre(kind, barrierLane, distance));
 
     return gap >= barrierHalfWidth(kind, distance) + DROP_CONTACT_RADIUS;
@@ -139,19 +148,22 @@ describe('every level', () => {
             const crossing = (Math.log(((laneCount() - 1) * laneWidth()) / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000;
             const dragged = SWIPE_REPEAT_DELAY + ((Math.log(laneWidth() / ORB_CATCH_RADIUS) / LANE_CHANGE_SPEED) * 1000);
 
-            //  The tightest the level ever gets, not the level's own default.
-            //  Finales pack their rows closer and the fast stretches run their
-            //  road past faster, and both of those shorten exactly this window
-            //  - so measuring the default would be measuring the easiest part
-            //  of the level and calling it the level.
-            const spacing = Math.min(
-                spec.rowSpacing ?? ORB_ROW_SPACING,
-                ...spec.sections.map((section) => section.rowSpacing ?? spec.rowSpacing ?? ORB_ROW_SPACING)
-            );
+            //  Per section, not per level. The old version took the level's
+            //  tightest spacing and its fastest zone and put them together -
+            //  but those live in different movements and never co-occur, so it
+            //  was rejecting levels for a stretch of road that does not exist.
+            for (const section of spec.sections)
+            {
+                const spacing = section.rowSpacing ?? spec.rowSpacing ?? ORB_ROW_SPACING;
+                const speed = (spec.forwardSpeed ?? FORWARD_SPEED) * (section.speed ?? 1);
+                const available = (spacing / speed) * 1000;
 
-            const speed = (spec.forwardSpeed ?? FORWARD_SPEED)
-                * Math.max(1, ...spec.sections.map((section) => section.speed ?? 1));
+                expect(available, `level ${spec.name}, a section, separate swipes`).toBeGreaterThan(crossing);
+                expect(available, `level ${spec.name}, a section, one drag`).toBeGreaterThan(dragged);
+            }
 
+            const spacing = spec.rowSpacing ?? ORB_ROW_SPACING;
+            const speed = spec.forwardSpeed ?? FORWARD_SPEED;
             const available = (spacing / speed) * 1000;
 
             expect(available, `level ${spec.name}, separate swipes`).toBeGreaterThan(crossing);
@@ -181,16 +193,110 @@ describe('every level', () => {
 
                 for (const row of section.rows)
                 {
-                    //  Full-height sliders only. A sliding hurdle is answered
-                    //  by leaving the ground rather than by finding the lane
-                    //  between them, so a row of those is not relying on a gap
-                    //  and cannot be robbed of one.
-                    const sliders = [ ...row ].filter((c) => 'abcde'.includes(c)).length;
+                    //  Walls and holes, not hurdles. A sliding hurdle is
+                    //  answered by leaving the ground rather than by finding
+                    //  the lane between them, so a row of those is not relying
+                    //  on a gap and cannot be robbed of one.
+                    //
+                    //  A sliding hole counts. It used to be impossible to
+                    //  author one and this rule was written when it was, so it
+                    //  looked only at 'abcde' - but a hole travels on the same
+                    //  clock as a wall and shuts the lane between a pair in
+                    //  exactly the same way, and now that a hole can move the
+                    //  omission is a trap rather than a simplification.
+                    const sliders = [ ...row ].filter((c) => 'abcde0'.includes(c)).length;
 
                     expect(sliders, `level ${spec.name} row "${row}"`).toBeLessThanOrEqual(1);
                 }
             }
         }
+
+    });
+
+    //  A rotor reaches half again as far as a lane is wide, so from an outside
+    //  lane it always leaves the far one and from the middle it seals the road.
+    //  Both facts are checked above; this is the rule that follows from them.
+    it('never puts a rotating bar anywhere but an outside lane', () => {
+
+        for (const spec of LEVELS)
+        {
+            if (spec.sections.every((s) => s.obstacles !== 'rotor'))
+            {
+                continue;
+            }
+
+            const lanes = spec.lanes ?? DEFAULT_LANES;
+
+            for (const section of spec.sections)
+            {
+                if (section.obstacles !== 'rotor')
+                {
+                    continue;
+                }
+
+                for (const row of section.rows)
+                {
+                    for (let lane = 0; lane < row.length; lane++)
+                    {
+                        if (!'abcdeABCDE'.includes(row[lane]))
+                        {
+                            continue;
+                        }
+
+                        expect(
+                            lane === 0 || lane === lanes - 1,
+                            `level ${spec.name} row "${row}": a bar in lane ${lane} of ${lanes}`
+                        ).toBe(true);
+                    }
+                }
+            }
+        }
+
+    });
+
+    //  Two bars on one row is the paired-slider trap again in a new shape: one
+    //  in each outside lane, both broadside at once, and the middle is covered
+    //  from both sides. They share a clock like everything else here, so the
+    //  pair does not leave a gap that moves - it leaves one that shuts.
+    it('never puts two rotating bars on the same row', () => {
+
+        for (const spec of LEVELS)
+        {
+            for (const section of spec.sections)
+            {
+                if (section.obstacles !== 'rotor')
+                {
+                    continue;
+                }
+
+                for (const row of section.rows)
+                {
+                    const bars = [ ...row ].filter((c) => 'abcdeABCDE'.includes(c)).length;
+
+                    expect(bars, `level ${spec.name} row "${row}"`).toBeLessThanOrEqual(1);
+                }
+            }
+        }
+
+    });
+
+    it('would have the road sealed by a pair of them', () => {
+
+        useLanes(DEFAULT_LANES);
+
+        //  The claim the rule above rests on, checked rather than asserted.
+        let sealed = false;
+
+        for (let distance = 0; distance < ROTOR_PERIOD; distance += 3)
+        {
+            const free = [ 0, 1, 2 ].filter(
+                (seat) => [ 0, 2 ].every((lane) => isClear(seat, 'rotor', lane, distance))
+            );
+
+            sealed ||= free.length === 0;
+        }
+
+        expect(sealed).toBe(true);
 
     });
 
@@ -213,6 +319,123 @@ describe('every level', () => {
         }
 
         expect(closed).toBe(true);
+
+    });
+
+});
+
+describe('a rotating bar', () => {
+
+    beforeEach(() => useLanes(DEFAULT_LANES));
+
+    it('opens and closes across its turn', () => {
+
+        const widths = [];
+
+        for (let d = 0; d < ROTOR_PERIOD; d += 5)
+        {
+            widths.push(barrierHalfWidth('rotor', d));
+        }
+
+        //  Broadside it reaches its full length; edge-on it is barely there.
+        expect(Math.max(...widths)).toBeCloseTo(ROTOR_REACH, 0);
+        expect(Math.min(...widths)).toBeLessThan(OBSTACLE_HALF_WIDTH / 2);
+
+    });
+
+    it('holds its lane rather than travelling', () => {
+
+        for (let d = 0; d < 2000; d += 71)
+        {
+            expect(barrierCentre('rotor', 1, d)).toBe(laneCenterX(1));
+        }
+
+    });
+
+    //  The rule the paired sliders had to learn, applied before a rotor ever
+    //  reaches a level. A bar wide enough to cover its own lane and both its
+    //  neighbours at the top of its sweep leaves a three-lane road with no way
+    //  through - and a row that happens to land on a moment when it does not
+    //  is a trap rather than a rule, because the same bar a few hundred pixels
+    //  along is lethal.
+    it('always leaves a lane free from an outside lane, through the whole turn', () => {
+
+        for (const lane of [ 0, laneCount() - 1 ])
+        {
+            for (let d = 0; d < ROTOR_PERIOD * 2; d += 3)
+            {
+                const free = [];
+
+                for (let seat = 0; seat < laneCount(); seat++)
+                {
+                    if (isClear(seat, 'rotor', lane, d)) { free.push(seat); }
+                }
+
+                expect(free.length, `rotor in lane ${lane} at ${d}`).toBeGreaterThan(0);
+            }
+        }
+
+    });
+
+    //  And the other half of the same fact: from the middle it does not, which
+    //  is why the levels are held to keeping rotors off the middle lane.
+    it('can close a three-lane road from the middle, which is why it may not sit there', () => {
+
+        let sealed = false;
+
+        for (let d = 0; d < ROTOR_PERIOD; d += 3)
+        {
+            const free = [ 0, 1, 2 ].filter((seat) => isClear(seat, 'rotor', 1, d));
+
+            sealed ||= free.length === 0;
+        }
+
+        expect(sealed).toBe(true);
+
+    });
+
+});
+
+describe('a disappearing floor', () => {
+
+    it('comes and goes, and is road more often than hole', () => {
+
+        let open = 0;
+        const steps = 400;
+
+        for (let i = 0; i < steps; i++)
+        {
+            if (barrierPresent('blinker', (i / steps) * BLINK_PERIOD * 3)) { open++; }
+        }
+
+        expect(open / steps).toBeCloseTo(BLINK_OPEN, 1);
+        expect(open / steps).toBeLessThan(0.5);
+
+    });
+
+    it('is there at all times for every other kind', () => {
+
+        for (const kind of [ 'static', 'slider', 'pulse', 'rotor' ] as const)
+        {
+            for (let d = 0; d < 2000; d += 37)
+            {
+                expect(barrierPresent(kind, d), kind).toBe(true);
+            }
+        }
+
+    });
+
+    //  Phase is taken from distance travelled, which can be zero or negative in
+    //  a test even though a run never goes backwards. A modulo that flips sign
+    //  either side of zero would make the first hole in every level behave
+    //  differently from the rest.
+    it('keeps the same rhythm either side of zero', () => {
+
+        for (let d = 0; d < BLINK_PERIOD * 2; d += 7)
+        {
+            expect(barrierPresent('blinker', d), `at ${d}`)
+                .toBe(barrierPresent('blinker', d - (BLINK_PERIOD * 4)));
+        }
 
     });
 

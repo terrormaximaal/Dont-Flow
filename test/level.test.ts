@@ -263,18 +263,58 @@ describe('rowHasSafeLane', () => {
 
 describe('the shipped levels', () => {
 
-    it('are ten, in order', () => {
+    it('are twenty, in order', () => {
 
-        expect(LEVELS).toHaveLength(10);
-        expect(LEVELS.map((level) => level.name)).toEqual([ '1', '2', '3', '4', '5', '6', '7', '8', '9', '10' ]);
+        expect(LEVELS).toHaveLength(20);
+        expect(LEVELS.map((level) => level.name))
+            .toEqual(Array.from({ length: 20 }, (_, i) => String(i + 1)));
 
     });
 
-    it('each have their own world', () => {
+    //  Ten worlds and twenty levels, so every world is played exactly twice -
+    //  once by day and once, much later and much harder, after dark. Twice and
+    //  no more: a third visit is a place the game has run out of ideas about.
+    it('visit each world at most twice, and never twice by the same light', () => {
 
-        const worlds = LEVELS.map((level) => level.world);
+        const seen = new Map<string, string[]>();
 
-        expect(new Set(worlds).size).toBe(LEVELS.length);
+        for (const level of LEVELS)
+        {
+            const key = level.world;
+            const visits = seen.get(key) ?? [];
+
+            visits.push(level.variant ?? 'day');
+            seen.set(key, visits);
+        }
+
+        for (const [ world, visits ] of seen)
+        {
+            expect(visits.length, `world ${world}`).toBeLessThanOrEqual(2);
+            expect(new Set(visits).size, `world ${world} lighting`).toBe(visits.length);
+        }
+
+    });
+
+    //  And far apart. Two visits three levels apart is a repeat; the whole
+    //  point is that the second one arrives long after the first is a memory.
+    it('leave a long way between the two visits to a world', () => {
+
+        const first = new Map<string, number>();
+
+        LEVELS.forEach((level, index) => {
+
+            const seen = first.get(level.world);
+
+            if (seen === undefined)
+            {
+                first.set(level.world, index);
+
+                return;
+            }
+
+            expect(index - seen, `world ${level.world}`).toBeGreaterThanOrEqual(8);
+
+        });
 
     });
 
@@ -398,25 +438,46 @@ describe('the shipped levels', () => {
 
     });
 
-    it('introduce barrier kinds one at a time', () => {
+    it('introduce barrier kinds in the order the curve teaches them', () => {
 
-        //  A kind must appear on its own in some earlier section before it is
-        //  ever mixed with another, so nothing arrives unexplained.
-        const seen = new Set<string>();
+        //  Where each kind is met for the first time. This used to be a flat
+        //  list of the kinds that existed, which said nothing about when any of
+        //  them arrived and had to be edited every time one was added. What is
+        //  actually worth holding is the order and the timing: a rotating bar
+        //  in level three would pass a list and fail a curve.
+        const first = new Map<string, number>();
 
-        for (const level of LEVELS)
-        {
-            for (const section of level.sections)
+        LEVELS.forEach((level, index) => level.sections.forEach((section) => {
+
+            if (section.obstacles !== undefined && !first.has(section.obstacles))
             {
-                if (section.obstacles)
-                {
-                    seen.add(section.obstacles);
-                }
+                first.set(section.obstacles, index);
             }
+
+        }));
+
+        const order = [ ...first.entries() ]
+            .sort((a, b) => a[1] - b[1])
+            .map(([ kind ]) => kind);
+
+        expect(order).toEqual([ 'static', 'slider', 'pulse', 'rotor', 'blinker' ]);
+
+        //  The first levels teach lanes and colour with nothing in the way, so
+        //  nothing at all may block the road before the middle of the first
+        //  band of levels.
+        expect(LEVELS[0].sections.every((section) => section.obstacles === undefined)).toBe(true);
+
+        for (const [ kind, level ] of first)
+        {
+            expect(level, `${kind} arrives on level ${level + 1}`).toBeGreaterThanOrEqual(4);
         }
 
-        expect([ ...seen ].sort()).toEqual([ 'pulse', 'slider', 'static' ]);
-        expect(LEVELS[0].sections.every((section) => section.obstacles === undefined)).toBe(true);
+        //  And the two late ones land in the bands the rework gives them: a bar
+        //  is advanced movement, a floor that leaves is deception.
+        expect(first.get('rotor'), 'the rotating bar').toBeGreaterThanOrEqual(9);
+        expect(first.get('rotor'), 'the rotating bar').toBeLessThanOrEqual(11);
+        expect(first.get('blinker'), 'the disappearing floor').toBeGreaterThanOrEqual(12);
+        expect(first.get('blinker'), 'the disappearing floor').toBeLessThanOrEqual(14);
 
     });
 

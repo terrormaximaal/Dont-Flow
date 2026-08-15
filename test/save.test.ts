@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { MAX_ENERGY, STORAGE_KEY } from '../src/game/config/constants';
+import { MAX_ENERGY, STORAGE_KEY, SURVIVAL_TABLE } from '../src/game/config/constants';
 import { LEVEL_COUNT } from '../src/game/config/levels';
 import { SaveSystem } from '../src/game/systems/SaveSystem';
 import { FakeStorage, installStorage, uninstallStorage } from './helpers/fakeStorage';
@@ -300,6 +300,99 @@ describe('when storage is unavailable', () => {
         expect(save.persistent).toBe(false);
         expect(() => save.setCurrentLevel(1)).not.toThrow();
         expect(save.getResumeLevel()).toBe(1);
+
+    });
+
+});
+
+describe('the endless run table', () => {
+
+    it('starts empty and has no best', () => {
+
+        const save = new SaveSystem();
+
+        expect(save.getSurvivalScores()).toEqual([]);
+        expect(save.getSurvivalBest()).toBeNull();
+
+    });
+
+    it('keeps the best runs, highest first', () => {
+
+        const save = new SaveSystem();
+
+        for (const score of [ 300, 900, 100, 700 ]) { save.recordSurvival(score); }
+
+        expect(save.getSurvivalScores()).toEqual([ 900, 700, 300, 100 ]);
+        expect(save.getSurvivalBest()).toBe(900);
+
+    });
+
+    it('says where a run placed', () => {
+
+        const save = new SaveSystem();
+
+        expect(save.recordSurvival(500), 'the first run ever').toBe(1);
+        expect(save.recordSurvival(900), 'a new best').toBe(1);
+        expect(save.recordSurvival(700), 'between the two').toBe(2);
+        expect(save.recordSurvival(100), 'the worst so far').toBe(4);
+
+    });
+
+    //  A run that matched the best has equalled it, not come second to it.
+    it('places a tie alongside what it tied with, not behind it', () => {
+
+        const save = new SaveSystem();
+
+        save.recordSurvival(500);
+
+        expect(save.recordSurvival(500)).toBe(1);
+
+    });
+
+    it('drops what falls off the end, and says a run missed', () => {
+
+        const save = new SaveSystem();
+
+        for (const score of [ 500, 600, 700, 800, 900 ]) { save.recordSurvival(score); }
+
+        expect(save.getSurvivalScores().length).toBe(SURVIVAL_TABLE);
+        expect(save.recordSurvival(10), 'worse than everything kept').toBe(0);
+        expect(save.getSurvivalScores()).toEqual([ 900, 800, 700, 600, 500 ]);
+
+    });
+
+    it('survives, and repairs, a table full of rubbish', () => {
+
+        //  A real save on disk first, so what is seeded is a valid one with a
+        //  spoiled table rather than a foreign object the loader is right to
+        //  reject. Constructing a SaveSystem only reads - it takes a write to
+        //  put one there.
+        new SaveSystem().recordSurvival(1);
+
+        storage.seed(STORAGE_KEY, JSON.stringify({
+            ...stored(),
+            survivalScores: [ 300, 'nine hundred', null, NaN, 500, Infinity ]
+        }));
+
+        const save = new SaveSystem();
+
+        expect(save.getSurvivalScores()).toEqual([ 500, 300 ]);
+
+    });
+
+    it('reads an older save as having no runs rather than as broken', () => {
+
+        new SaveSystem().recordSurvival(1);
+
+        const older = { ...stored() };
+
+        delete older.survivalScores;
+        storage.seed(STORAGE_KEY, JSON.stringify(older));
+
+        const save = new SaveSystem();
+
+        expect(save.getSurvivalScores()).toEqual([]);
+        expect(save.recordSurvival(42)).toBe(1);
 
     });
 

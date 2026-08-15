@@ -18,13 +18,15 @@ import {
     JUMP_LIFT,
     JUMP_SHADOW_FADE,
     JUMP_SHADOW_SHRINK,
+    JUMP_SPAN,
     JUMP_TAKEOFF_SQUASH,
     LANE_CHANGE_SPEED,
     RAINBOW_CYCLE_SPEED,
     RAINBOW_WARNING,
     RAINBOW_WARNING_SPEED
 } from '../config/constants';
-import { hasLanded, jumpHeight } from '../systems/jump';
+import { play } from '../systems/Audio';
+import { bufferedTakeoff, hasLanded, jumpHeight } from '../systems/jump';
 import { clampLane, laneCenterX, startLane } from '../systems/Lanes';
 import { drawWaterDrop } from '../ui/shapes';
 import { rainbowAt } from '../utils/color';
@@ -88,6 +90,15 @@ export class Drop
 
     /** How high the drop is right now, 0 to 1. Collision reads this. */
     private height = 0;
+
+    /**
+     * Where a jump was last asked for while already off the road, if at all.
+     *
+     * Held rather than thrown away so a swipe made just before landing still
+     * counts. Whether it is recent enough to honour is decided on landing, by
+     * bufferedTakeoff - see JUMP_BUFFER for why the window is a short one.
+     */
+    private requested: number | null = null;
 
     /** Size, pop and idle wobble. Cosmetic only - collision never reads it. */
     private readonly juice = new DropJuice();
@@ -214,20 +225,24 @@ export class Drop
     }
 
     /**
-     * Leave the road, if not already off it.
+     * Leave the road, or ask to leave it the moment this jump ends.
      *
-     * Ignored mid-air rather than queued or stacked: a second jump that took
-     * effect on landing would fire at a moment the player has forgotten asking
-     * for, which is worse than nothing happening.
+     * Never stacked - a second arc cannot start while the first is running -
+     * but a request made close enough to landing is remembered and honoured
+     * there. Only the most recent one is kept: a player pressing repeatedly
+     * means "now", not "four more times".
      */
     jump (travelled: number): void
     {
         if (this.takeoff !== null)
         {
+            this.requested = travelled;
+
             return;
         }
 
         this.takeoff = travelled;
+        this.requested = null;
     }
 
     /** How high the drop is, 0 on the road and 1 at the top of the arc. */
@@ -260,8 +275,19 @@ export class Drop
         //  Height first: everything below is drawn from it.
         if (this.takeoff !== null && hasLanded(travelled, this.takeoff))
         {
-            this.takeoff = null;
+            const landedAt = this.takeoff + JUMP_SPAN;
+
+            this.takeoff = bufferedTakeoff(landedAt, this.requested);
+            this.requested = null;
             this.juice.pulse();
+
+            //  Only when it stays down. A buffered jump leaves the ground on
+            //  the same frame it touched it, and a landing sound under a
+            //  take-off sound is two noises for one gesture.
+            if (this.takeoff === null)
+            {
+                play('land');
+            }
         }
 
         this.height = jumpHeight(travelled, this.takeoff);

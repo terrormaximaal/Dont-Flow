@@ -518,6 +518,18 @@ export const GATE_SWAP_FLASH_ALPHA = 0.85;
  * doorway is drawn twice, and the player learns what a double frame means the
  * first time one of them swaps.
  */
+/**
+ * The grille across a barred doorway.
+ *
+ * Drawn in the doorway's own colour: the point of a sealed gate is that it is
+ * still a gate. It says what colour it would have given and it still gives it,
+ * so going through is a decision rather than an accident. Heavy enough to read
+ * as shut from as far off as the doorway reads as a doorway.
+ */
+export const GATE_BARS = 5;
+export const GATE_BAR_THICKNESS = 5;
+export const GATE_BAR_ALPHA = 0.85;
+
 export const GATE_SWAP_FRAME_INSET = 7;
 export const PORTAL_REACT_GAIN = 0.7;
 
@@ -596,6 +608,26 @@ export const JUMP_SPAN = 460;
 
 /** How far up the screen the drop rises at the top of the arc. */
 export const JUMP_LIFT = 96;
+
+/**
+ * How long before landing a jump can be asked for and still be honoured.
+ *
+ * A swipe made just before touching down used to be thrown away, and the
+ * player who needs it most is the one it failed: two groups of hurdles sit a
+ * span apart, so a drop that left the ground as late as it could lands with
+ * about forty pixels of road left to ask for the next one. Forty pixels is a
+ * tenth of a second. Missing that window is not a mistake worth punishing -
+ * the player read the road correctly and swiped, and the game dropped it.
+ *
+ * Short on purpose. The argument against queueing a jump is a real one - a
+ * request honoured long after it was made fires at a moment the player has
+ * forgotten asking for - and it applies to an unbounded queue, not to a window
+ * this size. At the base pace this is under a fifth of a second.
+ *
+ * A distance rather than a duration, like the arc it belongs to, so it means
+ * the same thing on the slowest level and the fastest.
+ */
+export const JUMP_BUFFER = 80;
 
 /**
  * How high the drop must be to clear a low obstacle, 0 to 1.
@@ -862,7 +894,20 @@ export const FAIL_WASH_ALPHA = 0.42;
  * is visible in the corner of the eye while the player is looking at the road,
  * which a number at the top of the screen is not.
  */
-export const LOW_VIGNETTE_ALPHA = 0.34;
+/**
+ * How hard the edges press in while the next mistake is fatal.
+ *
+ * Softer than it was, because what it reports has changed. It used to mark a
+ * state a run had to fall into, which was rare and lasted seconds; under the
+ * rule that a level starts at nothing, being one mistake from the end is where
+ * every level *begins* and can last a third of it. At the old strength that is
+ * a game shouting through its whole opening, and an alarm that never stops is
+ * an alarm nobody hears.
+ *
+ * Still several times the ambient darkening, and still the loudest thing on
+ * the screen that is not the road.
+ */
+export const LOW_VIGNETTE_ALPHA = 0.24;
 
 /**
  * Enough rings that the ramp between them is not a ramp anyone can see.
@@ -1014,9 +1059,45 @@ export const MENU_PROGRESS_SIZE = 13;
 //  have come this far along it" - which is what the screen is actually for.
 // ---------------------------------------------------------------------------
 
-/** Where the first and last stop sit vertically. */
-export const ROUTE_FIRST_Y = 178;
-export const ROUTE_LAST_Y = 702;
+/** The band of screen the route is seen through, between heading and BACK. */
+export const ROUTE_VIEW_TOP = 150;
+export const ROUTE_VIEW_BOTTOM = 700;
+
+/**
+ * How far inside each edge of that band a stop takes to fade out completely.
+ *
+ * Nothing is clipped: everything on the route fades out over the last stretch
+ * of its approach and reaches the edge with nothing left to cut. Wider than a
+ * bead, so the fade is read as a fade rather than as a flicker at the edge.
+ */
+export const ROUTE_FADE_BAND = 76;
+
+/**
+ * Where the first stop sits vertically.
+ *
+ * A whole fade band below the top of the view, so the first stop is at full
+ * strength when the route is scrolled to the top rather than half dissolved
+ * into the heading. The same clearance is left at the other end, in
+ * routeScrollRange - a route whose two ends are the only stops that can never
+ * be seen properly has them the wrong way round.
+ */
+export const ROUTE_FIRST_Y = ROUTE_VIEW_TOP + ROUTE_FADE_BAND;
+
+/**
+ * How far apart two stops sit down the route.
+ *
+ * The route no longer fits on a screen. Twenty stops at a spacing that keeps
+ * two beads from touching is longer than a phone is tall, so the whole thing
+ * scrolls - which is the honest answer, and a better one than shrinking every
+ * stop until the numbers stop being readable.
+ */
+export const ROUTE_STEP_Y = 64;
+
+export const ROUTE_LAST_Y = ROUTE_FIRST_Y + (ROUTE_STEP_Y * 19);
+
+
+/** How far a drag has to travel before it counts as a scroll and not a tap. */
+export const ROUTE_DRAG_SLOP = 8;
 
 /**
  * The wave the route runs along: how far it swings either side of centre, how
@@ -1037,7 +1118,16 @@ export const ROUTE_SWING = 92;
  * the pair that separates the *worst* pair the most: this one leaves every pair
  * a full swing apart horizontally, and 108px apart in all.
  */
-export const ROUTE_CYCLES = 2.25;
+/**
+ * How many times the route waves from side to side over its whole length.
+ *
+ * Searched rather than chosen, for the value that maximises the smallest
+ * sideways step between two neighbouring stops - two stops at the same x with
+ * a curve between them read as a straight line with beads threaded on it. At
+ * twenty stops this puts every neighbour a full swing apart, which is as far
+ * as the shape allows.
+ */
+export const ROUTE_CYCLES = 4.75;
 export const ROUTE_PHASE = 0;
 
 /** The stop itself, and the ring drawn around the one you would play next. */
@@ -1081,7 +1171,7 @@ export const ROUTE_MOTE_SECONDS = 7.5;
 
 /** How the stops arrive: staggered down the route, in the order they are walked. */
 export const ROUTE_ENTER_MS = 420;
-export const ROUTE_ENTER_STAGGER = 46;
+export const ROUTE_ENTER_STAGGER = 26;
 export const ROUTE_ENTER_FROM = 0.55;
 
 /** The dip a stop takes when it is pressed, before the screen washes out. */
@@ -1175,26 +1265,37 @@ export const SCORE_PENALTY = SCORE_PER_ORB * WRONG_COLOR_MULTIPLIER;
 /**
  * What a run starts with.
  *
- * The score is not a tally any more, it is a bank: the run begins with this
- * much and ends the moment it is gone. That one change is what makes every
- * mistake matter - a tally that goes negative is a number you can shrug at,
- * where a bank that empties takes the level away from you.
+ * Nothing. The score is the performance figure and the survival condition at
+ * once: everything correct adds to it, everything wrong takes from it, and the
+ * run ends the moment it goes below zero.
  *
- * Six clean mistakes deep, which is the number this is actually chosen for.
- * Deep enough that a single misread is a scare rather than a death, shallow
- * enough that a stretch played badly ends the run rather than being coasted
- * through - and the drop already wears the number as its own size, so a player
- * running low can see it without looking away from the road.
+ * Starting at zero is what makes that rule bite from the first second. There is
+ * no cushion to spend, so the opening of a level stops being a formality -
+ * points have to be earned before a mistake can be afforded, and the first
+ * stretch of a level is the stretch that buys the rest of it.
+ *
+ * Raise this to hand the player a cushion. The rule below does not change.
  */
-export const SCORE_START = SCORE_PENALTY * 6;
+export const SCORE_START = 0;
 
 /**
- * The point below which the run is visibly in trouble.
+ * The score a run ends *below*.
  *
- * Two mistakes from the end, so the warning arrives while there is still
- * something to do about it rather than as an obituary.
+ * Strictly below, not at. Zero is alive: a player who has spent exactly what
+ * they earned is on the edge rather than over it, and the difference between
+ * "nothing left" and "gone" is most of the tension of a bad run's last few
+ * seconds.
  */
-export const SCORE_WARNING = SCORE_PENALTY * 2;
+export const SCORE_DEATH_BELOW = 0;
+
+/**
+ * The score at or below which the run is visibly in trouble.
+ *
+ * One mistake's worth. At or under this, the next wrong colour ends the run -
+ * so the warning is not "you are getting low", it is "the next one is fatal",
+ * which is worth interrupting the screen for.
+ */
+export const SCORE_WARNING = SCORE_PENALTY;
 
 /**
  * The combo multiplier: what a streak is actually worth.
@@ -1263,6 +1364,147 @@ export const SLIDER_PERIOD = 620;
 /** Pulsing barriers: how much they breathe, and how often. */
 export const PULSE_AMOUNT = 0.42;
 export const PULSE_PERIOD = 300;
+
+/**
+ * Rotating bars: how far the bar reaches from its pivot, and over what stretch.
+ *
+ * A bar turning about its lane is seen from above as a width that opens and
+ * closes: broadside it reaches its full length across the road, edge-on it is
+ * barely there. That is the whole obstacle - not a thing to steer around, a
+ * thing to arrive at while it is turned away.
+ *
+ * The reach is deliberately less than two lanes. A bar that could cover its own
+ * lane and both neighbours at once would leave a three-lane road with no way
+ * through at all at the top of its sweep, and there is a test holding rotors to
+ * leaving a lane free through the whole turn rather than only where the row
+ * happens to land - the same rule the paired sliders had to learn.
+ */
+export const ROTOR_REACH = 150;
+export const ROTOR_PERIOD = 540;
+
+/**
+ * How a rotating bar is drawn: a beam on a post, not a wall.
+ *
+ * A wall of changing width reads as a pulse with a wide setting, and a player
+ * who reads it that way stands in the next lane and is swept off the road. The
+ * height is where the beam sweeps, as a fraction of how tall a barrier stands.
+ */
+export const ROTOR_BAR_HEIGHT = 0.62;
+export const ROTOR_BAR_THICKNESS = 13;
+export const ROTOR_POST_WIDTH = 9;
+
+/**
+ * Disappearing floor: how much of its cycle the hole is open, and how long.
+ *
+ * A hole that is not always there. Colour has never saved anyone from a hole,
+ * and neither does a lane change if every lane on the row is one - it is a
+ * question of arriving while the road is back.
+ *
+ * Open for less than half the cycle, so the road is solid more often than not.
+ * A floor that is missing most of the time is a hole with interruptions, which
+ * is a different and much worse obstacle.
+ */
+export const BLINK_PERIOD = 480;
+export const BLINK_OPEN = 0.42;
+
+/**
+ * How faintly a closed disappearing floor is still drawn.
+ *
+ * Not nothing. A hole that vanished without a trace would be one the player
+ * could only learn about by falling into it, and the rhythm is the whole
+ * obstacle - it has to be visible while it is shut, or there is nothing to
+ * read. Faint enough that open and closed are never confused at a glance.
+ */
+export const BLINK_GHOST_ALPHA = 0.22;
+
+/**
+ * How a drain zone is drawn.
+ *
+ * A drain the player cannot see is not a hazard but a bug they will report as
+ * one. The wash is the ground being tinted; the bands are bars across it, held
+ * at fixed points along the course so they sit still on the road rather than
+ * crawling with the camera; the edges are where it starts and stops.
+ *
+ * Faint. A zone covers a long stretch of road and everything that matters -
+ * orbs, gates, barriers - still has to be read through it.
+ */
+export const HAZARD_WASH_ALPHA = 0.17;
+export const HAZARD_BAND_ALPHA = 0.13;
+export const HAZARD_BAND_SPACING = 130;
+export const HAZARD_EDGE_ALPHA = 0.75;
+export const HAZARD_EDGE_THICKNESS = 3;
+
+/**
+ * Marks leaning against the direction of travel, across each band.
+ *
+ * The part of a zone that means "do not" without relying on hue. A coloured
+ * hazard has to say which colour it objects to, so its wash is that colour -
+ * and a green zone washed green would otherwise read as a place to go.
+ */
+export const HAZARD_SLASHES = 6;
+export const HAZARD_SLASH_ALPHA = 0.3;
+export const HAZARD_SLASH_THICKNESS = 2;
+
+/**
+ * What a zone with no colour of its own is drawn in: a hostile amber.
+ *
+ * Also the colour of every zone's edges, coloured or not, so the frame always
+ * means hazard even when the fill inside it is inviting.
+ */
+export const HAZARD_PLAIN_COLOR = 0xff9b3d;
+
+/**
+ * Where the chances left are drawn, in an endless run.
+ *
+ * Top left, opposite the pause button, and beside the score rather than under
+ * it - the score and the lives are the two things that say how a run is going,
+ * and a player checking one should see the other without moving their eyes.
+ */
+/**
+ * How many endless runs the table keeps.
+ *
+ * Five stored, three shown. Keeping more than are shown means a run that drops
+ * off the visible table has not been forgotten - beat the third-best twice and
+ * the fourth is still there underneath.
+ */
+/**
+ * Where a colour's mark hangs in its doorway, and how strongly.
+ *
+ * High in the arch rather than centred, so it sits above the orbs seen through
+ * the gate rather than among them. Faint, because it is a second way of reading
+ * something the colour has already said - a player who does not need it should
+ * barely notice it is there.
+ */
+export const PORTAL_GLYPH_HEIGHT = 0.3;
+export const PORTAL_GLYPH_ALPHA = 0.5;
+
+/**
+ * Where the game tells a player what to do, and how loudly.
+ *
+ * Low, just above the drop, because that is where the eye already is - a prompt
+ * at the top would be read after the row it was about had gone past. Pale,
+ * because it is help rather than an alarm and the player is trying to read the
+ * road behind it.
+ */
+export const COACH_Y = GAME_HEIGHT * 0.64;
+export const COACH_SIZE = '20px';
+export const COACH_ALPHA = 0.82;
+
+/** The sound toggle: a corner label rather than a button. */
+export const MUTE_MARGIN = 18;
+
+/** Line spacing for the switches stacked in the corner. */
+export const MUTE_LINE = 20;
+export const MUTE_SIZE = '13px';
+export const MUTE_ALPHA = 0.55;
+
+export const SURVIVAL_TABLE = 5;
+export const SURVIVAL_TABLE_SHOWN = 3;
+
+export const HUD_LIVES_X = 30;
+export const HUD_LIVES_Y = 44;
+export const HUD_LIVES_STEP = 26;
+export const HUD_LIVES_RADIUS = 6;
 
 // ---------------------------------------------------------------------------
 //  Feedback
@@ -1475,8 +1717,6 @@ export const DEPTH_OVERLAY = 50;
 //  plays: no files, the same way every picture in it is drawn rather than
 //  loaded. One instrument, a piano-ish struck tone, in a large room.
 
-export const SOUND_ENABLED = true;
-
 /** Everything the game plays passes through this. */
 export const SOUND_MASTER = 0.9;
 
@@ -1493,6 +1733,12 @@ export const SOUND_COMPRESSOR_RELEASE = 0.25;
 
 /** Middle C. Every note in the game is a number of semitones from here. */
 export const PIANO_ROOT_HZ = 261.63;
+
+/** Where a streak starts: the G above the root, which is where it sits best. */
+export const ORB_BASE_SEMITONES = 7;
+
+/** How far above that a streak may climb. Two octaves. */
+export const ORB_MAX_SEMITONES = 24;
 
 //  The voice, as three sine partials: the note, its octave, and the twelfth
 //  above that. A real string is far richer, but the first three partials in
@@ -1513,15 +1759,8 @@ export const PIANO_DECAY = 1.9;
 //  length, which is the single thing that most gives a synth away as one.
 export const PIANO_DECAY_TILT = 0.45;
 
+/** Headroom every note is played at, so a busy moment has somewhere to go. */
 export const PIANO_GAIN = 0.7;
-
-//  How far up the scale a streak climbs before it holds. Fourteen steps is
-//  just under three octaves, which is as high as the voice stays warm.
-export const PIANO_STREAK_CAP = 14;
-
-/** Where a wrong colour lands: below the root, so a miss is heard as down. */
-export const PIANO_MISS_SEMITONES = -17;
-export const PIANO_MISS_GAIN = 0.7;
 
 //  The room. Long and wide - the tail is most of the sound, and a note landing
 //  in it is what makes a streak feel like one phrase rather than a row of beeps.

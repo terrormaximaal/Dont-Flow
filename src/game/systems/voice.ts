@@ -1,3 +1,4 @@
+import { frequencyOf } from '../config/audio';
 import {
     PIANO_ATTACK,
     PIANO_DECAY,
@@ -6,7 +7,6 @@ import {
     PIANO_STRETCH,
     REVERB_SECONDS
 } from '../config/constants';
-import { frequencyOf } from './piano';
 import { impulseChannels } from './reverb';
 
 //  The instrument: one struck note, and the room it is struck in.

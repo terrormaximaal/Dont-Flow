@@ -6,6 +6,10 @@ import {
     DEPTH_HUD,
     GAME_WIDTH,
     HUD_FONT,
+    MUTE_ALPHA,
+    MUTE_LINE,
+    MUTE_MARGIN,
+    MUTE_SIZE,
     RESUME_AT_LAST_LEVEL,
     TITLE_DROP_RADIUS,
     TITLE_TAGLINE_SIZE
@@ -28,9 +32,10 @@ import { paintPageColors } from '../systems/PageBackdrop';
 import { EnergySystem } from '../systems/EnergySystem';
 import { MenuSky } from '../systems/MenuSky';
 import { SaveSystem } from '../systems/SaveSystem';
-import { sound } from '../systems/SoundSystem';
-import { TITLE_JINGLE } from '../systems/piano';
 import { Button } from '../ui/Button';
+//  Aliased: this scene already has a local called play - the PLAY button.
+import { listenForGesture, onWake, play as playCue, setMuted, wakeAudio } from '../systems/Audio';
+import { setMarks } from '../systems/marks';
 import { EnergyMeter } from '../ui/EnergyMeter';
 import { MENU_LAYOUT } from '../ui/menuLayout';
 import { TAGLINE } from '../ui/taglines';
@@ -75,13 +80,6 @@ export class Title extends Scene
         const energy = new EnergySystem(save);
         const resumeLevel = save.getResumeLevel();
 
-        //  The whole page has one voice and this is the first screen every
-        //  session passes through, so this is where it is woken and told what
-        //  the player decided about it last time.
-        sound().setMuted(save.isMuted());
-        sound().listen();
-        sound().whenAwake(() => sound().phrase(TITLE_JINGLE));
-
         //  "Continue" only means something if there is somewhere to continue to.
         const canContinue = RESUME_AT_LAST_LEVEL && resumeLevel > 0;
         const canPlay = energy.mayStart();
@@ -124,6 +122,21 @@ export class Title extends Scene
 
         play.container.setDepth(DEPTH_HUD);
 
+        //  The second mode, and deliberately the second button. An endless run
+        //  is what a player comes back for once the twenty are done, not what
+        //  they should meet first.
+        const survival = new Button(this, {
+            x: GAME_WIDTH / 2,
+            y: MENU_LAYOUT.survivalY,
+            label: canPlay ? 'SURVIVAL' : 'NO ENERGY',
+            variant: canPlay ? 'ghost' : 'locked',
+            radius: BUTTON_HEIGHT / 2,
+            width: BUTTON_WIDTH + 26,
+            onPress: () => leaveTo(this, () => this.scene.start('Play', { survival: true }))
+        });
+
+        survival.container.setDepth(DEPTH_HUD);
+
         const levels = new Button(this, {
             x: GAME_WIDTH / 2,
             y: MENU_LAYOUT.levelsY,
@@ -136,9 +149,84 @@ export class Title extends Scene
 
         levels.container.setDepth(DEPTH_HUD);
 
+        //  Sound on or off, remembered. Small and in a corner: it is the one
+        //  control here that is not about playing, and a player looking for it
+        //  knows to look in a corner.
+        setMuted(save.isMuted());
+
+        //  The game's own phrase, on the way in. It cannot play on a cold load
+        //  - no browser will start audio before the page has been touched - so
+        //  it waits for the first touch instead of being dropped.
+        listenForGesture();
+        onWake(() => playCue('title'));
+
+        const speaker = this.add.text(GAME_WIDTH - MUTE_MARGIN, MUTE_MARGIN, save.isMuted() ? 'SOUND OFF' : 'SOUND ON', {
+            fontFamily: HUD_FONT,
+            fontSize: MUTE_SIZE,
+            color: COLOR_HUD_DIM
+        });
+
+        speaker.setOrigin(1, 0);
+        speaker.setDepth(DEPTH_HUD);
+        speaker.setAlpha(MUTE_ALPHA);
+        speaker.setInteractive({ useHandCursor: true });
+
+        speaker.on('pointerdown', () => {
+
+            //  Woken here as well as in Button: this is a real gesture, and a
+            //  player who turns the sound *on* should hear the next thing that
+            //  happens rather than having to press something else first.
+            wakeAudio();
+
+            const next = !save.isMuted();
+
+            save.setMuted(next);
+            setMuted(next);
+            speaker.setText(next ? 'SOUND OFF' : 'SOUND ON');
+
+            playCue('press');
+
+        });
+
+        //  The other switch, under the sound. Named for what it does rather
+        //  than for who it is for: "colour blind mode" is a label a player has
+        //  to identify with before they will touch it, and plenty of people who
+        //  would benefit do not think of themselves that way.
+        setMarks(save.hasMarks());
+
+        const marks = this.add.text(
+            GAME_WIDTH - MUTE_MARGIN,
+            MUTE_MARGIN + MUTE_LINE,
+            save.hasMarks() ? 'SHAPES ON' : 'SHAPES OFF',
+            {
+                fontFamily: HUD_FONT,
+                fontSize: MUTE_SIZE,
+                color: COLOR_HUD_DIM
+            }
+        );
+
+        marks.setOrigin(1, 0);
+        marks.setDepth(DEPTH_HUD);
+        marks.setAlpha(MUTE_ALPHA);
+        marks.setInteractive({ useHandCursor: true });
+
+        marks.on('pointerdown', () => {
+
+            wakeAudio();
+
+            const next = !save.hasMarks();
+
+            save.setMarks(next);
+            setMarks(next);
+            marks.setText(next ? 'SHAPES ON' : 'SHAPES OFF');
+
+            playCue('press');
+
+        });
+
         this.meter = new EnergyMeter(this, MENU_LAYOUT.meterY, energy);
 
-        this.enter(mark, tagline, play, levels);
+        this.enter(mark, tagline, play, survival, levels);
 
         arrive(this);
 
@@ -164,6 +252,7 @@ export class Title extends Scene
         mark: TitleMark,
         tagline: Phaser.GameObjects.Text,
         play: Button,
+        survival: Button,
         levels: Button
     ): void
     {
@@ -217,7 +306,7 @@ export class Title extends Scene
             ease: 'Quad.Out'
         });
 
-        [ play, levels ].forEach((button, index) => {
+        [ play, survival, levels ].forEach((button, index) => {
 
             const restingY = button.container.y;
 

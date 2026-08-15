@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { play, wakeAudio } from '../systems/Audio';
 import {
     BUTTON_EDGE_ALPHA,
     BUTTON_GLOW_ALPHA,
@@ -189,6 +190,13 @@ export class Button
             //  Fires on press rather than release, which is what a game button
             //  should do - waiting for the lift reads as lag.
             this.background.on('pointerdown', () => {
+
+                //  Every button press is a genuine user gesture, which is the
+                //  only thing a browser will let a sound start from. Waking it
+                //  here means the audio is alive by the time anything in a run
+                //  wants to make a noise.
+                wakeAudio();
+                play('press');
 
                 this.sink();
                 options.onPress();
