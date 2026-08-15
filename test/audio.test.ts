@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Cue, CUES, MASTER_VOLUME, ORB_BASE_HZ, pitchFor, voiceFor } from '../src/game/config/audio';
+import { Cue, CUES, DETUNE_CENTS, MASTER_VOLUME, ORB_BASE_HZ, pitchFor, variesOnRepeat, voiceFor } from '../src/game/config/audio';
 
 describe('the note an orb is worth', () => {
 
@@ -165,6 +165,79 @@ describe('what each moment sounds like', () => {
         {
             expect(voiceFor(cue).gain * MASTER_VOLUME, `${cue}`).toBeLessThanOrEqual(0.5);
         }
+
+    });
+
+});
+
+describe('the things that stop a repeat becoming a machine', () => {
+
+    //  A square carries every odd harmonic at full strength forever, which is
+    //  what makes one at low pitch read as a buzz rather than a tone. Only the
+    //  waves that have that problem are filtered - a sine has no harmonics to
+    //  remove and a triangle's fall away too fast to be worth it.
+    it('softens the harsh waves and leaves the gentle ones alone', () => {
+
+        for (const cue of CUES)
+        {
+            const voice = voiceFor(cue);
+            const harsh = voice.wave === 'square' || voice.wave === 'sawtooth';
+
+            expect(voice.soften !== undefined, `${cue} is a ${voice.wave}`).toBe(harsh);
+        }
+
+    });
+
+    //  The character of a wave is in its first few harmonics; the ice-pick is
+    //  in the rest. A cutoff at or below the fundamental would take the note
+    //  itself and leave a thud.
+    it('cuts above the note rather than through it', () => {
+
+        for (const cue of CUES)
+        {
+            const voice = voiceFor(cue);
+
+            if (voice.soften === undefined)
+            {
+                continue;
+            }
+
+            //  Comfortably above the highest pitch the sound reaches, so there
+            //  are harmonics left to hear.
+            expect(voice.soften, `${cue}`).toBeGreaterThan(Math.max(voice.from, voice.to) * 2);
+        }
+
+    });
+
+    //  A hundred cents is a semitone. This has to be a fraction of one - the
+    //  point is that a repeat is not identical, not that it is a different note.
+    it('nudges a repeat off pitch without changing the note', () => {
+
+        expect(DETUNE_CENTS).toBeGreaterThan(0);
+        expect(DETUNE_CENTS, 'well under a semitone').toBeLessThan(50);
+
+    });
+
+    //  The two that end a run play once each and are the only sounds anybody
+    //  will remember. They should be the same every time.
+    it('leaves the sounds that end a run exactly as they are', () => {
+
+        expect(variesOnRepeat('fail')).toBe(false);
+        expect(variesOnRepeat('finish')).toBe(false);
+
+        expect(variesOnRepeat('orb'), 'the one heard most').toBe(true);
+        expect(variesOnRepeat('gate')).toBe(true);
+
+    });
+
+    //  A dozen a level. Anything that frequent has to sit under the things that
+    //  mark a moment, or it becomes the sound of the game.
+    it('keeps the sound of a doorway among the quietest there is', () => {
+
+        const louder = CUES.filter((cue) => voiceFor(cue).gain > voiceFor('gate').gain);
+
+        expect(louder, 'only the press is quieter').not.toContain('press');
+        expect(voiceFor('gate').gain).toBeLessThan(voiceFor('orb').gain);
 
     });
 

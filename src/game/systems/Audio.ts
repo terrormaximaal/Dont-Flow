@@ -1,4 +1,4 @@
-import { Cue, MASTER_VOLUME, voiceFor } from '../config/audio';
+import { Cue, DETUNE_CENTS, MASTER_VOLUME, variesOnRepeat, voiceFor } from '../config/audio';
 
 //  The thing that makes the noise.
 //
@@ -117,6 +117,15 @@ export function play (cue: Cue, combo = 0): void
         osc.type = voice.wave;
         osc.frequency.setValueAtTime(voice.from, now);
 
+        //  A fraction of a semitone either way, so a sound repeating hundreds
+        //  of times a run is never byte-for-byte the same twice. Not applied to
+        //  the two that end a run - those play once and should be the sound
+        //  the player remembers rather than a slightly different one each time.
+        if (variesOnRepeat(cue))
+        {
+            osc.detune.setValueAtTime((Math.random() * 2 - 1) * DETUNE_CENTS, now);
+        }
+
         if (voice.to !== voice.from)
         {
             //  Exponential rather than linear, because pitch is heard
@@ -135,7 +144,30 @@ export function play (cue: Cue, combo = 0): void
         level.gain.exponentialRampToValueAtTime(peak, now + ATTACK);
         level.gain.exponentialRampToValueAtTime(0.0001, until);
 
-        osc.connect(level);
+        //  The top taken off the harsh waves. See Voice.soften.
+        if (voice.soften !== undefined)
+        {
+            const filter = ctx.createBiquadFilter();
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(voice.soften, now);
+
+            osc.connect(filter);
+            filter.connect(level);
+
+            osc.onended = () => {
+
+                osc.disconnect();
+                filter.disconnect();
+                level.disconnect();
+
+            };
+        }
+        else
+        {
+            osc.connect(level);
+        }
+
         level.connect(ctx.destination);
 
         osc.start(now);
@@ -143,8 +175,9 @@ export function play (cue: Cue, combo = 0): void
 
         //  Released as soon as it has finished. Without this every sound the
         //  game has ever made stays connected to the destination for the life
-        //  of the page.
-        osc.onended = () => {
+        //  of the page. Already set above where there is a filter to release
+        //  as well.
+        osc.onended ??= () => {
 
             osc.disconnect();
             level.disconnect();

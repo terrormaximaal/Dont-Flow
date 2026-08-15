@@ -28,6 +28,40 @@ export interface Voice
 
     /** How loud, 0 to 1, before the master volume. */
     gain: number;
+
+    /**
+     * Cutoff for a low-pass, in hertz, or absent to leave the tone alone.
+     *
+     * A square wave carries every odd harmonic at full strength forever, which
+     * is what makes one at low pitch read as a buzz rather than as a tone. The
+     * character of the wave is in its first few harmonics; the ice-pick is in
+     * the rest. Taking the top off keeps the first and loses the second.
+     *
+     * Only the harsh waves ask for it. A sine has no harmonics to remove and a
+     * triangle's fall away so fast there is nothing worth filtering.
+     */
+    soften?: number;
+}
+
+/**
+ * How far a repeat is nudged off pitch, in cents.
+ *
+ * A hundred cents is a semitone, so this is a fraction of one - not a different
+ * note, just not the *identical* note. Every sound in this game repeats: orbs
+ * hundreds of times a run, gates a dozen times a level. Played back byte-for-
+ * byte identical they stop sounding like a game and start sounding like a
+ * machine, and the ear notices long before the player could say why.
+ *
+ * Deliberately not applied to the two that end a run. Those play once and are
+ * the only sounds here anybody will remember, so they should be the same every
+ * time.
+ */
+export const DETUNE_CENTS = 18;
+
+/** Whether a cue is nudged off pitch on repeat. */
+export function variesOnRepeat (cue: Cue): boolean
+{
+    return cue !== 'fail' && cue !== 'finish';
 }
 
 /** Everything the game can make a noise about. */
@@ -98,14 +132,17 @@ export function voiceFor (cue: Cue, combo = 0): Voice
 
         //  Down rather than up, and square rather than triangle: a wrong colour
         //  should sound like a wrong colour without anybody having to be told.
+        //  Filtered hard. A square at this pitch is a buzz without it, and a
+        //  buzz is what a player turns the sound off over - the cue has to be
+        //  unwelcome, not unpleasant.
         case 'wrong':
-            return { wave: 'square', from: 220, to: 110, seconds: 0.20, gain: 0.35 };
+            return { wave: 'square', from: 220, to: 110, seconds: 0.20, gain: 0.35, soften: 900 };
 
         //  A soft swell upwards. A gate is not a reward or a mistake - it is a
-        //  door opening, and it happens often enough to need to stay out of the
-        //  way.
+        //  door opening, and at a dozen a level it has to stay out of the way:
+        //  quieter and shorter than anything else that is not the menu click.
         case 'gate':
-            return { wave: 'sine', from: 300, to: 420, seconds: 0.16, gain: 0.22 };
+            return { wave: 'sine', from: 300, to: 420, seconds: 0.13, gain: 0.16 };
 
         case 'jump':
             return { wave: 'sine', from: 340, to: 620, seconds: 0.13, gain: 0.26 };
@@ -121,10 +158,10 @@ export function voiceFor (cue: Cue, combo = 0): Voice
         //  The heaviest thing in the game, because losing one of three chances
         //  is the most important thing that happens in a run.
         case 'life':
-            return { wave: 'sawtooth', from: 180, to: 60, seconds: 0.45, gain: 0.42 };
+            return { wave: 'sawtooth', from: 180, to: 60, seconds: 0.45, gain: 0.42, soften: 1400 };
 
         case 'fail':
-            return { wave: 'sawtooth', from: 300, to: 70, seconds: 0.75, gain: 0.38 };
+            return { wave: 'sawtooth', from: 300, to: 70, seconds: 0.75, gain: 0.38, soften: 1600 };
 
         case 'finish':
             return { wave: 'triangle', from: 523, to: 1046, seconds: 0.55, gain: 0.36 };
