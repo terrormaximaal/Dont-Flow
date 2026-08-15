@@ -326,12 +326,18 @@ export class Play extends Scene
 
         this.coach = new Coach(this);
 
-        //  Nothing is taught twice, and nothing is taught in survival: an
-        //  endless run is not where anybody meets this game for the first time,
-        //  and it has no fixed first hurdle to warn about.
-        this.teachMove = !this.survival && !this.save.hasLearned('move');
+        //  Nothing is taught twice - and it is taught in survival too. The
+        //  endless run used to be exempt on the grounds that nobody meets the
+        //  game there first, which is simply not true: SURVIVAL is the second
+        //  button on the title screen, unlocked from the very first launch, and
+        //  three of its chunks contain a row blocked across every lane by
+        //  things that can only be jumped. A player who pressed it first met
+        //  that row with nothing ever having mentioned the input.
+        this.teachMove = !this.save.hasLearned('move');
 
-        this.teachJumpAt = this.survival || this.save.hasLearned('jump')
+        //  An endless run has no fixed first hurdle, so this is asked again of
+        //  each batch as it is built rather than answered once here.
+        this.teachJumpAt = this.save.hasLearned('jump')
             ? null
             : firstForcedJump(course, level.lanes ?? DEFAULT_LANES);
 
@@ -860,6 +866,16 @@ export class Play extends Scene
         this.hazardField.setZones([ ...this.hazards, ...batch.hazards ]);
         this.hazards = [ ...this.hazards, ...batch.hazards ];
         this.zones = [ ...this.zones, ...batch.zones ];
+
+        //  Whether this batch is the one that first asks for a jump. A run can
+        //  go a long way before a forced row turns up - the chunks that carry
+        //  one are not the ones a run opens with - so the question has to be
+        //  asked of every batch, not just the first. Once the lesson has been
+        //  given it is recorded, and this stops asking.
+        if (this.teachJumpAt === null && !this.save.hasLearned('jump'))
+        {
+            this.teachJumpAt = firstForcedJump(batch, run.spec.lanes ?? DEFAULT_LANES);
+        }
 
         this.chunksBuilt += BATCH_CHUNKS;
         this.builtTo = batch.finishDistance;

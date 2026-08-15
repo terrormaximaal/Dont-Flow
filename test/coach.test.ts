@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { CHUNKS } from '../src/game/config/chunks';
 import { DEFAULT_LANES } from '../src/game/config/constants';
 import { buildLevel } from '../src/game/config/level';
 import { LEVELS } from '../src/game/config/levels';
+import { BATCH_CHUNKS, generateRun, SURVIVAL_PALETTE } from '../src/game/config/survival';
 import { COACH_HOLD, COACH_LEAD, firstForcedJump, isPrompting, wordsFor } from '../src/game/systems/coach';
 
 describe('the row that has to be taught', () => {
@@ -65,6 +67,58 @@ describe('the row that has to be taught', () => {
                 expect(distance).toBeGreaterThanOrEqual(at);
             }
         }
+
+    });
+
+});
+
+describe('the endless run, which was exempt and should not have been', () => {
+
+    //  SURVIVAL is the second button on the title screen and it is not locked,
+    //  so it can be the first thing anybody ever presses. The teaching used to
+    //  skip it on the reasoning that nobody meets the game there. These two
+    //  tests are the reasoning that replaced it: the rows exist, so the lesson
+    //  has to.
+    it('is built from pieces that cannot be passed on the ground', () => {
+
+        const jumpable = new Set([ ...'0ABCDE' ]);
+
+        const forced = CHUNKS.filter(
+            (chunk) => chunk.rows.some((row) => [ ...row ].every((c) => jumpable.has(c)))
+        );
+
+        expect(forced.map((c) => c.name), 'chunks with a row blocked across every lane').not.toHaveLength(0);
+
+    });
+
+    //  And they turn up in an ordinary run - not on the opening batch, which is
+    //  held below their tier, but a batch or two in. That gap is the whole
+    //  reason the lesson cannot be answered once when the scene is built: at
+    //  the moment a run starts, the road that will ask for a jump does not
+    //  exist yet. It has to be asked again of every batch, which is what
+    //  extendRun now does.
+    it('lays one down a batch or two in, not on the first', () => {
+
+        let runsThatAsk = 0;
+
+        for (let seed = 0; seed < 20; seed++)
+        {
+            //  The same walk the scene makes: one batch at a time, each
+            //  generated from the seed plus the chunks already built.
+            for (let built = 0; built < BATCH_CHUNKS * 4; built += BATCH_CHUNKS)
+            {
+                const run = generateRun(seed + built, BATCH_CHUNKS, SURVIVAL_PALETTE, 'sky', 0, built);
+
+                if (firstForcedJump(buildLevel(run.spec), DEFAULT_LANES) !== null)
+                {
+                    runsThatAsk++;
+
+                    break;
+                }
+            }
+        }
+
+        expect(runsThatAsk, 'of 20 runs, how many demand a jump within four batches').toBe(20);
 
     });
 
