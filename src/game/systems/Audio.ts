@@ -1,6 +1,6 @@
 import { Cue, DETUNE_CENTS, Strike, thinned, variesOnRepeat, voiceFor } from '../config/audio';
 import { CROWD_SECONDS } from '../config/audio';
-import { MUTE_FADE, SOUND_GAIN, SOUND_MASTER } from '../config/constants';
+import { MUSIC_FADE, MUTE_FADE, SOUND_GAIN, SOUND_MASTER } from '../config/constants';
 import { buildMixer, Mixer } from './mixer';
 import { strike } from './voice';
 
@@ -181,6 +181,38 @@ export function setMuted (value: boolean): void
 }
 
 /**
+ * Bring the soundtrack in or take it away, leaving the game's own sounds alone.
+ *
+ * Clearing the timer that writes bars down does not unwrite the bars already
+ * on the audio clock: measured through the pause button, the backing was still
+ * due to play for 1.73 seconds after the game had stopped. Two comments in the
+ * play scene say otherwise - that pausing stops the music, and that the phrase
+ * ending a run is the only thing playing when it lands - and neither was true.
+ *
+ * Faded rather than cut, and over longer than the mute: this one happens while
+ * the player is listening to something else - an overlay opening, a run ending
+ * - and a soundtrack that disappears between two samples is heard as a fault.
+ */
+export function setMusicPlaying (playing: boolean): void
+{
+    const ctx = audio();
+
+    if (mixer === null || ctx === null)
+    {
+        return;
+    }
+
+    for (const node of [ mixer.musicBoth, mixer.musicAiry ])
+    {
+        const gain = node.gain;
+
+        gain.cancelScheduledValues(ctx.currentTime);
+        gain.setValueAtTime(gain.value, ctx.currentTime);
+        gain.linearRampToValueAtTime(playing ? 1 : 0, ctx.currentTime + MUSIC_FADE);
+    }
+}
+
+/**
  * Make the noise for a moment.
  *
  * Silent and harmless when muted, when there is no context, or when the context
@@ -274,7 +306,7 @@ export function playAt (notes: Strike[], when: number, gain = 1): void
 
     try
     {
-        schedule(ctx, notes, when, gain * SOUND_GAIN, 0, true);
+        schedule(ctx, notes, when, gain * SOUND_GAIN, 0, true, true);
     }
     catch
     {
@@ -293,7 +325,8 @@ function schedule (
     from: number,
     gain: number,
     drift: number,
-    room: boolean
+    room: boolean,
+    music = false
 ): void
 {
     //  Built at whatever the switch currently says. Nothing reaches here
@@ -313,7 +346,10 @@ function schedule (
     //  twice, once per side. A note built twice is a note that costs twice, and
     //  on the busiest stretch of a level that was the difference between a
     //  phone keeping up and a phone dropping the music.
-    const into = room ? chain.both : chain.dry;
+    //  The soundtrack goes in through its own pair, which is what lets it be
+    //  turned off on its own. Everything else plays straight into the
+    //  junctions, exactly as before.
+    const into = room ? (music ? chain.musicBoth : chain.both) : chain.dry;
 
     for (const note of notes)
     {
@@ -328,7 +364,9 @@ function schedule (
         //  The tune takes the wetter of the two junctions. It is the only
         //  voice that is blown rather than struck, and the only one a room
         //  flatters instead of blurring.
-        const bus = room && note.timbre === 'lead' ? chain.airy : into;
+        const bus = room && note.timbre === 'lead'
+            ? (music ? chain.musicAiry : chain.airy)
+            : into;
 
         strike(ctx, bus, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
     }

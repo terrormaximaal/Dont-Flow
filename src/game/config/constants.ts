@@ -1768,6 +1768,17 @@ export const SOUND_MASTER = 0.9;
  */
 export const MUTE_FADE = 0.04;
 
+/**
+ * How long the soundtrack takes to go when it is stopped.
+ *
+ * Longer than the mute, because this one happens while the player is listening
+ * to something else - a pause overlay opening, or the phrase that ends a run -
+ * and a backing that disappears between two samples is heard as a fault rather
+ * than as a decision. Still short enough to be gone before the thing it is
+ * making room for has finished.
+ */
+export const MUSIC_FADE = 0.12;
+
 //  The limiter across the master. Notes are triggered by how the player is
 //  doing rather than by an arrangement, so a good run overlaps half a dozen of
 //  them - which without this adds up past what the speaker can give and is
