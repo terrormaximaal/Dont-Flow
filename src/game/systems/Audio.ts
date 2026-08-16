@@ -1,6 +1,6 @@
 import { Cue, DETUNE_CENTS, Strike, thinned, variesOnRepeat, voiceFor } from '../config/audio';
 import { CROWD_SECONDS } from '../config/audio';
-import { SOUND_GAIN } from '../config/constants';
+import { MUTE_FADE, SOUND_GAIN, SOUND_MASTER } from '../config/constants';
 import { buildMixer, Mixer } from './mixer';
 import { strike } from './voice';
 
@@ -143,10 +143,41 @@ export function isMuted (): boolean
     return muted;
 }
 
-/** Turn sound on or off. Persisting the choice is the caller's business. */
+/**
+ * Turn sound on or off. Persisting the choice is the caller's business.
+ *
+ * Refusing to schedule anything new is not enough on its own. The soundtrack
+ * is handed to the audio clock a bar and a half before it is due, so a player
+ * who pressed the switch went on hearing music for the better part of two
+ * seconds - measured at 1.90 - which is a long time to sit next to somebody
+ * who has just asked you to be quiet.
+ *
+ * So the last gain before the speaker is turned down as well. Over a few
+ * milliseconds rather than instantly: cutting a sounding note to zero on one
+ * sample is a click, and a click is a worse noise than the note was.
+ */
 export function setMuted (value: boolean): void
 {
     muted = value;
+
+    const ctx = audio();
+
+    //  Nothing has been built yet, so there is nothing sounding to silence.
+    //  The flag above is the whole answer until the first note asks for a
+    //  chain, and buildMixer starts it wherever the flag says.
+    if (mixer === null || ctx === null)
+    {
+        return;
+    }
+
+    const gain = mixer.master.gain;
+
+    //  From wherever it actually is right now, not from the value it was last
+    //  set to: a ramp already under way means those two are different, and
+    //  starting from the stale one is the click this is here to avoid.
+    gain.cancelScheduledValues(ctx.currentTime);
+    gain.setValueAtTime(gain.value, ctx.currentTime);
+    gain.linearRampToValueAtTime(value ? 0 : SOUND_MASTER, ctx.currentTime + MUTE_FADE);
 }
 
 /**
@@ -265,7 +296,17 @@ function schedule (
     room: boolean
 ): void
 {
-    const chain = mixer ??= buildMixer(ctx, ctx.destination);
+    //  Built at whatever the switch currently says. Nothing reaches here
+    //  while muted today - both entry points refuse first - but a chain that
+    //  came up at full volume under a mute would be a loud surprise, and the
+    //  cost of not relying on that is one line.
+    if (mixer === null)
+    {
+        mixer = buildMixer(ctx, ctx.destination);
+        mixer.master.gain.value = muted ? 0 : SOUND_MASTER;
+    }
+
+    const chain = mixer;
     const offset = from - ctx.currentTime;
 
     //  Once, into a junction that is already wired to both sides - rather than

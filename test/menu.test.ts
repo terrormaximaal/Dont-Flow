@@ -3,6 +3,11 @@ import {
     BUTTON_GAP,
     BUTTON_HEIGHT,
     GAME_HEIGHT,
+    MUTE_LINE,
+    MUTE_MARGIN,
+    MUTE_SIZE,
+    MUTE_TOUCH_HEIGHT,
+    MUTE_TOUCH_WIDTH,
     TITLE_DROP_RADIUS,
     TITLE_TAGLINE_SIZE
 } from '../src/game/config/constants';
@@ -126,6 +131,48 @@ describe('the home screen composition', () => {
     it('sets the two words of the mark at clearly different sizes', () => {
 
         expect(TITLE_MAIN_SIZE).toBeGreaterThan(TITLE_TOP_SIZE * 2);
+
+    });
+
+});
+
+describe('the switches in the corner', () => {
+
+    //  These were laid out as type and never as controls: a 13px label whose
+    //  hit area was its own glyph box, fourteen pixels tall, with six pixels
+    //  between it and a switch that does something entirely different. Nothing
+    //  looked wrong, because the buttons on the same screen are 246 by 62. It
+    //  took measuring the hit areas to see it.
+    it('answer to a finger rather than to the size of their own type', () => {
+
+        const type = Number.parseInt(MUTE_SIZE, 10);
+
+        expect(MUTE_TOUCH_HEIGHT, 'touch height against type size').toBeGreaterThan(type * 3);
+        expect(MUTE_TOUCH_WIDTH, 'touch width').toBeGreaterThan(MUTE_TOUCH_HEIGHT * 2);
+
+    });
+
+    //  The reason the line spacing is what it is. Two adjacent switches whose
+    //  areas overlap are worse than two small ones: the player does not get the
+    //  thing they aimed at, and one of these two is the setting that some
+    //  players cannot read the game without.
+    it('are spaced so that neither can be hit by aiming at the other', () => {
+
+        expect(MUTE_LINE, 'line spacing against touch height').toBeGreaterThanOrEqual(MUTE_TOUCH_HEIGHT);
+
+    });
+
+    //  And the pair still has to stay out of the composition. This is the
+    //  ceiling on how big they can be: the drop is the first thing the eye
+    //  lands on and a switch reaching into it would be a worse trade.
+    it('stay clear of the drop above the wordmark', () => {
+
+        const type = Number.parseInt(MUTE_SIZE, 10);
+
+        //  Centred on the lower label, which sits one line below the margin.
+        const lowest = MUTE_MARGIN + MUTE_LINE + (type / 2) + (MUTE_TOUCH_HEIGHT / 2);
+
+        expect(lowest, 'bottom of the lower switch').toBeLessThan(MENU_LAYOUT.dropY - TITLE_DROP_RADIUS);
 
     });
 

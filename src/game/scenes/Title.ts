@@ -1,4 +1,7 @@
-import { Scene } from 'phaser';
+//  Geom is imported rather than reached for through the Phaser global: the
+//  types are ambient, so a global reference typechecks and then fails at run
+//  time under the ESM build - which is exactly how it failed here first.
+import { Geom, Scene } from 'phaser';
 import {
     BUTTON_HEIGHT,
     BUTTON_WIDTH,
@@ -10,6 +13,8 @@ import {
     MUTE_LINE,
     MUTE_MARGIN,
     MUTE_SIZE,
+    MUTE_TOUCH_HEIGHT,
+    MUTE_TOUCH_WIDTH,
     RESUME_AT_LAST_LEVEL,
     TITLE_DROP_RADIUS,
     TITLE_TAGLINE_SIZE
@@ -179,7 +184,8 @@ export class Title extends Scene
         speaker.setOrigin(1, 0);
         speaker.setDepth(DEPTH_HUD);
         speaker.setAlpha(MUTE_ALPHA);
-        speaker.setInteractive({ useHandCursor: true });
+
+        Title.widenTouch(speaker);
 
         speaker.on('pointerdown', () => {
 
@@ -218,7 +224,8 @@ export class Title extends Scene
         marks.setOrigin(1, 0);
         marks.setDepth(DEPTH_HUD);
         marks.setAlpha(MUTE_ALPHA);
-        marks.setInteractive({ useHandCursor: true });
+
+        Title.widenTouch(marks);
 
         marks.on('pointerdown', () => {
 
@@ -332,6 +339,30 @@ export class Title extends Scene
                 ease: 'Cubic.Out'
             });
 
+        });
+    }
+
+    /**
+     * Gives a corner label something a finger can actually find.
+     *
+     * The area that responds is set explicitly rather than left to default to
+     * the glyph box, because the glyph box is the size of the type and a finger
+     * is not. Drawn appearance is untouched - the label stays a quiet word in a
+     * corner, which is the right weight for it; only what it answers to grows.
+     *
+     * Hit areas are in the object's own untransformed space, where the origin
+     * is the top left of the frame whatever the display origin is, so the same
+     * padding works for a right-aligned label as for any other.
+     */
+    private static widenTouch (label: Phaser.GameObjects.Text): void
+    {
+        const padX = (MUTE_TOUCH_WIDTH - label.width) / 2;
+        const padY = (MUTE_TOUCH_HEIGHT - label.height) / 2;
+
+        label.setInteractive({
+            useHandCursor: true,
+            hitArea: new Geom.Rectangle(-padX, -padY, MUTE_TOUCH_WIDTH, MUTE_TOUCH_HEIGHT),
+            hitAreaCallback: Geom.Rectangle.Contains
         });
     }
 
