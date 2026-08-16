@@ -14,6 +14,7 @@ import {
     FAIL_WASH_ALPHA,
     FAIL_WASH_MS,
     FAIL_ZOOM,
+    FINALE_SECONDS,
     FINISH_SLOWDOWN_MS,
     FLASH_DURATION,
     FORWARD_SPEED,
@@ -32,7 +33,7 @@ import {
 } from '../config/constants';
 import { buildLevel, drainAt, HazardZone, LEAD_IN, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
 import { listenForGesture, play, wakeAudio } from '../systems/Audio';
-import { startMusic, stopMusic } from '../systems/Music';
+import { setFinale, startMusic, stopMusic } from '../systems/Music';
 import { Coach } from '../ui/Coach';
 import { firstForcedJump, isPrompting } from '../systems/coach';
 import { formOf } from '../config/form';
@@ -729,6 +730,27 @@ export class Play extends Scene
         this.pauseOverlay = null;
     }
 
+    /**
+     * How far into the run-in to the finish the level is, 0 to 1.
+     *
+     * Measured against how long the road left would take at the pace being run
+     * now, rather than against a number of pixels. Ten seconds is ten seconds
+     * whatever speed a level runs at, and a boost near the line should not
+     * shorten the warning.
+     */
+    private finaleAmount (): number
+    {
+        const window = this.forwardSpeed * this.pace * FINALE_SECONDS;
+        const left = this.finishDistance - this.distance;
+
+        if (window <= 0)
+        {
+            return 0;
+        }
+
+        return Math.max(0, Math.min(1, 1 - (left / window)));
+    }
+
     private onFinish (): void
     {
         play('finish');
@@ -994,6 +1016,14 @@ export class Play extends Scene
         const moved = this.forwardSpeed * this.speed.scale * this.pace * dt;
 
         this.distance += moved;
+
+        //  How close the finish is, in seconds of road rather than in pixels
+        //  of it: ten seconds is ten seconds whatever pace the level runs at,
+        //  and a boost near the line should not shorten the run-in.
+        //
+        //  Survival has no finish, so it never gets one - there is nothing to
+        //  announce, and announcing it anyway would be the game lying.
+        setFinale(this.survival ? 0 : this.finaleAmount());
 
         this.chargeForGround(moved);
 

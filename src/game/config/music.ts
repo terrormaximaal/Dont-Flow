@@ -1,4 +1,4 @@
-import { MUSIC_BEATS_PER_BAR, MUSIC_BPM, ORB_BASE_SEMITONES } from './constants';
+import { FINALE_LIFT, MUSIC_BEATS_PER_BAR, MUSIC_BPM, ORB_BASE_SEMITONES } from './constants';
 import { Strike } from './audio';
 import { Timbre } from '../systems/voice';
 
@@ -67,17 +67,20 @@ export function beatsOf (seconds: number): number
  * progression that lands every four bars announces itself, and anything that
  * announces itself during a level is competing with the level.
  */
-const CHORDS: Array<{ root: number; shape: number[] }> = [
-    { root: HOME, shape: [ 0, 3, 7 ] },
-    { root: HOME + 3, shape: [ 0, 4, 7 ] },
+const CHORDS: Array<{ root: number; shape: number[]; extra: number[] }> = [
+    //  `extra` is what the chord grows in the run-in to the finish: more of
+    //  itself, never anything new. Every one of these is a note of the same
+    //  five-note scale the player is collecting in, for the reason below.
+    { root: HOME, shape: [ 0, 3, 7 ], extra: [ 10, 15 ] },
+    { root: HOME + 3, shape: [ 0, 4, 7 ], extra: [ 12, 16 ] },
 
     //  These two are voiced without their thirds - fourths and fifths stacked
     //  instead. A third would be a semitone away from a note the player can
     //  play, and with a three-second room something is always still sounding:
     //  the chord under a run has to be built from the same five notes the run
     //  is, or a good streak lands on a clash sooner or later.
-    { root: HOME + 10, shape: [ 0, 5, 7 ] },
-    { root: HOME + 7, shape: [ 0, 3, 5 ] }
+    { root: HOME + 10, shape: [ 0, 5, 7 ], extra: [ 12, 17 ] },
+    { root: HOME + 7, shape: [ 0, 3, 5 ], extra: [ 12, 15 ] }
 ];
 
 /** How many bars before the whole thing comes round again. */
@@ -105,25 +108,70 @@ export interface Beat
  * up to eight a second on the hardest levels - and a backing with a pattern of
  * its own underneath that is what made the whole thing sound busy.
  *
- * @param bar Which bar of the run, counted from the first. Loops on its own.
+ * @param bar    Which bar of the run, counted from the first. Loops on its own.
+ * @param finale How far into the run-in to the finish, 0 to 1. Above zero the
+ *               bar changes chord halfway through and each chord carries more
+ *               of itself - see `chordAt`.
  */
-export function barNotes (bar: number): Beat[]
+export function barNotes (bar: number, finale = 0): Beat[]
 {
     const step = ((bar % LOOP_BARS) + LOOP_BARS) % LOOP_BARS;
-    const chord = CHORDS[step % CHORDS.length];
+    const half = MUSIC_BEATS_PER_BAR / 2;
+    const lift = 1 + (FINALE_LIFT * finale);
 
     const notes: Beat[] = [
-        { semitones: chord.root - 12, beat: 0, gain: 0.7, timbre: 'bass' },
-        { semitones: chord.root - 12, beat: MUSIC_BEATS_PER_BAR / 2, gain: 0.45, timbre: 'bass' }
+        { semitones: CHORDS[step % CHORDS.length].root - 12, beat: 0, gain: 0.7 * lift, timbre: 'bass' }
     ];
 
-    //  Laid down together, barely spread, so the chord is heard as one thing
-    //  rather than as three notes that happen to agree.
-    chord.shape.forEach((interval, i) => {
+    //  Ordinarily one chord a bar with the bass struck again halfway through.
+    //  In the run-in the halfway point becomes the next chord instead, so the
+    //  progression moves at twice the speed without a single new sound being
+    //  introduced - which is what makes it read as arriving rather than as
+    //  something else starting.
+    laid(CHORDS[step % CHORDS.length], 0, finale, lift, notes);
 
-        notes.push({ semitones: chord.root + interval, beat: 0.05 * i, gain: 0.4, timbre: 'pad' });
+    if (finale > 0)
+    {
+        const next = CHORDS[(step + 1) % CHORDS.length];
 
-    });
+        notes.push({ semitones: next.root - 12, beat: half, gain: 0.55 * lift, timbre: 'bass' });
+        laid(next, half, finale, lift, notes);
+    }
+    else
+    {
+        notes.push({ semitones: CHORDS[step % CHORDS.length].root - 12, beat: half, gain: 0.45, timbre: 'bass' });
+    }
 
     return notes.filter((note) => note.beat < MUSIC_BEATS_PER_BAR);
+}
+
+/**
+ * Lays one chord down at `beat`, with as much of it as the finale asks for.
+ *
+ * The extra notes come in one at a time rather than all at once, so the last
+ * ten seconds of a level are a chord thickening rather than a switch being
+ * thrown.
+ */
+function laid (
+    chord: { root: number; shape: number[]; extra: number[] },
+    beat: number,
+    finale: number,
+    lift: number,
+    into: Beat[]
+): void
+{
+    const grown = chord.extra.slice(0, Math.round(finale * chord.extra.length));
+
+    //  Laid down together, barely spread, so the chord is heard as one thing
+    //  rather than as several notes that happen to agree.
+    [ ...chord.shape, ...grown ].forEach((interval, i) => {
+
+        into.push({
+            semitones: chord.root + interval,
+            beat: beat + (0.05 * i),
+            gain: (i < chord.shape.length ? 0.4 : 0.3) * lift,
+            timbre: 'pad'
+        });
+
+    });
 }

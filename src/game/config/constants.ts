@@ -1840,4 +1840,16 @@ export const MUSIC_GAIN = 0.5;
 //  is the only way to get music in time out of a browser: notes are handed to
 //  the audio clock before they are due, so a busy frame cannot delay one.
 export const MUSIC_LOOKAHEAD = 1.5;
+
+//  The run-in to the finish.
+//
+//  For the last stretch of a level the backing changes chord twice as often
+//  and puts more notes in each one. Doubling the harmonic rhythm is how music
+//  has said "this is the end of it" since long before anybody wrote it down,
+//  and it works here for the same reason it works in a song: the player hears
+//  something coming before anything on screen has told them.
+export const FINALE_SECONDS = 10;
+
+/** Extra volume on the backing by the time the finish arrives. */
+export const FINALE_LIFT = 0.35;
 export const MUSIC_TICK_MS = 250;

@@ -214,6 +214,120 @@ describe('the backing under a run', () => {
 
 });
 
+describe('the last ten seconds of a level', () => {
+
+    /** Every note a bar carries, at a given point in the run-in. */
+    const notesIn = (bar: number, finale: number) => barNotes(bar, finale);
+
+    it('changes nothing at all until the finish is in range', () => {
+
+        for (let bar = 0; bar < LOOP_BARS; bar++)
+        {
+            expect(notesIn(bar, 0), `bar ${bar}`).toEqual(barNotes(bar));
+        }
+
+    });
+
+    //  The whole idea: the progression moves at twice the speed. Doubling the
+    //  harmonic rhythm is how music has said "this is the end of it" since
+    //  long before anybody wrote it down.
+    it('changes chord twice a bar rather than once', () => {
+
+        for (let bar = 0; bar < LOOP_BARS; bar++)
+        {
+            const roots = new Set(notesIn(bar, 1).filter((note) => note.timbre === 'bass')
+                .map((note) => note.semitones));
+
+            expect(roots.size, `bar ${bar}`).toBe(2);
+            expect(new Set(barNotes(bar).filter((note) => note.timbre === 'bass')
+                .map((note) => note.semitones)).size, `bar ${bar} before`).toBe(1);
+        }
+
+    });
+
+    it('puts more in the bar the closer the line gets', () => {
+
+        let last = barNotes(0).length;
+
+        for (const finale of [ 0.25, 0.5, 0.75, 1 ])
+        {
+            const now = notesIn(0, finale).length;
+
+            expect(now, `at ${finale}`).toBeGreaterThanOrEqual(last);
+
+            last = now;
+        }
+
+        expect(notesIn(0, 1).length).toBeGreaterThan(barNotes(0).length);
+
+    });
+
+    it('lifts the backing without letting it take over', () => {
+
+        const loudest = (finale: number) => Math.max(...notesIn(0, finale).map((note) => note.gain));
+
+        expect(loudest(1)).toBeGreaterThan(loudest(0));
+        expect(loudest(1) * MUSIC_GAIN, 'still under the game itself')
+            .toBeLessThan(voiceFor('orb')[0].gain);
+
+    });
+
+    //  The rule that lets the backing run under the game at all has to survive
+    //  the one moment the backing gets bigger - which is exactly the moment a
+    //  player is most likely to be holding a long streak.
+    it('never grows a note a semitone from one the player can play', () => {
+
+        const reachable = new Set<number>();
+
+        for (let combo = 0; combo < 40; combo++)
+        {
+            reachable.add(((semitonesFor(combo) % 12) + 12) % 12);
+        }
+
+        for (let bar = 0; bar < LOOP_BARS; bar++)
+        {
+            for (const note of notesIn(bar, 1))
+            {
+                const pitch = ((note.semitones % 12) + 12) % 12;
+
+                for (const played of reachable)
+                {
+                    const apart = Math.abs(pitch - played) % 12;
+
+                    expect(apart === 1 || apart === 11, `${note.semitones} against ${played}`).toBe(false);
+                }
+            }
+        }
+
+    });
+
+    it('stays inside its own bar however big it gets', () => {
+
+        for (let bar = 0; bar < LOOP_BARS; bar++)
+        {
+            for (const note of notesIn(bar, 1))
+            {
+                expect(note.beat, `bar ${bar}`).toBeGreaterThanOrEqual(0);
+                expect(note.beat, `bar ${bar}`).toBeLessThan(MUSIC_BEATS_PER_BAR);
+            }
+        }
+
+    });
+
+    //  A run-in that arrived in one step would be a switch being thrown. It has
+    //  to be something the player notices without being able to say when it
+    //  started.
+    it('arrives in steps rather than in one', () => {
+
+        const sizes = [ 0, 0.2, 0.4, 0.6, 0.8, 1 ].map((finale) => notesIn(0, finale).length);
+        const jumps = new Set(sizes);
+
+        expect(jumps.size, 'distinct sizes on the way in').toBeGreaterThan(2);
+
+    });
+
+});
+
 describe('how the backing is handed to the clock', () => {
 
     //  Music written a frame at a time limps: a busy frame puts a note late and

@@ -27,6 +27,9 @@ let timer: ReturnType<typeof setInterval> | null = null;
 let nextBarAt = 0;
 let bar = 0;
 
+/** How far into the run-in to the finish the level is, 0 to 1. */
+let finale = 0;
+
 /**
  * Starts the backing from the top.
  *
@@ -41,6 +44,7 @@ export function startMusic (): void
 
     bar = 0;
     nextBarAt = 0;
+    finale = 0;
 
     timer = setInterval(fill, MUSIC_TICK_MS);
 
@@ -56,6 +60,18 @@ export function stopMusic (): void
 
         timer = null;
     }
+}
+
+/**
+ * How close the finish is, 0 until the run-in starts and 1 at the line.
+ *
+ * Read when a bar is written rather than when it is played, so the backing
+ * thickens a bar at a time - which is the only way it can change, and also the
+ * only way it should: a chord that grew halfway through would be a glitch.
+ */
+export function setFinale (amount: number): void
+{
+    finale = Math.max(0, Math.min(1, amount));
 }
 
 /** Whether the backing is running, which is what a paused run has to know. */
@@ -90,7 +106,7 @@ function fill (): void
 
     while (nextBarAt < now + MUSIC_LOOKAHEAD)
     {
-        playAt(barStrikes(bar), nextBarAt, MUSIC_GAIN);
+        playAt(barStrikes(bar, finale), nextBarAt, MUSIC_GAIN);
 
         nextBarAt += BAR_SECONDS;
         bar += 1;
@@ -98,9 +114,9 @@ function fill (): void
 }
 
 /** One bar of the backing, with its beats turned into seconds. */
-function barStrikes (index: number): Strike[]
+function barStrikes (index: number, into: number): Strike[]
 {
-    return barNotes(index).map((note) => ({
+    return barNotes(index, into).map((note) => ({
         semitones: note.semitones,
         at: note.beat * BEAT_SECONDS,
         gain: note.gain,
