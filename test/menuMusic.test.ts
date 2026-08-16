@@ -9,9 +9,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 //  up, which vitest drives.
 let now = 0;
 
+//  Every export of the sound system that the music reaches for. A mock listing
+//  them one by one fails loudly the moment the music starts using another, and
+//  it did: setMusicPlaying arrived from a parallel change, the merge of the two
+//  was textually clean, and these four tests were how the break showed up.
 vi.mock('../src/game/systems/Audio', () => ({
     audioTime: () => now,
-    playAt: () => undefined
+    playAt: () => undefined,
+    setMusicPlaying: () => undefined
 }));
 
 const {
