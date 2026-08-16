@@ -1763,18 +1763,50 @@ export const SOUND_ROOT_HZ = 196.00;
  */
 export const ORB_SEMITONES = 19;
 
-//  The bass: a square with a triangle an octave below it. The triangle is
-//  what gives it a body on a phone, where the square alone is a buzz.
+//  How the two filtered voices are shaped, as harmonic strengths: the first
+//  number is the note itself and each one after it is the next harmonic up.
+//
+//  A square wave is every odd harmonic at full strength forever, which is why
+//  one sounds like a buzzer and a dozen at once sound like an alarm. These roll
+//  off instead. The first handful of harmonics is what makes a note sound like
+//  an instrument; the twentieth is only what makes it sting.
+export const LEAD_PARTIALS = [ 1, 0.62, 0.4, 0.26, 0.17, 0.11, 0.07, 0.04, 0.02 ];
+export const BASS_PARTIALS = [ 1, 0.72, 0.38, 0.22, 0.12, 0.06, 0.03 ];
+
+//  The bass: that shape with a sine an octave below it. The sine is what gives
+//  it a body on a phone, where the top half alone is a buzz.
 export const BASS_ATTACK = 0.004;
 export const BASS_HOLD = 0.05;
 export const BASS_DECAY = 0.16;
+
+//  And the filter over it, in multiples of the note being played rather than
+//  in hertz - so a note two octaves up is filtered the same distance above
+//  itself as one two octaves down. Open at the strike, shut by the end: that
+//  fall is the difference between a plucked string and a tone generator.
+export const BASS_FILTER_FROM = 9;
+export const BASS_FILTER_TO = 1.6;
+export const BASS_FILTER_Q = 4;
 
 //  The channel that plays the tune. A shade longer than the bass notes so it
 //  sings over them rather than clicking along with them.
 export const LEAD_ATTACK = 0.005;
 export const LEAD_HOLD = 0.06;
 export const LEAD_DECAY = 0.13;
-export const LEAD_DETUNE = 4;
+
+/**
+ * How far apart the tune's two oscillators are, in cents.
+ *
+ * One oscillator is a machine. Two a few cents apart beat slowly against each
+ * other, and that beating is most of what an ear hears as an instrument being
+ * played rather than a frequency being produced.
+ */
+export const LEAD_DETUNE = 7;
+
+//  Brighter than the bass, and it stays brighter: this is the voice that has
+//  to be heard over a drum kit and everything the player is doing.
+export const LEAD_FILTER_FROM = 12;
+export const LEAD_FILTER_TO = 3;
+export const LEAD_FILTER_Q = 3;
 
 /**
  * The most of a written long note the tune will actually hold, in seconds.
@@ -1786,33 +1818,73 @@ export const LEAD_DETUNE = 4;
  */
 export const LEAD_MAX_RING = 0.75;
 
-//  The backing: a triangle, quiet and short. Four of these sound at once under
-//  the tune and there are eight of them to a bar, so anything with a tail on it
-//  turns the whole thing to mud - which is exactly what happened the first time.
+//  The backing: an electric piano, which is one sine bending another and
+//  nothing else. Quiet and short, because four of these sound at once under the
+//  tune and there are eight of them to a bar - anything with a tail on it turns
+//  the whole thing to mud, which is exactly what happened the first time.
 export const CHORD_ATTACK = 0.004;
 export const CHORD_HOLD = 0.03;
 export const CHORD_DECAY = 0.13;
 
-/** The tick a collected orb makes: one short square and nothing else. */
+//  A whole-number ratio, so what comes out is still the note that went in. The
+//  depth collapses in a fortieth of a second: bright at the strike, a plain
+//  sine by the time the next eighth arrives. That collapse is the hammer.
+export const CHORD_FM_RATIO = 2;
+export const CHORD_FM_INDEX = 2.6;
+export const CHORD_FM_FALL = 0.025;
+
+/**
+ * The tick a collected orb makes: a struck bar rather than a beep.
+ *
+ * One sine bending another at a ratio that is deliberately not a whole number,
+ * which is what files a sound under 'struck metal' instead of 'note'. Heard
+ * hundreds of times a run, so it is kept to two oscillators and a short tail.
+ */
 export const TICK_ATTACK = 0.003;
 export const TICK_DECAY = 0.07;
+export const TICK_TAIL = 0.06;
+export const TICK_FM_RATIO = 3.7;
+export const TICK_FM_INDEX = 1.4;
 
-//  The kit. A kick is a sine dropped from a high pitch to a low one in a
-//  twentieth of a second - that fall *is* a kick drum, there is nothing else
-//  to it. A snare and a hat are both noise; what separates them is where the
-//  filter sits and how long they last.
-export const KICK_FROM = 150;
-export const KICK_TO = 45;
+//  The kit, each built the way the machine that made it famous built it,
+//  because those recipes are what an ear recognises as drums.
+
+//  A kick is a pitch falling off a cliff, and that fall *is* the drum. The
+//  click on the front is what makes it audible on a phone, where everything
+//  below about two hundred hertz simply is not there - without it, a kick on a
+//  handset is a gap in the bar rather than a beat in it.
+export const KICK_FROM = 180;
+export const KICK_TO = 48;
 export const KICK_FALL = 0.06;
 export const KICK_DECAY = 0.14;
+export const KICK_CLICK = 0.3;
+
+//  A snare is two bands at once: a body around two kilohertz, which is the
+//  wood and the skin, and a snap much higher and much shorter, which is the
+//  wires underneath. One without the other is a box or a hiss.
 export const SNARE_BAND = 1900;
+export const SNARE_SNAP = 0.22;
+export const SNARE_TONE = 210;
 
 //  Short, because the fill that closes a section is four of them on the
 //  sixteenths - and at a hundred and fifty that is a tenth of a second apart.
 //  Anything longer is not a drum roll, it is one long noise.
 export const SNARE_DECAY = 0.09;
-export const SNARE_TONE = 210;
-export const HAT_BAND = 7000;
+
+/**
+ * The hat, which is not noise at all: squares at ratios belonging to no scale.
+ *
+ * Noise has no pitch and metal has too many at once, so a hat made of noise
+ * hisses where a real one rings. The ratios are chosen so no two are a whole
+ * number apart - the moment two are, the ear hears a note.
+ */
+export const HAT_RATIOS = [ 2, 3, 4.16, 5.43, 6.79, 8.21 ];
+export const HAT_TOP = 40;
+
+//  Six kilohertz rather than the seven a drum machine would use. Up there a
+//  phone speaker is all edge and no body, and eight of these to a bar is the
+//  quickest way to a game people play with the sound off.
+export const HAT_BAND = 6000;
 export const HAT_DECAY = 0.035;
 
 /** Headroom every note is played at, so a busy moment has somewhere to go. */

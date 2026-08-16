@@ -5,45 +5,50 @@ import {
     BASS_HOLD,
     CHORD_ATTACK,
     CHORD_DECAY,
+    CHORD_FM_FALL,
+    CHORD_FM_INDEX,
+    CHORD_FM_RATIO,
     CHORD_HOLD,
     HAT_DECAY,
     KICK_DECAY,
     LEAD_ATTACK,
     LEAD_DECAY,
-    LEAD_DETUNE,
     LEAD_HOLD,
     LEAD_MAX_RING,
-    REVERB_SECONDS,
     SNARE_DECAY,
     TICK_ATTACK,
-    TICK_DECAY
+    TICK_DECAY,
+    TICK_FM_INDEX,
+    TICK_FM_RATIO,
+    TICK_TAIL
 } from '../config/constants';
+import { bass, lead, struck } from './instruments';
 import { kick, rattle } from './kit';
-import { impulseChannels } from './reverb';
 
-//  The cabinet: four channels and a kit, and the room it stands in.
+//  The instruments, and the room they stand in.
+//
+//  Every one is the same three parts: something making a shape, an envelope on
+//  how loud it is, and a filter closing over it as it dies. That last part is
+//  most of what separates an instrument from a beep - a struck note is bright
+//  at the moment it is struck and dark a fraction of a second later, and an
+//  oscillator with nothing over it never is.
 //
 //  Everything takes the context it is to be built in rather than reaching for
 //  one, so the same code that plays a note in the game can be rendered offline
-//  into a file to listen to - and so nothing here has to know whether it is
-//  being heard live.
+//  into a file to listen to.
 
 /**
- * The voices, which are almost all the same voice.
+ * The voices, which are no longer all the same voice.
  *
- * 'lead' is the tune, 'chord' the backing under it and 'bass' the bottom of
- * it; 'tick' is the one sound the player's own playing makes, and the three
- * drums are noise and a sine. A chip soundtrack is this and nothing else, and
- * that is the point: there is no depth here to turn into mud.
+ * 'lead' is the tune and 'bass' the bottom of it, both filtered; 'chord' is the
+ * backing, which is two oscillators rather than a shape - the only way to get a
+ * struck key out of a browser is to have one bend the other. 'tick' is the one
+ * sound the player's own playing makes, and the drums live in `systems/kit`.
  */
 export type Timbre = 'bass' | 'lead' | 'chord' | 'tick' | 'kick' | 'snare' | 'hat';
 
 /**
  * How long a sound of this kind lasts, in seconds.
- *
- * The pitch is taken but never read: on this instrument nothing rings longer
- * for being lower, because nothing rings. It stays in the signature because
- * every other version of this game's voice needed it and the next one might.
  *
  * @param held Extra ring asked for by a note that was written long, in
  *             seconds, before it is capped.
@@ -63,12 +68,11 @@ export function decayOf (_semitones: number, timbre: Timbre = 'tick', held = 0):
 }
 
 /**
- * How much of a written note's length the tune actually holds on to.
+ * How much of a written long note the tune actually holds on to.
  *
- * The tune has notes written six beats long, and six beats of square wave is
+ * The tune has notes written six beats long, and six beats of one oscillator is
  * not a held note - it is a test tone. It is given a generous fraction of what
- * was written and then let go, which reads as a long note without ever
- * becoming a drone.
+ * was written and then let go.
  */
 function ringing (held: number): number
 {
@@ -93,12 +97,7 @@ export function strike (
 {
     const at = ctx.currentTime + when;
 
-    if (timbre === 'kick')
-    {
-        kick(ctx, destination, at, gain);
-
-        return;
-    }
+    if (timbre === 'kick') { kick(ctx, destination, at, gain); return; }
 
     if (timbre === 'snare' || timbre === 'hat')
     {
@@ -109,45 +108,23 @@ export function strike (
 
     const frequency = frequencyOf(semitones);
 
-    if (timbre === 'bass')
-    {
-        //  A square for the edge and a triangle an octave down for the body.
-        //  On a phone the square alone is a buzz with no bottom to it.
-        pulse(ctx, destination, frequency, at, gain * 0.4, 'square', BASS_ATTACK, BASS_HOLD, BASS_DECAY, 0);
-        pulse(ctx, destination, frequency / 2, at, gain * 0.72, 'triangle', BASS_ATTACK, BASS_HOLD + 0.03, BASS_DECAY + 0.06, 0);
+    if (timbre === 'bass') { bass(ctx, destination, frequency, at, gain); return; }
 
-        return;
-    }
+    if (timbre === 'lead') { lead(ctx, destination, frequency, at, gain, ringing(held)); return; }
 
-    if (timbre === 'lead')
-    {
-        const hold = LEAD_HOLD + ringing(held);
+    if (timbre === 'chord') { struck(ctx, destination, frequency, at, gain * 0.5, CHORD_FM_RATIO, CHORD_FM_INDEX, CHORD_FM_FALL, CHORD_ATTACK, CHORD_HOLD, CHORD_DECAY); return; }
 
-        pulse(ctx, destination, frequency, at, gain * 0.3, 'square', LEAD_ATTACK, hold, LEAD_DECAY, LEAD_DETUNE);
-
-        return;
-    }
-
-    //  The backing. A triangle rather than a square: it is four voices at once
-    //  under a tune, and four squares at once is the buzz this game used to be.
-    if (timbre === 'chord')
-    {
-        pulse(ctx, destination, frequency, at, gain * 0.3, 'triangle', CHORD_ATTACK, CHORD_HOLD, CHORD_DECAY, 0);
-
-        return;
-    }
-
-    pulse(ctx, destination, frequency, at, gain * 0.34, 'square', TICK_ATTACK, 0, TICK_DECAY, 0);
+    struck(ctx, destination, frequency, at, gain * 0.6, TICK_FM_RATIO, TICK_FM_INDEX, TICK_DECAY * 0.4, TICK_ATTACK, 0, TICK_DECAY + TICK_TAIL);
 }
 
-/** One enveloped oscillator, started and stopped. */
-export function pulse (
+/** One enveloped oscillator of a given shape, started and stopped. */
+export function shape (
     ctx: BaseAudioContext,
     destination: AudioNode,
     frequency: number,
     at: number,
     gain: number,
-    type: OscillatorType,
+    wave: OscillatorType | PeriodicWave,
     attack: number,
     hold: number,
     decay: number,
@@ -157,19 +134,13 @@ export function pulse (
     const osc = ctx.createOscillator();
     const level = ctx.createGain();
 
-    osc.type = type;
+    if (typeof wave === 'object') { osc.setPeriodicWave(wave); }
+    else { osc.type = wave; }
+
     osc.frequency.value = frequency;
     osc.detune.value = detune;
 
-    level.gain.setValueAtTime(0.0001, at);
-    level.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), at + attack);
-
-    if (hold > 0)
-    {
-        level.gain.setValueAtTime(Math.max(0.0002, gain), at + attack + hold);
-    }
-
-    level.gain.exponentialRampToValueAtTime(0.0001, at + attack + hold + decay);
+    envelope(level.gain, at, gain, attack, hold, decay);
 
     osc.connect(level);
     level.connect(destination);
@@ -177,19 +148,22 @@ export function pulse (
     osc.stop(at + attack + hold + decay + 0.02);
 }
 
-/** The convolver every sound is sent through, loaded with a generated room. */
-export function room (ctx: BaseAudioContext): ConvolverNode
+/** Up, along, and away again. Exponential, because loudness is heard that way. */
+export function envelope (
+    param: AudioParam,
+    at: number,
+    gain: number,
+    attack: number,
+    hold: number,
+    decay: number
+): void
 {
-    const length = Math.floor(ctx.sampleRate * REVERB_SECONDS);
-    const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
-    const channels = impulseChannels(length);
+    const peak = Math.max(0.0002, gain);
 
-    buffer.copyToChannel(channels[0], 0);
-    buffer.copyToChannel(channels[1], 1);
+    param.setValueAtTime(0.0001, at);
+    param.exponentialRampToValueAtTime(peak, at + attack);
 
-    const convolver = ctx.createConvolver();
+    if (hold > 0) { param.setValueAtTime(peak, at + attack + hold); }
 
-    convolver.buffer = buffer;
-
-    return convolver;
+    param.exponentialRampToValueAtTime(0.0001, at + attack + hold + decay);
 }

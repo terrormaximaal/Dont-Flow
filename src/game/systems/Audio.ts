@@ -268,6 +268,12 @@ function schedule (
     const chain = mixer ??= buildMixer(ctx, ctx.destination);
     const offset = from - ctx.currentTime;
 
+    //  Once, into a junction that is already wired to both sides - rather than
+    //  twice, once per side. A note built twice is a note that costs twice, and
+    //  on the busiest stretch of a level that was the difference between a
+    //  phone keeping up and a phone dropping the music.
+    const into = room ? chain.both : chain.dry;
+
     for (const note of notes)
     {
         //  Anything already in the past is dropped rather than played late: a
@@ -278,12 +284,7 @@ function schedule (
             continue;
         }
 
-        strike(ctx, chain.dry, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
-
-        if (room)
-        {
-            strike(ctx, chain.send, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
-        }
+        strike(ctx, into, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
     }
 }
 

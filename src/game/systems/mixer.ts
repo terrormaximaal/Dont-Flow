@@ -13,16 +13,26 @@ import {
     REVERB_PREDELAY,
     REVERB_WET
 } from '../config/constants';
-import { room } from './voice';
+import { room } from './reverb';
 
-/** The two places a note is played into: straight out, and into the room. */
+/** Where a note is played into. */
 export interface Mixer
 {
     /** The note itself, heard immediately. */
     dry: GainNode;
 
-    /** A copy of it, heard as the room a moment later. */
+    /** The room, heard a moment later. */
     send: GainNode;
+
+    /**
+     * The two of those together, which is where nearly everything goes.
+     *
+     * A note used to be built twice - once for the dry side and once for the
+     * room - which is a whole second instrument per note, and a hi-hat is six
+     * oscillators. One permanent junction wired to both costs nothing per note
+     * and halves what the game asks of a phone.
+     */
+    both: GainNode;
 }
 
 /**
@@ -112,5 +122,12 @@ export function buildMixer (ctx: BaseAudioContext, destination: AudioNode): Mixe
     //  than in front of it.
     echoLevel.connect(predelay);
 
-    return { dry, send };
+    //  The junction everything that is not crowded plays into. Permanent, so
+    //  no note ever pays to make one.
+    const both = ctx.createGain();
+
+    both.connect(dry);
+    both.connect(send);
+
+    return { dry, send, both };
 }

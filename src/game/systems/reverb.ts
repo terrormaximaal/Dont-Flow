@@ -1,4 +1,4 @@
-import { REVERB_DECAY, REVERB_SEED } from '../config/constants';
+import { REVERB_SECONDS, REVERB_DECAY, REVERB_SEED } from '../config/constants';
 import { seeded } from './noise';
 
 //  The room every note is played into.
@@ -72,4 +72,21 @@ export function impulseChannels (length: number, decay = REVERB_DECAY): [ Float3
         impulseChannel(length, REVERB_SEED, decay),
         impulseChannel(length, REVERB_SEED * 7, decay)
     ];
+}
+
+/** The convolver every sound is sent through, loaded with a generated room. */
+export function room (ctx: BaseAudioContext): ConvolverNode
+{
+    const length = Math.floor(ctx.sampleRate * REVERB_SECONDS);
+    const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
+    const channels = impulseChannels(length);
+
+    buffer.copyToChannel(channels[0], 0);
+    buffer.copyToChannel(channels[1], 1);
+
+    const convolver = ctx.createConvolver();
+
+    convolver.buffer = buffer;
+
+    return convolver;
 }
