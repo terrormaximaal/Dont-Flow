@@ -1,5 +1,6 @@
 import {
     SWIPE_DOMINANCE,
+    SWIPE_DOWN_THRESHOLD,
     SWIPE_UP_THRESHOLD,
     SWIPE_REANCHOR_DISTANCE,
     SWIPE_REPEAT_DELAY,
@@ -22,6 +23,9 @@ export interface DragResult
 
     /** True when this drag has just asked for a jump. */
     jump: boolean;
+
+    /** True when it has just asked to come back down from one. */
+    dive: boolean;
 
     /** Where the next movement should be measured from. */
     anchor: DragAnchor;
@@ -54,22 +58,34 @@ export function evaluateDrag (anchor: DragAnchor, x: number, y: number): DragRes
 
     if (farEnough && horizontalEnough)
     {
-        return { intent: dx > 0 ? 1 : -1, jump: false, anchor: { x, y } };
+        return { intent: dx > 0 ? 1 : -1, jump: false, dive: false, anchor: { x, y } };
     }
+
+    const verticalEnough = Math.abs(dy) >= Math.abs(dx) * SWIPE_DOMINANCE;
 
     //  Upwards, and clearly more up than across. Checked before the reanchor
     //  below, which would otherwise swallow the very gesture it is measuring.
-    if (dy <= -SWIPE_UP_THRESHOLD && Math.abs(dy) >= Math.abs(dx) * SWIPE_DOMINANCE)
+    if (dy <= -SWIPE_UP_THRESHOLD && verticalEnough)
     {
-        return { intent: 0, jump: true, anchor: { x, y } };
+        return { intent: 0, jump: true, dive: false, anchor: { x, y } };
+    }
+
+    //  And downwards, which asks a drop already in the air to come back to the
+    //  road. Held to a longer throw than the jump: down is the direction a
+    //  finger wanders in while it is reaching for the next lane change, and
+    //  the reanchor below exists because of exactly that. A dive has to be
+    //  meant.
+    if (dy >= SWIPE_DOWN_THRESHOLD && verticalEnough)
+    {
+        return { intent: 0, jump: false, dive: true, anchor: { x, y } };
     }
 
     if (Math.abs(dy) >= SWIPE_REANCHOR_DISTANCE)
     {
-        return { intent: 0, jump: false, anchor: { x, y } };
+        return { intent: 0, jump: false, dive: false, anchor: { x, y } };
     }
 
-    return { intent: 0, jump: false, anchor };
+    return { intent: 0, jump: false, dive: false, anchor };
 }
 
 /**

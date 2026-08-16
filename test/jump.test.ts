@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { JUMP_CLEAR_HEIGHT, JUMP_SPAN } from '../src/game/config/constants';
+import {
+    DIVE_SPAN,
+    JUMP_CLEAR_HEIGHT,
+    JUMP_SPAN,
+    SWIPE_DOWN_THRESHOLD,
+    SWIPE_UP_THRESHOLD
+} from '../src/game/config/constants';
 import { isBlockedBy } from '../src/game/systems/contact';
-import { hasLanded, jumpHeight } from '../src/game/systems/jump';
+import { divingHeight, hasDived, hasLanded, jumpHeight } from '../src/game/systems/jump';
 import { evaluateDrag } from '../src/game/systems/swipe';
 
 describe('the jump arc', () => {
@@ -177,6 +183,134 @@ describe('the jump gesture', () => {
         const result = evaluateDrag(anchor, 205, 600 - 60);
 
         expect(result.anchor).toEqual({ x: 205, y: 540 });
+
+    });
+
+});
+
+
+describe('the gesture that asks for the ground', () => {
+
+    const from = { x: 100, y: 300 };
+
+    it('reads a clear downward flick as a dive', () => {
+
+        const result = evaluateDrag(from, 100, 300 + SWIPE_DOWN_THRESHOLD);
+
+        expect(result.dive).toBe(true);
+        expect(result.jump, 'and never as a jump').toBe(false);
+        expect(result.intent, 'and never as a lane change').toBe(0);
+
+    });
+
+    //  Down is the direction a finger wanders in between lane changes, which is
+    //  why the drag rules re-anchor on it. A dive has to be meant.
+    it('ignores a downward drift too small to be meant', () => {
+
+        expect(evaluateDrag(from, 100, 300 + SWIPE_DOWN_THRESHOLD - 1).dive).toBe(false);
+
+    });
+
+    it('takes more of a throw than a jump does', () => {
+
+        expect(SWIPE_DOWN_THRESHOLD).toBeGreaterThan(SWIPE_UP_THRESHOLD);
+
+    });
+
+    //  The same rule the jump is held to: steering is what a player does
+    //  constantly, so a flick that is both down and clearly across is read as
+    //  a lane change.
+    it('prefers steering when a flick is both down and across', () => {
+
+        const result = evaluateDrag(from, 100 + 110, 300 + SWIPE_DOWN_THRESHOLD);
+
+        expect(result.dive).toBe(false);
+        expect(result.intent).toBe(1);
+
+    });
+
+    //  And one that is neither clearly down nor clearly across asks for
+    //  nothing at all, rather than guessing.
+    it('does nothing with a flick that commits to neither', () => {
+
+        const result = evaluateDrag(from, 100 + 60, 300 + SWIPE_DOWN_THRESHOLD);
+
+        expect(result.dive).toBe(false);
+        expect(result.intent).toBe(0);
+
+    });
+
+});
+
+describe('coming back down on purpose', () => {
+
+    //  Asked for by name: a swipe up leaves the road, and a swipe down while
+    //  still in the air should get the drop back to it sooner than the arc
+    //  would have.
+    it('starts from exactly where the drop was', () => {
+
+        //  Nothing may jump at the moment the gesture lands. A dive that began
+        //  by snapping the drop to some other height would read as a glitch,
+        //  however quickly it then fell.
+        expect(divingHeight(400, 400, 0.8)).toBeCloseTo(0.8, 6);
+        expect(divingHeight(399, 400, 0.8)).toBeCloseTo(0.8, 6);
+
+    });
+
+    it('reaches the road, and stays there', () => {
+
+        const from = 400;
+        const height = 0.8;
+
+        expect(divingHeight(from + (DIVE_SPAN * height), from, height)).toBe(0);
+        expect(divingHeight(from + 10000, from, height)).toBe(0);
+
+    });
+
+    it('never rises on the way', () => {
+
+        let last = 1;
+
+        for (let moved = 0; moved <= DIVE_SPAN; moved += 5)
+        {
+            const now = divingHeight(400 + moved, 400, 1);
+
+            expect(now).toBeLessThanOrEqual(last);
+
+            last = now;
+        }
+
+    });
+
+    //  One speed, wherever it was asked for. A fixed span instead would make a
+    //  dive from the top of the arc quick and one from just above the road a
+    //  slow float, which is backwards - the higher you are, the further there
+    //  is to fall.
+    it('comes down at the same rate from any height', () => {
+
+        const rate = (height: number) => {
+
+            const half = divingHeight(400 + (DIVE_SPAN * height * 0.5), 400, height);
+
+            return (height - half) / (DIVE_SPAN * height * 0.5);
+        };
+
+        expect(rate(1)).toBeCloseTo(rate(0.25), 6);
+
+    });
+
+    it('takes less road from lower down', () => {
+
+        expect(hasDived(400 + 40, 400, 1), 'from the top').toBe(false);
+        expect(hasDived(400 + 40, 400, 0.2), 'from just above the road').toBe(true);
+
+    });
+
+    //  A dive that beat the arc it replaced would be a way of asking for a
+    //  shorter jump rather than for the ground.
+    it('is quicker than the fall it replaces', () => {
+
+        expect(DIVE_SPAN).toBeLessThan(JUMP_SPAN / 2);
 
     });
 

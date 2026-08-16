@@ -328,7 +328,8 @@ export class Play extends Scene
         this.input_ = new InputSystem(
             this,
             (direction) => this.drop.moveLane(direction),
-            () => { play('jump'); this.drop.jump(this.distance); }
+            () => { play('jump'); this.drop.jump(this.distance); },
+            () => this.drop.dropDown(this.distance)
         );
 
         this.coach = new Coach(this);

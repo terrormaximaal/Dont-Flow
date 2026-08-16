@@ -627,6 +627,19 @@ export const JUMP_LIFT = 96;
  * A distance rather than a duration, like the arc it belongs to, so it means
  * the same thing on the slowest level and the fastest.
  */
+/**
+ * How much road a dive from the very top of the arc covers, in track pixels.
+ *
+ * A swipe down while the drop is off the road abandons the arc and heads
+ * straight for the ground. Shorter than the half-arc it replaces, or the
+ * gesture would be a way of asking for the jump the drop was already making.
+ *
+ * Scaled by how high the drop actually is, so it comes down at one speed
+ * wherever it was asked - a fixed span would make a dive from the apex quick
+ * and one from just above the road a slow float, which is backwards.
+ */
+export const DIVE_SPAN = 150;
+
 export const JUMP_BUFFER = 80;
 
 /**
@@ -684,6 +697,16 @@ export const BOOST_ZOOM = 0.965;
 export const BOOST_ZOOM_SMOOTHING = 2.4;
 
 /** An upward flick this long, and this much more vertical than sideways, jumps. */
+/**
+ * How far down a finger has to travel to ask a drop in the air to come back.
+ *
+ * Longer than the jump's throw. Down is the direction a finger wanders in
+ * while it is reaching for the next lane change - the reanchor rule below
+ * exists because of exactly that - so a dive has to be meant rather than
+ * merely happened.
+ */
+export const SWIPE_DOWN_THRESHOLD = 64;
+
 export const SWIPE_UP_THRESHOLD = 34;
 
 // ---------------------------------------------------------------------------
@@ -1245,11 +1268,33 @@ export const ORB_CORE_ALPHA = 0.3;
 export const ORB_CATCH_SLACK = 4;
 export const ORB_CATCH_RADIUS = DROP_RADIUS + ORB_RADIUS + ORB_CATCH_SLACK;
 
-//  How far past the drop a missed orb keeps being drawn, in track pixels.
-//  Behind the player there is no depth left to show and the perspective only
-//  spreads things outwards, which reads as the orb sliding sideways. Fading it
-//  out over a short stretch keeps the miss visible without the drift.
-export const ORB_PASS_FADE = 70;
+/**
+ * How far past the drop a missed orb stays fully drawn, in track pixels.
+ *
+ * Far enough to leave the bottom of the view. An orb the drop did not take is
+ * one the drop went past, and going past something means watching it come
+ * alongside and slide away behind you.
+ *
+ * It used to be rubbed out over seventy pixels, which put it at nothing forty
+ * pixels under the drop with a third of the screen still below it - the orb
+ * evaporating at the player's shoulder rather than being passed. That was there
+ * to hide an orb appearing to shift sideways as the player steered, which was
+ * really the lean towards the drop switching off in one frame; that is eased
+ * now, so the cover is not needed.
+ */
+export const ORB_PASS_KEEP = 340;
+
+/** And how far it takes to go after that, well below the view. */
+export const ORB_PASS_FADE = 160;
+
+/**
+ * How far the world moves while an orb settles into or out of leaning towards
+ * the drop, in track pixels.
+ *
+ * Short enough that an orb about to be taken is already leaning by the time it
+ * arrives, long enough that steering across a lane cannot make one jump.
+ */
+export const ORB_LEAN_EASE = 90;
 
 export const SCORE_PER_ORB = 10;
 

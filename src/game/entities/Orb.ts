@@ -19,7 +19,9 @@ import {
     ORB_MOTE_ORBIT,
     ORB_MOTE_RADIUS,
     ORB_MOTES,
+    ORB_LEAN_EASE,
     ORB_PASS_FADE,
+    ORB_PASS_KEEP,
     ORB_RADIUS,
     ORB_REACT_DISTANCE,
     ORB_REACT_SWELL,
@@ -37,12 +39,17 @@ const TAU = Math.PI * 2;
 
 /**
  * How much of an orb is left to draw, given how far past the drop it now is.
+ *
+ * Nothing, until it is off the bottom of the view. An orb the drop did not take
+ * is one the drop went past, and going past something means watching it come
+ * alongside and disappear behind you - not watching it evaporate at your own
+ * shoulder, which is what a short fade here looked like.
  */
 function fadedPast (past: number): number
 {
-    if (past <= 0) { return 1; }
+    if (past <= ORB_PASS_KEEP) { return 1; }
 
-    return Math.max(0, 1 - (past / ORB_PASS_FADE));
+    return Math.max(0, 1 - ((past - ORB_PASS_KEEP) / ORB_PASS_FADE));
 }
 
 /**
@@ -76,6 +83,15 @@ export class Orb
     private readonly glyph: Glyph;
     private readonly gfx: Phaser.GameObjects.Graphics;
 
+    //  How far out this orb is leaning towards the drop, and how swollen it is,
+    //  both eased rather than switched. Kept here because easing needs to know
+    //  where it got to last time.
+    private near = 0;
+    private pull = 0;
+
+    /** Where the world had got to when this orb was last drawn. */
+    private seenAt = -1;
+
     constructor (scene: Scene, spec: OrbSpec)
     {
         this.distance = spec.distance;
@@ -105,12 +121,32 @@ export class Orb
         const ahead = this.distance - travelled;
         const past = -ahead;
 
-        const near = lined ? 1 - clamp(ahead / ORB_REACT_DISTANCE, 0, 1) : 0;
-        const pull = lined ? 1 - clamp(ahead / ORB_MAGNET_DISTANCE, 0, 1) : 0;
+        //  How far the world moved since this orb was last drawn, which is what
+        //  the two leans below are eased over. Distance rather than time, like
+        //  everything else here, so a slow frame cannot make an orb jump.
+        const moved = this.seenAt < 0 ? 0 : Math.max(0, travelled - this.seenAt);
+
+        this.seenAt = travelled;
+
+        //  Eased rather than switched.
+        //
+        //  Both of these used to be read straight off `lined`, which flips the
+        //  moment the drop moves out of an orb's lane - so an orb that was
+        //  leaning out towards the drop snapped back to its lane in one frame,
+        //  and the orb appeared to shift sideways as the player steered. That
+        //  was hidden for a while by rubbing missed orbs out almost as soon as
+        //  they arrived; now that they stay to be passed, it has to be fixed
+        //  rather than covered.
+        const step = clamp(moved / ORB_LEAN_EASE, 0, 1);
+
+        this.near += (((lined ? 1 - clamp(ahead / ORB_REACT_DISTANCE, 0, 1) : 0) - this.near) * step);
+        this.pull += (((lined ? 1 - clamp(ahead / ORB_MAGNET_DISTANCE, 0, 1) : 0) - this.pull) * step);
+
+        const near = this.near;
 
         //  Drawn drifting towards the drop over the last stretch. Its track-space
         //  x is untouched: this moves the picture, not the orb.
-        const drawnX = this.x + ((dropX - this.x) * pull * ORB_MAGNET_REACH);
+        const drawnX = this.x + ((dropX - this.x) * this.pull * ORB_MAGNET_REACH);
 
         const projected = project(drawnX, y);
 
@@ -125,7 +161,7 @@ export class Orb
 
         this.gfx.clear();
 
-        if (past >= ORB_PASS_FADE)
+        if (past >= ORB_PASS_KEEP + ORB_PASS_FADE)
         {
             return y;
         }

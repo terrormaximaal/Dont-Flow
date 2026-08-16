@@ -17,6 +17,7 @@ export class InputSystem
     private readonly scene: Scene;
     private readonly onIntent: (direction: LaneIntent) => void;
     private readonly onJump: () => void;
+    private readonly onDive: () => void;
 
     /** Where the current drag was last measured from. */
     private anchor: DragAnchor = { x: 0, y: 0 };
@@ -28,11 +29,17 @@ export class InputSystem
     /** Scene clock reading of the last swipe-driven lane change. */
     private lastSwipeTime = 0;
 
-    constructor (scene: Scene, onIntent: (direction: LaneIntent) => void, onJump: () => void = () => {})
+    constructor (
+        scene: Scene,
+        onIntent: (direction: LaneIntent) => void,
+        onJump: () => void = () => {},
+        onDive: () => void = () => {}
+    )
     {
         this.scene = scene;
         this.onIntent = onIntent;
         this.onJump = onJump;
+        this.onDive = onDive;
 
         this.attachKeyboard();
         this.attachTouch();
@@ -56,6 +63,11 @@ export class InputSystem
         keyboard.on('keydown-UP', this.leap, this);
         keyboard.on('keydown-W', this.leap, this);
         keyboard.on('keydown-SPACE', this.leap, this);
+
+        //  The other way, for a drop already in the air. Harmless on the road,
+        //  where the drop has nothing to come down from.
+        keyboard.on('keydown-DOWN', this.duck, this);
+        keyboard.on('keydown-S', this.duck, this);
     }
 
     private attachTouch (): void
@@ -99,6 +111,14 @@ export class InputSystem
         }
     }
 
+    private duck (): void
+    {
+        if (this.enabled)
+        {
+            this.onDive();
+        }
+    }
+
     private onPointerDown (pointer: Phaser.Input.Pointer): void
     {
         if (!this.enabled)
@@ -127,6 +147,14 @@ export class InputSystem
         {
             this.anchor = result.anchor;
             this.leap();
+
+            return;
+        }
+
+        if (result.dive)
+        {
+            this.anchor = result.anchor;
+            this.duck();
 
             return;
         }

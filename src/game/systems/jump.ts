@@ -1,4 +1,4 @@
-import { JUMP_BUFFER, JUMP_SPAN } from '../config/constants';
+import { DIVE_SPAN, JUMP_BUFFER, JUMP_SPAN } from '../config/constants';
 
 //  The jump, as pure maths.
 //
@@ -71,4 +71,46 @@ export function bufferedTakeoff (landedAt: number, requestedAt: number | null): 
     }
 
     return landedAt;
+}
+
+/**
+ * How high a diving drop is, given where the dive began and how high it was.
+ *
+ * A straight line down rather than the rest of the parabola. The gesture means
+ * "come down now", and the honest shape for that is not the arc the drop was
+ * already on - it is the arc being abandoned. Starting from the height the
+ * drop actually had keeps it continuous: nothing jumps at the moment the dive
+ * is asked for, it simply stops rising and heads for the road.
+ *
+ * @param from   Distance at which the dive began.
+ * @param height How high the drop was then, 0 to 1.
+ */
+export function divingHeight (travelled: number, from: number, height: number): number
+{
+    if (height <= 0) { return 0; }
+
+    //  Over a distance proportional to the height, so the drop comes down at
+    //  one speed wherever the dive was asked for. A fixed span instead would
+    //  make a dive from the top of the arc fast and one from just above the
+    //  road a slow float, which is backwards.
+    const u = (travelled - from) / (DIVE_SPAN * height);
+
+    if (u <= 0) { return height; }
+
+    if (u >= 1) { return 0; }
+
+    return height * (1 - u);
+}
+
+/**
+ * Whether a dive begun at `from` has reached the road by `travelled`.
+ *
+ * Scaled by how high it started, so a dive from the top of the arc takes the
+ * full span and one from just above the road takes almost none. Without that,
+ * a drop clipping the ground would hang there waiting out a distance it had
+ * no height left to fall through.
+ */
+export function hasDived (travelled: number, from: number, height: number): boolean
+{
+    return travelled - from >= DIVE_SPAN * height;
 }

@@ -26,7 +26,7 @@ import {
     RAINBOW_WARNING_SPEED
 } from '../config/constants';
 import { play } from '../systems/Audio';
-import { bufferedTakeoff, hasLanded, jumpHeight } from '../systems/jump';
+import { bufferedTakeoff, divingHeight, hasDived, hasLanded, jumpHeight } from '../systems/jump';
 import { clampLane, laneCenterX, startLane } from '../systems/Lanes';
 import { drawWaterDrop } from '../ui/shapes';
 import { rainbowAt } from '../utils/color';
@@ -99,6 +99,15 @@ export class Drop
      * bufferedTakeoff - see JUMP_BUFFER for why the window is a short one.
      */
     private requested: number | null = null;
+
+    /**
+     * An arc abandoned part way, if the player asked to come down.
+     *
+     * Holds where the dive began and how high the drop was then, which is all
+     * the fall needs - starting from the height it actually had is what keeps
+     * the drop from jumping at the moment the gesture lands.
+     */
+    private dive: { from: number; height: number } | null = null;
 
     /** Size, pop and idle wobble. Cosmetic only - collision never reads it. */
     private readonly juice = new DropJuice();
@@ -243,6 +252,27 @@ export class Drop
 
         this.takeoff = travelled;
         this.requested = null;
+        this.dive = null;
+    }
+
+    /**
+     * Abandon the arc and head for the road.
+     *
+     * Only from the air, and only once per jump: the drop is already coming
+     * down as fast as it comes down, and a second dive would only be a way of
+     * asking for the same thing twice. Ignored on the ground, where there is
+     * nothing to come down from - a finger wandering downwards between lane
+     * changes should not do anything at all.
+     */
+    dropDown (travelled: number): void
+    {
+        if (this.takeoff === null || this.dive !== null || this.height <= 0)
+        {
+            return;
+        }
+
+        this.dive = { from: travelled, height: this.height };
+        this.requested = null;
     }
 
     /** How high the drop is, 0 on the road and 1 at the top of the arc. */
@@ -273,7 +303,27 @@ export class Drop
     update (dt: number, travelled: number): void
     {
         //  Height first: everything below is drawn from it.
-        if (this.takeoff !== null && hasLanded(travelled, this.takeoff))
+        //
+        //  A dive comes before the arc, because it has replaced it: the drop is
+        //  no longer on the parabola it took off along, it is on its way down.
+        if (this.dive !== null)
+        {
+            if (hasDived(travelled, this.dive.from, this.dive.height))
+            {
+                this.dive = null;
+                this.takeoff = null;
+                this.height = 0;
+
+                this.juice.pulse();
+                play('land');
+            }
+            else
+            {
+                this.height = divingHeight(travelled, this.dive.from, this.dive.height);
+            }
+        }
+
+        if (this.dive === null && this.takeoff !== null && hasLanded(travelled, this.takeoff))
         {
             const landedAt = this.takeoff + JUMP_SPAN;
 
@@ -290,7 +340,10 @@ export class Drop
             }
         }
 
-        this.height = jumpHeight(travelled, this.takeoff);
+        if (this.dive === null)
+        {
+            this.height = jumpHeight(travelled, this.takeoff);
+        }
 
         const targetX = laneCenterX(this.targetLane);
         const previousX = this.x;
