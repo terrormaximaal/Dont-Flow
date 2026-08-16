@@ -4,9 +4,11 @@ import {
     MUSIC_BPM,
     MUSIC_GAIN,
     MUSIC_LOOKAHEAD,
+    MUSIC_SELECT_GAIN,
     MUSIC_TICK_MS
 } from '../config/constants';
-import { barNotes } from '../config/music';
+import { Beat, barNotes } from '../config/music';
+import { selectBar } from '../config/musicMenu';
 import { audioTime, playAt } from './Audio';
 
 //  The soundtrack, handed to the clock a bar or so before it is due.
@@ -17,16 +19,18 @@ import { audioTime, playAt } from './Audio';
 //  times a second, and every bar falling due inside the next second and a half
 //  is written down in advance.
 //
-//  It keeps its own tempo rather than the road's. That was tried the other way
-//  round - a bar being a whole number of orb rows, so a collect landed on a
-//  beat - and it is a lovely idea that this game does not want: it put the
-//  early levels at sixty beats a minute. No arcade game ever synchronised its
-//  music to the enemies.
+//  Two pieces, one at a time: the run has drums and a tune, the level select
+//  has the same chords with neither. Which one is playing is the only thing a
+//  scene has to say.
 
 const BEAT_SECONDS = 60 / MUSIC_BPM;
 const BAR_SECONDS = BEAT_SECONDS * MUSIC_BEATS_PER_BAR;
 
+/** Which of the two pieces is playing. */
+export type Track = 'play' | 'select';
+
 let timer: ReturnType<typeof setInterval> | null = null;
+let track: Track = 'play';
 
 /** When the next bar is due on the audio clock, and which bar it is. */
 let nextBarAt = 0;
@@ -36,16 +40,17 @@ let bar = 0;
 let finale = 0;
 
 /**
- * Starts the soundtrack from the top.
+ * Starts a piece from the top.
  *
  * Called on every level start rather than once for the session: the tune
  * beginning where the run begins is most of what makes it feel like this run's
  * music rather than something already playing that the game was dropped into.
  */
-export function startMusic (): void
+export function startMusic (which: Track = 'play'): void
 {
     stopMusic();
 
+    track = which;
     bar = 0;
     nextBarAt = 0;
     finale = 0;
@@ -70,6 +75,12 @@ export function stopMusic (): void
 export function isMusicPlaying (): boolean
 {
     return timer !== null;
+}
+
+/** Which piece is playing, so a scene can leave one that is already right. */
+export function playingTrack (): Track | null
+{
+    return timer === null ? null : track;
 }
 
 /**
@@ -108,22 +119,25 @@ function fill (): void
         nextBarAt = now + 0.05;
     }
 
+    const gain = track === 'play' ? MUSIC_GAIN : MUSIC_SELECT_GAIN;
+
     while (nextBarAt < now + MUSIC_LOOKAHEAD)
     {
-        playAt(barStrikes(bar, finale), nextBarAt, MUSIC_GAIN);
+        playAt(seconds(track === 'play' ? barNotes(bar, finale) : selectBar(bar)), nextBarAt, gain);
 
         nextBarAt += BAR_SECONDS;
         bar += 1;
     }
 }
 
-/** One bar of the soundtrack, with its beats turned into seconds. */
-function barStrikes (index: number, into: number): Strike[]
+/** One bar, with its beats turned into seconds. */
+function seconds (notes: Beat[]): Strike[]
 {
-    return barNotes(index, into).map((note) => ({
+    return notes.map((note) => ({
         semitones: note.semitones,
         at: note.beat * BEAT_SECONDS,
         gain: note.gain,
-        timbre: note.timbre
+        timbre: note.timbre,
+        held: (note.held ?? 0) * BEAT_SECONDS
     }));
 }

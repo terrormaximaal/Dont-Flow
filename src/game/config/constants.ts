@@ -1740,16 +1740,26 @@ export const SOUND_COMPRESSOR_RATIO = 6;
 export const SOUND_COMPRESSOR_ATTACK = 0.004;
 export const SOUND_COMPRESSOR_RELEASE = 0.25;
 
-/** Middle C. Every note in the game is a number of semitones from here. */
-export const SOUND_ROOT_HZ = 261.63;
+/**
+ * G below middle C. Every note in the game is a number of semitones from here.
+ *
+ * The written music is in G minor and this is where it sits, so every number in
+ * `config/score` is the note that was written rather than the note transposed
+ * to wherever the game's root happened to be.
+ */
+export const SOUND_ROOT_HZ = 196.00;
 
 /**
  * The note a collected orb plays. Always this one.
  *
  * It used to climb with the streak, and that was wrong twice over: it was the
- * sound heard most often in the game, and it was the one that changed most. It
- * is the root of the key, two octaves up - the one note that is in every chord
- * of the loop, so it can land at any moment without ever being wrong.
+ * sound heard most often in the game, and it was the one that changed most.
+ *
+ * Nineteen semitones over G is the D two octaves up: the fifth of the key,
+ * which is in three of the four chords the backing turns on and consonant with
+ * the fourth. It can land at any moment of any bar without ever being wrong,
+ * which is the only thing that matters about a note played hundreds of times a
+ * run at moments nobody is arranging.
  */
 export const ORB_SEMITONES = 19;
 
@@ -1759,12 +1769,29 @@ export const BASS_ATTACK = 0.004;
 export const BASS_HOLD = 0.05;
 export const BASS_DECAY = 0.16;
 
-//  The second channel, which plays the tune. A shade longer than the bass
-//  notes so it sings over them rather than clicking along with them.
+//  The channel that plays the tune. A shade longer than the bass notes so it
+//  sings over them rather than clicking along with them.
 export const LEAD_ATTACK = 0.005;
-export const LEAD_HOLD = 0.08;
-export const LEAD_DECAY = 0.22;
+export const LEAD_HOLD = 0.06;
+export const LEAD_DECAY = 0.13;
 export const LEAD_DETUNE = 4;
+
+/**
+ * The most of a written long note the tune will actually hold, in seconds.
+ *
+ * The tune has notes written six beats long. Six beats of square wave is a
+ * test tone, not a held note, so a long one rings for about this much and is
+ * then let go - long enough to read as held, short enough that the phrase
+ * underneath it stays audible.
+ */
+export const LEAD_MAX_RING = 0.75;
+
+//  The backing: a triangle, quiet and short. Four of these sound at once under
+//  the tune and there are eight of them to a bar, so anything with a tail on it
+//  turns the whole thing to mud - which is exactly what happened the first time.
+export const CHORD_ATTACK = 0.004;
+export const CHORD_HOLD = 0.03;
+export const CHORD_DECAY = 0.13;
 
 /** The tick a collected orb makes: one short square and nothing else. */
 export const TICK_ATTACK = 0.003;
@@ -1779,7 +1806,11 @@ export const KICK_TO = 45;
 export const KICK_FALL = 0.06;
 export const KICK_DECAY = 0.14;
 export const SNARE_BAND = 1900;
-export const SNARE_DECAY = 0.12;
+
+//  Short, because the fill that closes a section is four of them on the
+//  sixteenths - and at a hundred and fifty that is a tenth of a second apart.
+//  Anything longer is not a drum roll, it is one long noise.
+export const SNARE_DECAY = 0.09;
 export const SNARE_TONE = 210;
 export const HAT_BAND = 7000;
 export const HAT_DECAY = 0.035;
@@ -1818,9 +1849,6 @@ export const REVERB_SEED = 8317;
 
 //  The music under the run.
 //
-//  Slow, because it plays for as long as the level does and anything with a
-//  pulse the player can tap along to becomes a metronome they are trying to
-//  collect in time with.
 //  One tempo for the whole game, and it does not follow the road.
 //
 //  It was derived from each level's own row spacing for a while, so that a
@@ -1829,7 +1857,11 @@ export const REVERB_SEED = 8317;
 //  arcade cabinet does not play at sixty. A soundtrack that keeps its own time
 //  is what every game of this kind has always done - none of them ever
 //  synchronised the music to the enemies.
-export const MUSIC_BPM = 128;
+//
+//  A hundred and fifty because that is what the music was written at. Playing
+//  somebody's tune at another tempo is not a tuning decision, it is a different
+//  tune - the phrasing of the topline only works at the speed it was phrased.
+export const MUSIC_BPM = 150;
 export const MUSIC_BEATS_PER_BAR = 4;
 
 /**
@@ -1843,6 +1875,16 @@ export const MUSIC_BEATS_PER_BAR = 4;
 //  soundtrack carries the run; it never competes with the thing the player
 //  did.
 export const MUSIC_GAIN = 0.42;
+
+/**
+ * And how loud the level select is, where there is nothing to compete with.
+ *
+ * Louder than the run, because on that screen the music is the only thing
+ * happening - but still well down: it plays while somebody is reading a map of
+ * twenty levels, and a menu that insists on being heard is a menu people
+ * silence before they ever reach the game.
+ */
+export const MUSIC_SELECT_GAIN = 0.85;
 
 //  Scheduled a little ahead of the sound card and topped up on a timer, which
 //  is the only way to get music in time out of a browser: notes are handed to

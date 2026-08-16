@@ -3,24 +3,23 @@ import {
     BASS_ATTACK,
     BASS_DECAY,
     BASS_HOLD,
-    HAT_BAND,
+    CHORD_ATTACK,
+    CHORD_DECAY,
+    CHORD_HOLD,
     HAT_DECAY,
     KICK_DECAY,
-    KICK_FALL,
-    KICK_FROM,
-    KICK_TO,
     LEAD_ATTACK,
     LEAD_DECAY,
     LEAD_DETUNE,
     LEAD_HOLD,
+    LEAD_MAX_RING,
     REVERB_SECONDS,
-    SNARE_BAND,
     SNARE_DECAY,
-    SNARE_TONE,
     TICK_ATTACK,
     TICK_DECAY
 } from '../config/constants';
-import { impulseChannels, noiseBuffer } from './reverb';
+import { kick, rattle } from './kit';
+import { impulseChannels } from './reverb';
 
 //  The cabinet: four channels and a kit, and the room it stands in.
 //
@@ -32,12 +31,12 @@ import { impulseChannels, noiseBuffer } from './reverb';
 /**
  * The voices, which are almost all the same voice.
  *
- * 'bass' and 'lead' are the two channels the music is written on, 'tick' is
- * the one sound the player's own playing makes, and the three drums are noise
- * and a sine. A chip soundtrack is this and nothing else, and that is the
- * point: there is no depth here to turn into mud.
+ * 'lead' is the tune, 'chord' the backing under it and 'bass' the bottom of
+ * it; 'tick' is the one sound the player's own playing makes, and the three
+ * drums are noise and a sine. A chip soundtrack is this and nothing else, and
+ * that is the point: there is no depth here to turn into mud.
  */
-export type Timbre = 'bass' | 'lead' | 'tick' | 'kick' | 'snare' | 'hat';
+export type Timbre = 'bass' | 'lead' | 'chord' | 'tick' | 'kick' | 'snare' | 'hat';
 
 /**
  * How long a sound of this kind lasts, in seconds.
@@ -45,18 +44,35 @@ export type Timbre = 'bass' | 'lead' | 'tick' | 'kick' | 'snare' | 'hat';
  * The pitch is taken but never read: on this instrument nothing rings longer
  * for being lower, because nothing rings. It stays in the signature because
  * every other version of this game's voice needed it and the next one might.
+ *
+ * @param held Extra ring asked for by a note that was written long, in
+ *             seconds, before it is capped.
  */
-export function decayOf (_semitones: number, timbre: Timbre = 'tick'): number
+export function decayOf (_semitones: number, timbre: Timbre = 'tick', held = 0): number
 {
     switch (timbre)
     {
         case 'bass': return BASS_ATTACK + BASS_HOLD + BASS_DECAY;
-        case 'lead': return LEAD_ATTACK + LEAD_HOLD + LEAD_DECAY;
+        case 'lead': return LEAD_ATTACK + LEAD_HOLD + ringing(held) + LEAD_DECAY;
+        case 'chord': return CHORD_ATTACK + CHORD_HOLD + CHORD_DECAY;
         case 'kick': return KICK_DECAY;
         case 'snare': return SNARE_DECAY;
         case 'hat': return HAT_DECAY;
         default: return TICK_ATTACK + TICK_DECAY;
     }
+}
+
+/**
+ * How much of a written note's length the tune actually holds on to.
+ *
+ * The tune has notes written six beats long, and six beats of square wave is
+ * not a held note - it is a test tone. It is given a generous fraction of what
+ * was written and then let go, which reads as a long note without ever
+ * becoming a drone.
+ */
+function ringing (held: number): number
+{
+    return Math.min(Math.max(0, held - LEAD_HOLD), LEAD_MAX_RING);
 }
 
 /**
@@ -71,7 +87,8 @@ export function strike (
     semitones: number,
     when: number,
     gain: number,
-    timbre: Timbre = 'tick'
+    timbre: Timbre = 'tick',
+    held = 0
 ): void
 {
     const at = ctx.currentTime + when;
@@ -104,7 +121,18 @@ export function strike (
 
     if (timbre === 'lead')
     {
-        pulse(ctx, destination, frequency, at, gain * 0.3, 'square', LEAD_ATTACK, LEAD_HOLD, LEAD_DECAY, LEAD_DETUNE);
+        const hold = LEAD_HOLD + ringing(held);
+
+        pulse(ctx, destination, frequency, at, gain * 0.3, 'square', LEAD_ATTACK, hold, LEAD_DECAY, LEAD_DETUNE);
+
+        return;
+    }
+
+    //  The backing. A triangle rather than a square: it is four voices at once
+    //  under a tune, and four squares at once is the buzz this game used to be.
+    if (timbre === 'chord')
+    {
+        pulse(ctx, destination, frequency, at, gain * 0.3, 'triangle', CHORD_ATTACK, CHORD_HOLD, CHORD_DECAY, 0);
 
         return;
     }
@@ -113,7 +141,7 @@ export function strike (
 }
 
 /** One enveloped oscillator, started and stopped. */
-function pulse (
+export function pulse (
     ctx: BaseAudioContext,
     destination: AudioNode,
     frequency: number,
@@ -147,63 +175,6 @@ function pulse (
     level.connect(destination);
     osc.start(at);
     osc.stop(at + attack + hold + decay + 0.02);
-}
-
-/** The kick: a sine falling off a cliff. */
-function kick (ctx: BaseAudioContext, destination: AudioNode, at: number, gain: number): void
-{
-    const osc = ctx.createOscillator();
-    const level = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(KICK_FROM, at);
-    osc.frequency.exponentialRampToValueAtTime(KICK_TO, at + KICK_FALL);
-
-    level.gain.setValueAtTime(0.0001, at);
-    level.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), at + 0.002);
-    level.gain.exponentialRampToValueAtTime(0.0001, at + KICK_DECAY);
-
-    osc.connect(level);
-    level.connect(destination);
-    osc.start(at);
-    osc.stop(at + KICK_DECAY + 0.05);
-}
-
-/** The snare and the hat: the same noise, filtered differently. */
-function rattle (
-    ctx: BaseAudioContext,
-    destination: AudioNode,
-    at: number,
-    gain: number,
-    snare: boolean
-): void
-{
-    const decay = snare ? SNARE_DECAY : HAT_DECAY;
-    const source = ctx.createBufferSource();
-    const filter = ctx.createBiquadFilter();
-    const level = ctx.createGain();
-
-    source.buffer = noiseBuffer(ctx, decay + 0.05, snare ? 7 : 11);
-
-    filter.type = snare ? 'bandpass' : 'highpass';
-    filter.frequency.value = snare ? SNARE_BAND : HAT_BAND;
-    filter.Q.value = snare ? 0.9 : 1;
-
-    level.gain.setValueAtTime(0.0001, at);
-    level.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * (snare ? 0.55 : 0.26)), at + 0.001);
-    level.gain.exponentialRampToValueAtTime(0.0001, at + decay);
-
-    source.connect(filter);
-    filter.connect(level);
-    level.connect(destination);
-    source.start(at);
-    source.stop(at + decay + 0.05);
-
-    //  A little tone under the noise, or a snare is a hiss rather than a drum.
-    if (snare)
-    {
-        pulse(ctx, destination, SNARE_TONE, at, gain * 0.3, 'triangle', 0.001, 0, 0.08, 0);
-    }
 }
 
 /** The convolver every sound is sent through, loaded with a generated room. */

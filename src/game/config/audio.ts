@@ -1,5 +1,5 @@
-import { ORB_SEMITONES, SOUND_ROOT_HZ } from './constants';
-import { THEME } from './music';
+import { MUSIC_BPM, ORB_SEMITONES, SOUND_ROOT_HZ } from './constants';
+import { jingle, THEME } from './musicMenu';
 import { Timbre } from '../systems/voice';
 
 //  What the game sounds like.
@@ -30,6 +30,9 @@ export interface Strike
      * there to be a chord rather than an event.
      */
     timbre?: Timbre;
+
+    /** Extra ring, in seconds, for a note that was written long. */
+    held?: number;
 }
 
 /**
@@ -112,11 +115,11 @@ export function voiceFor (cue: Cue): Strike[]
             return [ { semitones: ORB_SEMITONES, at: 0, gain: 0.55 } ];
 
         //  The only cue that has to cut through the music, and the only one
-        //  that is not in the key: a semitone under the root, with the bottom
-        //  of the bass under it.
+        //  that is not in the key: a semitone under the octave of the root,
+        //  with the bottom of the bass under it.
         case 'wrong':
             return [
-                { semitones: -1, at: 0, gain: 0.7 },
+                { semitones: 11, at: 0, gain: 0.7 },
                 { semitones: -13, at: 0.04, gain: 0.75, timbre: 'bass' },
                 { semitones: 0, at: 0, gain: 0.5, timbre: 'snare' }
             ];
@@ -149,26 +152,14 @@ export function voiceFor (cue: Cue): Strike[]
                 { semitones: -25, at: 0.14, gain: 0.6, timbre: 'bass' }
             ];
 
-        //  Running out: three notes down, and the machine stopping.
+        //  The two written jingles. They are a pair - the same seven-note shape
+        //  going up and coming down - so the game only has to say which of the
+        //  two happened and the music says the rest.
         case 'fail':
-            return [
-                { semitones: -1, at: 0, gain: 0.7, timbre: 'lead' },
-                { semitones: -5, at: 0.14, gain: 0.65, timbre: 'lead' },
-                { semitones: -12, at: 0.3, gain: 0.75, timbre: 'bass' },
-                { semitones: 0, at: 0.3, gain: 0.7, timbre: 'kick' }
-            ];
+            return jingle(false, 60 / MUSIC_BPM);
 
-        //  Reaching the finish: up the chord, and a hit under it.
         case 'finish':
-            return [
-                { semitones: 0, at: 0, gain: 0.9, timbre: 'kick' },
-                { semitones: -12, at: 0, gain: 0.8, timbre: 'bass' },
-                { semitones: 12, at: 0.08, gain: 0.6, timbre: 'lead' },
-                { semitones: 15, at: 0.16, gain: 0.6, timbre: 'lead' },
-                { semitones: 19, at: 0.24, gain: 0.65, timbre: 'lead' },
-                { semitones: 0, at: 0.32, gain: 0.6, timbre: 'snare' },
-                { semitones: 24, at: 0.32, gain: 0.75, timbre: 'lead' }
-            ];
+            return jingle(true, 60 / MUSIC_BPM);
 
         //  Barely there. A menu that clicks loudly is a menu people turn off.
         case 'press':
