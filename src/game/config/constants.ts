@@ -2064,6 +2064,32 @@ export const ECHO_FEEDBACK = 0.12;
 export const ECHO_WET = 0.07;
 export const ECHO_DAMP = 3000;
 
+/**
+ * The other space: the one the phrase that ends a level is played into.
+ *
+ * Long, and allowed to be. The room above sits under everything the game does
+ * hundreds of times a run, which is why it is a cabinet; this plays once, when
+ * the road has stopped and the music has been taken away, with nothing left
+ * for it to blur. A big space is most of what makes an ending sound like one.
+ */
+export const HALL_SECONDS = 2.8;
+
+/** Slower to empty than the cabinet, which is what "large" means to an ear. */
+export const HALL_DECAY = 2.2;
+
+/** How much of the ending goes into it, and how much stays in front. */
+export const HALL_WET = 0.5;
+export const HALL_DRY = 0.8;
+
+/**
+ * The silence between the phrase and the space answering it, in seconds.
+ *
+ * Longer than the cabinet's. A big room answers later than a small one, and
+ * that gap is a large part of how big it sounds - without it the reverb sits on
+ * the note instead of behind it, and the size is heard as mush.
+ */
+export const HALL_PREDELAY = 0.035;
+
 /** Seed for the room's noise, so the reverb is identical on every device. */
 export const REVERB_SEED = 8317;
 
@@ -2143,10 +2169,10 @@ export const JINGLE_FROM = 0.28;
 //  is the same phrase in parallel at different heights - one instrument is a
 //  signal, three are an ending.
 export const JINGLE_HARMONY = 0.6;
-//  Quieter than it was. The voice an octave below the tune is where a phrase
-//  gets its weight, and also where it gets its gloom - and a phrase that ends
-//  a level is meant to lift rather than to settle.
-export const JINGLE_UNDER = 0.3;
+//  The wind under the bells, at the height the tune is written. It is where the
+//  phrase gets its body - bells alone are all front and no middle - and also
+//  where it would get its gloom, so it is held well under them.
+export const JINGLE_UNDER = 0.4;
 
 /**
  * A fourth voice an octave over the tune, and how far in it starts.
@@ -2158,6 +2184,16 @@ export const JINGLE_UNDER = 0.3;
  * which is the whole shape of an ending.
  */
 export const JINGLE_OVER = 0.5;
+
+/**
+ * How far over the written tune the bells that carry it sit, in semitones.
+ *
+ * An octave. Height is what makes a bell bright: played where the winds used
+ * to be, the same instrument measured darker than the winds it replaced -
+ * presence fell from 13% of the phrase to 3% - because a bell is mostly its
+ * fundamental, and the fundamental was in the middle of the mix.
+ */
+export const JINGLE_LIFT = 12;
 export const JINGLE_OPEN_FROM = 0.35;
 
 //  Scheduled a little ahead of the sound card and topped up on a timer, which

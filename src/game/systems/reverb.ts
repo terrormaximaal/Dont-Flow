@@ -1,4 +1,4 @@
-import { REVERB_SECONDS, REVERB_DECAY, REVERB_SEED } from '../config/constants';
+import { HALL_DECAY, HALL_SECONDS, REVERB_DECAY, REVERB_SECONDS, REVERB_SEED } from '../config/constants';
 import { seeded } from './noise';
 
 //  The room every note is played into.
@@ -77,9 +77,29 @@ export function impulseChannels (length: number, decay = REVERB_DECAY): [ Float3
 /** The convolver every sound is sent through, loaded with a generated room. */
 export function room (ctx: BaseAudioContext): ConvolverNode
 {
-    const length = Math.floor(ctx.sampleRate * REVERB_SECONDS);
+    return convolverOf(ctx, REVERB_SECONDS, REVERB_DECAY);
+}
+
+/**
+ * And a second, far larger space, for the phrase that ends a level.
+ *
+ * The room above is deliberately a cabinet: it sits under everything the game
+ * does, hundreds of times a run, and a long tail there is the wash this game
+ * spent a long time getting rid of. None of that applies to the one phrase
+ * that plays when the road has stopped and the music has been taken away.
+ * There is nothing for it to blur, and a big space is most of what makes an
+ * ending sound like one - so it gets its own, and only it.
+ */
+export function hall (ctx: BaseAudioContext): ConvolverNode
+{
+    return convolverOf(ctx, HALL_SECONDS, HALL_DECAY);
+}
+
+function convolverOf (ctx: BaseAudioContext, seconds: number, decay: number): ConvolverNode
+{
+    const length = Math.floor(ctx.sampleRate * seconds);
     const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
-    const channels = impulseChannels(length);
+    const channels = impulseChannels(length, decay);
 
     buffer.copyToChannel(channels[0], 0);
     buffer.copyToChannel(channels[1], 1);

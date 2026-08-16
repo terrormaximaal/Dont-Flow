@@ -1,4 +1,11 @@
-import { JINGLE_FROM, JINGLE_HARMONY, JINGLE_OPEN_FROM, JINGLE_OVER, JINGLE_UNDER } from './constants';
+import {
+    JINGLE_FROM,
+    JINGLE_HARMONY,
+    JINGLE_LIFT,
+    JINGLE_OPEN_FROM,
+    JINGLE_OVER,
+    JINGLE_UNDER
+} from './constants';
 import { Strike } from './audio';
 import { JINGLE_LOSE, JINGLE_LOSE_GAINS, JINGLE_WIN, JINGLE_WIN_GAINS, Written } from './score';
 import { Timbre } from '../systems/voice';
@@ -49,6 +56,9 @@ export function jingle (win: boolean, beatSeconds: number): Strike[]
         0.8
     );
 
+    //  The kit stays out of the space: a drum with a two-second tail on it is
+    //  not a drum, and what the hit is there for is to put a floor under the
+    //  phrase rather than to ring with it.
     notes.push({ semitones: DRUM, at: 0, gain: 0.5, timbre: 'kick' });
     notes.push({ semitones: last[1] - 24, at: last[0] * beatSeconds, gain: 0.8, timbre: 'bass' });
     notes.push({ semitones: DRUM, at: last[0] * beatSeconds, gain: 0.85, timbre: 'kick' });
@@ -67,13 +77,19 @@ const WIN_HARMONY = [ 7, 3, 7, 10, 10, 7, 7 ];
 const LOSE_HARMONY = [ 7, 3, 2, 3, 0, -2, -5 ];
 
 /**
- * A phrase as a section rather than a soloist: the tune, a voice below it, and
- * the tune again an octave down.
+ * A phrase as a section rather than a soloist, played into the large space.
  *
- * The written velocities already climb. They are stretched here rather than
- * used flat, because a phrase that ends a level has one job - to arrive - and
- * an ear reads arriving as getting louder towards the last note. Starting the
- * first note this far down is what gives the last one anywhere to get to.
+ * Bells carry it and a wind holds it up from underneath. A phrase that ends a
+ * level wants to be bright and to lift, and a section of winds is neither: they
+ * are warm, they hold, and holding is what makes a thing sound settled rather
+ * than opened out. Struck metal does the opposite - it arrives, rings, and
+ * leaves the space to answer, which is the whole reason the ending is the one
+ * thing here with a space of its own.
+ *
+ * The written velocities already climb. They are stretched rather than used
+ * flat, because a phrase that ends a level has one job - to arrive - and an ear
+ * reads arriving as getting louder towards the last note. Starting the first
+ * note this far down is what gives the last one anywhere to get to.
  *
  * @param loudest How loud the last note of the tune is allowed to be.
  * @param upTo    How many notes of the phrase to play, for the half of it that
@@ -100,21 +116,42 @@ function band (
         const at = beat * beatSeconds;
         const rings = held * beatSeconds;
 
-        notes.push({ semitones, at, gain: grown * loudest, timbre: 'lead', held: rings });
-
+        //  The tune, on a bell, an octave over where it is written.
+        //
+        //  Up there because that is what makes a bell bright. Played at the
+        //  height the winds used to sit at, the same instrument came out darker
+        //  than the winds it replaced - measured, presence fell from 13% of the
+        //  phrase to 3% - because a bell is mostly its fundamental and the
+        //  fundamental was in the middle of the mix. Height is the brightness.
         notes.push({
-            semitones: harmony[i],
+            semitones: semitones + JINGLE_LIFT,
             at,
-            gain: grown * loudest * JINGLE_HARMONY,
-            timbre: 'lead' as Timbre,
+            gain: grown * loudest,
+            timbre: 'pluck',
+            hall: true,
             held: rings
         });
 
+        //  A second bell a third or a fifth under it: two of them in parallel
+        //  is a section, and one is a signal.
         notes.push({
-            semitones: semitones - 12,
+            semitones: harmony[i] + JINGLE_LIFT,
+            at,
+            gain: grown * loudest * JINGLE_HARMONY,
+            timbre: 'pluck' as Timbre,
+            hall: true,
+            held: rings
+        });
+
+        //  And the wind, at the height the tune is written, holding underneath.
+        //  Bells alone have no body - they are all front and no middle, and a
+        //  phrase made only of them rings without ever landing.
+        notes.push({
+            semitones,
             at,
             gain: grown * loudest * JINGLE_UNDER,
             timbre: 'lead' as Timbre,
+            hall: true,
             held: rings
         });
 
@@ -132,10 +169,11 @@ function band (
             const into = (opening - JINGLE_OPEN_FROM) / (1 - JINGLE_OPEN_FROM);
 
             notes.push({
-                semitones: semitones + 12,
+                semitones: semitones + (JINGLE_LIFT * 2),
                 at,
                 gain: grown * loudest * JINGLE_OVER * into,
-                timbre: 'lead' as Timbre,
+                timbre: 'pluck' as Timbre,
+                hall: true,
                 held: rings
             });
         }

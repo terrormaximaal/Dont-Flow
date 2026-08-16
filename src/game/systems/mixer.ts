@@ -3,6 +3,9 @@ import {
     ECHO_FEEDBACK,
     ECHO_SECONDS,
     ECHO_WET,
+    HALL_DRY,
+    HALL_PREDELAY,
+    HALL_WET,
     LEAD_ROOM,
     REVERB_DRY,
     REVERB_PREDELAY,
@@ -14,7 +17,7 @@ import {
     SOUND_COMPRESSOR_THRESHOLD,
     SOUND_MASTER
 } from '../config/constants';
-import { room } from './reverb';
+import { hall, room } from './reverb';
 
 /** Where a note is played into. */
 export interface Mixer
@@ -37,6 +40,15 @@ export interface Mixer
 
     /** The same again with more of the room in it, which the tune alone takes. */
     airy: GainNode;
+
+    /**
+     * The way into the large space, which only the phrase ending a level takes.
+     *
+     * A separate convolver rather than more send on the one above: the room
+     * everything else uses is a cabinet on purpose, and lengthening it would
+     * put a tail under every collected orb in the game.
+     */
+    hall: GainNode;
 
     /**
      * The last thing before the speaker, and the only way to silence a note
@@ -170,6 +182,28 @@ export function buildMixer (ctx: BaseAudioContext, destination: AudioNode): Mixe
     airy.connect(airySend);
     airySend.connect(send);
 
+    //  The large space, for the one phrase in the game that has the road to
+    //  itself. Its own predelay as well: a big room answers later than a small
+    //  one, and that gap is a large part of how big it sounds.
+    const hallIn = ctx.createGain();
+    const hallDry = ctx.createGain();
+    const hallPre = ctx.createDelay(1);
+    const hallWet = ctx.createGain();
+
+    hallDry.gain.value = HALL_DRY;
+    hallPre.delayTime.value = HALL_PREDELAY;
+    hallWet.gain.value = HALL_WET;
+
+    hallIn.connect(hallDry);
+    hallDry.connect(limiter);
+
+    const hallRoom = hall(ctx);
+
+    hallIn.connect(hallPre);
+    hallPre.connect(hallRoom);
+    hallRoom.connect(hallWet);
+    hallWet.connect(limiter);
+
     //  The soundtrack's own way in to the two junctions above.
     //
     //  Two nodes rather than one because a note picks its junction by what it
@@ -188,5 +222,5 @@ export function buildMixer (ctx: BaseAudioContext, destination: AudioNode): Mixe
     musicBoth.connect(both);
     musicAiry.connect(airy);
 
-    return { dry, send, both, airy, master, musicBoth, musicAiry };
+    return { dry, send, both, airy, hall: hallIn, master, musicBoth, musicAiry };
 }

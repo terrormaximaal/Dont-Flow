@@ -33,6 +33,15 @@ export interface Strike
 
     /** Extra ring, in seconds, for a note that was written long. */
     held?: number;
+
+    /**
+     * Whether this note is played into the large space rather than the room.
+     *
+     * Only the phrase that ends a level asks for it. Everything else in the
+     * game happens while something else is happening, and a long tail under
+     * that is the wash this game spent a long time getting rid of.
+     */
+    hall?: boolean;
 }
 
 /**

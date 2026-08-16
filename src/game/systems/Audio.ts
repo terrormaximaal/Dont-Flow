@@ -333,15 +333,19 @@ function schedule (
             continue;
         }
 
-        //  The two voices that carry a tune take the wetter of the junctions:
-        //  the bell the menus play, and the winds the jingles are played by.
-        //  Both ring on after they are struck, and a ringing note with no room
-        //  around it is a test tone. Everything else here is a short event, and
-        //  a room only blurs those.
+        //  Three ways out, and a note picks one by what it is for.
+        //
+        //  The phrase that ends a level goes into the large space: it plays
+        //  once, with the road stopped and the music taken away, and there is
+        //  nothing for a long tail to blur. The two voices that carry a tune
+        //  take the wetter of the ordinary junctions, because both ring on
+        //  after they are struck and a ringing note with no room around it is a
+        //  test tone. Everything else is a short event, which a room only
+        //  smears.
         const sings = note.timbre === 'lead' || note.timbre === 'pluck';
-        const bus = room && sings
-            ? (music ? chain.musicAiry : chain.airy)
-            : into;
+        const bus = note.hall === true
+            ? chain.hall
+            : (room && sings ? (music ? chain.musicAiry : chain.airy) : into);
 
         strike(ctx, bus, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
     }

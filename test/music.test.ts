@@ -10,6 +10,7 @@ import {
     MUSIC_TICK_MS
 } from '../src/game/config/constants';
 import { voiceFor } from '../src/game/config/audio';
+import { JINGLE_LIFT } from '../src/game/config/constants';
 import { barNotes, LOOP_BARS } from '../src/game/config/music';
 import { MENU_BARS, selectBar, SELECT_BARS } from '../src/game/config/musicMenu';
 import { BACKING_BARS, CHORUS_FROM, CHORUS_TO, TOPLINE } from '../src/game/config/score';
@@ -416,8 +417,11 @@ describe('the music on the level select', () => {
 describe('the two jingles', () => {
 
     /** The melody alone: the top voice, since a jingle is now three of them. */
-    const melody = (cue: 'finish' | 'fail' | 'rainbow') =>
-        loudestAt(voiceFor(cue).filter((note) => note.timbre === 'lead'));
+    /** Everything in a jingle that carries a pitch, whichever voice plays it. */
+    const sung = (cue: 'finish' | 'fail' | 'rainbow') =>
+        voiceFor(cue).filter((note) => note.timbre === 'lead' || note.timbre === 'pluck');
+
+    const melody = (cue: 'finish' | 'fail' | 'rainbow') => loudestAt(sung(cue));
 
     /** How many voices are sounding at the moment of the nth note of the tune. */
     const voicesOn = (cue: 'finish' | 'fail', n: number) => {
@@ -425,7 +429,7 @@ describe('the two jingles', () => {
         const tune = melody(cue);
         const when = tune[n < 0 ? tune.length + n : n].at;
 
-        return voiceFor(cue).filter((note) => note.timbre === 'lead' && note.at === when).length;
+        return sung(cue).filter((note) => note.at === when).length;
     };
 
     //  A section rather than a soloist, and one that opens out. One instrument
@@ -478,6 +482,54 @@ describe('the two jingles', () => {
 
         expect(end('finish'), 'finishing').toBeGreaterThan(0);
         expect(end('fail'), 'not finishing').toBeLessThan(0);
+
+    });
+
+    //  Bells carry it and a wind holds it up from underneath. A section of
+    //  winds is warm and it holds, and holding is what makes a thing sound
+    //  settled rather than opened out; struck metal arrives, rings, and leaves
+    //  the space to answer.
+    it('are carried by bells over a wind, rather than by winds alone', () => {
+
+        for (const cue of [ 'finish', 'fail' ] as const)
+        {
+            const tune = melody(cue);
+            const winds = sung(cue).filter((note) => note.timbre === 'lead');
+
+            expect(tune.every((note) => note.timbre === 'pluck'), `${cue} melody`).toBe(true);
+            expect(winds.length, `${cue} has a wind under it`).toBeGreaterThan(0);
+
+            //  An octave over the wind, note for note. Height is what makes a
+            //  bell bright: played where the wind is, the same instrument
+            //  measures darker than the wind it replaced - which is how this
+            //  was got wrong the first time.
+            for (const note of tune)
+            {
+                const under = winds.find((w) => w.at === note.at);
+
+                expect(under, `a wind under the bell at ${note.at}`).toBeDefined();
+                expect(note.semitones - (under?.semitones ?? 0), 'an octave over it').toBe(JINGLE_LIFT);
+            }
+        }
+
+    });
+
+    //  The one phrase in the game with a space of its own. It plays once, with
+    //  the road stopped and the music taken away, so there is nothing for a
+    //  long tail to blur - and a big space is most of what makes an ending
+    //  sound like one. The kit stays out of it: a drum with a two-second tail
+    //  is not a drum.
+    it('are played into the large space, drums excepted', () => {
+
+        for (const cue of [ 'finish', 'fail' ] as const)
+        {
+            for (const note of voiceFor(cue))
+            {
+                const pitched = note.timbre === 'lead' || note.timbre === 'pluck';
+
+                expect(note.hall === true, `${cue} ${note.timbre}`).toBe(pitched);
+            }
+        }
 
     });
 
