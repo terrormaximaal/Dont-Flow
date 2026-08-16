@@ -1,5 +1,5 @@
 import { MUSIC_BPM, ORB_SEMITONES, SOUND_ROOT_HZ } from './constants';
-import { flourish, jingle, THEME } from './musicMenu';
+import { flourish, jingle } from './musicMenu';
 import { Timbre } from '../systems/voice';
 
 //  What the game sounds like.
@@ -53,7 +53,7 @@ export const DETUNE_CENTS = 9;
 /** Whether a cue is nudged off pitch on repeat. */
 export function variesOnRepeat (cue: Cue): boolean
 {
-    return cue !== 'fail' && cue !== 'finish' && cue !== 'title' && cue !== 'life';
+    return cue !== 'fail' && cue !== 'finish' && cue !== 'life';
 }
 
 /** Everything the game can make a noise about. */
@@ -67,8 +67,7 @@ export type Cue =
     | 'life'
     | 'fail'
     | 'finish'
-    | 'press'
-    | 'title';
+    | 'press';
 
 /**
  * The note a collected orb plays, which is the same note every time.
@@ -166,11 +165,6 @@ export function voiceFor (cue: Cue): Strike[]
         //  Barely there. A menu that clicks loudly is a menu people turn off.
         case 'press':
             return [ { semitones: 12, at: 0, gain: 0.22 } ];
-
-        //  The game's tune, unaccompanied, the way a cabinet announces itself
-        //  across a room.
-        case 'title':
-            return THEME;
     }
 }
 
@@ -217,5 +211,5 @@ export function thinned (notes: Strike[], sinceLast: number): Strike[]
 
 /** Every cue there is, so a test can hold the table to being complete. */
 export const CUES: Cue[] = [
-    'orb', 'wrong', 'gate', 'jump', 'land', 'rainbow', 'life', 'fail', 'finish', 'press', 'title'
+    'orb', 'wrong', 'gate', 'jump', 'land', 'rainbow', 'life', 'fail', 'finish', 'press'
 ];

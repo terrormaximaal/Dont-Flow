@@ -39,7 +39,8 @@ import { MenuSky } from '../systems/MenuSky';
 import { SaveSystem } from '../systems/SaveSystem';
 import { Button } from '../ui/Button';
 //  Aliased: this scene already has a local called play - the PLAY button.
-import { listenForGesture, onWake, play as playCue, setMuted, wakeAudio } from '../systems/Audio';
+import { listenForGesture, play as playCue, setMuted, wakeAudio } from '../systems/Audio';
+import { startMenuMusic } from '../systems/Music';
 import { setMarks } from '../systems/marks';
 import { EnergyMeter } from '../ui/EnergyMeter';
 import { MENU_LAYOUT } from '../ui/menuLayout';
@@ -164,18 +165,15 @@ export class Title extends Scene
         //  it waits for the first touch instead of being dropped.
         listenForGesture();
 
-        //  Only if this screen is still the one being looked at. On a cold
-        //  load the gesture that wakes the audio is usually PLAY itself, and
-        //  the theme arriving over the first bars of a level is the menu
-        //  talking over the game.
-        onWake(() => {
-
-            if (this.scene.isActive())
-            {
-                playCue('title');
-            }
-
-        });
+        //  The menus' own music, which the level select plays too and neither
+        //  screen stops. It begins on the tune's opening call, so the game
+        //  still announces itself the way a cabinet does - it simply carries on
+        //  afterwards instead of falling silent.
+        //
+        //  Started rather than waited for: the timer feeding it is harmless
+        //  before the page has been touched, and it begins on its own the
+        //  moment there is a context to begin into.
+        startMenuMusic();
 
         const speaker = this.add.text(GAME_WIDTH - MUTE_MARGIN, MUTE_MARGIN, save.isMuted() ? 'SOUND OFF' : 'SOUND ON', {
             fontFamily: HUD_FONT,

@@ -1,4 +1,4 @@
-import { FINALE_LIFT, MUSIC_BEATS_PER_BAR } from './constants';
+import { BODY_INNER, BODY_TOP, FINALE_LIFT, MUSIC_BEATS_PER_BAR } from './constants';
 import { BACKING_BARS, BACKING_TOPS, CHORDS } from './score';
 import { Timbre } from '../systems/voice';
 
@@ -57,7 +57,7 @@ export function barNotes (bar: number, finale = 0): Beat[]
     const step = ((bar % LOOP_BARS) + LOOP_BARS) % LOOP_BARS;
     const lift = 1 + (FINALE_LIFT * finale);
 
-    const notes: Beat[] = [ ...kit(step, finale, lift), ...backing(step, lift) ];
+    const notes: Beat[] = [ ...kit(step, finale, lift), ...backing(step, lift, finale) ];
 
     return notes.filter((note) => note.beat < MUSIC_BEATS_PER_BAR);
 }
@@ -109,7 +109,7 @@ function kit (step: number, finale: number, lift: number): Beat[]
  * voice moving, which is the only thing that keeps a chord loop from being
  * heard as one.
  */
-function backing (step: number, lift: number): Beat[]
+function backing (step: number, lift: number, finale: number): Beat[]
 {
     const chord = CHORDS[step % CHORDS.length];
     const top = BACKING_TOPS[step % BACKING_BARS];
@@ -130,6 +130,27 @@ function backing (step: number, lift: number): Beat[]
             notes.push({ semitones, beat: half + 0.5 + (i * 0.5), gain: 0.28 * lift, timbre: 'chord' });
 
         });
+
+        //  Approaching the finish the harmony fills out from underneath: the
+        //  same chord, doubled an octave down, easing in as the line gets
+        //  closer. Nothing new is played and nothing gets faster - the same
+        //  music simply acquires a bottom half, which is heard as weight
+        //  arriving rather than as the music changing.
+        if (finale > 0)
+        {
+            notes.push({ semitones: top - 12, beat: half, gain: BODY_TOP * finale * lift, timbre: 'chord' });
+
+            chord.inner.forEach((semitones, i) => {
+
+                notes.push({
+                    semitones: semitones - 12,
+                    beat: half + 0.5 + (i * 0.5),
+                    gain: BODY_INNER * finale * lift,
+                    timbre: 'chord'
+                });
+
+            });
+        }
     }
 
     return notes;

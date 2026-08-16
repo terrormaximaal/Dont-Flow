@@ -24,9 +24,6 @@ let listening = false;
 /** When the last cue was played, on the audio clock, to hear a crowd coming. */
 let lastCueAt = -1;
 
-/** Asked for before the browser would allow it, and owed once it does. */
-let owed: (() => void) | null = null;
-
 /** The context, made on first use, or null where there is none to be had. */
 function audio (): AudioContext | null
 {
@@ -81,11 +78,6 @@ export function wakeAudio (): void
     {
         void ctx.resume().catch(() => undefined);
     }
-
-    const pending = owed;
-
-    owed = null;
-    pending?.();
 }
 
 /**
@@ -110,31 +102,6 @@ export function listenForGesture (): void
 
     window.addEventListener('pointerdown', () => wakeAudio());
     window.addEventListener('keydown', () => wakeAudio());
-}
-
-/**
- * Runs `fn` as soon as there is audio to run it into.
- *
- * The title screen wants to play its phrase the moment it appears, and on a
- * cold load there is no audio yet - a browser will not start any until the
- * player has touched the page. Rather than drop the phrase, it waits for the
- * touch that was going to arrive anyway.
- */
-export function onWake (fn: () => void): void
-{
-    //  Deliberately reading the context rather than asking for one: a context
-    //  built before the page has been touched is a context some browsers never
-    //  let go of again, and there is nothing to play into yet anyway.
-    const ctx = context;
-
-    if (ctx !== null && ctx.state === 'running')
-    {
-        fn();
-
-        return;
-    }
-
-    owed = fn;
 }
 
 /** Whether sound is currently off. */
@@ -379,7 +346,6 @@ export function resetAudioForTest (): void
     mixer = null;
     unavailable = false;
     muted = false;
-    owed = null;
     listening = false;
     lastCueAt = -1;
 }

@@ -2029,6 +2029,33 @@ export const MUSIC_GAIN = 0.42;
  */
 export const MUSIC_SELECT_GAIN = 0.85;
 
+/**
+ * And how loud the tune is within that, against the chords under it.
+ *
+ * Well down. It is the only melody in the game and it plays for as long as
+ * somebody takes to choose a level - which means it wants to be the thing they
+ * notice on the second listen, not the first. A tune mixed to the front of a
+ * menu is a tune people are sick of before they have played anything.
+ */
+export const MENU_TUNE_GAIN = 0.3;
+
+/**
+ * How quiet the first note of a jingle is against its last.
+ *
+ * The written velocities climb by about a fifth. That is a shade on a piano
+ * and nothing at all on a phone, so the range is opened out: a phrase that
+ * ends a level has one job, which is to arrive, and an ear reads arriving as
+ * getting louder towards the last note. Starting this far down is what gives
+ * the last note somewhere to get to.
+ */
+export const JINGLE_FROM = 0.28;
+
+//  And the two voices under the tune, as fractions of it. A section of winds
+//  is the same phrase in parallel at different heights - one instrument is a
+//  signal, three are an ending.
+export const JINGLE_HARMONY = 0.6;
+export const JINGLE_UNDER = 0.45;
+
 //  Scheduled a little ahead of the sound card and topped up on a timer, which
 //  is the only way to get music in time out of a browser: notes are handed to
 //  the audio clock before they are due, so a busy frame cannot delay one.
@@ -2045,4 +2072,15 @@ export const FINALE_SECONDS = 10;
 
 /** Extra volume on the backing by the time the finish arrives. */
 export const FINALE_LIFT = 0.35;
+
+/**
+ * And how much of the chord is doubled an octave down by then.
+ *
+ * The other half of the run-in, and the half an ear reads as weight rather
+ * than as volume. Approaching the line the same chords acquire a bottom
+ * octave, easing in - nothing new is played and nothing gets faster, so it is
+ * heard as the music filling out instead of as the music changing.
+ */
+export const BODY_TOP = 0.3;
+export const BODY_INNER = 0.24;
 export const MUSIC_TICK_MS = 250;

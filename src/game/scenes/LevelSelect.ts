@@ -41,7 +41,7 @@ import { WORLDS } from '../config/worldData';
 import { applyVariant } from '../config/worldVariant';
 import { EnergySystem } from '../systems/EnergySystem';
 import { MenuSky } from '../systems/MenuSky';
-import { startMusic, stopMusic } from '../systems/Music';
+import { startMenuMusic } from '../systems/Music';
 import { paintPageColors } from '../systems/PageBackdrop';
 import { SaveSystem } from '../systems/SaveSystem';
 import { mixColor } from '../utils/color';
@@ -193,13 +193,10 @@ export class LevelSelect extends Scene
 
         this.input.keyboard?.once('keydown-ESC', () => leaveTo(this, () => this.scene.start('Title')));
 
-        //  The chords, with no drums and no tune over them. Started here rather
-        //  than waited for: the timer that feeds it is harmless before the page
-        //  has been touched, and it begins on its own the moment there is a
-        //  context to begin into.
-        startMusic('select');
-
-        this.events.once('shutdown', () => stopMusic());
+        //  Started but never stopped. The title screen plays the same piece,
+        //  so walking between the two leaves it alone entirely - a run is the
+        //  only thing that interrupts it.
+        startMenuMusic();
 
         arrive(this);
     }
