@@ -1,4 +1,4 @@
-import { JINGLE_FROM, JINGLE_HARMONY, JINGLE_UNDER } from './constants';
+import { JINGLE_FROM, JINGLE_HARMONY, JINGLE_OPEN_FROM, JINGLE_OVER, JINGLE_UNDER } from './constants';
 import { Strike } from './audio';
 import { JINGLE_LOSE, JINGLE_LOSE_GAINS, JINGLE_WIN, JINGLE_WIN_GAINS, Written } from './score';
 import { Timbre } from '../systems/voice';
@@ -117,6 +117,28 @@ function band (
             timbre: 'lead' as Timbre,
             held: rings
         });
+
+        //  And an octave over the top, arriving rather than present.
+        //
+        //  A phrase that ends a level has one job, which is to lift. Growing
+        //  louder does half of it; the other half is growing *wider*, and an
+        //  octave above is the widest a phrase can get without anybody hearing
+        //  a new note. It comes in over the run rather than from the start, so
+        //  the last note is the one that opens out.
+        const opening = i / (written.length - 1);
+
+        if (opening > JINGLE_OPEN_FROM)
+        {
+            const into = (opening - JINGLE_OPEN_FROM) / (1 - JINGLE_OPEN_FROM);
+
+            notes.push({
+                semitones: semitones + 12,
+                at,
+                gain: grown * loudest * JINGLE_OVER * into,
+                timbre: 'lead' as Timbre,
+                held: rings
+            });
+        }
 
     });
 

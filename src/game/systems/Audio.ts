@@ -127,11 +127,19 @@ export function setMuted (value: boolean): void
 {
     muted = value;
 
-    const ctx = audio();
-
     //  Nothing has been built yet, so there is nothing sounding to silence.
     //  The flag above is the whole answer until the first note asks for a
     //  chain, and buildMixer starts it wherever the flag says.
+    //
+    //  Deliberately reading the context rather than asking for one. The title
+    //  screen calls this on the way in to restore a remembered choice, and a
+    //  context built before the page has been touched is a context some
+    //  browsers never let go of again - it comes up suspended and stays that
+    //  way, which is a game that is simply silent for the whole session. The
+    //  first gesture is what builds one, and there is nothing to silence
+    //  before then anyway.
+    const ctx = context;
+
     if (mixer === null || ctx === null)
     {
         return;
@@ -162,7 +170,12 @@ export function setMuted (value: boolean): void
  */
 export function setMusicPlaying (playing: boolean): void
 {
-    const ctx = audio();
+    //  Reading the context rather than asking for one, as the mute switch does
+    //  and for the same reason: the menus start their music on the way in, and
+    //  a context built before the page has been touched comes up suspended and
+    //  in some browsers never resumes. With no mixer there is no soundtrack to
+    //  bring in or take away, and the first note builds both.
+    const ctx = context;
 
     if (mixer === null || ctx === null)
     {

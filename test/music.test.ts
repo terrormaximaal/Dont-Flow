@@ -49,21 +49,25 @@ function tuneOf (bar: number)
         .sort((a, b) => a.beat - b.beat);
 }
 
-//  The tune of one menu bar, in the order it is played, with only the melody:
-//  the top note at each moment, since the jingles put three voices on one.
-function topOf<T extends { semitones: number; at?: number; beat?: number }> (notes: T[]): T[]
+//  The melody alone, out of a phrase that several voices are playing at once.
+//
+//  By loudness rather than by pitch. The section around the tune reaches above
+//  it as well as below - an octave over is how the last notes open out - so the
+//  top voice is not the tune, but the loudest one always is: every other voice
+//  is written as a fraction of it.
+function loudestAt<T extends { semitones: number; gain: number; at?: number; beat?: number }> (notes: T[]): T[]
 {
-    const highest = new Map<number, T>();
+    const best = new Map<number, T>();
 
     for (const note of notes)
     {
         const when = note.at ?? note.beat ?? 0;
-        const held = highest.get(when);
+        const held = best.get(when);
 
-        if (held === undefined || held.semitones < note.semitones) { highest.set(when, note); }
+        if (held === undefined || held.gain < note.gain) { best.set(when, note); }
     }
 
-    return [ ...highest.entries() ].sort((a, b) => a[0] - b[0]).map(([ , note ]) => note);
+    return [ ...best.entries() ].sort((a, b) => a[0] - b[0]).map(([ , note ]) => note);
 }
 
 describe('how the menus announce the game', () => {
@@ -413,17 +417,26 @@ describe('the two jingles', () => {
 
     /** The melody alone: the top voice, since a jingle is now three of them. */
     const melody = (cue: 'finish' | 'fail' | 'rainbow') =>
-        topOf(voiceFor(cue).filter((note) => note.timbre === 'lead'));
+        loudestAt(voiceFor(cue).filter((note) => note.timbre === 'lead'));
 
-    //  A section of winds rather than a soloist. One instrument playing this
-    //  is a signal; three playing it in parallel is an ending.
-    it('are played by three voices rather than one', () => {
+    /** How many voices are sounding at the moment of the nth note of the tune. */
+    const voicesOn = (cue: 'finish' | 'fail', n: number) => {
+
+        const tune = melody(cue);
+        const when = tune[n < 0 ? tune.length + n : n].at;
+
+        return voiceFor(cue).filter((note) => note.timbre === 'lead' && note.at === when).length;
+    };
+
+    //  A section rather than a soloist, and one that opens out. One instrument
+    //  playing this is a signal; three in parallel is an ending; a fourth
+    //  arriving an octave over the top is that ending lifting.
+    it('are played by a section that widens towards the last note', () => {
 
         for (const cue of [ 'finish', 'fail' ] as const)
         {
-            const leads = voiceFor(cue).filter((note) => note.timbre === 'lead');
-
-            expect(leads.length, cue).toBe(melody(cue).length * 3);
+            expect(voicesOn(cue, 0), `${cue} at the start`).toBe(3);
+            expect(voicesOn(cue, -1), `${cue} at the end`).toBe(4);
         }
 
     });

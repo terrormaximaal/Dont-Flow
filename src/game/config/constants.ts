@@ -1934,7 +1934,17 @@ export const CHORD_DECAY = 0.13;
  */
 export const PLUCK_ATTACK = 0.002;
 export const PLUCK_DECAY = 0.85;
-export const PLUCK_FM_RATIO = 2.76;
+/**
+ * A whole number, so every partial lands on a harmonic.
+ *
+ * It was 2.76 - the ratio a real bell has, and the reason a real bell is never
+ * played a melody on. Measured on a single note, the partials sat at 1.76 and
+ * 3.76 times the fundamental: between the harmonics, and dissonant against the
+ * chords underneath even though the root itself was dead on pitch. That is
+ * what an ear calls out of tune. At three, the sidebands fall on the second,
+ * fourth and fifth harmonics and the same strike is a plucked string.
+ */
+export const PLUCK_FM_RATIO = 3;
 
 //  Struck harder and left bright for longer than the electric piano is. The
 //  sidebands are the whole ring of a bell: collapse them in a fortieth of a
@@ -2109,6 +2119,18 @@ export const JINGLE_FROM = 0.28;
 //  signal, three are an ending.
 export const JINGLE_HARMONY = 0.6;
 export const JINGLE_UNDER = 0.45;
+
+/**
+ * A fourth voice an octave over the tune, and how far in it starts.
+ *
+ * Growing louder is half of a phrase arriving; the other half is growing
+ * *wider*, and an octave above is the widest a phrase can get without anybody
+ * hearing a new note in it. It fades in over the second half rather than
+ * being there from the start, so the last note is the one that opens out -
+ * which is the whole shape of an ending.
+ */
+export const JINGLE_OVER = 0.5;
+export const JINGLE_OPEN_FROM = 0.35;
 
 //  Scheduled a little ahead of the sound card and topped up on a timer, which
 //  is the only way to get music in time out of a browser: notes are handed to
