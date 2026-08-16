@@ -1493,10 +1493,38 @@ export const COACH_ALPHA = 0.82;
 /** The sound toggle: a corner label rather than a button. */
 export const MUTE_MARGIN = 18;
 
-/** Line spacing for the switches stacked in the corner. */
-export const MUTE_LINE = 20;
+/**
+ * Line spacing for the switches stacked in the corner.
+ *
+ * Set by the size of a thumb rather than by the size of the type. At 20 these
+ * two sat six pixels apart, which on a phone is one target: a player reaching
+ * for the sound had a real chance of turning the shape marks off instead, and
+ * those marks are the thing some players cannot play without.
+ */
+export const MUTE_LINE = 46;
 export const MUTE_SIZE = '13px';
 export const MUTE_ALPHA = 0.55;
+
+/**
+ * What a corner switch is worth touching, as opposed to what it is worth
+ * looking at.
+ *
+ * The label is thirteen pixels of type and its glyph box is fourteen tall,
+ * which was also, until this existed, the entire area that responded to a
+ * finger. Apple asks for 44 points and Android for 48; fourteen game pixels is
+ * about twelve of either. It was measured rather than noticed - the buttons on
+ * the same screen are 246 by 62, so nothing about the screen looked wrong.
+ *
+ * These are game pixels, and the canvas is letterboxed into whatever the phone
+ * has: 46 lands near 41 CSS pixels on a 430-wide screen and near 36 on a
+ * 375-wide one. Short of the guideline, and three times what was there. Taller
+ * would collide with the drop, which is the composition rather than furniture,
+ * so the height is what the corner has to give and the width - far more
+ * generous than the words need - is where the rest of the forgiveness comes
+ * from.
+ */
+export const MUTE_TOUCH_HEIGHT = 46;
+export const MUTE_TOUCH_WIDTH = 150;
 
 export const SURVIVAL_TABLE = 5;
 export const SURVIVAL_TABLE_SHOWN = 3;
