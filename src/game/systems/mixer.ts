@@ -3,15 +3,16 @@ import {
     ECHO_FEEDBACK,
     ECHO_SECONDS,
     ECHO_WET,
+    LEAD_ROOM,
+    REVERB_DRY,
+    REVERB_PREDELAY,
+    REVERB_WET,
     SOUND_COMPRESSOR_ATTACK,
     SOUND_COMPRESSOR_KNEE,
     SOUND_COMPRESSOR_RATIO,
     SOUND_COMPRESSOR_RELEASE,
     SOUND_COMPRESSOR_THRESHOLD,
-    SOUND_MASTER,
-    REVERB_DRY,
-    REVERB_PREDELAY,
-    REVERB_WET
+    SOUND_MASTER
 } from '../config/constants';
 import { room } from './reverb';
 
@@ -33,6 +34,9 @@ export interface Mixer
      * and halves what the game asks of a phone.
      */
     both: GainNode;
+
+    /** The same again with more of the room in it, which the tune alone takes. */
+    airy: GainNode;
 }
 
 /**
@@ -129,5 +133,20 @@ export function buildMixer (ctx: BaseAudioContext, destination: AudioNode): Mixe
     both.connect(dry);
     both.connect(send);
 
-    return { dry, send, both };
+    //  And the same again with more of the room in it, for the tune alone.
+    //
+    //  A wind instrument is the one voice here that belongs in a space rather
+    //  than in front of one - it is a held sound, and a held sound with no room
+    //  around it is a test tone. Everything else is struck and wants to stay
+    //  dry, so this is a second junction rather than more reverb on the lot.
+    const airy = ctx.createGain();
+    const airySend = ctx.createGain();
+
+    airySend.gain.value = LEAD_ROOM;
+
+    airy.connect(dry);
+    airy.connect(airySend);
+    airySend.connect(send);
+
+    return { dry, send, both, airy };
 }

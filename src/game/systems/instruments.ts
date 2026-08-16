@@ -4,19 +4,13 @@ import {
     BASS_FILTER_FROM,
     BASS_FILTER_Q,
     BASS_FILTER_TO,
-    BASS_HOLD,
-    LEAD_ATTACK,
-    LEAD_DECAY,
-    LEAD_DETUNE,
-    LEAD_FILTER_FROM,
-    LEAD_FILTER_Q,
-    LEAD_FILTER_TO,
-    LEAD_HOLD
+    BASS_HOLD
 } from '../config/constants';
 import { envelope, shape } from './voice';
 import { waveFor } from './waves';
 
-//  The three pitched instruments.
+//  The struck instruments: the bass, and the two-oscillator voice that is an
+//  electric piano at one tuning and struck metal at another.
 //
 //  Each is the same three parts: something making a shape, an envelope on how
 //  loud it is, and a filter closing over it as it dies. That last part is most
@@ -42,29 +36,6 @@ export function bass (ctx: BaseAudioContext, destination: AudioNode, frequency: 
     //  A sine an octave down, straight past the filter. This is the part a
     //  phone speaker cannot reproduce and a pair of headphones lives on.
     shape(ctx, destination, frequency / 2, at, gain * 0.5, 'sine', BASS_ATTACK, BASS_HOLD + 0.03, BASS_DECAY + 0.06, 0);
-}
-
-/** The tune: the same idea, brighter, and two of them a few cents apart. */
-export function lead (
-    ctx: BaseAudioContext,
-    destination: AudioNode,
-    frequency: number,
-    at: number,
-    gain: number,
-    ring: number
-): void
-{
-    const hold = LEAD_HOLD + ring;
-    const total = LEAD_ATTACK + hold + LEAD_DECAY;
-    const filter = sweep(ctx, destination, frequency, at, LEAD_FILTER_FROM, LEAD_FILTER_TO, LEAD_FILTER_Q, total);
-    const wave = waveFor(ctx, 'lead');
-
-    //  Two, detuned against each other. One oscillator is a machine; two a few
-    //  cents apart beat slowly against each other, and that beating is most of
-    //  what an ear hears as an instrument being played rather than a frequency
-    //  being produced.
-    shape(ctx, filter, frequency, at, gain * 0.26, wave, LEAD_ATTACK, hold, LEAD_DECAY, LEAD_DETUNE);
-    shape(ctx, filter, frequency, at, gain * 0.26, wave, LEAD_ATTACK, hold, LEAD_DECAY, -LEAD_DETUNE);
 }
 
 /**
@@ -127,7 +98,7 @@ export function struck (
  * down - which is the difference between an instrument and a rack of sounds
  * that get duller the higher you play.
  */
-function sweep (
+export function sweep (
     ctx: BaseAudioContext,
     destination: AudioNode,
     frequency: number,

@@ -1,6 +1,14 @@
 import { Strike } from './audio';
 import { Beat } from './music';
-import { JINGLE_LOSE, JINGLE_LOSE_GAINS, JINGLE_WIN, JINGLE_WIN_GAINS, SELECT, Written } from './score';
+import {
+    JINGLE_LOSE,
+    JINGLE_LOSE_GAINS,
+    JINGLE_WIN,
+    JINGLE_WIN_GAINS,
+    SELECT,
+    TOPLINE,
+    Written
+} from './score';
 import { Timbre } from '../systems/voice';
 
 //  The music outside the run: the title, the level select, and the two jingles.
@@ -35,15 +43,20 @@ export const THEME: Strike[] = [
 ];
 
 /**
- * One bar of the level select: the same four chords, held rather than walked.
+ * One bar of the level select: the four chords held, with the tune over them.
  *
- * No drums and no tune. It plays while somebody is deciding which level to
- * try, and a screen where nothing is moving does not want a beat telling it
+ * This is where the tune goes. Under a run it is a melody asking to be
+ * followed by somebody who has a road to read; here there is nothing to do but
+ * choose a level, and something to listen to while choosing is the whole
+ * reason menu music exists.
+ *
+ * No drums. A screen where nothing is moving does not want a beat telling it
  * to hurry up.
  */
 export function selectBar (bar: number): Beat[]
 {
-    const shape = SELECT[((bar % SELECT.length) + SELECT.length) % SELECT.length];
+    const step = ((bar % MENU_BARS) + MENU_BARS) % MENU_BARS;
+    const shape = SELECT[step % SELECT.length];
     const notes: Beat[] = [];
 
     for (const beat of [ 0, 3 ])
@@ -62,11 +75,48 @@ export function selectBar (bar: number): Beat[]
         }
     }
 
+    for (const [ beat, semitones, held ] of TOPLINE[step])
+    {
+        notes.push({ semitones, beat, gain: 0.5, timbre: 'lead', held });
+    }
+
     return notes;
 }
 
-/** How many bars of the level select before it comes round. */
+/**
+ * How many bars before the level select comes round.
+ *
+ * The tune, which is four times the length of the chords under it - so the same
+ * eight bars of chords land under a different phrase each time and thirty-two
+ * bars pass before anything repeats.
+ */
+export const MENU_BARS = TOPLINE.length;
+
+/** How many bars of chords before those come round, which is a quarter of it. */
 export const SELECT_BARS = SELECT.length;
+
+/**
+ * The rising half of the win jingle, for the one moment in a run that has
+ * earned a phrase.
+ *
+ * A rainbow is rare and it is the only thing in a level worth a tune, so this
+ * is where the jingle gets to appear mid-run. It stops four notes in, on the
+ * note the phrase climbs to rather than the one it settles on - unfinished,
+ * because the run is not over and a full cadence in the middle of one says it
+ * is.
+ *
+ * @param beatSeconds How long a beat is, since cues are written in seconds.
+ */
+export function flourish (beatSeconds: number): Strike[]
+{
+    return JINGLE_WIN.slice(0, 4).map(([ beat, semitones, held ], i) => ({
+        semitones,
+        at: beat * beatSeconds,
+        gain: JINGLE_WIN_GAINS[i] * 0.6,
+        timbre: 'lead' as Timbre,
+        held: held * beatSeconds
+    }));
+}
 
 /**
  * One of the two jingles, in seconds, with the kit under its last note.

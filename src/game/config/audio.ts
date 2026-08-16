@@ -1,5 +1,5 @@
 import { MUSIC_BPM, ORB_SEMITONES, SOUND_ROOT_HZ } from './constants';
-import { jingle, THEME } from './musicMenu';
+import { flourish, jingle, THEME } from './musicMenu';
 import { Timbre } from '../systems/voice';
 
 //  What the game sounds like.
@@ -138,10 +138,12 @@ export function voiceFor (cue: Cue): Strike[]
         case 'land':
             return [];
 
+        //  The one moment in a run that has earned a phrase rather than a
+        //  sound. It is the opening of the win jingle, stopped before it
+        //  settles: the run is not over, and a full cadence in the middle of
+        //  one says that it is.
         case 'rainbow':
-            return [ 12, 19, 24, 31 ].map((semitones, i) => ({
-                semitones, at: i * 0.05, gain: 0.5, timbre: 'lead' as Timbre
-            }));
+            return flourish(60 / MUSIC_BPM);
 
         //  A chance gone: the kick and the bottom of the bass together, which
         //  is the heaviest thing this instrument can do.

@@ -1770,7 +1770,11 @@ export const ORB_SEMITONES = 19;
 //  one sounds like a buzzer and a dozen at once sound like an alarm. These roll
 //  off instead. The first handful of harmonics is what makes a note sound like
 //  an instrument; the twentieth is only what makes it sting.
-export const LEAD_PARTIALS = [ 1, 0.62, 0.4, 0.26, 0.17, 0.11, 0.07, 0.04, 0.02 ];
+//  The tune is a wind instrument, so it is nearly a sine with a little on top.
+//  A flute is almost only its fundamental; a recorder and a soft horn have a
+//  second and a third and very little after that. Everything above the fourth
+//  is what would make it a reed, and a reed is what "not too sharp" rules out.
+export const LEAD_PARTIALS = [ 1, 0.34, 0.16, 0.06, 0.025, 0.01 ];
 export const BASS_PARTIALS = [ 1, 0.72, 0.38, 0.22, 0.12, 0.06, 0.03 ];
 
 //  The bass: that shape with a sine an octave below it. The sine is what gives
@@ -1789,24 +1793,42 @@ export const BASS_FILTER_Q = 4;
 
 //  The channel that plays the tune. A shade longer than the bass notes so it
 //  sings over them rather than clicking along with them.
-export const LEAD_ATTACK = 0.005;
+//  A moment to speak rather than an instant. That delay is the single thing
+//  that separates something blown from something struck, and it is worth more
+//  than any waveform: an instant attack is a key, a slow one is a breath.
+export const LEAD_ATTACK = 0.03;
 export const LEAD_HOLD = 0.06;
-export const LEAD_DECAY = 0.13;
+export const LEAD_DECAY = 0.16;
+
+//  Soft above, and low resonance. This is the one voice that plays for minutes
+//  on end, and a resonant filter is what makes a sound sharp - it is the peak
+//  at the corner, not the harmonics, that an ear calls shrill.
+export const LEAD_FILTER_FROM = 6;
+export const LEAD_FILTER_TO = 2.2;
+export const LEAD_FILTER_Q = 0.9;
+
+//  The air at the front of the note: a short hiss around the note's own pitch,
+//  gone before it has properly started. Without it a note simply exists; with
+//  it, somebody started it.
+export const LEAD_BREATH = 0.3;
+export const LEAD_BREATH_DECAY = 0.07;
+
+//  And vibrato, on the notes long enough to want it. A wind player does not
+//  vibrato a passing eighth, and one that did would sound seasick - so it only
+//  arrives on notes written to be held, and only after they have spoken.
+export const LEAD_VIBRATO_HZ = 5.1;
+export const LEAD_VIBRATO_CENTS = 13;
+export const LEAD_VIBRATO_FROM = 0.12;
 
 /**
- * How far apart the tune's two oscillators are, in cents.
+ * How much more of the room the tune gets than everything else.
  *
- * One oscillator is a machine. Two a few cents apart beat slowly against each
- * other, and that beating is most of what an ear hears as an instrument being
- * played rather than a frequency being produced.
+ * A wind instrument is the one voice here that belongs in a space rather than
+ * in front of one: it is a held sound, and a held sound with no room around it
+ * is a test tone. Everything else in the game is struck and wants to stay dry,
+ * so this is extra send on one voice rather than a wetter mix for all of them.
  */
-export const LEAD_DETUNE = 7;
-
-//  Brighter than the bass, and it stays brighter: this is the voice that has
-//  to be heard over a drum kit and everything the player is doing.
-export const LEAD_FILTER_FROM = 12;
-export const LEAD_FILTER_TO = 3;
-export const LEAD_FILTER_Q = 3;
+export const LEAD_ROOM = 2.6;
 
 /**
  * The most of a written long note the tune will actually hold, in seconds.

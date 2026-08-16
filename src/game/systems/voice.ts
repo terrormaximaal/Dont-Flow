@@ -22,7 +22,8 @@ import {
     TICK_FM_RATIO,
     TICK_TAIL
 } from '../config/constants';
-import { bass, lead, struck } from './instruments';
+import { bass, struck } from './instruments';
+import { lead } from './wind';
 import { kick, rattle } from './kit';
 
 //  The instruments, and the room they stand in.

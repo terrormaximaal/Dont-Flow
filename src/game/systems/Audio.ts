@@ -284,7 +284,12 @@ function schedule (
             continue;
         }
 
-        strike(ctx, into, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
+        //  The tune takes the wetter of the two junctions. It is the only
+        //  voice that is blown rather than struck, and the only one a room
+        //  flatters instead of blurring.
+        const bus = room && note.timbre === 'lead' ? chain.airy : into;
+
+        strike(ctx, bus, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
     }
 }
 

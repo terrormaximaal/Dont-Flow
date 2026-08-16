@@ -10,11 +10,11 @@ import {
 } from '../src/game/config/constants';
 import { voiceFor } from '../src/game/config/audio';
 import { barNotes, LOOP_BARS } from '../src/game/config/music';
-import { selectBar, SELECT_BARS, THEME } from '../src/game/config/musicMenu';
+import { MENU_BARS, selectBar, SELECT_BARS, THEME } from '../src/game/config/musicMenu';
 import { BACKING_BARS, CHORUS_FROM, CHORUS_TO } from '../src/game/config/score';
 import { decayOf } from '../src/game/systems/voice';
 
-/** Every note the soundtrack plays in one time round the loop. */
+/** Every note the run's music plays in one time round its loop. */
 function wholeLoop (finale = 0)
 {
     const notes = [];
@@ -25,6 +25,27 @@ function wholeLoop (finale = 0)
     }
 
     return notes;
+}
+
+/** And every note of the menu's, which is where the tune went. */
+function wholeMenu ()
+{
+    const notes = [];
+
+    for (let bar = 0; bar < MENU_BARS; bar++)
+    {
+        notes.push(...selectBar(bar));
+    }
+
+    return notes;
+}
+
+/** The tune of one menu bar, in the order it is played. */
+function tuneOf (bar: number)
+{
+    return selectBar(bar)
+        .filter((note) => note.timbre === 'lead')
+        .sort((a, b) => a.beat - b.beat);
 }
 
 describe('the theme', () => {
@@ -41,8 +62,8 @@ describe('the theme', () => {
     });
 
     //  The title is not a separate piece of music: it is the written opening
-    //  call of the soundtrack, note for note, with the waiting taken out. What
-    //  is written is one note held six beats and then four walking up to the
+    //  call of the tune, note for note, with the waiting taken out. What is
+    //  written is one note held six beats and then four walking up to the
     //  answer, which on a title screen is four seconds of nothing.
     it('is the opening call of the tune, in the order it was written', () => {
 
@@ -50,10 +71,7 @@ describe('the theme', () => {
 
         for (let bar = 0; written.length < 5; bar++)
         {
-            written.push(...barNotes(bar)
-                .filter((note) => note.timbre === 'lead')
-                .sort((a, b) => a.beat - b.beat)
-                .map((note) => note.semitones));
+            written.push(...tuneOf(bar).map((note) => note.semitones));
         }
 
         expect(tune().map((note) => note.semitones)).toEqual(written.slice(0, 5));
@@ -68,7 +86,7 @@ describe('the theme', () => {
 
 });
 
-describe('the soundtrack', () => {
+describe('the music under a run', () => {
 
     it('lays down a bar wherever it is asked, however far in', () => {
 
@@ -86,53 +104,33 @@ describe('the soundtrack', () => {
 
     });
 
-    //  The answer to "it is still a bit repetitive". Four bars comes round
-    //  every seven seconds and the ear has it memorised inside one level.
-    it('takes the best part of a minute to come round', () => {
+    //  The rule this whole arrangement turns on. A melody is a thing an ear
+    //  follows from note to note, and a player reading a road at a hundred and
+    //  fifty has no attention spare to follow anything - so under a run there
+    //  is harmony, which is taken in without being listened to, and a beat.
+    it('has no tune in it at all', () => {
 
-        const barSeconds = (60 / MUSIC_BPM) * MUSIC_BEATS_PER_BAR;
-
-        expect(LOOP_BARS * barSeconds).toBeGreaterThan(45);
-
-    });
-
-    //  The tune is twice as long as the chords under it, which is the cheapest
-    //  trick in music for the money: the same eight bars of backing land under
-    //  a different phrase the second time round and stop sounding like a loop.
-    it('runs the tune over two turns of the backing', () => {
-
-        expect(LOOP_BARS).toBe(BACKING_BARS * 2);
-
-        const first = barNotes(0).filter((note) => note.timbre !== 'lead');
-        const second = barNotes(BACKING_BARS).filter((note) => note.timbre !== 'lead');
-
-        expect(second, 'the same backing').toEqual(first);
-
-        expect(
-            barNotes(BACKING_BARS).filter((note) => note.timbre === 'lead'),
-            'a different tune over it'
-        ).not.toEqual(barNotes(0).filter((note) => note.timbre === 'lead'));
+        expect(wholeLoop().filter((note) => note.timbre === 'lead')).toHaveLength(0);
+        expect(wholeLoop(1).filter((note) => note.timbre === 'lead')).toHaveLength(0);
 
     });
 
-    //  A verse low down and a chorus an octave over it. Without that the tune
-    //  is one long paragraph, which is what a level of this length cannot use.
-    it('lifts the second half rather than only moving it', () => {
+    it('is the written backing, all of it, and nothing shorter', () => {
 
-        const average = (from: number, to: number) => {
+        expect(LOOP_BARS).toBe(BACKING_BARS);
 
-            const notes = [];
+        //  Sixteen bars rather than the four the chords turn on: what stops it
+        //  being heard as four is the top voice, which moves.
+        const tops = [];
 
-            for (let bar = from; bar < to; bar++)
-            {
-                notes.push(...barNotes(bar).filter((note) => note.timbre === 'lead'));
-            }
+        for (let bar = 0; bar < LOOP_BARS; bar++)
+        {
+            const chords = barNotes(bar).filter((note) => note.timbre === 'chord');
 
-            return notes.reduce((sum, note) => sum + note.semitones, 0) / notes.length;
-        };
+            tops.push(Math.max(...chords.map((note) => note.semitones)));
+        }
 
-        expect(average(CHORUS_FROM, CHORUS_TO), 'the chorus').toBeGreaterThan(average(0, CHORUS_FROM));
-        expect(average(CHORUS_TO, LOOP_BARS), 'and back down after it').toBeLessThan(average(CHORUS_FROM, CHORUS_TO));
+        expect(new Set(tops).size, 'different top notes').toBeGreaterThan(2);
 
     });
 
@@ -169,10 +167,10 @@ describe('the soundtrack', () => {
 
     });
 
-    //  Nothing under the tune rings past the note after it. That is why a busy
-    //  stretch cannot turn to mud: eight chord notes to the bar with a tail on
-    //  each is the wash this game had once and does not have now.
-    it('never holds anything but the tune into the note that follows it', () => {
+    //  Nothing rings past the note after it. That is why a busy stretch cannot
+    //  turn to mud: eight chord notes to the bar with a tail on each is the
+    //  wash this game had once and does not have now.
+    it('never holds a note into the one that follows it', () => {
 
         const beat = 60 / MUSIC_BPM;
 
@@ -199,21 +197,6 @@ describe('the soundtrack', () => {
 
     });
 
-    //  The tune does hold - it was written with notes six beats long and a tune
-    //  that lets go of them is a different tune. What it may not do is still be
-    //  sounding a bar later, which on a square wave is not a held note but a
-    //  test tone.
-    it('lets the tune hold its long notes, but never past its own bar', () => {
-
-        const barSeconds = (60 / MUSIC_BPM) * MUSIC_BEATS_PER_BAR;
-        const leads = wholeLoop().filter((note) => note.timbre === 'lead');
-        const rings = leads.map((note) => decayOf(note.semitones, 'lead', (note.held ?? 0) * (60 / MUSIC_BPM)));
-
-        expect(Math.max(...rings), 'the longest').toBeLessThan(barSeconds);
-        expect(Math.max(...rings), 'and still a held note').toBeGreaterThan(0.5);
-
-    });
-
     it('stays under the sounds of the game itself', () => {
 
         const loudest = Math.max(...wholeLoop().map((note) => note.gain));
@@ -222,29 +205,10 @@ describe('the soundtrack', () => {
 
     });
 
-    //  The tune, against the one note the player's own playing makes.
-    //
-    //  Only the tune: the bass is more than an octave below the tick and it is
-    //  *meant* to walk down chromatically past it - that descending line is the
-    //  one thing the three records this was built from have in common, and a
-    //  semitone between a low bass note and a high one is how all three of them
-    //  sound. Up where the tick lives, a semitone would just be wrong.
-    it('never puts a tune note a semitone from the tick', () => {
-
-        const tick = ((voiceFor('orb')[0].semitones % 12) + 12) % 12;
-
-        for (const note of wholeLoop())
-        {
-            if (note.timbre !== 'lead') { continue; }
-
-            const apart = Math.abs((((note.semitones % 12) + 12) % 12) - tick) % 12;
-
-            expect(apart === 1 || apart === 11, `${note.semitones} against the tick`).toBe(false);
-        }
-
-    });
-
-    //  And the bass stays down where that is allowed to be true.
+    //  The bass is more than an octave below the tick and it is *meant* to walk
+    //  down past it - that descending line is the whole shape of the piece, and
+    //  a semitone between a low bass note and a high one is how it is written.
+    //  Up where the tick lives, a semitone would just be wrong.
     it('keeps the bass an octave and more below the tick', () => {
 
         const tick = voiceFor('orb')[0].semitones;
@@ -310,41 +274,111 @@ describe('the last ten seconds of a level', () => {
 
 describe('the music on the level select', () => {
 
-    it('comes round on its own eight bars', () => {
+    it('comes round on the length of the tune, not the chords', () => {
 
-        expect(selectBar(SELECT_BARS)).toEqual(selectBar(0));
-        expect(selectBar((SELECT_BARS * 4) + 3)).toEqual(selectBar(3));
+        expect(MENU_BARS).toBe(SELECT_BARS * 4);
+        expect(selectBar(MENU_BARS)).toEqual(selectBar(0));
+        expect(selectBar((MENU_BARS * 2) + 3)).toEqual(selectBar(3));
+
+    });
+
+    //  Half a minute before anything comes back in the same place, which is
+    //  longer than most people spend choosing a level.
+    it('takes the best part of a minute to come round', () => {
+
+        const barSeconds = (60 / MUSIC_BPM) * MUSIC_BEATS_PER_BAR;
+
+        expect(MENU_BARS * barSeconds).toBeGreaterThan(45);
+
+    });
+
+    //  This is where the tune went, and the reason menu music exists: there is
+    //  nothing to do on that screen but choose, and something to listen to
+    //  while choosing is the point.
+    it('is where the tune is', () => {
+
+        expect(wholeMenu().filter((note) => note.timbre === 'lead').length).toBeGreaterThan(50);
 
     });
 
     //  Nobody is playing on that screen. A beat there is a screen telling
     //  somebody reading a map of twenty levels to hurry up.
-    it('has neither drums nor a tune, only the chords', () => {
+    it('has chords and a tune, and no drums', () => {
 
-        for (let bar = 0; bar < SELECT_BARS; bar++)
+        for (const note of wholeMenu())
         {
-            for (const note of selectBar(bar))
-            {
-                expect(note.timbre, `bar ${bar}`).toBe('chord');
-            }
+            expect(note.timbre === 'chord' || note.timbre === 'lead', `${note.timbre}`).toBe(true);
         }
 
     });
 
-    it('keeps moving without anything happening', () => {
+    it('keeps the chords moving under it without anything happening', () => {
 
-        for (let bar = 0; bar < SELECT_BARS; bar++)
+        for (let bar = 0; bar < MENU_BARS; bar++)
         {
-            const beats = new Set(selectBar(bar).map((note) => note.beat));
+            const beats = new Set(selectBar(bar).filter((n) => n.timbre === 'chord').map((n) => n.beat));
 
             expect(beats.size, `bar ${bar}`).toBe(8);
         }
 
     });
 
+    //  The same eight bars of chords land under a different phrase each time
+    //  round, which is what stops thirty-two bars sounding like eight.
+    it('lands a different phrase on the same chords each time round', () => {
+
+        for (let bar = 0; bar < SELECT_BARS; bar++)
+        {
+            const chords = (at: number) => selectBar(at).filter((n) => n.timbre === 'chord');
+
+            expect(chords(bar + SELECT_BARS), `bar ${bar} chords`).toEqual(chords(bar));
+
+            expect(
+                tuneOf(bar + SELECT_BARS).map((n) => n.semitones),
+                `bar ${bar} tune`
+            ).not.toEqual(tuneOf(bar).map((n) => n.semitones));
+        }
+
+    });
+
+    //  A verse low down and a chorus an octave over it. Without that the tune
+    //  is one long paragraph.
+    it('lifts into a chorus and comes back down after it', () => {
+
+        const average = (from: number, to: number) => {
+
+            const notes = [];
+
+            for (let bar = from; bar < to; bar++) { notes.push(...tuneOf(bar)); }
+
+            return notes.reduce((sum, note) => sum + note.semitones, 0) / notes.length;
+        };
+
+        expect(average(CHORUS_FROM, CHORUS_TO), 'the chorus').toBeGreaterThan(average(0, CHORUS_FROM));
+        expect(average(CHORUS_TO, MENU_BARS), 'and back down').toBeLessThan(average(CHORUS_FROM, CHORUS_TO));
+
+    });
+
+    //  The tune does hold - it was written with notes six beats long and a tune
+    //  that lets go of them is a different tune. What it may not do is still be
+    //  sounding a bar later, which on one oscillator is not a held note but a
+    //  test tone.
+    it('lets the tune hold its long notes, but never past its own bar', () => {
+
+        const barSeconds = (60 / MUSIC_BPM) * MUSIC_BEATS_PER_BAR;
+        const beat = 60 / MUSIC_BPM;
+        const rings = wholeMenu()
+            .filter((note) => note.timbre === 'lead')
+            .map((note) => decayOf(note.semitones, 'lead', (note.held ?? 0) * beat));
+
+        expect(Math.max(...rings), 'the longest').toBeLessThan(barSeconds);
+        expect(Math.max(...rings), 'and still a held note').toBeGreaterThan(0.5);
+
+    });
+
     it('stays quieter than the game it is a menu for', () => {
 
-        const loudest = Math.max(...selectBar(0).map((note) => note.gain));
+        const loudest = Math.max(...wholeMenu().map((note) => note.gain));
 
         expect(loudest * MUSIC_SELECT_GAIN).toBeLessThan(voiceFor('orb')[0].gain);
 
@@ -387,6 +421,35 @@ describe('the two jingles', () => {
 
             expect(tune[tune.length - 1].gain, cue).toBeGreaterThan(tune[0].gain);
         }
+
+    });
+
+    //  A rainbow is the one moment in a run worth a phrase rather than a
+    //  sound, and it is the only place the tune appears while anybody is
+    //  playing.
+    it('lend a rainbow their opening, stopped before it settles', () => {
+
+        const win = voiceFor('finish').filter((note) => note.timbre === 'lead');
+        const bonus = voiceFor('rainbow');
+
+        expect(bonus.length, 'shorter than the whole thing').toBeLessThan(win.length);
+        expect(bonus.map((note) => note.semitones))
+            .toEqual(win.slice(0, bonus.length).map((note) => note.semitones));
+
+        //  Unfinished: it stops above where it started, rather than on the note
+        //  the full phrase settles onto. A cadence mid-run says the run is over.
+        expect(bonus[bonus.length - 1].semitones).toBeGreaterThan(bonus[0].semitones);
+        expect(bonus[bonus.length - 1].semitones).not.toBe(win[win.length - 1].semitones);
+
+    });
+
+    it('are quieter mid-run than they are at the end of one', () => {
+
+        const loudest = (cue: 'finish' | 'rainbow') => Math.max(
+            ...voiceFor(cue).filter((note) => note.timbre === 'lead').map((note) => note.gain)
+        );
+
+        expect(loudest('rainbow')).toBeLessThan(loudest('finish'));
 
     });
 

@@ -1,20 +1,28 @@
 import { FINALE_LIFT, MUSIC_BEATS_PER_BAR } from './constants';
-import { BACKING_BARS, BACKING_TOPS, CHORDS, TOPLINE } from './score';
+import { BACKING_BARS, BACKING_TOPS, CHORDS } from './score';
 import { Timbre } from '../systems/voice';
 
-//  The arrangement: what `config/score` says, played by what `systems/voice` has.
+//  The music under a run: chords and a kit, and no tune at all.
 //
-//  The written music is a piano part. This is a cabinet, so the arranging is
-//  mostly deciding what *not* to sustain: the tune holds its long notes because
-//  that is the tune, and everything under it is struck and gone. A chip
-//  instrument holding four voices is the mud this game already had once.
+//  The tune lives in `config/musicMenu`, which is the whole point. A melody is
+//  a thing an ear follows from note to note, and a player reading a road at a
+//  hundred and fifty has no attention to spare for following anything. Under
+//  the run it is harmony - which an ear takes in without listening - and a beat
+//  to move to. The tune is what the menus are for.
 //
-//  What is added here and is not in the written music: a drum kit. There are no
-//  drums in any of the four files, and a game running at a hundred and fifty
-//  with nothing counting the bars is a game with no floor under it.
+//  What is added here and is not in the written music: the drum kit. There are
+//  no drums in any of the four files, and a game running at this tempo with
+//  nothing counting the bars has no floor under it.
 
-/** How many bars before the whole thing comes round: the tune is the long one. */
-export const LOOP_BARS = TOPLINE.length;
+/**
+ * How many bars before the run's music comes round.
+ *
+ * The backing, because the tune is not in it. A melody is a thing an ear
+ * follows, and following one is exactly what a player reading a road cannot
+ * spare the attention for - so under the run there are chords and a kit, and
+ * the tune waits in the menus where there is nothing else to listen to.
+ */
+export const LOOP_BARS = BACKING_BARS;
 
 /** The drums have no pitch worth the name; this is what they are given. */
 const DRUM = 0;
@@ -36,7 +44,7 @@ export interface Beat
 }
 
 /**
- * One bar of the soundtrack: the kit, the backing, and the tune over them.
+ * One bar of the music under a run: the kit and the written backing.
  *
  * @param bar    Which bar of the run, counted from the first. Loops on its own.
  * @param finale How far into the run-in to the finish, 0 to 1. Above zero the
@@ -50,11 +58,6 @@ export function barNotes (bar: number, finale = 0): Beat[]
     const lift = 1 + (FINALE_LIFT * finale);
 
     const notes: Beat[] = [ ...kit(step, finale, lift), ...backing(step, lift) ];
-
-    for (const [ beat, semitones, held ] of TOPLINE[step])
-    {
-        notes.push({ semitones, beat, gain: 0.42 * lift, timbre: 'lead', held });
-    }
 
     return notes.filter((note) => note.beat < MUSIC_BEATS_PER_BAR);
 }
@@ -102,8 +105,9 @@ function kit (step: number, finale: number, lift: number): Beat[]
  * The written backing: the bass on the first and third beat with the top voice
  * over it, and the figure running on the eighths between.
  *
- * The tune is twice as long as this, so it comes round twice per turn of the
- * topline and lands under a different phrase each time.
+ * Sixteen bars of it: four times round the same four chords with the top
+ * voice moving, which is the only thing that keeps a chord loop from being
+ * heard as one.
  */
 function backing (step: number, lift: number): Beat[]
 {
