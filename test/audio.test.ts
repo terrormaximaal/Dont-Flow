@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ORB_SEMITONES, SOUND_MASTER } from '../src/game/config/constants';
+import { MUSIC_LOOKAHEAD, MUTE_FADE, ORB_SEMITONES, SOUND_MASTER } from '../src/game/config/constants';
 import {
     CROWD_DUCK,
     CROWD_SECONDS,
@@ -22,6 +22,31 @@ function loudest (cue: Cue): number
 
     return notes.length === 0 ? 0 : Math.max(...notes.map((note: Strike) => note.gain));
 }
+
+describe('turning the sound off', () => {
+
+    //  Refusing to schedule new notes is not enough on its own. The soundtrack
+    //  is written down a bar or so before it is due - measured in a live run,
+    //  between 1.4 and 2.7 seconds of it is on the audio clock at any moment -
+    //  so a player who pressed the switch went on hearing music. The master
+    //  gain is turned down as well, and the only thing about that which can be
+    //  checked away from a speaker is that the fade is the right size.
+    it('fades far faster than the music is written ahead', () => {
+
+        expect(MUTE_FADE, 'against the lookahead').toBeLessThan(MUSIC_LOOKAHEAD / 10);
+
+    });
+
+    //  And it is a fade rather than a cut. A gain dropped to zero between one
+    //  sample and the next is a step in the waveform, which is heard as a
+    //  click - a strange last thing to hear on the way into silence.
+    it('is a fade rather than a cut', () => {
+
+        expect(MUTE_FADE, 'seconds').toBeGreaterThan(0);
+
+    });
+
+});
 
 describe('the tick a collected orb makes', () => {
 

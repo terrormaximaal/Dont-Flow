@@ -1758,6 +1758,16 @@ export const DEPTH_OVERLAY = 50;
 /** Everything the game plays passes through this. */
 export const SOUND_MASTER = 0.9;
 
+/**
+ * How long the master takes to fall silent when the sound is turned off.
+ *
+ * Short enough to read as immediate and long enough not to click. A gain cut
+ * to zero between one sample and the next is a step in the waveform, and a
+ * step is a click - which would be a strange thing to hear as the last sound
+ * before silence.
+ */
+export const MUTE_FADE = 0.04;
+
 //  The limiter across the master. Notes are triggered by how the player is
 //  doing rather than by an arrangement, so a good run overlaps half a dozen of
 //  them - which without this adds up past what the speaker can give and is

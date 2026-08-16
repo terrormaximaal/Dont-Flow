@@ -37,6 +37,17 @@ export interface Mixer
 
     /** The same again with more of the room in it, which the tune alone takes. */
     airy: GainNode;
+
+    /**
+     * The last thing before the speaker, and the only way to silence a note
+     * that has already been handed to the clock.
+     *
+     * The soundtrack is written down a bar and a half in advance, so refusing
+     * to schedule anything new leaves whatever is already booked to play out.
+     * Turning this down stops all of it at once, which is what a player asking
+     * for silence is asking for.
+     */
+    master: GainNode;
 }
 
 /**
@@ -148,5 +159,5 @@ export function buildMixer (ctx: BaseAudioContext, destination: AudioNode): Mixe
     airy.connect(airySend);
     airySend.connect(send);
 
-    return { dry, send, both, airy };
+    return { dry, send, both, airy, master };
 }
