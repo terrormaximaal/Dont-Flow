@@ -97,8 +97,7 @@ describe('what each moment sounds like', () => {
 
         const named: Record<Cue, true> = {
             orb: true, wrong: true, gate: true, jump: true, land: true,
-            rainbow: true, life: true, fail: true, finish: true, press: true,
-            title: true
+            rainbow: true, life: true, fail: true, finish: true, press: true
         };
 
         expect([ ...CUES ].sort()).toEqual(Object.keys(named).sort());
@@ -130,7 +129,7 @@ describe('what each moment sounds like', () => {
 
             if (notes.length === 0) { continue; }
 
-            const room = cue === 'title' ? 4 : 1.5;
+            const room = 1.5;
 
             expect(notes[notes.length - 1].at, cue).toBeLessThan(room);
         }
@@ -240,7 +239,6 @@ describe('the things that stop a repeat becoming a machine', () => {
 
         expect(variesOnRepeat('fail')).toBe(false);
         expect(variesOnRepeat('finish')).toBe(false);
-        expect(variesOnRepeat('title')).toBe(false);
         expect(variesOnRepeat('life')).toBe(false);
 
         expect(variesOnRepeat('orb'), 'the one heard most').toBe(true);

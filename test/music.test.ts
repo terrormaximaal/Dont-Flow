@@ -10,7 +10,7 @@ import {
 } from '../src/game/config/constants';
 import { voiceFor } from '../src/game/config/audio';
 import { barNotes, LOOP_BARS } from '../src/game/config/music';
-import { MENU_BARS, selectBar, SELECT_BARS, THEME } from '../src/game/config/musicMenu';
+import { MENU_BARS, selectBar, SELECT_BARS } from '../src/game/config/musicMenu';
 import { BACKING_BARS, CHORUS_FROM, CHORUS_TO } from '../src/game/config/score';
 import { decayOf } from '../src/game/systems/voice';
 
@@ -48,24 +48,30 @@ function tuneOf (bar: number)
         .sort((a, b) => a.beat - b.beat);
 }
 
-describe('the theme', () => {
+//  The tune of one menu bar, in the order it is played, with only the melody:
+//  the top note at each moment, since the jingles put three voices on one.
+function topOf<T extends { semitones: number; at?: number; beat?: number }> (notes: T[]): T[]
+{
+    const highest = new Map<number, T>();
 
-    const tune = () => THEME.filter((note) => note.timbre === 'lead');
+    for (const note of notes)
+    {
+        const when = note.at ?? note.beat ?? 0;
+        const held = highest.get(when);
 
-    it('is short enough to be a title and long enough to be a phrase', () => {
+        if (held === undefined || held.semitones < note.semitones) { highest.set(when, note); }
+    }
 
-        const last = THEME[THEME.length - 1];
+    return [ ...highest.entries() ].sort((a, b) => a[0] - b[0]).map(([ , note ]) => note);
+}
 
-        expect(tune().length, 'notes').toBeGreaterThanOrEqual(5);
-        expect(last.at, 'seconds').toBeLessThan(2.5);
+describe('how the menus announce the game', () => {
 
-    });
-
-    //  The title is not a separate piece of music: it is the written opening
-    //  call of the tune, note for note, with the waiting taken out. What is
-    //  written is one note held six beats and then four walking up to the
-    //  answer, which on a title screen is four seconds of nothing.
-    it('is the opening call of the tune, in the order it was written', () => {
+    //  There was a separate title sting for a while. It played the same five
+    //  notes as the first bars of the menu music, so the announcement and the
+    //  music were two things saying the same thing over each other. The menu
+    //  music starting on the tune's opening call is the announcement now.
+    it('opens on the written opening call of the tune', () => {
 
         const written = [];
 
@@ -74,13 +80,7 @@ describe('the theme', () => {
             written.push(...tuneOf(bar).map((note) => note.semitones));
         }
 
-        expect(tune().map((note) => note.semitones)).toEqual(written.slice(0, 5));
-
-    });
-
-    it('has the machine hit under it rather than a chord', () => {
-
-        expect(THEME.some((note) => note.timbre === 'kick')).toBe(true);
+        expect(written.slice(0, 5)).toEqual([ 0, 2, 3, 5, 7 ]);
 
     });
 
@@ -388,14 +388,46 @@ describe('the music on the level select', () => {
 
 describe('the two jingles', () => {
 
+    /** The melody alone: the top voice, since a jingle is now three of them. */
+    const melody = (cue: 'finish' | 'fail' | 'rainbow') =>
+        topOf(voiceFor(cue).filter((note) => note.timbre === 'lead'));
+
+    //  A section of winds rather than a soloist. One instrument playing this
+    //  is a signal; three playing it in parallel is an ending.
+    it('are played by three voices rather than one', () => {
+
+        for (const cue of [ 'finish', 'fail' ] as const)
+        {
+            const leads = voiceFor(cue).filter((note) => note.timbre === 'lead');
+
+            expect(leads.length, cue).toBe(melody(cue).length * 3);
+        }
+
+    });
+
+    it('put every voice of them in the key', () => {
+
+        //  G minor: the notes of the scale, as semitones from the root.
+        const scale = new Set([ 0, 2, 3, 5, 7, 8, 10 ]);
+
+        for (const cue of [ 'finish', 'fail' ] as const)
+        {
+            for (const note of voiceFor(cue))
+            {
+                if (note.timbre !== 'lead') { continue; }
+
+                expect(scale.has((((note.semitones % 12) + 12) % 12)), `${note.semitones} in ${cue}`).toBe(true);
+            }
+        }
+
+    });
+
     //  They are one shape played twice, once up and once down, so the game
     //  only has to say which of the two happened.
     it('are the same length and start on the same note', () => {
 
-        const tune = (cue: 'finish' | 'fail') => voiceFor(cue).filter((note) => note.timbre === 'lead');
-
-        expect(tune('finish')).toHaveLength(tune('fail').length);
-        expect(tune('finish')[0].semitones).toBe(tune('fail')[0].semitones);
+        expect(melody('finish')).toHaveLength(melody('fail').length);
+        expect(melody('finish')[0].semitones).toBe(melody('fail')[0].semitones);
 
     });
 
@@ -403,7 +435,7 @@ describe('the two jingles', () => {
 
         const end = (cue: 'finish' | 'fail') => {
 
-            const tune = voiceFor(cue).filter((note) => note.timbre === 'lead');
+            const tune = melody(cue);
 
             return tune[tune.length - 1].semitones - tune[0].semitones;
         };
@@ -417,9 +449,12 @@ describe('the two jingles', () => {
 
         for (const cue of [ 'finish', 'fail' ] as const)
         {
-            const tune = voiceFor(cue).filter((note) => note.timbre === 'lead');
+            const tune = melody(cue);
 
-            expect(tune[tune.length - 1].gain, cue).toBeGreaterThan(tune[0].gain);
+            //  Not merely louder: a real crescendo. The written velocities
+            //  climb by a fifth, which is a shade on a piano and nothing at
+            //  all on a phone, so they are opened out to most of the range.
+            expect(tune[tune.length - 1].gain / tune[0].gain, cue).toBeGreaterThan(2);
         }
 
     });
@@ -429,8 +464,8 @@ describe('the two jingles', () => {
     //  playing.
     it('lend a rainbow their opening, stopped before it settles', () => {
 
-        const win = voiceFor('finish').filter((note) => note.timbre === 'lead');
-        const bonus = voiceFor('rainbow');
+        const win = melody('finish');
+        const bonus = melody('rainbow');
 
         expect(bonus.length, 'shorter than the whole thing').toBeLessThan(win.length);
         expect(bonus.map((note) => note.semitones))
@@ -445,9 +480,7 @@ describe('the two jingles', () => {
 
     it('are quieter mid-run than they are at the end of one', () => {
 
-        const loudest = (cue: 'finish' | 'rainbow') => Math.max(
-            ...voiceFor(cue).filter((note) => note.timbre === 'lead').map((note) => note.gain)
-        );
+        const loudest = (cue: 'finish' | 'rainbow') => Math.max(...melody(cue).map((note) => note.gain));
 
         expect(loudest('rainbow')).toBeLessThan(loudest('finish'));
 

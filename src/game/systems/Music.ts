@@ -84,6 +84,40 @@ export function playingTrack (): Track | null
 }
 
 /**
+ * How far into the piece it has got, in bars.
+ *
+ * Read by nothing in the game. It is here so that a test can tell the
+ * difference between music that carried on across a screen change and music
+ * that started again from its first note - which from the outside are
+ * otherwise identical, and are the whole point of `startMenuMusic`.
+ */
+export function musicBar (): number
+{
+    return bar;
+}
+
+/**
+ * The menus' music, started only if it is not already going.
+ *
+ * Both menu screens call this and neither stops it, so walking from the title
+ * to the level select and back leaves the music entirely alone: it carries on
+ * from where it is, the way music in a building does when you walk between two
+ * rooms. Starting it again on every screen would restart the tune from its
+ * first note every time somebody changed their mind, which is the surest way
+ * to make a thirty-two bar piece sound like four.
+ *
+ * A run is what interrupts it. `startMusic('play')` stops this and puts the
+ * level's own music up instead.
+ */
+export function startMenuMusic (): void
+{
+    if (playingTrack() !== 'select')
+    {
+        startMusic('select');
+    }
+}
+
+/**
  * How close the finish is, 0 until the run-in starts and 1 at the line.
  *
  * Read when a bar is written rather than when it is played, so the drums pick
