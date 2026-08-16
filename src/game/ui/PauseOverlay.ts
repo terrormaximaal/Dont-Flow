@@ -8,6 +8,7 @@ import {
     GAME_HEIGHT,
     GAME_WIDTH,
     HUD_FONT,
+    MUTE_MARGIN,
     OVERLAY_DIM_ALPHA,
     OVERLAY_ENERGY_TICK_MS,
     OVERLAY_ENERGY_Y,
@@ -97,20 +98,22 @@ export class PauseOverlay
 
         });
 
-        //  The sound switch, here as well as on the title.
+        //  The sound switch, in the corner it lives in on the title screen.
         //
         //  Pause is where somebody reaches when the room changes - a train
-        //  fills up, somebody starts talking - and until now the only way to
-        //  silence the game from inside a run was to leave the run. That is a
-        //  real cost for a thing that should take one tap.
+        //  fills up, somebody starts talking - and the only way to silence a
+        //  run used to be to leave it. Put where the same switch is everywhere
+        //  else rather than in with the buttons: a control that moves between
+        //  screens is one that has to be looked for on each of them, and the
+        //  pause button it replaces was in this corner too.
         new ToggleChip(scene, {
-            x: GAME_WIDTH / 2,
-            y: centerY + 30 + (buttons.length * step) + BUTTON_GAP,
+            x: GAME_WIDTH - MUTE_MARGIN,
+            y: MUTE_MARGIN,
             label: 'SOUND',
             icon: 'sound',
             on: actions.sound,
-            origin: 0.5,
             onChange: actions.onSound,
+            confirm: 'orb',
             into: this.layer
         });
 

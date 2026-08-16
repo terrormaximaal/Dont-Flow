@@ -2,6 +2,7 @@
 //  types are ambient, so a global reference typechecks and then fails at run
 //  time under the ESM build. This game has been bitten by that once already.
 import { Geom, Scene } from 'phaser';
+import { Cue } from '../config/audio';
 import { play, wakeAudio } from '../systems/Audio';
 import {
     CHIP_EDGE_ALPHA,
@@ -34,6 +35,16 @@ export interface ChipOptions
     icon: ChipIcon;
     on: boolean;
     onChange: (on: boolean) => void;
+
+    /**
+     * A cue to play when the switch goes on, over the click every press makes.
+     *
+     * The sound switch needs one. Pressed from the pause overlay it turns the
+     * sound back on in a game that has deliberately stopped its music, so the
+     * only proof it did anything is a click quiet enough to be missed - which
+     * is how a working switch comes to look broken.
+     */
+    confirm?: Cue;
 
     /** 1 for a chip hung off the right edge, 0.5 for one in the middle. */
     origin?: number;
@@ -119,6 +130,8 @@ export class ToggleChip
             options.onChange(this.on);
 
             play('press');
+
+            if (this.on && options.confirm !== undefined) { play(options.confirm); }
 
         });
 

@@ -1888,11 +1888,17 @@ export const ORB_SEMITONES = 19;
 //  one sounds like a buzzer and a dozen at once sound like an alarm. These roll
 //  off instead. The first handful of harmonics is what makes a note sound like
 //  an instrument; the twentieth is only what makes it sting.
-//  The tune is a wind instrument, so it is nearly a sine with a little on top.
-//  A flute is almost only its fundamental; a recorder and a soft horn have a
-//  second and a third and very little after that. Everything above the fourth
-//  is what would make it a reed, and a reed is what "not too sharp" rules out.
-export const LEAD_PARTIALS = [ 1, 0.34, 0.16, 0.06, 0.025, 0.01 ];
+//  The winds that play the jingles: nearly a sine with a little on top.
+//
+//  A flute is almost only its fundamental; a recorder has a second and a third
+//  and not much after. Everything above the fourth is what would make it a
+//  reed, and a reed is what "not too sharp" rules out.
+//
+//  It sat lower than this and read as sombre, which for the phrase that says a
+//  level is finished is the wrong thing entirely. A second and third harmonic
+//  half again as strong is the difference between a wooden flute and a
+//  recorder - brighter, and still nothing up where a phone speaker stings.
+export const LEAD_PARTIALS = [ 1, 0.5, 0.3, 0.15, 0.07, 0.03, 0.012 ];
 export const BASS_PARTIALS = [ 1, 0.72, 0.38, 0.22, 0.12, 0.06, 0.03 ];
 
 //  The bass: that shape with a sine an octave below it. The sine is what gives
@@ -1921,8 +1927,8 @@ export const LEAD_DECAY = 0.16;
 //  Soft above, and low resonance. This is the one voice that plays for minutes
 //  on end, and a resonant filter is what makes a sound sharp - it is the peak
 //  at the corner, not the harmonics, that an ear calls shrill.
-export const LEAD_FILTER_FROM = 6;
-export const LEAD_FILTER_TO = 2.2;
+export const LEAD_FILTER_FROM = 9;
+export const LEAD_FILTER_TO = 3;
 export const LEAD_FILTER_Q = 0.9;
 
 //  The air at the front of the note: a short hiss around the note's own pitch,
@@ -2163,7 +2169,10 @@ export const JINGLE_FROM = 0.28;
 //  is the same phrase in parallel at different heights - one instrument is a
 //  signal, three are an ending.
 export const JINGLE_HARMONY = 0.6;
-export const JINGLE_UNDER = 0.45;
+//  Quieter than it was. The voice an octave below the tune is where a phrase
+//  gets its weight, and also where it gets its gloom - and a phrase that ends
+//  a level is meant to lift rather than to settle.
+export const JINGLE_UNDER = 0.3;
 
 /**
  * A fourth voice an octave over the tune, and how far in it starts.

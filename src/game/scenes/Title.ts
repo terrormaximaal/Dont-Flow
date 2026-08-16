@@ -175,6 +175,7 @@ export class Title extends Scene
             label: 'SOUND',
             icon: 'sound',
             on: !save.isMuted(),
+            confirm: 'orb',
             onChange: (on) => {
 
                 save.setMuted(!on);
