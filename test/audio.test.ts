@@ -1,56 +1,64 @@
 import { describe, expect, it } from 'vitest';
-import { Cue, CUES, DETUNE_CENTS, MASTER_VOLUME, ORB_BASE_HZ, pitchFor, variesOnRepeat, voiceFor } from '../src/game/config/audio';
+import { ORB_SEMITONES, SOUND_MASTER } from '../src/game/config/constants';
+import {
+    CROWD_DUCK,
+    CROWD_SECONDS,
+    Cue,
+    CUES,
+    DETUNE_CENTS,
+    frequencyOf,
+    pitchFor,
+    semitonesFor,
+    Strike,
+    thinned,
+    variesOnRepeat,
+    voiceFor
+} from '../src/game/config/audio';
 
-describe('the note an orb is worth', () => {
+/** How loud the cue is at its loudest, which is what it competes on. */
+function loudest (cue: Cue): number
+{
+    const notes = voiceFor(cue);
 
-    it('starts on the base note and climbs from there', () => {
+    return notes.length === 0 ? 0 : Math.max(...notes.map((note: Strike) => note.gain));
+}
 
-        expect(pitchFor(0)).toBeCloseTo(ORB_BASE_HZ, 4);
-        expect(pitchFor(3)).toBeGreaterThan(pitchFor(0));
+describe('the tick a collected orb makes', () => {
 
-    });
+    //  The whole point of this version of the sound: the most-heard sound in
+    //  the game is also the least eventful one. It used to climb with the
+    //  streak, which made the thing heard hundreds of times a run the thing
+    //  that changed most - and a tick that is different every time is a tick
+    //  the ear cannot stop listening to.
+    it('is the same note however the run is going', () => {
 
-    it('never falls as a streak grows', () => {
-
-        for (let combo = 1; combo < 60; combo++)
-        {
-            expect(pitchFor(combo), `combo ${combo}`).toBeGreaterThanOrEqual(pitchFor(combo - 1));
-        }
-
-    });
-
-    //  Past two octaves it stops being a reward and starts being a noise
-    //  complaint. A long streak is the case that matters here, since it is the
-    //  one a good player will actually reach.
-    it('stops climbing before it becomes a whistle', () => {
-
-        expect(pitchFor(9999)).toBeLessThanOrEqual(ORB_BASE_HZ * 4.2);
-
-    });
-
-    //  The whole point of a pentatonic scale: five notes that cannot sound
-    //  wrong against each other in any order. A chromatic climb would be in
-    //  tune with nothing and would grate by the fourth orb.
-    it('uses five notes to the octave rather than twelve', () => {
-
-        const withinFirstOctave = new Set<number>();
-
-        for (let combo = 0; combo < 5; combo++)
-        {
-            withinFirstOctave.add(Math.round(pitchFor(combo) * 100));
-        }
-
-        expect(withinFirstOctave.size, 'distinct notes before it repeats').toBe(5);
-
-        //  And the sixth is the first one again, an octave up.
-        expect(pitchFor(5) / pitchFor(0)).toBeCloseTo(2, 2);
+        expect(semitonesFor()).toBe(ORB_SEMITONES);
+        expect(voiceFor('orb')).toHaveLength(1);
+        expect(voiceFor('orb')[0].semitones).toBe(ORB_SEMITONES);
 
     });
 
-    it('answers for a nonsense combo rather than throwing', () => {
+    it('is one sound rather than a chord', () => {
 
-        expect(Number.isFinite(pitchFor(-4))).toBe(true);
-        expect(Number.isFinite(pitchFor(0.5))).toBe(true);
+        expect(voiceFor('orb')).toHaveLength(1);
+        expect(voiceFor('orb')[0].timbre).toBe(undefined);
+
+    });
+
+    it('sits where a phone speaker is at its best', () => {
+
+        expect(pitchFor()).toBeGreaterThan(400);
+        expect(pitchFor()).toBeLessThan(1200);
+
+    });
+
+    //  Under the music rather than over it. The soundtrack carries the run;
+    //  this is the game agreeing with the player, not congratulating them.
+    it('is quieter than the things that only happen once', () => {
+
+        expect(loudest('orb')).toBeLessThan(loudest('wrong'));
+        expect(loudest('orb')).toBeLessThan(loudest('life'));
+        expect(loudest('orb')).toBeLessThan(loudest('finish'));
 
     });
 
@@ -58,18 +66,28 @@ describe('the note an orb is worth', () => {
 
 describe('what each moment sounds like', () => {
 
-    it('has a voice for every cue there is', () => {
+    it('has a voice for every cue that should have one', () => {
 
         for (const cue of CUES)
         {
-            const voice = voiceFor(cue);
+            const notes = voiceFor(cue);
 
-            expect(voice, cue).toBeDefined();
-            expect(voice.seconds, `${cue} length`).toBeGreaterThan(0);
-            expect(voice.gain, `${cue} volume`).toBeGreaterThan(0);
-            expect(voice.from, `${cue} pitch`).toBeGreaterThan(0);
-            expect(voice.to, `${cue} pitch`).toBeGreaterThan(0);
+            for (const note of notes)
+            {
+                expect(note.gain, `${cue} volume`).toBeGreaterThan(0);
+                expect(note.gain, `${cue} volume`).toBeLessThanOrEqual(1);
+                expect(note.at, `${cue} timing`).toBeGreaterThanOrEqual(0);
+            }
         }
+
+    });
+
+    //  Asked for by name: jumping is a thing the player did on purpose and can
+    //  see happening, so the game saying it back is the game repeating itself.
+    it('says nothing at all about a jump', () => {
+
+        expect(voiceFor('jump')).toHaveLength(0);
+        expect(voiceFor('land')).toHaveLength(0);
 
     });
 
@@ -77,137 +95,135 @@ describe('what each moment sounds like', () => {
     //  the union without being added to CUES is a cue nothing above checks.
     it('lists every cue the table can answer', () => {
 
-        //  Every cue named in the type, written out. If the union grows and
-        //  this does not, the compiler fails here rather than the suite
-        //  silently testing less than it used to.
         const named: Record<Cue, true> = {
             orb: true, wrong: true, gate: true, jump: true, land: true,
-            rainbow: true, life: true, fail: true, finish: true, press: true
+            rainbow: true, life: true, fail: true, finish: true, press: true,
+            title: true
         };
 
         expect([ ...CUES ].sort()).toEqual(Object.keys(named).sort());
 
     });
 
-    //  Everything here happens while the player is reading the road, and a
-    //  sound still ringing when the next one starts is mud. The two that end a
-    //  run are excused: they have nothing left to talk over.
-    it('keeps every in-play sound short enough not to overlap the next', () => {
+    //  Everything in play happens while the player is reading the road, so
+    //  each of those has to be one event rather than something to listen to.
+    it('lands every in-play cue in a single moment', () => {
 
-        for (const cue of CUES)
+        for (const cue of [ 'orb', 'gate', 'wrong', 'press' ] as Cue[])
         {
-            if (cue === 'fail' || cue === 'finish' || cue === 'life')
-            {
-                continue;
-            }
+            const notes = voiceFor(cue);
 
-            expect(voiceFor(cue).seconds, `${cue}`).toBeLessThanOrEqual(0.3);
+            if (notes.length === 0) { continue; }
+
+            const spread = notes[notes.length - 1].at - notes[0].at;
+
+            expect(spread, cue).toBeLessThanOrEqual(0.05);
         }
 
     });
 
-    //  The orb is the sound the player hears constantly. Anything that plays
-    //  hundreds of times a run has to sit under the things that play once.
-    it('keeps the constant sound quieter than the rare ones', () => {
-
-        expect(voiceFor('orb').gain).toBeLessThan(voiceFor('life').gain);
-        expect(voiceFor('orb').gain).toBeLessThan(voiceFor('fail').gain);
-
-        //  And the menu click quieter still. A menu that clicks loudly is a
-        //  menu people turn off.
-        expect(voiceFor('press').gain).toBeLessThan(voiceFor('orb').gain);
-
-    });
-
-    //  Down for a mistake, up for a reward. The player should be able to tell
-    //  what happened without looking, which is most of what sound is for here.
-    it('falls for a mistake and rises for a reward', () => {
-
-        expect(voiceFor('wrong').to, 'a wrong colour').toBeLessThan(voiceFor('wrong').from);
-        expect(voiceFor('fail').to, 'a run ending').toBeLessThan(voiceFor('fail').from);
-        expect(voiceFor('life').to, 'a life going').toBeLessThan(voiceFor('life').from);
-
-        expect(voiceFor('finish').to, 'a level finished').toBeGreaterThan(voiceFor('finish').from);
-        expect(voiceFor('rainbow').to, 'a rainbow taken').toBeGreaterThan(voiceFor('rainbow').from);
-        expect(voiceFor('jump').to, 'leaving the ground').toBeGreaterThan(voiceFor('jump').from);
-
-    });
-
-    //  A jump and its landing are one gesture with two ends, not two events.
-    it('lands lower and shorter than it took off', () => {
-
-        expect(voiceFor('land').from).toBeLessThan(voiceFor('jump').from);
-        expect(voiceFor('land').seconds).toBeLessThan(voiceFor('jump').seconds);
-
-    });
-
-    it('follows the combo for the orb and ignores it everywhere else', () => {
-
-        expect(voiceFor('orb', 4).from).toBeGreaterThan(voiceFor('orb', 0).from);
+    it('finishes every phrase before what follows it arrives', () => {
 
         for (const cue of CUES)
         {
-            if (cue === 'orb')
-            {
-                continue;
-            }
+            const notes = voiceFor(cue);
 
-            expect(voiceFor(cue, 9).from, `${cue}`).toBe(voiceFor(cue, 0).from);
+            if (notes.length === 0) { continue; }
+
+            const room = cue === 'title' ? 4 : 1.5;
+
+            expect(notes[notes.length - 1].at, cue).toBeLessThan(room);
         }
+
+    });
+
+    //  A wrong colour is the only thing that has to be heard over the music,
+    //  and the only note in the game that is not in the key.
+    it('puts a mistake outside the key and under the tick', () => {
+
+        const wrong = voiceFor('wrong')[0].semitones;
+
+        expect(((wrong % 12) + 12) % 12, 'a semitone under the root').toBe(11);
+        expect(wrong).toBeLessThan(ORB_SEMITONES);
+
+    });
+
+    //  A doorway happens a dozen times a level. Anything that frequent has to
+    //  sit under the things that mark a moment.
+    it('keeps the doorway among the quietest things there are', () => {
+
+        expect(loudest('gate')).toBeLessThan(loudest('orb'));
+        expect(loudest('press')).toBeLessThan(loudest('orb'));
 
     });
 
     //  This is a game played on a phone in public, and the first thing a player
     //  does with one that starts loud is silence it for good.
-    it('never asks for more than half volume, cue and master together', () => {
+    it('never asks for more than full scale, cue and master together', () => {
 
         for (const cue of CUES)
         {
-            expect(voiceFor(cue).gain * MASTER_VOLUME, `${cue}`).toBeLessThanOrEqual(0.5);
+            expect(loudest(cue) * SOUND_MASTER, `${cue}`).toBeLessThanOrEqual(1);
         }
 
     });
 
 });
 
-describe('the things that stop a repeat becoming a machine', () => {
+describe('a stretch of road that is asking for a lot at once', () => {
 
-    //  A square carries every odd harmonic at full strength forever, which is
-    //  what makes one at low pitch read as a buzz rather than a tone. Only the
-    //  waves that have that problem are filtered - a sine has no harmonics to
-    //  remove and a triangle's fall away too fast to be worth it.
-    it('softens the harsh waves and leaves the gentle ones alone', () => {
+    it('leaves a cue alone when there is room around it', () => {
 
-        for (const cue of CUES)
-        {
-            const voice = voiceFor(cue);
-            const harsh = voice.wave === 'square' || voice.wave === 'sawtooth';
-
-            expect(voice.soften !== undefined, `${cue} is a ${voice.wave}`).toBe(harsh);
-        }
+        expect(thinned(voiceFor('orb'), 0.5)).toEqual(voiceFor('orb'));
+        expect(thinned(voiceFor('orb'), CROWD_SECONDS)).toEqual(voiceFor('orb'));
 
     });
 
-    //  The character of a wave is in its first few harmonics; the ice-pick is
-    //  in the rest. A cutoff at or below the fundamental would take the note
-    //  itself and leave a thud.
-    it('cuts above the note rather than through it', () => {
+    //  What is dropped is whatever is not the sound itself: the drum under a
+    //  cue and the bass under it are what accumulate, in the mix and in the
+    //  room both.
+    it('drops the body of a cue that lands in a crowd', () => {
 
         for (const cue of CUES)
         {
-            const voice = voiceFor(cue);
+            const full = voiceFor(cue);
 
-            if (voice.soften === undefined)
+            if (full.length === 0) { continue; }
+
+            const crowded = thinned(full, 0.1);
+            const heard = full.filter((note) => note.timbre === undefined);
+
+            if (heard.length > 0)
             {
-                continue;
+                expect(crowded, cue).toEqual(heard.map((note) => ({ ...note, gain: note.gain * CROWD_DUCK })));
             }
-
-            //  Comfortably above the highest pitch the sound reaches, so there
-            //  are harmonics left to hear.
-            expect(voice.soften, `${cue}`).toBeGreaterThan(Math.max(voice.from, voice.to) * 2);
+            else
+            {
+                expect(crowded, cue).toHaveLength(1);
+            }
         }
 
     });
+
+    it('ducks what is left rather than only thinning it', () => {
+
+        expect(thinned(voiceFor('orb'), 0.1)[0].gain).toBeLessThan(voiceFor('orb')[0].gain);
+
+    });
+
+    it('changes what is played rather than what it says', () => {
+
+        const full = voiceFor('wrong');
+        const crowded = thinned(full, 0.05);
+
+        expect(crowded[0].semitones).toBe(full[0].semitones);
+        expect(crowded[0].at).toBe(full[0].at);
+
+    });
+
+});
+
+describe('the things that stop a repeat becoming a machine', () => {
 
     //  A hundred cents is a semitone. This has to be a fraction of one - the
     //  point is that a repeat is not identical, not that it is a different note.
@@ -218,26 +234,28 @@ describe('the things that stop a repeat becoming a machine', () => {
 
     });
 
-    //  The two that end a run play once each and are the only sounds anybody
-    //  will remember. They should be the same every time.
+    //  The ones that mark the end of something play once each and are the only
+    //  sounds anybody will remember. They should be the same every time.
     it('leaves the sounds that end a run exactly as they are', () => {
 
         expect(variesOnRepeat('fail')).toBe(false);
         expect(variesOnRepeat('finish')).toBe(false);
+        expect(variesOnRepeat('title')).toBe(false);
+        expect(variesOnRepeat('life')).toBe(false);
 
         expect(variesOnRepeat('orb'), 'the one heard most').toBe(true);
         expect(variesOnRepeat('gate')).toBe(true);
 
     });
 
-    //  A dozen a level. Anything that frequent has to sit under the things that
-    //  mark a moment, or it becomes the sound of the game.
-    it('keeps the sound of a doorway among the quietest there is', () => {
+});
 
-        const louder = CUES.filter((cue) => voiceFor(cue).gain > voiceFor('gate').gain);
+describe('semitones as frequencies', () => {
 
-        expect(louder, 'only the press is quieter').not.toContain('press');
-        expect(voiceFor('gate').gain).toBeLessThan(voiceFor('orb').gain);
+    it('doubles every octave', () => {
+
+        expect(frequencyOf(12) / frequencyOf(0)).toBeCloseTo(2);
+        expect(frequencyOf(-12) / frequencyOf(0)).toBeCloseTo(0.5);
 
     });
 

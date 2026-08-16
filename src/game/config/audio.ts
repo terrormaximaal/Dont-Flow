@@ -1,46 +1,38 @@
+import { MUSIC_BPM, ORB_SEMITONES, SOUND_ROOT_HZ } from './constants';
+import { flourish, jingle, THEME } from './musicMenu';
+import { Timbre } from '../systems/voice';
+
 //  What the game sounds like.
 //
 //  Synthesised rather than sampled. The game ships no assets at all - every
 //  world, every drop, every panel is drawn from numbers - and a folder of wav
 //  files would be the first thing in it, plus a loading screen to fetch them
-//  with. Oscillators cost nothing, load instantly, work offline, and can be
-//  tuned by changing a number here rather than by opening an audio editor.
+//  with.
 //
-//  The trade is real and worth stating: synthesised sound is arcade rather than
-//  produced. This will sound like a game from 1985 with a good sense of pitch,
-//  not like one from now.
-//
-//  Kept pure and separate from the thing that plays it, for the usual reason -
-//  which sound a moment makes is a design decision, and design decisions that
-//  live inside a Web Audio call are ones nobody can check.
+//  The division of labour matters more than any of the sounds. The music
+//  carries the tune and the beat; the game only ticks along on top of it. What
+//  the player did is on the screen, so the sound does not need to narrate it -
+//  and a game that narrates every input is a game people mute.
 
-/** One sound: a tone that may slide, under an envelope. */
-export interface Voice
+/** One note in a cue: how high, how far into the cue, and how hard. */
+export interface Strike
 {
-    wave: OscillatorType;
+    semitones: number;
 
-    /** Where the pitch starts and ends, in hertz. Equal for a steady tone. */
-    from: number;
-    to: number;
+    /** Seconds after the cue starts. */
+    at: number;
 
-    /** How long it lasts, in seconds. */
-    seconds: number;
-
-    /** How loud, 0 to 1, before the master volume. */
+    /** 0 to 1, before the master volume. */
     gain: number;
 
     /**
-     * Cutoff for a low-pass, in hertz, or absent to leave the tone alone.
-     *
-     * A square wave carries every odd harmonic at full strength forever, which
-     * is what makes one at low pitch read as a buzz rather than as a tone. The
-     * character of the wave is in its first few harmonics; the ice-pick is in
-     * the rest. Taking the top off keeps the first and loses the second.
-     *
-     * Only the harsh waves ask for it. A sine has no harmonics to remove and a
-     * triangle's fall away so fast there is nothing worth filtering.
+     * How it is played: struck by default, or held for the notes that are
+     * there to be a chord rather than an event.
      */
-    soften?: number;
+    timbre?: Timbre;
+
+    /** Extra ring, in seconds, for a note that was written long. */
+    held?: number;
 }
 
 /**
@@ -52,16 +44,16 @@ export interface Voice
  * byte identical they stop sounding like a game and start sounding like a
  * machine, and the ear notices long before the player could say why.
  *
- * Deliberately not applied to the two that end a run. Those play once and are
- * the only sounds here anybody will remember, so they should be the same every
- * time.
+ * Deliberately not applied to the three written phrases. Those play once and
+ * are the only sounds here anybody will remember, so they should be the same
+ * every time.
  */
-export const DETUNE_CENTS = 18;
+export const DETUNE_CENTS = 9;
 
 /** Whether a cue is nudged off pitch on repeat. */
 export function variesOnRepeat (cue: Cue): boolean
 {
-    return cue !== 'fail' && cue !== 'finish';
+    return cue !== 'fail' && cue !== 'finish' && cue !== 'title' && cue !== 'life';
 }
 
 /** Everything the game can make a noise about. */
@@ -75,112 +67,155 @@ export type Cue =
     | 'life'
     | 'fail'
     | 'finish'
-    | 'press';
+    | 'press'
+    | 'title';
 
 /**
- * The note an orb is worth, from the combo it lands on.
+ * The note a collected orb plays, which is the same note every time.
  *
- * A pentatonic scale, which is the whole trick: five notes that cannot sound
- * wrong against each other in any order, so a run of collects reads as a tune
- * getting higher rather than as a siren. A chromatic climb would be in tune
- * with nothing and would grate by the fourth orb.
- *
- * Capped two octaves up. Past that it stops being a reward and starts being a
- * noise complaint.
- *
- * The cap is on the whole interval rather than on the octave, which is where
- * the first version of this was wrong: clamping the octave while letting the
- * note carry on cycling meant the top of the second octave overshot the cap and
- * then *fell* when the octave clamped - a fifteen-orb streak sounded lower than
- * a fourteen-orb one. Clamping the total holds the last note instead, which is
- * what "stops climbing" is supposed to mean.
+ * It used to climb with the streak. That was the single most-heard sound in
+ * the game and also the one that changed most, which is backwards: the score
+ * is on the screen, and a tick that is different every time is a tick the ear
+ * cannot stop listening to. It is the root of the key, so it fits every chord
+ * of the backing and can land at any moment.
  */
-export const ORB_BASE_HZ = 392;
-
-const PENTATONIC = [ 0, 2, 4, 7, 9 ];
-
-/** How far above the base a streak may reach, in semitones. Two octaves. */
-export const MAX_SEMITONES = 24;
-
-export function pitchFor (combo: number): number
+export function semitonesFor (): number
 {
-    const step = Math.max(0, Math.floor(combo));
-    const note = PENTATONIC[step % PENTATONIC.length];
-    const octave = Math.floor(step / PENTATONIC.length);
+    return ORB_SEMITONES;
+}
 
-    const semitones = Math.min(MAX_SEMITONES, note + (octave * 12));
+export function frequencyOf (semitones: number): number
+{
+    return SOUND_ROOT_HZ * Math.pow(2, semitones / 12);
+}
 
-    return ORB_BASE_HZ * Math.pow(2, semitones / 12);
+/** The pitch of the tick, in hertz. */
+export function pitchFor (): number
+{
+    return frequencyOf(ORB_SEMITONES);
 }
 
 /**
  * The sound each moment makes.
  *
- * Short, because everything here happens while the player is reading the road
- * and a sound still ringing when the next one starts is mud. Nothing over a
- * third of a second except the two that end a run, which have nothing left to
- * talk over.
+ * Most of them are one note. The instrument rings for a second or more on its
+ * own and the room holds it for three, so a cue with several notes in it is a
+ * phrase rather than a sound - which is right for the three moments that end
+ * something, and wrong for the ones that happen while the player is reading the
+ * road.
  */
-export function voiceFor (cue: Cue, combo = 0): Voice
+export function voiceFor (cue: Cue): Strike[]
 {
     switch (cue)
     {
-        //  Rises with the combo. The one sound the player hears constantly, so
-        //  it is the quietest thing here and the shortest.
+        //  The tick. Always the same, always quiet: this is the sound of the
+        //  game agreeing with you, not the sound of the game congratulating
+        //  you.
         case 'orb':
-            return { wave: 'triangle', from: pitchFor(combo), to: pitchFor(combo), seconds: 0.09, gain: 0.30 };
+            return [ { semitones: ORB_SEMITONES, at: 0, gain: 0.55 } ];
 
-        //  Down rather than up, and square rather than triangle: a wrong colour
-        //  should sound like a wrong colour without anybody having to be told.
-        //  Filtered hard. A square at this pitch is a buzz without it, and a
-        //  buzz is what a player turns the sound off over - the cue has to be
-        //  unwelcome, not unpleasant.
+        //  The only cue that has to cut through the music, and the only one
+        //  that is not in the key: a semitone under the octave of the root,
+        //  with the bottom of the bass under it.
         case 'wrong':
-            return { wave: 'square', from: 220, to: 110, seconds: 0.20, gain: 0.35, soften: 900 };
+            return [
+                { semitones: 11, at: 0, gain: 0.7 },
+                { semitones: -13, at: 0.04, gain: 0.75, timbre: 'bass' },
+                { semitones: 0, at: 0, gain: 0.5, timbre: 'snare' }
+            ];
 
-        //  A soft swell upwards. A gate is not a reward or a mistake - it is a
-        //  door opening, and at a dozen a level it has to stay out of the way:
-        //  quieter and shorter than anything else that is not the menu click.
+        //  A doorway, at a dozen a level, is the hi-hat of the game: heard
+        //  without ever being listened to.
         case 'gate':
-            return { wave: 'sine', from: 300, to: 420, seconds: 0.13, gain: 0.16 };
+            return [ { semitones: 0, at: 0, gain: 0.3, timbre: 'hat' } ];
 
+        //  Nothing at all. Jumping is a thing the player did on purpose and
+        //  can see happening; a sound on top of it is the game repeating
+        //  itself back at them.
         case 'jump':
-            return { wave: 'sine', from: 340, to: 620, seconds: 0.13, gain: 0.26 };
+            return [];
 
-        //  Lower and shorter than the jump, so an arc reads as one gesture with
-        //  two ends rather than as two events.
         case 'land':
-            return { wave: 'sine', from: 260, to: 180, seconds: 0.08, gain: 0.20 };
+            return [];
 
+        //  The one moment in a run that has earned a phrase rather than a
+        //  sound. It is the opening of the win jingle, stopped before it
+        //  settles: the run is not over, and a full cadence in the middle of
+        //  one says that it is.
         case 'rainbow':
-            return { wave: 'triangle', from: 660, to: 1320, seconds: 0.28, gain: 0.32 };
+            return flourish(60 / MUSIC_BPM);
 
-        //  The heaviest thing in the game, because losing one of three chances
-        //  is the most important thing that happens in a run.
+        //  A chance gone: the kick and the bottom of the bass together, which
+        //  is the heaviest thing this instrument can do.
         case 'life':
-            return { wave: 'sawtooth', from: 180, to: 60, seconds: 0.45, gain: 0.42, soften: 1400 };
+            return [
+                { semitones: 0, at: 0, gain: 0.9, timbre: 'kick' },
+                { semitones: -13, at: 0.02, gain: 0.7, timbre: 'bass' },
+                { semitones: -25, at: 0.14, gain: 0.6, timbre: 'bass' }
+            ];
 
+        //  The two written jingles. They are a pair - the same seven-note shape
+        //  going up and coming down - so the game only has to say which of the
+        //  two happened and the music says the rest.
         case 'fail':
-            return { wave: 'sawtooth', from: 300, to: 70, seconds: 0.75, gain: 0.38, soften: 1600 };
+            return jingle(false, 60 / MUSIC_BPM);
 
         case 'finish':
-            return { wave: 'triangle', from: 523, to: 1046, seconds: 0.55, gain: 0.36 };
+            return jingle(true, 60 / MUSIC_BPM);
 
         //  Barely there. A menu that clicks loudly is a menu people turn off.
         case 'press':
-            return { wave: 'sine', from: 520, to: 520, seconds: 0.05, gain: 0.16 };
+            return [ { semitones: 12, at: 0, gain: 0.22 } ];
+
+        //  The game's tune, unaccompanied, the way a cabinet announces itself
+        //  across a room.
+        case 'title':
+            return THEME;
     }
+}
+
+/**
+ * How close two cues have to be before the game starts thinning them.
+ *
+ * The shipped levels ask for up to eight sounds a second on their busiest
+ * stretches, with gaps of an eighth of a second - and every one of those
+ * sounds is copied into a room that holds it afterwards. Played in full, a
+ * hard stretch is two dozen sounds at once: twice the loudness of a calm one,
+ * and a wash rather than a run of collects.
+ *
+ * A little over an eighth of a second, so an ordinary level never trips it and
+ * only the stretches that are genuinely crowded are thinned.
+ */
+export const CROWD_SECONDS = 0.3;
+
+/** How much a cue gives up when it lands in a crowd. */
+export const CROWD_DUCK = 0.72;
+
+/**
+ * A cue as it is played when the last one was `sinceLast` seconds ago.
+ *
+ * Crowded, it keeps the note that has to be heard and drops the chord and the
+ * bass underneath it. Those are there to give a single cue a body, and a body
+ * is exactly what a stretch of them does not need - eight a second are already
+ * holding each other up.
+ *
+ * The phrases that mark an ending are never thinned; they are handed here
+ * unchanged because nothing that plays once a run is what makes it crowded.
+ */
+export function thinned (notes: Strike[], sinceLast: number): Strike[]
+{
+    if (sinceLast >= CROWD_SECONDS)
+    {
+        return notes;
+    }
+
+    const heard = notes.filter((note) => note.timbre === undefined);
+    const kept = heard.length > 0 ? heard : notes.slice(0, 1);
+
+    return kept.map((note) => ({ ...note, gain: note.gain * CROWD_DUCK }));
 }
 
 /** Every cue there is, so a test can hold the table to being complete. */
 export const CUES: Cue[] = [
-    'orb', 'wrong', 'gate', 'jump', 'land', 'rainbow', 'life', 'fail', 'finish', 'press'
+    'orb', 'wrong', 'gate', 'jump', 'land', 'rainbow', 'life', 'fail', 'finish', 'press', 'title'
 ];
-
-/**
- * Master volume.
- *
- * Low. This is a game played on a phone in public, and the first thing a player
- * does with one that starts loud is silence it for good.
- */
-export const MASTER_VOLUME = 0.5;

@@ -1,4 +1,8 @@
-import { Cue, DETUNE_CENTS, MASTER_VOLUME, variesOnRepeat, voiceFor } from '../config/audio';
+import { Cue, DETUNE_CENTS, Strike, thinned, variesOnRepeat, voiceFor } from '../config/audio';
+import { CROWD_SECONDS } from '../config/audio';
+import { SOUND_GAIN } from '../config/constants';
+import { buildMixer, Mixer } from './mixer';
+import { strike } from './voice';
 
 //  The thing that makes the noise.
 //
@@ -12,8 +16,16 @@ import { Cue, DETUNE_CENTS, MASTER_VOLUME, variesOnRepeat, voiceFor } from '../c
 //  page may have and a scene restart would otherwise leak one per run.
 
 let context: AudioContext | null = null;
+let mixer: Mixer | null = null;
 let unavailable = false;
 let muted = false;
+let listening = false;
+
+/** When the last cue was played, on the audio clock, to hear a crowd coming. */
+let lastCueAt = -1;
+
+/** Asked for before the browser would allow it, and owed once it does. */
+let owed: (() => void) | null = null;
 
 /** The context, made on first use, or null where there is none to be had. */
 function audio (): AudioContext | null
@@ -69,6 +81,60 @@ export function wakeAudio (): void
     {
         void ctx.resume().catch(() => undefined);
     }
+
+    const pending = owed;
+
+    owed = null;
+    pending?.();
+}
+
+/**
+ * Wakes the audio on whatever gesture arrives first, wherever it arrives.
+ *
+ * The buttons already wake it when they are pressed, which covers a phone -
+ * every touch on this game is a button. A keyboard player never presses one:
+ * the title is started with Enter and the road is steered with arrows, so
+ * without this the whole game is silent on a desktop until something is
+ * clicked. Left attached rather than taken off after the first one, because a
+ * page that has been in the background comes back suspended and needs waking
+ * again.
+ */
+export function listenForGesture (): void
+{
+    if (typeof window === 'undefined' || listening)
+    {
+        return;
+    }
+
+    listening = true;
+
+    window.addEventListener('pointerdown', () => wakeAudio());
+    window.addEventListener('keydown', () => wakeAudio());
+}
+
+/**
+ * Runs `fn` as soon as there is audio to run it into.
+ *
+ * The title screen wants to play its phrase the moment it appears, and on a
+ * cold load there is no audio yet - a browser will not start any until the
+ * player has touched the page. Rather than drop the phrase, it waits for the
+ * touch that was going to arrive anyway.
+ */
+export function onWake (fn: () => void): void
+{
+    //  Deliberately reading the context rather than asking for one: a context
+    //  built before the page has been touched is a context some browsers never
+    //  let go of again, and there is nothing to play into yet anyway.
+    const ctx = context;
+
+    if (ctx !== null && ctx.state === 'running')
+    {
+        fn();
+
+        return;
+    }
+
+    owed = fn;
 }
 
 /** Whether sound is currently off. */
@@ -89,9 +155,12 @@ export function setMuted (value: boolean): void
  * Silent and harmless when muted, when there is no context, or when the context
  * has not been woken yet - all three are ordinary states rather than errors.
  *
- * @param combo Where the run's streak is, for the cues whose pitch follows it.
+ * @param _combo Where the run's streak is. Nothing reads it any more - the
+ *               tick a collected orb makes is the same note however well the
+ *               run is going - but every caller passes it, and taking it out
+ *               would touch a dozen call sites to say nothing.
  */
-export function play (cue: Cue, combo = 0): void
+export function play (cue: Cue, _combo = 0): void
 {
     if (muted)
     {
@@ -107,82 +176,31 @@ export function play (cue: Cue, combo = 0): void
 
     try
     {
-        const voice = voiceFor(cue, combo);
-        const now = ctx.currentTime;
-        const until = now + voice.seconds;
-
-        const osc = ctx.createOscillator();
-        const level = ctx.createGain();
-
-        osc.type = voice.wave;
-        osc.frequency.setValueAtTime(voice.from, now);
 
         //  A fraction of a semitone either way, so a sound repeating hundreds
         //  of times a run is never byte-for-byte the same twice. Not applied to
-        //  the two that end a run - those play once and should be the sound
-        //  the player remembers rather than a slightly different one each time.
-        if (variesOnRepeat(cue))
-        {
-            osc.detune.setValueAtTime((Math.random() * 2 - 1) * DETUNE_CENTS, now);
-        }
+        //  the written phrases - those play once and should be the sound the
+        //  player remembers rather than a slightly different one each time.
+        const drift = variesOnRepeat(cue)
+            ? (((Math.random() * 2) - 1) * DETUNE_CENTS) / 100
+            : 0;
 
-        if (voice.to !== voice.from)
-        {
-            //  Exponential rather than linear, because pitch is heard
-            //  logarithmically: a linear sweep from 300 to 1300 spends most of
-            //  its time in the top half and reads as a click into a tone.
-            osc.frequency.exponentialRampToValueAtTime(Math.max(1, voice.to), until);
-        }
+        //  Thinned when they are arriving on top of each other, and the copy
+        //  into the room dropped with them: the room is where a busy stretch
+        //  turns into a wash, because every note is held there for three
+        //  seconds after the note itself has gone.
+        const now = ctx.currentTime;
+        const gap = lastCueAt < 0 ? Infinity : now - lastCueAt;
+        const crowded = variesOnRepeat(cue) && gap < CROWD_SECONDS;
+        //  `combo` is no longer a pitch: the tick is the same note however
+        //  well the run is going, so nothing here reads it any more. It is
+        //  kept in the signature because every caller passes it and taking it
+        //  out would touch a dozen call sites to say nothing.
+        const notes = crowded ? thinned(voiceFor(cue), gap) : voiceFor(cue);
 
-        //  A quick attack and a long tail. Starting at zero rather than at full
-        //  is what stops every sound beginning with a click, and ramping to a
-        //  small non-zero value is what stops the exponential ramp dividing by
-        //  nothing.
-        const peak = voice.gain * MASTER_VOLUME;
+        lastCueAt = now;
 
-        level.gain.setValueAtTime(0.0001, now);
-        level.gain.exponentialRampToValueAtTime(peak, now + ATTACK);
-        level.gain.exponentialRampToValueAtTime(0.0001, until);
-
-        //  The top taken off the harsh waves. See Voice.soften.
-        if (voice.soften !== undefined)
-        {
-            const filter = ctx.createBiquadFilter();
-
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(voice.soften, now);
-
-            osc.connect(filter);
-            filter.connect(level);
-
-            osc.onended = () => {
-
-                osc.disconnect();
-                filter.disconnect();
-                level.disconnect();
-
-            };
-        }
-        else
-        {
-            osc.connect(level);
-        }
-
-        level.connect(ctx.destination);
-
-        osc.start(now);
-        osc.stop(until);
-
-        //  Released as soon as it has finished. Without this every sound the
-        //  game has ever made stays connected to the destination for the life
-        //  of the page. Already set above where there is a filter to release
-        //  as well.
-        osc.onended ??= () => {
-
-            osc.disconnect();
-            level.disconnect();
-
-        };
+        schedule(ctx, notes, now, SOUND_GAIN, drift, !crowded);
     }
     catch
     {
@@ -190,13 +208,99 @@ export function play (cue: Cue, combo = 0): void
     }
 }
 
-/** How quickly a sound reaches full volume. Short enough to feel immediate. */
-const ATTACK = 0.008;
+/**
+ * The audio clock, or null when there is nothing running to read it from.
+ *
+ * Music has to be handed to the sound card before it is due, so the thing
+ * writing it needs to know what time the card thinks it is - which is not the
+ * same clock as the game's.
+ */
+export function audioTime (): number | null
+{
+    return context !== null && context.state === 'running' ? context.currentTime : null;
+}
+
+/**
+ * Notes at a given moment on that clock, rather than now.
+ *
+ * The backing is written ahead of itself, which is the only way a browser
+ * plays anything in time: a note handed over a second early lands exactly when
+ * it was asked to, however busy the frame that asked is.
+ */
+export function playAt (notes: Strike[], when: number, gain = 1): void
+{
+    if (muted)
+    {
+        return;
+    }
+
+    const ctx = audio();
+
+    if (ctx === null || ctx.state !== 'running')
+    {
+        return;
+    }
+
+    try
+    {
+        schedule(ctx, notes, when, gain * SOUND_GAIN, 0, true);
+    }
+    catch
+    {
+        //  As above: a sound that will not play is not worth a broken run.
+    }
+}
+
+/**
+ * Hands a set of notes to the clock, twice over: once straight out, once into
+ * the room. The room is the loud half, which is why a note is sent there
+ * rather than passed through it.
+ */
+function schedule (
+    ctx: AudioContext,
+    notes: Strike[],
+    from: number,
+    gain: number,
+    drift: number,
+    room: boolean
+): void
+{
+    const chain = mixer ??= buildMixer(ctx, ctx.destination);
+    const offset = from - ctx.currentTime;
+
+    //  Once, into a junction that is already wired to both sides - rather than
+    //  twice, once per side. A note built twice is a note that costs twice, and
+    //  on the busiest stretch of a level that was the difference between a
+    //  phone keeping up and a phone dropping the music.
+    const into = room ? chain.both : chain.dry;
+
+    for (const note of notes)
+    {
+        //  Anything already in the past is dropped rather than played late: a
+        //  phone that was asleep comes back with a backlog, and a bar's worth
+        //  of music arriving at once is worse than a missing bar.
+        if (note.at + offset < -0.05)
+        {
+            continue;
+        }
+
+        //  The tune takes the wetter of the two junctions. It is the only
+        //  voice that is blown rather than struck, and the only one a room
+        //  flatters instead of blurring.
+        const bus = room && note.timbre === 'lead' ? chain.airy : into;
+
+        strike(ctx, bus, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
+    }
+}
 
 /** Forget everything, so a test can start from nothing. */
 export function resetAudioForTest (): void
 {
     context = null;
+    mixer = null;
     unavailable = false;
     muted = false;
+    owed = null;
+    listening = false;
+    lastCueAt = -1;
 }

@@ -14,6 +14,7 @@ import {
     FAIL_WASH_ALPHA,
     FAIL_WASH_MS,
     FAIL_ZOOM,
+    FINALE_SECONDS,
     FINISH_SLOWDOWN_MS,
     FLASH_DURATION,
     FORWARD_SPEED,
@@ -31,7 +32,8 @@ import {
     SHAKE_INTENSITY
 } from '../config/constants';
 import { buildLevel, drainAt, HazardZone, LEAD_IN, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
-import { play, wakeAudio } from '../systems/Audio';
+import { listenForGesture, play, wakeAudio } from '../systems/Audio';
+import { setFinale, startMusic, stopMusic } from '../systems/Music';
 import { Coach } from '../ui/Coach';
 import { firstForcedJump, isPrompting } from '../systems/coach';
 import { formOf } from '../config/form';
@@ -317,6 +319,11 @@ export class Play extends Scene
         this.powerUps = new PowerUps(this, course.powerUps, (x, y) => this.onRainbow(x, y));
 
         this.input.on('pointerdown', wakeAudio);
+        listenForGesture();
+
+        //  From the top with the level, and stopped with it: the soundtrack is
+        //  this run's music rather than something the game leaves playing.
+        startMusic();
 
         this.input_ = new InputSystem(
             this,
@@ -350,7 +357,12 @@ export class Play extends Scene
         //  pause: that gates the update loop, this pauses the whole scene.
         new OrientationGuard(this);
 
-        this.events.once('shutdown', () => this.input_.destroy());
+        this.events.once('shutdown', () => {
+
+            this.input_.destroy();
+            stopMusic();
+
+        });
 
         arrive(this);
     }
@@ -532,6 +544,10 @@ export class Play extends Scene
         this.effects.bloom(x, y, COLOR_FAIL_FLASH);
         play('fail');
 
+        //  The backing stops with the run, so the phrase that ends it is the
+        //  only thing playing when it lands.
+        stopMusic();
+
         //  Creeping in as it stops. The camera has pulled *back* for speed all
         //  game, so coming forward is the opposite gesture and reads as the
         //  world closing rather than as another boost.
@@ -662,6 +678,17 @@ export class Play extends Scene
         this.input_.setEnabled(!paused);
         this.pauseButton.setVisible(!paused);
 
+        //  Music under a paused game is the game carrying on without the
+        //  player, which is exactly what pausing is for stopping.
+        if (paused)
+        {
+            stopMusic();
+        }
+        else
+        {
+            startMusic();
+        }
+
         if (paused)
         {
             this.pauseOverlay = new PauseOverlay(this, {
@@ -703,9 +730,39 @@ export class Play extends Scene
         this.pauseOverlay = null;
     }
 
+    /**
+     * How far into the run-in to the finish the level is, 0 to 1.
+     *
+     * Measured against how long the road left would take at the pace being run
+     * now, rather than against a number of pixels. Ten seconds is ten seconds
+     * whatever speed a level runs at, and a boost near the line should not
+     * shorten the warning.
+     */
+    /**
+     * How far into the run-in to the finish the level is, 0 to 1.
+     *
+     * Measured against how long the road left would take at the pace being run
+     * now, rather than against a number of pixels. Ten seconds is ten seconds
+     * whatever speed a level runs at, and a boost near the line should not
+     * shorten the warning.
+     */
+    private finaleAmount (): number
+    {
+        const window = this.forwardSpeed * this.pace * FINALE_SECONDS;
+        const left = this.finishDistance - this.distance;
+
+        if (window <= 0)
+        {
+            return 0;
+        }
+
+        return Math.max(0, Math.min(1, 1 - (left / window)));
+    }
+
     private onFinish (): void
     {
         play('finish');
+        stopMusic();
 
         if (this.finished)
         {
@@ -863,6 +920,7 @@ export class Play extends Scene
         const batch = batchAt(run.spec, this.builtTo);
 
         this.course.extend(batch);
+
         this.hazardField.setZones([ ...this.hazards, ...batch.hazards ]);
         this.hazards = [ ...this.hazards, ...batch.hazards ];
         this.zones = [ ...this.zones, ...batch.zones ];
@@ -967,6 +1025,15 @@ export class Play extends Scene
         const moved = this.forwardSpeed * this.speed.scale * this.pace * dt;
 
         this.distance += moved;
+
+        //  How close the finish is, in seconds of road rather than in pixels
+        //  of it: ten seconds is ten seconds whatever pace the level runs at,
+        //  and a boost near the line should not shorten the run-in.
+        //
+        //  Survival has no finish, so it never gets one - there is nothing to
+        //  announce, and announcing it anyway would be the game lying.
+        setFinale(this.survival ? 0 : this.finaleAmount());
+
 
         this.chargeForGround(moved);
 

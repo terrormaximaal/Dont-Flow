@@ -39,7 +39,7 @@ import { MenuSky } from '../systems/MenuSky';
 import { SaveSystem } from '../systems/SaveSystem';
 import { Button } from '../ui/Button';
 //  Aliased: this scene already has a local called play - the PLAY button.
-import { play as playCue, setMuted, wakeAudio } from '../systems/Audio';
+import { listenForGesture, onWake, play as playCue, setMuted, wakeAudio } from '../systems/Audio';
 import { setMarks } from '../systems/marks';
 import { EnergyMeter } from '../ui/EnergyMeter';
 import { MENU_LAYOUT } from '../ui/menuLayout';
@@ -158,6 +158,24 @@ export class Title extends Scene
         //  control here that is not about playing, and a player looking for it
         //  knows to look in a corner.
         setMuted(save.isMuted());
+
+        //  The game's own phrase, on the way in. It cannot play on a cold load
+        //  - no browser will start audio before the page has been touched - so
+        //  it waits for the first touch instead of being dropped.
+        listenForGesture();
+
+        //  Only if this screen is still the one being looked at. On a cold
+        //  load the gesture that wakes the audio is usually PLAY itself, and
+        //  the theme arriving over the first bars of a level is the menu
+        //  talking over the game.
+        onWake(() => {
+
+            if (this.scene.isActive())
+            {
+                playCue('title');
+            }
+
+        });
 
         const speaker = this.add.text(GAME_WIDTH - MUTE_MARGIN, MUTE_MARGIN, save.isMuted() ? 'SOUND OFF' : 'SOUND ON', {
             fontFamily: HUD_FONT,
