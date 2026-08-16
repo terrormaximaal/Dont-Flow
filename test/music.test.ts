@@ -26,23 +26,26 @@ function everyNote (): number[]
 
 describe('the theme', () => {
 
+    /** The tune itself, without the bass laid under it. */
+    const melody = () => THEME.filter((note) => note.timbre === undefined);
+
     it('is long enough to be a tune and short enough to sit through', () => {
 
-        const last = THEME[THEME.length - 1];
+        const last = melody()[melody().length - 1];
 
-        expect(THEME.length, 'notes').toBeGreaterThanOrEqual(8);
+        expect(melody().length, 'notes').toBeGreaterThanOrEqual(8);
         expect(last.at, 'seconds').toBeGreaterThan(1.5);
         expect(last.at, 'seconds').toBeLessThan(4);
 
     });
 
-    it('is played in order, with no two bubbles on the same moment', () => {
+    it('is played in order, with no two notes on the same moment', () => {
 
-        const bubbles = THEME.filter((note) => note.timbre === undefined);
+        const notes = melody();
 
-        for (let i = 1; i < bubbles.length; i++)
+        for (let i = 1; i < notes.length; i++)
         {
-            expect(bubbles[i].at, `note ${i}`).toBeGreaterThan(bubbles[i - 1].at);
+            expect(notes[i].at, `note ${i}`).toBeGreaterThan(notes[i - 1].at);
         }
 
     });
@@ -50,29 +53,30 @@ describe('the theme', () => {
     //  An arch: away from the root, and back to it. A tune that ends somewhere
     //  other than where it started is a fragment, and a fragment is the thing
     //  nobody can hum back.
-    it('leaves the root, reaches a top, and comes home to it', () => {
+    it('leaves the root, climbs, and is left hanging on the fifth', () => {
 
-        const bubbles = THEME.filter((note) => note.timbre === undefined);
-        const top = Math.max(...bubbles.map((note) => note.semitones));
-        const home = bubbles[0].semitones;
-        const last = bubbles[bubbles.length - 1].semitones;
+        const notes = melody();
+        const top = Math.max(...notes.map((note) => note.semitones));
+        const home = notes[0].semitones;
+        const last = notes[notes.length - 1].semitones;
 
         //  In the game's own key rather than in one of its own, which is what
         //  keeps it consonant with everything the player triggers over it.
         expect(home, 'starts where a streak starts').toBe(ORB_BASE_SEMITONES);
-
-        //  And ends on the same note, in whichever octave the rise left it.
-        expect((last - home) % 12, 'ends on the root').toBe(0);
         expect(top - home, 'goes somewhere on the way').toBeGreaterThanOrEqual(12);
+
+        //  And does not come home. A tune that resolves says the story is
+        //  over, and this one plays before the player has started.
+        expect(last - home, 'ends on the fifth').toBe(7);
 
     });
 
     it('ends on its loudest note, so it lands rather than trails off', () => {
 
-        const bubbles = THEME.filter((note) => note.timbre === undefined);
-        const loudest = Math.max(...bubbles.map((note) => note.gain));
+        const notes = melody();
+        const loudest = Math.max(...notes.map((note) => note.gain));
 
-        expect(bubbles[bubbles.length - 1].gain).toBe(loudest);
+        expect(notes[notes.length - 1].gain).toBe(loudest);
 
     });
 
@@ -160,18 +164,23 @@ describe('the backing under a run', () => {
     //  backing, and a hole is heard as the music stopping. Something that
     //  outlasts the next bar by a long way is two of them sounding at once,
     //  which is the other way of being muddy.
-    it('runs each bar of water just past the next one', () => {
+    it('holds each chord just past the bar it belongs to', () => {
 
         const barSeconds = (60 / MUSIC_BPM) * MUSIC_BEATS_PER_BAR;
 
         for (const note of barNotes(0))
         {
-            const ring = decayOf(note.semitones, note.timbre);
+            const ring = decayOf(note.semitones, note.timbre) + (note.beat * (60 / MUSIC_BPM));
 
-            expect(ring + (note.beat * (60 / MUSIC_BPM)), `${note.timbre}`)
-                .toBeGreaterThan(barSeconds);
+            //  Something has to still be sounding when the next bar arrives, or
+            //  the backing has a hole in it - and nothing may outlast the bar
+            //  after that, or two harmonies sound at once.
             expect(ring, `${note.timbre}`).toBeLessThan(barSeconds * 2);
         }
+
+        const longest = Math.max(...barNotes(0).map((note) => decayOf(note.semitones, note.timbre)));
+
+        expect(longest, 'reaches the next bar').toBeGreaterThan(barSeconds);
 
     });
 
@@ -179,14 +188,18 @@ describe('the backing under a run', () => {
     //  its way across the bar and quote the theme every eight of them, and
     //  underneath a game that already makes a sound every time an orb goes
     //  past, that was the mess: two things playing patterns at each other.
-    it('is water rather than a part being played', () => {
+    it('is a chord rather than a part being played', () => {
 
         for (let bar = 0; bar < LOOP_BARS; bar++)
         {
             for (const note of barNotes(bar))
             {
-                expect(note.timbre, `bar ${bar}`).not.toBe('bubble');
-                expect(note.timbre, `bar ${bar}`).not.toBe('sink');
+                //  Never the sound the player triggers, and never off the beat
+                //  it belongs to: the backing has a downbeat and a halfway
+                //  point and nothing else.
+                expect(note.timbre, `bar ${bar}`).not.toBe(undefined);
+                expect(note.timbre, `bar ${bar}`).not.toBe('pluck');
+                expect(note.beat % (MUSIC_BEATS_PER_BAR / 2), `bar ${bar}`).toBeLessThan(0.25);
             }
         }
 

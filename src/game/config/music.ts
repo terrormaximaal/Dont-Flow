@@ -29,27 +29,27 @@ const HOME = ORB_BASE_SEMITONES;
 /**
  * The theme.
  *
- * Bubbles rising: the same three-note figure three times over, each one
- * starting where the last one ended, and a single low one to finish. Written
- * as a shape rather than a melody line because that is what it has to be
- * recognisable as - the title plays it, and the run is made of the same
- * gesture over and over.
+ * Minor, and it does not resolve: it climbs to the octave, falls back, and
+ * ends on the fifth rather than on the root - hanging, the way a synth line
+ * over a title card does. A tune that comes home says the story is over, and
+ * this one is played before the player has started.
  */
 export const THEME: Strike[] = [
-    { semitones: HOME, at: 0, gain: 0.6 },
-    { semitones: HOME + 4, at: 0.13, gain: 0.6 },
-    { semitones: HOME + 7, at: 0.26, gain: 0.65 },
+    { semitones: HOME, at: 0, gain: 0.7 },
+    { semitones: HOME + 3, at: 0.20, gain: 0.7 },
+    { semitones: HOME + 7, at: 0.40, gain: 0.75 },
+    { semitones: HOME + 10, at: 0.60, gain: 0.8 },
+    { semitones: HOME + 7, at: 0.90, gain: 0.7 },
+    { semitones: HOME + 12, at: 1.10, gain: 0.85 },
+    { semitones: HOME + 10, at: 1.45, gain: 0.7 },
+    { semitones: HOME + 7, at: 1.65, gain: 0.7 },
+    { semitones: HOME + 3, at: 1.90, gain: 0.7 },
+    { semitones: HOME + 7, at: 2.20, gain: 0.9 },
 
-    { semitones: HOME + 7, at: 0.60, gain: 0.6 },
-    { semitones: HOME + 9, at: 0.73, gain: 0.6 },
-    { semitones: HOME + 12, at: 0.86, gain: 0.7 },
-
-    { semitones: HOME + 12, at: 1.20, gain: 0.6 },
-    { semitones: HOME + 16, at: 1.33, gain: 0.65 },
-    { semitones: HOME + 19, at: 1.46, gain: 0.75 },
-
-    { semitones: HOME + 12, at: 1.85, gain: 0.9 },
-    { semitones: HOME - 12, at: 1.85, gain: 0.5, timbre: 'deep' }
+    //  The floor under it, struck twice, which is what makes the line sound
+    //  like it is standing on something.
+    { semitones: HOME - 12, at: 0, gain: 0.5, timbre: 'bass' },
+    { semitones: HOME - 12, at: 1.10, gain: 0.45, timbre: 'bass' }
 ];
 
 /** Seconds as beats, for anything written in one that is played in the other. */
@@ -59,14 +59,26 @@ export function beatsOf (seconds: number): number
 }
 
 /**
- * Where the water sits, one entry per four bars.
+ * The chords the backing circles through, one to a bar.
  *
- * Two of them, and that is the whole harmony. A stream does not have a chord
- * progression; what it has is a note it settles around, and moving that note
- * every four bars is enough to keep a run from feeling like it is standing
- * still. Anything faster would be music the player has to listen to.
+ * i - III - VII - v, which is the minor loop behind more or less every big
+ * minor-key song of the last twenty years. It walks away from home and leans
+ * back towards it without ever arriving, which is what a backing wants - a
+ * progression that lands every four bars announces itself, and anything that
+ * announces itself during a level is competing with the level.
  */
-const ROOTS = [ HOME, HOME - 3 ];
+const CHORDS: Array<{ root: number; shape: number[] }> = [
+    { root: HOME, shape: [ 0, 3, 7 ] },
+    { root: HOME + 3, shape: [ 0, 4, 7 ] },
+
+    //  These two are voiced without their thirds - fourths and fifths stacked
+    //  instead. A third would be a semitone away from a note the player can
+    //  play, and with a three-second room something is always still sounding:
+    //  the chord under a run has to be built from the same five notes the run
+    //  is, or a good streak lands on a clash sooner or later.
+    { root: HOME + 10, shape: [ 0, 5, 7 ] },
+    { root: HOME + 7, shape: [ 0, 3, 5 ] }
+];
 
 /** How many bars before the whole thing comes round again. */
 export const LOOP_BARS = 8;
@@ -81,33 +93,37 @@ export interface Beat
 
     gain: number;
 
-    /** What kind of water it is. The backing is never a bubble. */
+    /** The backing is never the sound the player triggers. */
     timbre?: Timbre;
 }
 
 /**
- * One bar of the backing: running water, and the note under it.
+ * One bar of the backing: a chord, and the bass it stands on.
  *
- * There is no rhythm here on purpose. The game already makes a sound every
- * time an orb goes past - up to eight a second on the hardest levels - and a
- * backing with a pattern of its own underneath that was the thing that made it
- * all sound busy. This is a colour rather than a part.
+ * The bass is struck twice a bar and the chord once, and that is the entire
+ * rhythm of it. The game already makes a sound every time an orb goes past -
+ * up to eight a second on the hardest levels - and a backing with a pattern of
+ * its own underneath that is what made the whole thing sound busy.
  *
  * @param bar Which bar of the run, counted from the first. Loops on its own.
  */
 export function barNotes (bar: number): Beat[]
 {
     const step = ((bar % LOOP_BARS) + LOOP_BARS) % LOOP_BARS;
-    const root = ROOTS[Math.floor(step / 4) % ROOTS.length];
+    const chord = CHORDS[step % CHORDS.length];
 
     const notes: Beat[] = [
-        { semitones: root - 12, beat: 0, gain: 0.5, timbre: 'deep' },
-        { semitones: root, beat: 0, gain: 0.55, timbre: 'stream' },
-
-        //  A second low note halfway through, a fifth up, so the floor moves
-        //  once a bar without anything above it having to.
-        { semitones: root - 5, beat: MUSIC_BEATS_PER_BAR / 2, gain: 0.3, timbre: 'deep' }
+        { semitones: chord.root - 12, beat: 0, gain: 0.7, timbre: 'bass' },
+        { semitones: chord.root - 12, beat: MUSIC_BEATS_PER_BAR / 2, gain: 0.45, timbre: 'bass' }
     ];
+
+    //  Laid down together, barely spread, so the chord is heard as one thing
+    //  rather than as three notes that happen to agree.
+    chord.shape.forEach((interval, i) => {
+
+        notes.push({ semitones: chord.root + interval, beat: 0.05 * i, gain: 0.4, timbre: 'pad' });
+
+    });
 
     return notes.filter((note) => note.beat < MUSIC_BEATS_PER_BAR);
 }

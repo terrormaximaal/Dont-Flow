@@ -364,21 +364,20 @@ describe('a stretch of road that is asking for a lot at once', () => {
     //  up, and played in full they stop being collects and become a wash.
     it('drops the body of a cue that lands in a crowd', () => {
 
-        //  Everything that is not the bubble itself goes: the water under a
-        //  cue is what accumulates, both in the mix and in the room. A cue
-        //  made of nothing but water - a doorway is one - keeps its first
-        //  note, because a cue thinned away to silence is a cue the player
-        //  stops being told about exactly when the road is hardest.
+        //  Everything that is not the note itself goes: the chord and the bass
+        //  under a cue are what accumulate, both in the mix and in the room. A
+        //  cue made of nothing else - a doorway is one - keeps its first note,
+        //  because a cue thinned away to silence is a cue the player stops
+        //  being told about exactly when the road is hardest.
         for (const cue of CUES)
         {
             const full = voiceFor(cue);
             const crowded = thinned(full, 0.1);
-            const bubbles = (list: Strike[]) =>
-                list.filter((note) => note.timbre === undefined || note.timbre === 'sink');
+            const heard = (list: Strike[]) => list.filter((note) => note.timbre === undefined);
 
-            if (bubbles(full).length > 0)
+            if (heard(full).length > 0)
             {
-                expect(crowded, cue).toEqual(bubbles(full).map((note) => ({ ...note, gain: note.gain * CROWD_DUCK })));
+                expect(crowded, cue).toEqual(heard(full).map((note) => ({ ...note, gain: note.gain * CROWD_DUCK })));
             }
             else
             {

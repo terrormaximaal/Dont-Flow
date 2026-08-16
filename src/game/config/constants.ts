@@ -1717,11 +1717,11 @@ export const DEPTH_OVERLAY = 50;
 //  plays: no files, the same way every picture in it is drawn rather than
 //  loaded.
 //
-//  The instrument is water, because the player is a drop of it. A bubble
-//  rising through water is a sine tone whose pitch climbs as it goes - the
-//  bubble shrinks, so its resonance rises - under a very fast decay. That is
-//  the whole synthesis of a collect, and it is why this reads as the game
-//  rather than as a game.
+//  The instrument is the oldest recipe in synthesis: two sawtooths a few cents
+//  apart through a resonant lowpass, with an envelope on the *cutoff* rather
+//  than on the volume. Detuning is what makes it sound like a machine with
+//  parts in it rather than like arithmetic - two saws that agree exactly are
+//  one saw - and the filter opening and shutting is the whole character.
 
 /** Everything the game plays passes through this. */
 export const SOUND_MASTER = 0.9;
@@ -1750,78 +1750,71 @@ export const SOUND_ROOT_HZ = 261.63;
  */
 export const ORB_BASE_SEMITONES = -5;
 
-/**
- * How far above that a streak may climb. One octave.
- *
- * Two was too far. The top of it was where the sound stopped being musical,
- * and a streak long enough to get there is exactly the run that should sound
- * best rather than worst.
- */
+/** How far above that a streak may climb. One octave. */
 export const ORB_MAX_SEMITONES = 12;
 
-//  A bubble. The pitch climbs by about a fifth over the length of the note,
-//  and the note is over in a fifth of a second - which is what makes it read
-//  as "bloop" rather than as a rising tone. Sinking is the same thing
-//  backwards, and is what a mistake sounds like.
-export const BUBBLE_FROM = 0.82;
-export const BUBBLE_TO = 1.5;
-export const BUBBLE_ATTACK = 0.004;
+//  How far apart the two sawtooths are, in cents. Wider on the pad, because a
+//  pad is meant to be a mass rather than a note; narrow on a pluck, or the
+//  beating between them is heard as being out of tune rather than as width.
+export const SYNTH_DETUNE = 7;
+export const SYNTH_PAD_DETUNE = 14;
 
-/** How long a bubble lasts: a little longer for the low ones. */
-export const BUBBLE_DECAY_BASE = 0.12;
-export const BUBBLE_DECAY_SPAN = 130;
-export const BUBBLE_DECAY_MAX = 0.5;
+//  Where the filter opens to and shuts down to, as multiples of the note's own
+//  pitch, and how fast. On a pluck that sweep is over in half a second and is
+//  the "wow" at the front of every note; on the pad it takes seconds and is
+//  heard as the weather changing rather than as a filter.
+export const SYNTH_OPEN = 9;
+export const SYNTH_SHUT = 1.6;
+export const SYNTH_SWEEP = 0.5;
+export const SYNTH_Q = 3.2;
 
-//  The drop of water landing on top of it: a tick of noise, bandpassed around
-//  the note itself. It is the difference between a bubble and a bleep.
-export const DROPLET_GAIN = 0.15;
-export const DROPLET_DECAY = 0.02;
-export const DROPLET_BAND = 5;
-export const DROPLET_Q = 3;
+export const SYNTH_ATTACK = 0.006;
+export const SYNTH_DECAY_SPAN = 240;
+export const SYNTH_DECAY_BASE = 0.5;
+export const SYNTH_DECAY_MAX = 1.8;
 
-//  The stream: noise through a resonance that drifts, which is what running
-//  water is. It is the backing, and it has no rhythm at all.
-export const STREAM_ATTACK = 1.0;
-export const STREAM_HOLD = 0.6;
-export const STREAM_DECAY = 1.8;
-export const STREAM_Q = 2.2;
-export const STREAM_BAND_LOW = 3;
-export const STREAM_BAND_HIGH = 5;
-export const STREAM_SECONDS = 3.4;
+//  The pad: the same two saws with the attack opened right out, a gentler
+//  filter, and a sweep that takes most of a bar. It is the backing, and it has
+//  no rhythm of its own at all.
+export const PAD_OPEN = 5;
+export const PAD_SHUT = 1.8;
+export const PAD_Q = 1.2;
+export const PAD_ATTACK = 0.9;
+export const PAD_HOLD = 0.8;
+export const PAD_DECAY = 3.2;
 
-//  The deep note under it all: felt more than heard, and the only thing in the
-//  palette carrying the harmony on its own.
-export const DEEP_ATTACK = 0.6;
-export const DEEP_HOLD = 1.2;
-export const DEEP_DECAY = 1.8;
-export const DEEP_HARMONIC = 0.12;
+//  The bass: short, hard, and with a sine an octave down under it so the low
+//  end is felt rather than only heard. A saw that low would be mud.
+export const BASS_ATTACK = 0.01;
+export const BASS_DECAY = 1.4;
+export const BASS_SUB = 0.4;
 
 /** Headroom every note is played at, so a busy moment has somewhere to go. */
 export const SOUND_GAIN = 0.8;
 
 //  The room. Long and wide - the tail is most of the sound, and a note landing
 //  in it is what makes a streak feel like one phrase rather than a row of beeps.
-export const REVERB_SECONDS = 2.4;
+export const REVERB_SECONDS = 3.0;
 
 /** How sharply the tail falls away. Higher is a smaller, deader room. */
-export const REVERB_DECAY = 2.8;
+export const REVERB_DECAY = 2.0;
 
 /** Silence between the note and its room, in seconds. */
-export const REVERB_PREDELAY = 0.018;
+export const REVERB_PREDELAY = 0.024;
 
 //  Less than it was. A big room under single bright notes is atmosphere; the
 //  same room under chords that are already holding is a smear, and the two
 //  together were most of why the game sounded busy.
-export const REVERB_WET = 0.3;
-export const REVERB_DRY = 0.72;
+export const REVERB_WET = 0.34;
+export const REVERB_DRY = 0.66;
 
 //  A short echo, quiet and dark. Water in a space repeats before it blurs -
 //  a single reflection is the difference between a room and a cave, and it is
 //  what fills the gaps between collects without adding anything to play.
-export const ECHO_SECONDS = 0.29;
-export const ECHO_FEEDBACK = 0.24;
-export const ECHO_WET = 0.12;
-export const ECHO_DAMP = 2200;
+export const ECHO_SECONDS = 0.375;
+export const ECHO_FEEDBACK = 0.34;
+export const ECHO_WET = 0.16;
+export const ECHO_DAMP = 1600;
 
 /** Seed for the room's noise, so the reverb is identical on every device. */
 export const REVERB_SEED = 8317;
@@ -1831,7 +1824,7 @@ export const REVERB_SEED = 8317;
 //  Slow, because it plays for as long as the level does and anything with a
 //  pulse the player can tap along to becomes a metronome they are trying to
 //  collect in time with.
-export const MUSIC_BPM = 76;
+export const MUSIC_BPM = 80;
 export const MUSIC_BEATS_PER_BAR = 4;
 
 /**
@@ -1841,7 +1834,7 @@ export const MUSIC_BEATS_PER_BAR = 4;
  * listened to - and everything that matters to the player is a cue over the
  * top of it.
  */
-export const MUSIC_GAIN = 0.44;
+export const MUSIC_GAIN = 0.5;
 
 //  Scheduled a little ahead of the sound card and topped up on a timer, which
 //  is the only way to get music in time out of a browser: notes are handed to
