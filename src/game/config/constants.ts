@@ -18,7 +18,6 @@ export const GAME_HEIGHT = 854;
 //  Where the lanes actually are is worked out in `systems/Lanes`, from whatever
 //  the level being played asked for - not from here.
 export const DEFAULT_LANES = 3;
-export const MIN_LANES = 2;
 
 export const TRACK_WIDTH = 330;
 export const TRACK_LEFT = (GAME_WIDTH - TRACK_WIDTH) / 2;
@@ -370,11 +369,6 @@ export const RUNG_SPACING = 118;
 export const RUNG_THICKNESS = 5;
 
 //  Faint marks outside the track that scroll slower, for a sense of depth.
-export const SIDE_TICK_SPACING = 76;
-export const SIDE_TICK_PARALLAX = 0.55;
-export const SIDE_TICK_WIDTH = 26;
-export const SIDE_TICK_THICKNESS = 3;
-export const SIDE_TICK_GAP = 16;
 
 export const LANE_LINE_THICKNESS = 2;
 export const TRACK_EDGE_THICKNESS = 3;
@@ -794,6 +788,10 @@ export const ORB_REACT_SWELL = 0.4;
  * How far out a lined-up orb starts drifting towards the drop, and how much of
  * the way it gets. Presentation only: contact is still decided on the orb's
  * own lane position, which never moves.
+ *
+ * Both this and the swell above are eased in and out over ORB_LEAN_EASE rather
+ * than switched on the frame the drop lines up, or steering across a lane makes
+ * every orb in it flinch.
  */
 export const ORB_MAGNET_DISTANCE = 260;
 export const ORB_MAGNET_REACH = 0.85;
@@ -862,7 +860,6 @@ export const PORTAL_MOTE_ALPHA = 0.75;
 export const PORTAL_MOTE_RISE = 90;
 
 //  Kept for the level-complete banner's colours.
-export const GATE_HEIGHT = PORTAL_HEIGHT;
 
 // ---------------------------------------------------------------------------
 //  Finish
@@ -990,7 +987,6 @@ export const ENERGY_TIMER_OFFSET = 20;
 export const COLOR_ENERGY_FULL = 0x3fa9f5;
 export const COLOR_ENERGY_EMPTY = 0x243352;
 
-export const TITLE_ENERGY_Y = GAME_HEIGHT * 0.775;
 export const MENU_ENERGY_Y = 134;
 export const OVERLAY_ENERGY_Y = GAME_HEIGHT * 0.835;
 
@@ -1050,13 +1046,9 @@ export const COLOR_BUTTON_LOCKED_LABEL = '#4a5675';
 // ---------------------------------------------------------------------------
 
 /** Menu screens scroll the track behind them, at a fraction of play speed. */
-export const MENU_SCROLL_SPEED = 90;
 
-export const TITLE_LOGO_Y = GAME_HEIGHT * 0.30;
 export const TITLE_DROP_RADIUS = 34;
-export const TITLE_SIZE = 46;
 export const TITLE_TAGLINE_SIZE = 15;
-export const TITLE_BUTTONS_Y = GAME_HEIGHT * 0.60;
 
 export const MENU_HEADING_SIZE = 26;
 export const MENU_HEADING_Y = 88;
@@ -1155,7 +1147,6 @@ export const ROUTE_PHASE = 0;
 
 /** The stop itself, and the ring drawn around the one you would play next. */
 export const ROUTE_NODE_RADIUS = 26;
-export const ROUTE_NODE_RING = 4;
 export const ROUTE_NEXT_PULSE = 6;
 export const ROUTE_NEXT_PULSE_MS = 1100;
 
@@ -1229,16 +1220,7 @@ export const BEAD_LOCKED_MUTE = 0.8;
 export const ROUTE_DONE_ALPHA = 0.85;
 export const ROUTE_LOCKED_ALPHA = 0.16;
 
-export const LEVEL_COLUMNS = 2;
-export const LEVEL_ROW_WIDTH = 150;
-export const LEVEL_ROW_HEIGHT = 66;
-export const LEVEL_ROW_GAP = 14;
 //  Leaves room for the energy meter and its countdown above the first row.
-export const LEVEL_ROW_FIRST_Y = 248;
-export const LEVEL_ROW_NAME_SIZE = 24;
-export const LEVEL_ROW_DETAIL_SIZE = 12;
-export const LEVEL_ROW_NAME_OFFSET = -11;
-export const LEVEL_ROW_DETAIL_OFFSET = 15;
 
 // ---------------------------------------------------------------------------
 //  Pause
@@ -1546,9 +1528,8 @@ export const MUTE_MARGIN = 18;
  * for the sound had a real chance of turning the shape marks off instead, and
  * those marks are the thing some players cannot play without.
  */
-export const MUTE_LINE = 46;
-export const MUTE_SIZE = '13px';
-export const MUTE_ALPHA = 0.55;
+export const MUTE_LINE = 47;
+
 
 /**
  * What a corner switch is worth touching, as opposed to what it is worth
@@ -1574,8 +1555,8 @@ export const MUTE_ALPHA = 0.55;
 //  as a caption rather than as a control - and a setting a player cannot find
 //  is a setting that is not there. As a pill they are the same shape as every
 //  other thing in this game that answers to a finger.
-export const CHIP_WIDTH = 132;
-export const CHIP_HEIGHT = 34;
+export const CHIP_WIDTH = 150;
+export const CHIP_HEIGHT = 46;
 export const CHIP_PAD = 12;
 export const CHIP_ICON = 15;
 export const CHIP_GAP = 8;
@@ -1592,8 +1573,7 @@ export const CHIP_GLYPH_WIDTH = 1.6;
  */
 export const CHIP_OFF_ALPHA = 0.62;
 
-export const MUTE_TOUCH_HEIGHT = 46;
-export const MUTE_TOUCH_WIDTH = 150;
+
 
 export const SURVIVAL_TABLE = 5;
 export const SURVIVAL_TABLE_SHOWN = 3;
@@ -1780,11 +1760,6 @@ export const FADE_IN_DISTANCE = 900;
 // ---------------------------------------------------------------------------
 
 export const COLOR_BG = 0x0b1020;
-export const COLOR_TRACK = 0x131c30;
-export const COLOR_LANE_LINE = 0x1e2b47;
-export const COLOR_TRACK_EDGE = 0x2b3d63;
-export const COLOR_RUNG = 0x1c2743;
-export const COLOR_SIDE_TICK = 0x172038;
 
 export const COLOR_DROP_NEUTRAL = 0xcfe8ff;
 export const COLOR_DROP_HIGHLIGHT = 0xffffff;
@@ -1797,7 +1772,6 @@ export const COLOR_DROP_HIGHLIGHT = 0xffffff;
 export const DEPTH_GROUND = -8;
 export const DEPTH_ROADSIDE = -4;
 export const DEPTH_TRACK = 0;
-export const DEPTH_RUNGS = 1;
 //  Above the road it is laid on, below the things it must never hide.
 export const DEPTH_TRAIL = 2;
 export const DEPTH_GATES = 5;

@@ -5,9 +5,9 @@ import {
     GAME_HEIGHT,
     MUTE_LINE,
     MUTE_MARGIN,
-    MUTE_SIZE,
-    MUTE_TOUCH_HEIGHT,
-    MUTE_TOUCH_WIDTH,
+    CHIP_HEIGHT,
+    CHIP_LABEL_SIZE,
+    CHIP_WIDTH,
     TITLE_DROP_RADIUS,
     TITLE_TAGLINE_SIZE
 } from '../src/game/config/constants';
@@ -143,12 +143,18 @@ describe('the switches in the corner', () => {
     //  between it and a switch that does something entirely different. Nothing
     //  looked wrong, because the buttons on the same screen are 246 by 62. It
     //  took measuring the hit areas to see it.
+    //
+    //  They are drawn pills now rather than words with an invisible area behind
+    //  them, so these read the pill - which is also what the player sees, and
+    //  the only version of this guard that cannot be orphaned by a redraw. It
+    //  was: the switches became chips and these went on measuring two constants
+    //  nothing had read since.
     it('answer to a finger rather than to the size of their own type', () => {
 
-        const type = Number.parseInt(MUTE_SIZE, 10);
+        const type = Number.parseInt(CHIP_LABEL_SIZE, 10);
 
-        expect(MUTE_TOUCH_HEIGHT, 'touch height against type size').toBeGreaterThan(type * 3);
-        expect(MUTE_TOUCH_WIDTH, 'touch width').toBeGreaterThan(MUTE_TOUCH_HEIGHT * 2);
+        expect(CHIP_HEIGHT, 'touch height against type size').toBeGreaterThan(type * 3);
+        expect(CHIP_WIDTH, 'touch width').toBeGreaterThan(CHIP_HEIGHT * 2);
 
     });
 
@@ -158,7 +164,7 @@ describe('the switches in the corner', () => {
     //  players cannot read the game without.
     it('are spaced so that neither can be hit by aiming at the other', () => {
 
-        expect(MUTE_LINE, 'line spacing against touch height').toBeGreaterThanOrEqual(MUTE_TOUCH_HEIGHT);
+        expect(MUTE_LINE, 'line spacing against touch height').toBeGreaterThanOrEqual(CHIP_HEIGHT);
 
     });
 
@@ -167,10 +173,8 @@ describe('the switches in the corner', () => {
     //  lands on and a switch reaching into it would be a worse trade.
     it('stay clear of the drop above the wordmark', () => {
 
-        const type = Number.parseInt(MUTE_SIZE, 10);
-
-        //  Centred on the lower label, which sits one line below the margin.
-        const lowest = MUTE_MARGIN + MUTE_LINE + (type / 2) + (MUTE_TOUCH_HEIGHT / 2);
+        //  The bottom of the lower pill, which hangs one line below the margin.
+        const lowest = MUTE_MARGIN + MUTE_LINE + CHIP_HEIGHT;
 
         expect(lowest, 'bottom of the lower switch').toBeLessThan(MENU_LAYOUT.dropY - TITLE_DROP_RADIUS);
 

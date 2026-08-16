@@ -143,14 +143,12 @@ export const TITLE_FLOW_STOPS = [ '#5df3ff', '#7ea8ff', '#d46bff', '#ff6bc4' ];
 
 /** Kept for anything still asking for a single fill. */
 export const TITLE_FILL_TOP = '#ffffff';
-export const TITLE_FILL_LOW = '#7fd8ff';
 
 /** The glow behind it, and how far it spreads. */
 export const TITLE_GLOW = '#8a4bff';
 export const TITLE_GLOW_BLUR = 34;
 
 /** Space between letters, for anything setting a single line. */
-export const TITLE_TRACKING = 4;
 
 /**
  * The rule above the wordmark, which gives the block a top edge to hang from.

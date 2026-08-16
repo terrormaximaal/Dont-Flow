@@ -416,9 +416,7 @@ export class Play extends Scene
         {
             const gained = this.scoring.collect();
 
-            //  Pitched off the combo *after* it rose, so the first orb of a
-            //  streak is the first note rather than a repeat of the last one.
-            play('orb', this.scoring.getCombo());
+            play('orb');
 
             const colorId = this.drop.getColorId();
 

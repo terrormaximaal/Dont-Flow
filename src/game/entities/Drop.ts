@@ -15,6 +15,7 @@ import {
     DROP_STRETCH,
     DROP_TILT_SMOOTHING,
     JUMP_LANDING_SQUASH,
+    DIVE_SPAN,
     JUMP_LIFT,
     JUMP_SHADOW_FADE,
     JUMP_SHADOW_SHRINK,
@@ -310,12 +311,27 @@ export class Drop
         {
             if (hasDived(travelled, this.dive.from, this.dive.height))
             {
+                //  Where a dive puts the drop down, worked out rather than
+                //  taken from the frame that noticed - the same rule the arc
+                //  lands by, and for the same reason: a frame can overrun by
+                //  any amount and the next take-off has to be in the same place
+                //  whatever the frame rate did.
+                const landedAt = this.dive.from + (DIVE_SPAN * this.dive.height);
+
                 this.dive = null;
-                this.takeoff = null;
+
+                //  A jump asked for on the way down is honoured here, exactly
+                //  as one asked for on the way down an arc is. Diving to the
+                //  ground in order to jump again immediately is the whole point
+                //  of being able to dive, and without this the request was
+                //  quietly dropped.
+                this.takeoff = bufferedTakeoff(landedAt, this.requested);
+                this.requested = null;
                 this.height = 0;
 
                 this.juice.pulse();
-                play('land');
+
+                if (this.takeoff === null) { play('land'); }
             }
             else
             {
