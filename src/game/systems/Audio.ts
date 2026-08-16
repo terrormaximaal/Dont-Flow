@@ -308,11 +308,14 @@ function schedule (
             continue;
         }
 
-        //  The tune takes the wetter of the two junctions. It is the only
-        //  voice that is blown rather than struck, and the only one a room
-        //  flatters instead of blurring.
+        //  The two voices that carry a tune take the wetter of the junctions:
+        //  the bell the menus play and the winds the jingles are played by.
+        //  Both ring on after they are struck, and a ringing note with no room
+        //  around it is a test tone. Everything else here is a short event and
+        //  a room only blurs those.
+        const sings = note.timbre === 'lead' || note.timbre === 'pluck';
         const wetter = bus !== null ? bus.airy : chain.airy;
-        const where = room && note.timbre === 'lead' ? wetter : into;
+        const where = room && sings ? wetter : into;
 
         strike(ctx, where, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
     }

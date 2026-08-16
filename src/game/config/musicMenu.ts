@@ -1,4 +1,4 @@
-import { MENU_BELL_GAIN, MENU_TUNE_CEILING, MENU_TUNE_GAIN } from './constants';
+import { MENU_TUNE_CEILING, MENU_TUNE_GAIN } from './constants';
 import { Beat } from './music';
 import { SELECT, TOPLINE } from './score';
 
@@ -46,23 +46,21 @@ export function selectBar (bar: number): Beat[]
         }
     }
 
-    //  Well down under the chords. It is the only melody in the game and it
-    //  plays for as long as somebody takes to choose, so it wants to be the
-    //  thing they notice on the second listen rather than the first.
+    //  Plucked rather than blown, and well down under the chords.
+    //
+    //  A bell has no sustain to argue with the chords underneath and a long
+    //  tail to sit in the room, which is the opposite of the wind that was here
+    //  before: that held every note at full for as long as it lasted, and a
+    //  held melody over a moving chord figure is two things asking to be
+    //  followed at once. Struck and left to ring, it decorates instead.
+    //
+    //  The written note lengths are handed on as before. They do not stretch
+    //  the sound - a bell rings for as long as a bell rings - but a note
+    //  written long still keeps the room to itself, which is most of what being
+    //  written long meant.
     for (const [ beat, semitones, held ] of TOPLINE[step])
     {
-        notes.push({ semitones: folded(semitones), beat, gain: MENU_TUNE_GAIN, timbre: 'lead', held });
-    }
-
-    //  And a bell on the turn of every other bar, an octave over the chord.
-    //
-    //  One note every three seconds or so, which is the most a decoration can
-    //  be before it becomes a part. It rings for the better part of a second
-    //  and has nothing else up there to argue with, so it reads as a highlight
-    //  on the chord rather than as another line to follow.
-    if (step % 2 === 0)
-    {
-        notes.push({ semitones: shape.full[shape.full.length - 1] + 12, beat: 0, gain: MENU_BELL_GAIN, timbre: 'pluck' });
+        notes.push({ semitones: folded(semitones), beat, gain: MENU_TUNE_GAIN, timbre: 'pluck', held });
     }
 
     return notes;

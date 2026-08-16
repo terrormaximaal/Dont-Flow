@@ -15,6 +15,7 @@ import {
 } from '../config/constants';
 import { EnergySystem } from '../systems/EnergySystem';
 import { Button, ButtonVariant } from './Button';
+import { ToggleChip } from './ToggleChip';
 import { EnergyMeter } from './EnergyMeter';
 
 export interface PauseActions
@@ -22,6 +23,10 @@ export interface PauseActions
     onResume: () => void;
     onRetry: () => void;
     onMenu: () => void;
+
+    /** Whether sound is on, and what to do when the switch is pressed. */
+    sound: boolean;
+    onSound: (on: boolean) => void;
 }
 
 /**
@@ -90,6 +95,23 @@ export class PauseOverlay
 
             this.layer.add(button.container);
 
+        });
+
+        //  The sound switch, here as well as on the title.
+        //
+        //  Pause is where somebody reaches when the room changes - a train
+        //  fills up, somebody starts talking - and until now the only way to
+        //  silence the game from inside a run was to leave the run. That is a
+        //  real cost for a thing that should take one tap.
+        new ToggleChip(scene, {
+            x: GAME_WIDTH / 2,
+            y: centerY + 30 + (buttons.length * step) + BUTTON_GAP,
+            label: 'SOUND',
+            icon: 'sound',
+            on: actions.sound,
+            origin: 0.5,
+            onChange: actions.onSound,
+            into: this.layer
         });
 
         //  What is left for another run, and the only thing on this screen that

@@ -1,7 +1,4 @@
-//  Geom is imported rather than reached for through the Phaser global: the
-//  types are ambient, so a global reference typechecks and then fails at run
-//  time under the ESM build - which is exactly how it failed here first.
-import { Geom, Scene } from 'phaser';
+import { Scene } from 'phaser';
 import {
     BUTTON_HEIGHT,
     BUTTON_WIDTH,
@@ -9,12 +6,8 @@ import {
     DEPTH_HUD,
     GAME_WIDTH,
     HUD_FONT,
-    MUTE_ALPHA,
     MUTE_LINE,
     MUTE_MARGIN,
-    MUTE_SIZE,
-    MUTE_TOUCH_HEIGHT,
-    MUTE_TOUCH_WIDTH,
     RESUME_AT_LAST_LEVEL,
     TITLE_DROP_RADIUS,
     TITLE_TAGLINE_SIZE
@@ -39,8 +32,9 @@ import { MenuSky } from '../systems/MenuSky';
 import { SaveSystem } from '../systems/SaveSystem';
 import { Button } from '../ui/Button';
 //  Aliased: this scene already has a local called play - the PLAY button.
-import { listenForGesture, play as playCue, setMuted, wakeAudio } from '../systems/Audio';
+import { listenForGesture, setMuted } from '../systems/Audio';
 import { startMenuMusic } from '../systems/Music';
+import { ToggleChip } from '../ui/ToggleChip';
 import { setMarks } from '../systems/marks';
 import { EnergyMeter } from '../ui/EnergyMeter';
 import { MENU_LAYOUT } from '../ui/menuLayout';
@@ -175,34 +169,19 @@ export class Title extends Scene
         //  moment there is a context to begin into.
         startMenuMusic();
 
-        const speaker = this.add.text(GAME_WIDTH - MUTE_MARGIN, MUTE_MARGIN, save.isMuted() ? 'SOUND OFF' : 'SOUND ON', {
-            fontFamily: HUD_FONT,
-            fontSize: MUTE_SIZE,
-            color: COLOR_HUD_DIM
-        });
+        new ToggleChip(this, {
+            x: GAME_WIDTH - MUTE_MARGIN,
+            y: MUTE_MARGIN,
+            label: 'SOUND',
+            icon: 'sound',
+            on: !save.isMuted(),
+            onChange: (on) => {
 
-        speaker.setOrigin(1, 0);
-        speaker.setDepth(DEPTH_HUD);
-        speaker.setAlpha(MUTE_ALPHA);
+                save.setMuted(!on);
+                setMuted(!on);
 
-        Title.widenTouch(speaker);
-
-        speaker.on('pointerdown', () => {
-
-            //  Woken here as well as in Button: this is a real gesture, and a
-            //  player who turns the sound *on* should hear the next thing that
-            //  happens rather than having to press something else first.
-            wakeAudio();
-
-            const next = !save.isMuted();
-
-            save.setMuted(next);
-            setMuted(next);
-            speaker.setText(next ? 'SOUND OFF' : 'SOUND ON');
-
-            playCue('press');
-
-        });
+            }
+        }).container.setDepth(DEPTH_HUD);
 
         //  The other switch, under the sound. Named for what it does rather
         //  than for who it is for: "colour blind mode" is a label a player has
@@ -210,36 +189,19 @@ export class Title extends Scene
         //  would benefit do not think of themselves that way.
         setMarks(save.hasMarks());
 
-        const marks = this.add.text(
-            GAME_WIDTH - MUTE_MARGIN,
-            MUTE_MARGIN + MUTE_LINE,
-            save.hasMarks() ? 'SHAPES ON' : 'SHAPES OFF',
-            {
-                fontFamily: HUD_FONT,
-                fontSize: MUTE_SIZE,
-                color: COLOR_HUD_DIM
+        new ToggleChip(this, {
+            x: GAME_WIDTH - MUTE_MARGIN,
+            y: MUTE_MARGIN + MUTE_LINE,
+            label: 'SHAPES',
+            icon: 'shapes',
+            on: save.hasMarks(),
+            onChange: (on) => {
+
+                save.setMarks(on);
+                setMarks(on);
+
             }
-        );
-
-        marks.setOrigin(1, 0);
-        marks.setDepth(DEPTH_HUD);
-        marks.setAlpha(MUTE_ALPHA);
-
-        Title.widenTouch(marks);
-
-        marks.on('pointerdown', () => {
-
-            wakeAudio();
-
-            const next = !save.hasMarks();
-
-            save.setMarks(next);
-            setMarks(next);
-            marks.setText(next ? 'SHAPES ON' : 'SHAPES OFF');
-
-            playCue('press');
-
-        });
+        }).container.setDepth(DEPTH_HUD);
 
         this.meter = new EnergyMeter(this, MENU_LAYOUT.meterY, energy);
 
@@ -339,30 +301,6 @@ export class Title extends Scene
                 ease: 'Cubic.Out'
             });
 
-        });
-    }
-
-    /**
-     * Gives a corner label something a finger can actually find.
-     *
-     * The area that responds is set explicitly rather than left to default to
-     * the glyph box, because the glyph box is the size of the type and a finger
-     * is not. Drawn appearance is untouched - the label stays a quiet word in a
-     * corner, which is the right weight for it; only what it answers to grows.
-     *
-     * Hit areas are in the object's own untransformed space, where the origin
-     * is the top left of the frame whatever the display origin is, so the same
-     * padding works for a right-aligned label as for any other.
-     */
-    private static widenTouch (label: Phaser.GameObjects.Text): void
-    {
-        const padX = (MUTE_TOUCH_WIDTH - label.width) / 2;
-        const padY = (MUTE_TOUCH_HEIGHT - label.height) / 2;
-
-        label.setInteractive({
-            useHandCursor: true,
-            hitArea: new Geom.Rectangle(-padX, -padY, MUTE_TOUCH_WIDTH, MUTE_TOUCH_HEIGHT),
-            hitAreaCallback: Geom.Rectangle.Contains
         });
     }
 

@@ -45,7 +45,7 @@ function wholeMenu ()
 function tuneOf (bar: number)
 {
     return selectBar(bar)
-        .filter((note) => note.timbre === 'lead')
+        .filter((note) => note.timbre === 'pluck')
         .sort((a, b) => a.beat - b.beat);
 }
 
@@ -298,31 +298,27 @@ describe('the music on the level select', () => {
     //  while choosing is the point.
     it('is where the tune is', () => {
 
-        expect(wholeMenu().filter((note) => note.timbre === 'lead').length).toBeGreaterThan(50);
+        expect(wholeMenu().filter((note) => note.timbre === 'pluck').length).toBeGreaterThan(50);
 
     });
 
     //  Nobody is playing on that screen. A beat there is a screen telling
     //  somebody reading a map of twenty levels to hurry up.
-    it('has chords, a tune and a bell, and no drums', () => {
+    it('has chords and a plucked tune, and no drums', () => {
 
         const voices = new Set(wholeMenu().map((note) => note.timbre));
 
-        expect([ ...voices ].sort()).toEqual([ 'chord', 'lead', 'pluck' ]);
+        expect([ ...voices ].sort()).toEqual([ 'chord', 'pluck' ]);
 
     });
 
-    //  A decoration that can be picked out from across a room has stopped
-    //  being a decoration. One note every other bar, quieter than the tune.
-    it('keeps the bell to an ornament rather than a part', () => {
+    //  Struck and left to ring, rather than blown and held. A held melody over
+    //  a moving chord figure is two things asking to be followed at once; a
+    //  bell has no sustain to argue with what is underneath it.
+    it('plays the tune on the bell rather than the wind', () => {
 
-        const bells = wholeMenu().filter((note) => note.timbre === 'pluck');
-        const tune = wholeMenu().filter((note) => note.timbre === 'lead');
-
-        expect(bells.length).toBe(MENU_BARS / 2);
-        expect(bells.length, 'far rarer than the tune').toBeLessThan(tune.length / 3);
-        expect(Math.max(...bells.map((n) => n.gain)))
-            .toBeLessThan(Math.max(...tune.map((n) => n.gain)));
+        expect(wholeMenu().filter((note) => note.timbre === 'lead')).toHaveLength(0);
+        expect(wholeMenu().filter((note) => note.timbre === 'pluck').length).toBeGreaterThan(50);
 
     });
 
@@ -331,7 +327,7 @@ describe('the music on the level select', () => {
     //  piercing. Folding it back leaves the shape and lowers the register.
     it('keeps the tune inside one register', () => {
 
-        const notes = wholeMenu().filter((note) => note.timbre === 'lead');
+        const notes = wholeMenu().filter((note) => note.timbre === 'pluck');
         const written = Math.max(...TOPLINE.flat().map(([ , semitones ]) => semitones));
 
         expect(Math.max(...notes.map((n) => n.semitones)), 'lower than written').toBeLessThan(written);
@@ -390,16 +386,16 @@ describe('the music on the level select', () => {
     //  that lets go of them is a different tune. What it may not do is still be
     //  sounding a bar later, which on one oscillator is not a held note but a
     //  test tone.
-    it('lets the tune hold its long notes, but never past its own bar', () => {
+    //  A bell rings for as long as a bell rings, however long the note was
+    //  written - but it has to be gone before the bar is, or thirty-two of
+    //  them a minute would pile into each other.
+    it('lets the bell ring, but never past its own bar', () => {
 
         const barSeconds = (60 / MUSIC_BPM) * MUSIC_BEATS_PER_BAR;
-        const beat = 60 / MUSIC_BPM;
-        const rings = wholeMenu()
-            .filter((note) => note.timbre === 'lead')
-            .map((note) => decayOf(note.semitones, 'lead', (note.held ?? 0) * beat));
+        const ring = decayOf(0, 'pluck');
 
-        expect(Math.max(...rings), 'the longest').toBeLessThan(barSeconds);
-        expect(Math.max(...rings), 'and still a held note').toBeGreaterThan(0.5);
+        expect(ring, 'gone before the bar is').toBeLessThan(barSeconds);
+        expect(ring, 'and long enough to be a bell').toBeGreaterThan(0.5);
 
     });
 

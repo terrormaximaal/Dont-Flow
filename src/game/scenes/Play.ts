@@ -32,7 +32,7 @@ import {
     SHAKE_INTENSITY
 } from '../config/constants';
 import { buildLevel, drainAt, HazardZone, LEAD_IN, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
-import { listenForGesture, play, wakeAudio } from '../systems/Audio';
+import { listenForGesture, play, setMuted, wakeAudio } from '../systems/Audio';
 import { setFinale, startMusic, stopMusic } from '../systems/Music';
 import { Coach } from '../ui/Coach';
 import { firstForcedJump, isPrompting } from '../systems/coach';
@@ -717,6 +717,18 @@ export class Play extends Scene
                     this.abandon();
 
                     leaveTo(this, () => this.scene.start('Title'));
+
+                },
+
+                //  Silencing a run without leaving it. Pause is where somebody
+                //  reaches when the room changes, and until now the only way
+                //  out of the sound was out of the level.
+                sound: !this.save.isMuted(),
+
+                onSound: (on) => {
+
+                    this.save.setMuted(!on);
+                    setMuted(!on);
 
                 }
             }, new EnergySystem(this.save));

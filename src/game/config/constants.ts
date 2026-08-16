@@ -1523,6 +1523,30 @@ export const MUTE_ALPHA = 0.55;
  * generous than the words need - is where the rest of the forgiveness comes
  * from.
  */
+//  The switches in the corner, and the one in the pause overlay.
+//
+//  They were two dim words with an invisible hit area behind them, which reads
+//  as a caption rather than as a control - and a setting a player cannot find
+//  is a setting that is not there. As a pill they are the same shape as every
+//  other thing in this game that answers to a finger.
+export const CHIP_WIDTH = 132;
+export const CHIP_HEIGHT = 34;
+export const CHIP_PAD = 12;
+export const CHIP_ICON = 15;
+export const CHIP_GAP = 8;
+export const CHIP_LABEL_SIZE = '12px';
+export const CHIP_FILL_ALPHA = 0.16;
+export const CHIP_EDGE_ALPHA = 0.4;
+export const CHIP_GLYPH_WIDTH = 1.6;
+
+/**
+ * How far back a switch is drawn when it is off.
+ *
+ * Back rather than out. A switch that vanishes when it is off is a switch a
+ * player cannot find in order to turn it on again.
+ */
+export const CHIP_OFF_ALPHA = 0.62;
+
 export const MUTE_TOUCH_HEIGHT = 46;
 export const MUTE_TOUCH_WIDTH = 150;
 
@@ -1900,8 +1924,12 @@ export const CHORD_DECAY = 0.13;
 export const PLUCK_ATTACK = 0.002;
 export const PLUCK_DECAY = 0.85;
 export const PLUCK_FM_RATIO = 2.76;
-export const PLUCK_FM_INDEX = 1.1;
-export const PLUCK_FM_FALL = 0.14;
+
+//  Struck harder and left bright for longer than the electric piano is. The
+//  sidebands are the whole ring of a bell: collapse them in a fortieth of a
+//  second and what is left is a sine, which is a tone rather than a strike.
+export const PLUCK_FM_INDEX = 2.4;
+export const PLUCK_FM_FALL = 0.26;
 
 export const CHORD_FM_RATIO = 2;
 export const CHORD_FM_INDEX = 2.6;
@@ -2035,12 +2063,13 @@ export const MUSIC_SELECT_GAIN = 0.85;
 /**
  * And how loud the tune is within that, against the chords under it.
  *
- * Well down. It is the only melody in the game and it plays for as long as
- * somebody takes to choose a level - which means it wants to be the thing they
- * notice on the second listen, not the first. A tune mixed to the front of a
- * menu is a tune people are sick of before they have played anything.
+ * It came down from half when the tune was blown, because a wind instrument
+ * holds every note at full for as long as it lasts and that put the melody in
+ * front of everything. Plucked it is a strike and a tail, gone before the next
+ * chord, so the same number is a much smaller presence - and at a fifth of the
+ * mix the bell had simply disappeared under eight chord notes a bar.
  */
-export const MENU_TUNE_GAIN = 0.3;
+export const MENU_TUNE_GAIN = 0.45;
 
 /**
  * The highest the tune is allowed to sit, in semitones over the root.
@@ -2052,14 +2081,6 @@ export const MENU_TUNE_GAIN = 0.3;
  */
 export const MENU_TUNE_CEILING = 15;
 
-/**
- * And how loud the bell over it is.
- *
- * Quieter than the tune. It rings for the better part of a second with nothing
- * else up there to argue with, and a decoration that can be picked out from
- * across a room has stopped being a decoration.
- */
-export const MENU_BELL_GAIN = 0.22;
 
 /**
  * How quiet the first note of a jingle is against its last.
