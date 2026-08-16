@@ -1,4 +1,4 @@
-import { ORB_BASE_SEMITONES, ORB_MAX_SEMITONES, PIANO_ROOT_HZ } from './constants';
+import { ORB_BASE_SEMITONES, ORB_MAX_SEMITONES, SOUND_ROOT_HZ } from './constants';
 import { THEME } from './music';
 import { Timbre } from '../systems/voice';
 
@@ -136,7 +136,7 @@ export function semitonesFor (combo: number): number
 
 export function frequencyOf (semitones: number): number
 {
-    return PIANO_ROOT_HZ * Math.pow(2, semitones / 12);
+    return SOUND_ROOT_HZ * Math.pow(2, semitones / 12);
 }
 
 /** The note an orb is worth, in hertz. */
@@ -161,91 +161,75 @@ export function voiceFor (cue: Cue, combo = 0): Strike[]
 {
     switch (cue)
     {
-        //  The one sound the player hears constantly, and the one that turned
-        //  the game into an alarm: a bright note, once a second, into a long
-        //  room. It is now a chord rather than a note - the note itself, struck,
-        //  with its own octave held quietly underneath. The held note is what
-        //  gives it a body to land in, and it is the reason a run of them reads
-        //  as a phrase rather than as a row of pips.
+        //  A bubble, rising with the streak. The one sound the player hears
+        //  constantly, so it is the one everything else is built around.
         case 'orb':
-            return [
-                { semitones: semitonesFor(combo), at: 0, gain: 0.62 },
-                { semitones: semitonesFor(combo) - 12, at: 0.012, gain: 0.3, timbre: 'held' }
-            ];
+            return [ { semitones: semitonesFor(combo), at: 0, gain: 0.8 } ];
 
-        //  Below everything a streak can reach, and the only interval in the
-        //  game that is not in the scale: a wrong colour should sound wrong
-        //  without anybody having to be told.
+        //  A bubble going the wrong way, low, with a second one under it. A
+        //  bubble that sinks is heard as wrong before it is read as wrong,
+        //  which is the whole reason the instrument is water.
         case 'wrong':
             return [
-                { semitones: -10, at: 0, gain: 0.8 },
-                { semitones: -15, at: 0.02, gain: 0.5, timbre: 'held' }
+                { semitones: -14, at: 0, gain: 0.85, timbre: 'sink' },
+                { semitones: -19, at: 0.03, gain: 0.5, timbre: 'sink' }
             ];
 
-        //  A gate is not a reward or a mistake, it is a door opening. Held
-        //  rather than struck, and low: at a dozen a level, anything with a
-        //  hammer on it becomes the pulse of the game.
+        //  Passing through a doorway: a wash of water, no pitch to speak of.
+        //  At a dozen a level it has to be the least eventful thing here.
         case 'gate':
-            return [
-                { semitones: -17, at: 0, gain: 0.3, timbre: 'held' },
-                { semitones: -10, at: 0.02, gain: 0.22, timbre: 'held' }
-            ];
+            return [ { semitones: -5, at: 0, gain: 0.26, timbre: 'stream' } ];
 
         case 'jump':
-            return [ { semitones: 4, at: 0, gain: 0.3 } ];
+            return [ { semitones: 14, at: 0, gain: 0.4 } ];
 
-        //  Lower than the jump and quieter, so an arc reads as one gesture with
-        //  two ends rather than as two events.
+        //  Coming back down, which on this instrument is simply the same
+        //  gesture reversed.
         case 'land':
-            return [ { semitones: -5, at: 0, gain: 0.22 } ];
+            return [ { semitones: -2, at: 0, gain: 0.3, timbre: 'sink' } ];
 
-        //  The one cue that is unmistakably good news. Held, so it arrives as a
-        //  chord opening out rather than as four more pips.
+        //  The one cue that is unmistakably good news: a whole stream of them
+        //  going up at once.
         case 'rainbow':
-            return [
-                { semitones: -5, at: 0, gain: 0.45, timbre: 'held' },
-                { semitones: 2, at: 0.08, gain: 0.45, timbre: 'held' },
-                { semitones: 7, at: 0.16, gain: 0.45, timbre: 'held' },
-                { semitones: 12, at: 0.24, gain: 0.5, timbre: 'held' }
-            ];
+            return [ 0, 4, 7, 12, 16, 19, 24 ].map((semitones, i) => ({
+                semitones, at: i * 0.05, gain: 0.45
+            }));
 
-        //  The heaviest thing in the game, because losing one of three chances
-        //  is the most important thing that happens in a run.
+        //  The heaviest thing in the game. Deep, and the only cue that reaches
+        //  down to where a phone can barely follow it - on headphones it lands
+        //  in the chest.
         case 'life':
             return [
-                { semitones: -17, at: 0, gain: 0.9 },
-                { semitones: -12, at: 0.04, gain: 0.5, timbre: 'held' }
+                { semitones: -17, at: 0, gain: 0.9, timbre: 'sink' },
+                { semitones: -24, at: 0.02, gain: 0.7, timbre: 'deep' }
             ];
 
-        //  Running out: down, and deliberately not ugly. The run ending is
-        //  already clear from everything else on the screen, and a harsh sound
-        //  on top of it makes the player want to stop playing rather than press
-        //  retry.
+        //  Running out: three bubbles sinking, and the water closing over it.
         case 'fail':
             return [
-                { semitones: -10, at: 0, gain: 0.75 },
-                { semitones: -13, at: 0.16, gain: 0.65 },
-                { semitones: -17, at: 0.34, gain: 0.8 },
-                { semitones: -22, at: 0.36, gain: 0.4, timbre: 'held' }
+                { semitones: -10, at: 0, gain: 0.7, timbre: 'sink' },
+                { semitones: -14, at: 0.16, gain: 0.65, timbre: 'sink' },
+                { semitones: -19, at: 0.34, gain: 0.75, timbre: 'sink' },
+                { semitones: -24, at: 0.36, gain: 0.5, timbre: 'deep' }
             ];
 
-        //  Reaching the finish: the theme's arch taken upwards, over a chord
-        //  that opens under it.
+        //  Reaching the finish: up through the octave, and the surface breaking.
         case 'finish':
             return [
-                { semitones: -5, at: 0, gain: 0.4, timbre: 'held' },
-                { semitones: 0, at: 0.02, gain: 0.35, timbre: 'held' },
-                { semitones: 2, at: 0.14, gain: 0.7 },
-                { semitones: 7, at: 0.28, gain: 0.75 },
-                { semitones: 12, at: 0.44, gain: 0.85 }
+                { semitones: 0, at: 0, gain: 0.6 },
+                { semitones: 0, at: 0.02, gain: 0.35, timbre: 'stream' },
+                { semitones: -12, at: 0.04, gain: 0.5, timbre: 'deep' },
+                { semitones: 7, at: 0.12, gain: 0.65 },
+                { semitones: 12, at: 0.24, gain: 0.7 },
+                { semitones: 19, at: 0.36, gain: 0.8 }
             ];
 
         //  Barely there. A menu that clicks loudly is a menu people turn off.
         case 'press':
-            return [ { semitones: 7, at: 0, gain: 0.16 } ];
+            return [ { semitones: 7, at: 0, gain: 0.2 } ];
 
-        //  The game's tune, whole. It is also what the backing is built from,
-        //  so the title is where the player learns it.
+        //  The game's tune, whole: bubbles rising in three groups, each higher
+        //  than the last. The title is where the player learns it.
         case 'title':
             return THEME;
     }
@@ -256,9 +240,9 @@ export function voiceFor (cue: Cue, combo = 0): Strike[]
  *
  * The shipped levels ask for up to eight sounds a second on their busiest
  * stretches, with gaps of an eighth of a second - and every one of those
- * sounds rings for two seconds and is copied into a room that holds it for
- * three. Played in full, a hard stretch is two dozen notes sounding at once:
- * twice the loudness of a calm one, and a wash rather than a run of collects.
+ * sounds is copied into a room that holds it afterwards. Played in full, a
+ * hard stretch is two dozen sounds at once: twice the loudness of a calm one,
+ * and a wash rather than a run of collects.
  *
  * A little over an eighth of a second, so an ordinary level never trips it and
  * only the stretches that are genuinely crowded are thinned.
@@ -271,10 +255,10 @@ export const CROWD_DUCK = 0.72;
 /**
  * A cue as it is played when the last one was `sinceLast` seconds ago.
  *
- * Crowded, it keeps the note that has to be heard and drops the held ones
- * underneath it. Those are there to give a single collect a body, and a body
- * is exactly what a stretch of them does not need - eight of them a second
- * are already holding each other up.
+ * Crowded, it keeps the bubble that has to be heard and drops the water
+ * underneath it. That is there to give a single collect a body, and a body is
+ * exactly what a stretch of them does not need - eight of them a second are
+ * already holding each other up.
  *
  * The phrases that mark an ending are never thinned; they are handed here
  * unchanged because nothing that plays once a run is what makes it crowded.
@@ -286,8 +270,8 @@ export function thinned (notes: Strike[], sinceLast: number): Strike[]
         return notes;
     }
 
-    const struck = notes.filter((note) => note.timbre !== 'held');
-    const kept = struck.length > 0 ? struck : notes.slice(0, 1);
+    const heard = notes.filter((note) => note.timbre === undefined || note.timbre === 'sink');
+    const kept = heard.length > 0 ? heard : notes.slice(0, 1);
 
     return kept.map((note) => ({ ...note, gain: note.gain * CROWD_DUCK }));
 }

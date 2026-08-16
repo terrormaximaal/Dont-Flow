@@ -38,6 +38,28 @@ export function impulseChannel (length: number, seed: number, decay = REVERB_DEC
 }
 
 /**
+ * A buffer of noise, for anything that needs the sound of water rather than a
+ * note: the stream under a run, and the droplet on the front of a bubble.
+ *
+ * Deterministic like everything else here, so two runs of the same level sound
+ * the same as each other.
+ */
+export function noiseBuffer (ctx: BaseAudioContext, seconds: number, seed: number): AudioBuffer
+{
+    const length = Math.max(1, Math.floor(ctx.sampleRate * seconds));
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const random = seeded(seed);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < length; i++)
+    {
+        data[i] = (random() * 2) - 1;
+    }
+
+    return buffer;
+}
+
+/**
  * Both channels, from seeds far enough apart to be uncorrelated.
  *
  * Two different noises rather than one copied to both ears is the whole

@@ -1715,7 +1715,13 @@ export const DEPTH_OVERLAY = 50;
 // ---------------------------------------------------------------------------
 //  Every sound the game makes is built from oscillators at the moment it
 //  plays: no files, the same way every picture in it is drawn rather than
-//  loaded. One instrument, a piano-ish struck tone, in a large room.
+//  loaded.
+//
+//  The instrument is water, because the player is a drop of it. A bubble
+//  rising through water is a sine tone whose pitch climbs as it goes - the
+//  bubble shrinks, so its resonance rises - under a very fast decay. That is
+//  the whole synthesis of a collect, and it is why this reads as the game
+//  rather than as a game.
 
 /** Everything the game plays passes through this. */
 export const SOUND_MASTER = 0.9;
@@ -1732,13 +1738,13 @@ export const SOUND_COMPRESSOR_ATTACK = 0.004;
 export const SOUND_COMPRESSOR_RELEASE = 0.25;
 
 /** Middle C. Every note in the game is a number of semitones from here. */
-export const PIANO_ROOT_HZ = 261.63;
+export const SOUND_ROOT_HZ = 261.63;
 
 /**
  * Where a streak starts.
  *
  * A fifth below the root, which puts a collected orb in the middle of the
- * piano rather than at the top of it. It used to be an octave higher: bright,
+ * range rather than at the top of it. It used to be an octave higher: bright,
  * easy to hear over everything - and a bright note repeated once a second with
  * three seconds of room behind it is not a reward, it is a smoke alarm.
  */
@@ -1753,59 +1759,69 @@ export const ORB_BASE_SEMITONES = -5;
  */
 export const ORB_MAX_SEMITONES = 12;
 
-//  The voice, as three sine partials: the note, its octave, and the twelfth
-//  above that. A real string is far richer, but the first three partials in
-//  falling proportions are what makes a sine read as struck rather than as a
-//  test tone.
-export const PIANO_PARTIALS = [ 1, 0.34, 0.12 ];
+//  A bubble. The pitch climbs by about a fifth over the length of the note,
+//  and the note is over in a fifth of a second - which is what makes it read
+//  as "bloop" rather than as a rising tone. Sinking is the same thing
+//  backwards, and is what a mistake sounds like.
+export const BUBBLE_FROM = 0.82;
+export const BUBBLE_TO = 1.5;
+export const BUBBLE_ATTACK = 0.004;
 
-//  Where the top is taken off a struck note, as a multiple of its own pitch.
-//  Following the note rather than sitting at a fixed frequency is what keeps a
-//  low note from being left untouched while a high one is hollowed out.
-export const PIANO_TONE = 6;
+/** How long a bubble lasts: a little longer for the low ones. */
+export const BUBBLE_DECAY_BASE = 0.12;
+export const BUBBLE_DECAY_SPAN = 130;
+export const BUBBLE_DECAY_MAX = 0.5;
 
-//  The held voice: the same note with the hammer taken off, which is what a
-//  chord is built from. Fewer partials, a slow fade in, and a darker filter -
-//  everything that makes a note sit under the game rather than announce
-//  itself.
-export const PAD_PARTIALS = [ 1, 0.22, 0.05 ];
-export const PAD_ATTACK = 0.45;
-//  A little longer than a bar, so one chord is still fading as the next
-//  arrives and the backing never has a seam in it.
-export const PAD_DECAY = 3.9;
-export const PAD_TONE = 3;
+//  The drop of water landing on top of it: a tick of noise, bandpassed around
+//  the note itself. It is the difference between a bubble and a bleep.
+export const DROPLET_GAIN = 0.15;
+export const DROPLET_DECAY = 0.02;
+export const DROPLET_BAND = 5;
+export const DROPLET_Q = 3;
 
-/** Cents each partial above the first is stretched by, as a real string is. */
-export const PIANO_STRETCH = 5;
+//  The stream: noise through a resonance that drifts, which is what running
+//  water is. It is the backing, and it has no rhythm at all.
+export const STREAM_ATTACK = 1.0;
+export const STREAM_HOLD = 0.6;
+export const STREAM_DECAY = 1.8;
+export const STREAM_Q = 2.2;
+export const STREAM_BAND_LOW = 3;
+export const STREAM_BAND_HIGH = 5;
+export const STREAM_SECONDS = 3.4;
 
-/** Struck, not blown: the note is at full volume almost immediately. */
-export const PIANO_ATTACK = 0.006;
-
-/** How long a note at the root takes to fall away, in seconds. */
-export const PIANO_DECAY = 1.9;
-
-//  High notes ring shorter than low ones. 0 would give every note the same
-//  length, which is the single thing that most gives a synth away as one.
-export const PIANO_DECAY_TILT = 0.45;
+//  The deep note under it all: felt more than heard, and the only thing in the
+//  palette carrying the harmony on its own.
+export const DEEP_ATTACK = 0.6;
+export const DEEP_HOLD = 1.2;
+export const DEEP_DECAY = 1.8;
+export const DEEP_HARMONIC = 0.12;
 
 /** Headroom every note is played at, so a busy moment has somewhere to go. */
-export const PIANO_GAIN = 0.7;
+export const SOUND_GAIN = 0.8;
 
 //  The room. Long and wide - the tail is most of the sound, and a note landing
 //  in it is what makes a streak feel like one phrase rather than a row of beeps.
-export const REVERB_SECONDS = 3.4;
+export const REVERB_SECONDS = 2.4;
 
 /** How sharply the tail falls away. Higher is a smaller, deader room. */
-export const REVERB_DECAY = 2.2;
+export const REVERB_DECAY = 2.8;
 
 /** Silence between the note and its room, in seconds. */
-export const REVERB_PREDELAY = 0.035;
+export const REVERB_PREDELAY = 0.018;
 
 //  Less than it was. A big room under single bright notes is atmosphere; the
 //  same room under chords that are already holding is a smear, and the two
 //  together were most of why the game sounded busy.
-export const REVERB_WET = 0.42;
-export const REVERB_DRY = 0.6;
+export const REVERB_WET = 0.3;
+export const REVERB_DRY = 0.72;
+
+//  A short echo, quiet and dark. Water in a space repeats before it blurs -
+//  a single reflection is the difference between a room and a cave, and it is
+//  what fills the gaps between collects without adding anything to play.
+export const ECHO_SECONDS = 0.29;
+export const ECHO_FEEDBACK = 0.24;
+export const ECHO_WET = 0.12;
+export const ECHO_DAMP = 2200;
 
 /** Seed for the room's noise, so the reverb is identical on every device. */
 export const REVERB_SEED = 8317;
@@ -1825,7 +1841,7 @@ export const MUSIC_BEATS_PER_BAR = 4;
  * listened to - and everything that matters to the player is a cue over the
  * top of it.
  */
-export const MUSIC_GAIN = 0.3;
+export const MUSIC_GAIN = 0.44;
 
 //  Scheduled a little ahead of the sound card and topped up on a timer, which
 //  is the only way to get music in time out of a browser: notes are handed to

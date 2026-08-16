@@ -1,6 +1,6 @@
 import { Cue, DETUNE_CENTS, Strike, thinned, variesOnRepeat, voiceFor } from '../config/audio';
 import { CROWD_SECONDS } from '../config/audio';
-import { PIANO_GAIN } from '../config/constants';
+import { SOUND_GAIN } from '../config/constants';
 import { buildMixer, Mixer } from './mixer';
 import { strike } from './voice';
 
@@ -193,7 +193,7 @@ export function play (cue: Cue, combo = 0): void
 
         lastCueAt = now;
 
-        schedule(ctx, notes, now, PIANO_GAIN, drift, !crowded);
+        schedule(ctx, notes, now, SOUND_GAIN, drift, !crowded);
     }
     catch
     {
@@ -236,7 +236,7 @@ export function playAt (notes: Strike[], when: number, gain = 1): void
 
     try
     {
-        schedule(ctx, notes, when, gain * PIANO_GAIN, 0, true);
+        schedule(ctx, notes, when, gain * SOUND_GAIN, 0, true);
     }
     catch
     {

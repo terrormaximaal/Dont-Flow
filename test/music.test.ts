@@ -36,11 +36,13 @@ describe('the theme', () => {
 
     });
 
-    it('is played in order, with no two notes on the same moment', () => {
+    it('is played in order, with no two bubbles on the same moment', () => {
 
-        for (let i = 1; i < THEME.length; i++)
+        const bubbles = THEME.filter((note) => note.timbre === undefined);
+
+        for (let i = 1; i < bubbles.length; i++)
         {
-            expect(THEME[i].at, `note ${i}`).toBeGreaterThan(THEME[i - 1].at);
+            expect(bubbles[i].at, `note ${i}`).toBeGreaterThan(bubbles[i - 1].at);
         }
 
     });
@@ -50,22 +52,27 @@ describe('the theme', () => {
     //  nobody can hum back.
     it('leaves the root, reaches a top, and comes home to it', () => {
 
-        const top = Math.max(...THEME.map((note) => note.semitones));
-        const home = THEME[0].semitones;
+        const bubbles = THEME.filter((note) => note.timbre === undefined);
+        const top = Math.max(...bubbles.map((note) => note.semitones));
+        const home = bubbles[0].semitones;
+        const last = bubbles[bubbles.length - 1].semitones;
 
         //  In the game's own key rather than in one of its own, which is what
         //  keeps it consonant with everything the player triggers over it.
         expect(home, 'starts where a streak starts').toBe(ORB_BASE_SEMITONES);
-        expect(THEME[THEME.length - 1].semitones, 'ends there too').toBe(home);
+
+        //  And ends on the same note, in whichever octave the rise left it.
+        expect((last - home) % 12, 'ends on the root').toBe(0);
         expect(top - home, 'goes somewhere on the way').toBeGreaterThanOrEqual(12);
 
     });
 
     it('ends on its loudest note, so it lands rather than trails off', () => {
 
-        const loudest = Math.max(...THEME.map((note) => note.gain));
+        const bubbles = THEME.filter((note) => note.timbre === undefined);
+        const loudest = Math.max(...bubbles.map((note) => note.gain));
 
-        expect(THEME[THEME.length - 1].gain).toBe(loudest);
+        expect(bubbles[bubbles.length - 1].gain).toBe(loudest);
 
     });
 
@@ -149,20 +156,21 @@ describe('the backing under a run', () => {
 
     });
 
-    //  A chord that has died before the next one arrives leaves a hole in the
-    //  backing, and a hole is heard as the music stopping. One that outlasts
-    //  the next by a long way is two harmonies at once, which is the other way
-    //  of being muddy. It has to be a little longer than a bar and no more.
-    it('holds each chord just past the next one', () => {
+    //  Water that has stopped before the next bar starts leaves a hole in the
+    //  backing, and a hole is heard as the music stopping. Something that
+    //  outlasts the next bar by a long way is two of them sounding at once,
+    //  which is the other way of being muddy.
+    it('runs each bar of water just past the next one', () => {
 
         const barSeconds = (60 / MUSIC_BPM) * MUSIC_BEATS_PER_BAR;
 
         for (const note of barNotes(0))
         {
-            const ring = decayOf(note.semitones, 'held');
+            const ring = decayOf(note.semitones, note.timbre);
 
-            expect(ring, 'reaches the next chord').toBeGreaterThan(barSeconds);
-            expect(ring, 'and does not outstay it').toBeLessThan(barSeconds * 2);
+            expect(ring + (note.beat * (60 / MUSIC_BPM)), `${note.timbre}`)
+                .toBeGreaterThan(barSeconds);
+            expect(ring, `${note.timbre}`).toBeLessThan(barSeconds * 2);
         }
 
     });
@@ -171,16 +179,14 @@ describe('the backing under a run', () => {
     //  its way across the bar and quote the theme every eight of them, and
     //  underneath a game that already makes a sound every time an orb goes
     //  past, that was the mess: two things playing patterns at each other.
-    it('lays down a chord rather than a pattern', () => {
+    it('is water rather than a part being played', () => {
 
         for (let bar = 0; bar < LOOP_BARS; bar++)
         {
-            const notes = barNotes(bar);
-
-            for (const note of notes)
+            for (const note of barNotes(bar))
             {
-                expect(note.timbre, `bar ${bar}`).toBe('held');
-                expect(note.beat, `bar ${bar}`).toBeLessThan(1);
+                expect(note.timbre, `bar ${bar}`).not.toBe('bubble');
+                expect(note.timbre, `bar ${bar}`).not.toBe('sink');
             }
         }
 

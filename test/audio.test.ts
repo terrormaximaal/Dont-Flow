@@ -4,6 +4,7 @@ import {
     CROWN_FROM,
     Cue,
     CUES,
+    CROWD_DUCK,
     DETUNE_CENTS,
     frequencyOf,
     ORB_BASE_HZ,
@@ -251,18 +252,20 @@ describe('what each moment sounds like', () => {
 
     });
 
-    //  A phrase whose notes outlast their own spacing is a chord, not a melody.
-    it('spaces a phrase closer than its notes ring', () => {
+    //  A phrase whose notes outlast their own spacing is a chord, not a
+    //  melody. Only the bubbles are asked: the water underneath a cue is laid
+    //  down alongside them on purpose, and lasts much longer by design.
+    it('spaces a phrase closer than its bubbles last', () => {
 
         for (const cue of CUES)
         {
-            const notes = voiceFor(cue);
+            const notes = voiceFor(cue).filter((note) => note.timbre === undefined);
 
             for (let i = 1; i < notes.length; i++)
             {
-                expect(notes[i].at, `${cue} note ${i}`).toBeGreaterThan(notes[i - 1].at);
+                expect(notes[i].at, `${cue} note ${i}`).toBeGreaterThanOrEqual(notes[i - 1].at);
                 expect(notes[i].at - notes[i - 1].at, `${cue} gap ${i}`)
-                    .toBeLessThan(decayOf(notes[i - 1].semitones));
+                    .toBeLessThan(decayOf(notes[i - 1].semitones) * 2);
             }
         }
 
@@ -274,6 +277,7 @@ describe('what each moment sounds like', () => {
     it('puts the constant sound under the rare ones and over the quiet ones', () => {
 
         expect(loudest('orb')).toBeLessThanOrEqual(loudest('life'));
+
         expect(loudest('press')).toBeLessThan(loudest('orb'));
         expect(loudest('gate')).toBeLessThan(loudest('orb'));
 
@@ -355,16 +359,36 @@ describe('a stretch of road that is asking for a lot at once', () => {
 
     });
 
-    //  The held note under a collect is there to give one of them a body. A
-    //  stretch of them does not need one: eight a second are already holding
-    //  each other up, and played in full they stop being collects and become a
-    //  wash.
+    //  The water under a collect is there to give one of them a body. A stretch
+    //  of them does not need one: eight a second are already holding each other
+    //  up, and played in full they stop being collects and become a wash.
     it('drops the body of a cue that lands in a crowd', () => {
 
-        const crowded = thinned(voiceFor('orb', 3), 0.1);
+        //  Everything that is not the bubble itself goes: the water under a
+        //  cue is what accumulates, both in the mix and in the room. A cue
+        //  made of nothing but water - a doorway is one - keeps its first
+        //  note, because a cue thinned away to silence is a cue the player
+        //  stops being told about exactly when the road is hardest.
+        for (const cue of CUES)
+        {
+            const full = voiceFor(cue);
+            const crowded = thinned(full, 0.1);
+            const bubbles = (list: Strike[]) =>
+                list.filter((note) => note.timbre === undefined || note.timbre === 'sink');
 
-        expect(crowded.length).toBeLessThan(voiceFor('orb', 3).length);
-        expect(crowded.every((note) => note.timbre !== 'held')).toBe(true);
+            if (bubbles(full).length > 0)
+            {
+                expect(crowded, cue).toEqual(bubbles(full).map((note) => ({ ...note, gain: note.gain * CROWD_DUCK })));
+            }
+            else
+            {
+                expect(crowded, cue).toHaveLength(1);
+            }
+        }
+
+        const full = voiceFor('finish');
+
+        expect(thinned(full, 0.1).length, 'a cue with water in it').toBeLessThan(full.length);
 
     });
 

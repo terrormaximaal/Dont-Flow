@@ -1,73 +1,74 @@
 import { frequencyOf } from '../config/audio';
 import {
-    PAD_ATTACK,
-    PAD_DECAY,
-    PAD_PARTIALS,
-    PAD_TONE,
-    PIANO_ATTACK,
-    PIANO_DECAY,
-    PIANO_DECAY_TILT,
-    PIANO_PARTIALS,
-    PIANO_STRETCH,
-    PIANO_TONE,
-    REVERB_SECONDS
+    BUBBLE_ATTACK,
+    BUBBLE_DECAY_BASE,
+    BUBBLE_DECAY_MAX,
+    BUBBLE_DECAY_SPAN,
+    BUBBLE_FROM,
+    BUBBLE_TO,
+    DEEP_ATTACK,
+    DEEP_DECAY,
+    DEEP_HARMONIC,
+    DEEP_HOLD,
+    DROPLET_BAND,
+    DROPLET_DECAY,
+    DROPLET_GAIN,
+    DROPLET_Q,
+    REVERB_SECONDS,
+    STREAM_ATTACK,
+    STREAM_BAND_HIGH,
+    STREAM_BAND_LOW,
+    STREAM_DECAY,
+    STREAM_HOLD,
+    STREAM_Q,
+    STREAM_SECONDS
 } from '../config/constants';
-import { impulseChannels } from './reverb';
+import { impulseChannels, noiseBuffer } from './reverb';
 
-//  The instrument: one struck note, and the room it is struck in.
+//  The instrument: water, in three states, and the room it moves in.
 //
-//  Both take the context they are to be built in rather than reaching for one,
-//  so the same code that plays a note in the game can be rendered offline into
-//  a file to listen to - and so nothing here has to know whether it is being
-//  heard live.
+//  Everything takes the context it is to be built in rather than reaching for
+//  one, so the same code that plays a note in the game can be rendered offline
+//  into a file to listen to - and so nothing here has to know whether it is
+//  being heard live.
 
 /**
- * The two ways this game makes a sound.
+ * The four things water does here.
  *
- * 'struck' is a note with a hammer on it, for the moments that need to be
- * noticed. 'held' is the same three partials with the hammer taken off - it
- * fades in over a third of a second and sits there - and it is what a chord is
- * made of. The difference is almost entirely the attack: the same note, struck
- * fifty times over a run and drenched in a room, is what turns a game into an
- * alarm, and no amount of retuning the pitch fixes that.
+ * 'bubble' rises and 'sink' falls, which is the entire vocabulary the player
+ * needs: something went well, or it did not. 'stream' is running water and
+ * carries the backing; 'deep' is the note under all of it.
+ *
+ * None of them has a hammer on it, which is the point. A struck note repeated
+ * once a second into a long room is what turned this game into an alarm, and
+ * no amount of retuning the pitch fixed that.
  */
-export type Timbre = 'struck' | 'held';
+export type Timbre = 'bubble' | 'sink' | 'stream' | 'deep';
 
-/**
- * How long a note rings, in seconds.
- *
- * Falls as the note climbs, the way a shorter string does: at the top of a long
- * streak the notes are arriving quickly, and if they rang as long as the low
- * ones the reverb would silt up into a chord nobody played.
- */
-export function decayOf (semitones: number, timbre: Timbre = 'struck'): number
+/** How long a sound of this kind lasts, in seconds. */
+export function decayOf (semitones: number, timbre: Timbre = 'bubble'): number
 {
-    //  A held note is the same length whatever its pitch: it is there to last
-    //  a bar and hand over to the next chord, and a bass note that outlasted
-    //  the chord above it by twice over would leave two harmonies sounding at
-    //  once - which is most of what "muddy" is.
-    if (timbre === 'held')
+    if (timbre === 'stream')
     {
-        return PAD_DECAY;
+        return STREAM_ATTACK + STREAM_HOLD + STREAM_DECAY;
     }
 
-    return PIANO_DECAY * Math.pow(2, (-semitones / 12) * PIANO_DECAY_TILT);
+    if (timbre === 'deep')
+    {
+        return DEEP_ATTACK + DEEP_HOLD + DEEP_DECAY;
+    }
+
+    //  A big bubble takes longer to rise than a small one, so a low note lasts
+    //  longer than a high one - which is also what keeps a fast streak from
+    //  silting up: the notes at the top of it are the shortest.
+    return Math.min(BUBBLE_DECAY_MAX, (BUBBLE_DECAY_SPAN / frequencyOf(semitones)) + BUBBLE_DECAY_BASE);
 }
 
 /**
- * One struck note into `destination`.
+ * One sound into `destination`.
  *
- * Three sine partials, each quieter and slightly sharper than a whole multiple
- * of the one below it. Real strings are stiff, so their overtones sit a little
- * above where the arithmetic says they should - copying that is most of what
- * separates a note that sounds struck from a note that sounds generated.
- *
- * The whole thing is thrown away when it has finished sounding: an oscillator
- * is cheap to make and cannot be restarted once stopped, so a note is a new one
- * every time rather than a voice being reused.
- *
- * @param when  Seconds from now.
- * @param gain  0 to 1, on top of whatever the destination is set to.
+ * @param when Seconds from now.
+ * @param gain 0 to 1, on top of whatever the destination is set to.
  */
 export function strike (
     ctx: BaseAudioContext,
@@ -75,60 +76,149 @@ export function strike (
     semitones: number,
     when: number,
     gain: number,
-    timbre: Timbre = 'struck'
+    timbre: Timbre = 'bubble'
 ): void
 {
-    const held = timbre === 'held';
-    const start = ctx.currentTime + when;
-    const decay = decayOf(semitones, timbre);
+    const at = ctx.currentTime + when;
     const frequency = frequencyOf(semitones);
-    const attack = held ? PAD_ATTACK : PIANO_ATTACK;
 
-    //  The top taken off, so what is left of a note after the room has had it
-    //  is warm rather than glassy. The cutoff follows the note rather than
-    //  sitting at a fixed frequency, or the same filter would leave a low note
-    //  untouched and hollow out a high one.
-    const tone = ctx.createBiquadFilter();
+    if (timbre === 'stream')
+    {
+        stream(ctx, destination, frequency, at, gain);
 
-    tone.type = 'lowpass';
-    tone.frequency.value = frequency * (held ? PAD_TONE : PIANO_TONE);
-    tone.connect(destination);
+        return;
+    }
 
-    const envelope = ctx.createGain();
+    if (timbre === 'deep')
+    {
+        deep(ctx, destination, frequency, at, gain);
 
-    envelope.gain.setValueAtTime(0, start);
-    envelope.gain.linearRampToValueAtTime(gain, start + attack);
+        return;
+    }
 
-    //  Exponential, because that is how a struck thing loses energy - and
-    //  because a linear fade is audible as a note being turned down. It cannot
-    //  reach zero, so it aims just under hearing and is cut there.
-    envelope.gain.exponentialRampToValueAtTime(0.0001, start + decay);
-
-    envelope.connect(tone);
-
-    const partials = held ? PAD_PARTIALS : PIANO_PARTIALS;
-
-    partials.forEach((level, partial) => {
-
-        const osc = ctx.createOscillator();
-        const mix = ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.value = frequency * (partial + 1);
-        osc.detune.value = PIANO_STRETCH * partial * partial;
-
-        mix.gain.value = level;
-
-        osc.connect(mix);
-        mix.connect(envelope);
-
-        osc.start(start);
-        osc.stop(start + decay + 0.05);
-
-    });
+    bubble(ctx, destination, frequency, at, gain, timbre === 'sink');
 }
 
-/** The convolver every note is sent through, loaded with a generated room. */
+/**
+ * A bubble: one sine whose pitch slides while it fades, with a tick of noise
+ * on the front.
+ *
+ * The slide is the whole sound. A bubble in water shrinks as it rises and its
+ * resonance climbs with it, which is why every bubble anyone has ever heard
+ * goes up - and why one that goes down is heard as wrong before the player has
+ * looked at the screen.
+ */
+function bubble (
+    ctx: BaseAudioContext,
+    destination: AudioNode,
+    frequency: number,
+    at: number,
+    gain: number,
+    sinking: boolean
+): void
+{
+    const decay = Math.min(BUBBLE_DECAY_MAX, (BUBBLE_DECAY_SPAN / frequency) + BUBBLE_DECAY_BASE);
+
+    const osc = ctx.createOscillator();
+    const level = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(frequency * (sinking ? BUBBLE_TO : BUBBLE_FROM), at);
+    osc.frequency.exponentialRampToValueAtTime(
+        frequency * (sinking ? BUBBLE_FROM * 0.6 : BUBBLE_TO),
+        at + decay
+    );
+
+    level.gain.setValueAtTime(0.0001, at);
+    level.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), at + BUBBLE_ATTACK);
+    level.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+
+    osc.connect(level);
+    level.connect(destination);
+    osc.start(at);
+    osc.stop(at + decay + 0.05);
+
+    //  The droplet landing on it.
+    const tick = ctx.createBufferSource();
+    const band = ctx.createBiquadFilter();
+    const tickLevel = ctx.createGain();
+
+    tick.buffer = noiseBuffer(ctx, DROPLET_DECAY * 2, Math.round(frequency));
+    band.type = 'bandpass';
+    band.frequency.value = Math.min(5000, frequency * DROPLET_BAND);
+    band.Q.value = DROPLET_Q;
+
+    tickLevel.gain.setValueAtTime(0.0001, at);
+    tickLevel.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * DROPLET_GAIN), at + 0.001);
+    tickLevel.gain.exponentialRampToValueAtTime(0.0001, at + DROPLET_DECAY);
+
+    tick.connect(band);
+    band.connect(tickLevel);
+    tickLevel.connect(destination);
+    tick.start(at);
+    tick.stop(at + (DROPLET_DECAY * 2) + 0.01);
+}
+
+/**
+ * Running water: noise through a resonance that drifts.
+ *
+ * Broadband noise with a moving peak in it *is* the sound of a stream, which
+ * is why this needs no oscillator at all. It carries the harmony by where the
+ * peak sits rather than by playing a note.
+ */
+function stream (ctx: BaseAudioContext, destination: AudioNode, frequency: number, at: number, gain: number): void
+{
+    const source = ctx.createBufferSource();
+    const band = ctx.createBiquadFilter();
+    const level = ctx.createGain();
+    const length = STREAM_ATTACK + STREAM_HOLD + STREAM_DECAY;
+
+    source.buffer = noiseBuffer(ctx, STREAM_SECONDS, Math.round(frequency * 11));
+
+    band.type = 'bandpass';
+    band.Q.value = STREAM_Q;
+    band.frequency.setValueAtTime(frequency * STREAM_BAND_LOW, at);
+    band.frequency.linearRampToValueAtTime(frequency * STREAM_BAND_HIGH, at + (length / 2));
+    band.frequency.linearRampToValueAtTime(frequency * STREAM_BAND_LOW, at + length);
+
+    level.gain.setValueAtTime(0.0001, at);
+    level.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), at + STREAM_ATTACK);
+    level.gain.setValueAtTime(Math.max(0.0002, gain), at + STREAM_ATTACK + STREAM_HOLD);
+    level.gain.exponentialRampToValueAtTime(0.0001, at + length);
+
+    source.connect(band);
+    band.connect(level);
+    level.connect(destination);
+    source.start(at);
+    source.stop(at + length + 0.05);
+}
+
+/** The note under everything: a sine with one soft harmonic over it. */
+function deep (ctx: BaseAudioContext, destination: AudioNode, frequency: number, at: number, gain: number): void
+{
+    const length = DEEP_ATTACK + DEEP_HOLD + DEEP_DECAY;
+
+    for (const [ multiple, level ] of [ [ 1, 1 ], [ 2, DEEP_HARMONIC ] ])
+    {
+        const osc = ctx.createOscillator();
+        const envelope = ctx.createGain();
+
+        osc.type = multiple === 1 ? 'sine' : 'triangle';
+        osc.frequency.value = frequency * multiple;
+
+        envelope.gain.setValueAtTime(0.0001, at);
+        envelope.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * level), at + DEEP_ATTACK);
+        envelope.gain.setValueAtTime(Math.max(0.0002, gain * level), at + DEEP_ATTACK + DEEP_HOLD);
+        envelope.gain.exponentialRampToValueAtTime(0.0001, at + length);
+
+        osc.connect(envelope);
+        envelope.connect(destination);
+        osc.start(at);
+        osc.stop(at + length + 0.05);
+    }
+}
+
+/** The convolver every sound is sent through, loaded with a generated room. */
 export function room (ctx: BaseAudioContext): ConvolverNode
 {
     const length = Math.floor(ctx.sampleRate * REVERB_SECONDS);

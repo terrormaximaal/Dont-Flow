@@ -1,4 +1,8 @@
 import {
+    ECHO_DAMP,
+    ECHO_FEEDBACK,
+    ECHO_SECONDS,
+    ECHO_WET,
     SOUND_COMPRESSOR_ATTACK,
     SOUND_COMPRESSOR_KNEE,
     SOUND_COMPRESSOR_RATIO,
@@ -78,6 +82,35 @@ export function buildMixer (ctx: BaseAudioContext, destination: AudioNode): Mixe
     predelay.connect(convolver);
     convolver.connect(wet);
     wet.connect(limiter);
+
+    //  One short echo, dark and quiet, fed from the same send.
+    //
+    //  Water in a space repeats before it blurs: a single reflection is the
+    //  difference between a room and a cave. It also quietly fills the gap
+    //  between two collects without the game having to make another sound -
+    //  which is the cheapest way there is to sound less empty and not one bit
+    //  busier.
+    const echo = ctx.createDelay(1);
+    const feedback = ctx.createGain();
+    const damp = ctx.createBiquadFilter();
+    const echoLevel = ctx.createGain();
+
+    echo.delayTime.value = ECHO_SECONDS;
+    feedback.gain.value = ECHO_FEEDBACK;
+    damp.type = 'lowpass';
+    damp.frequency.value = ECHO_DAMP;
+    echoLevel.gain.value = ECHO_WET;
+
+    send.connect(echo);
+    echo.connect(damp);
+    damp.connect(feedback);
+    feedback.connect(echo);
+    damp.connect(echoLevel);
+    echoLevel.connect(limiter);
+
+    //  And into the room as well, so the echo lands in the same space rather
+    //  than in front of it.
+    echoLevel.connect(predelay);
 
     return { dry, send };
 }
