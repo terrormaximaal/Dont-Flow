@@ -5,10 +5,15 @@ import {
     MUSIC_GAIN,
     MUSIC_LOOKAHEAD,
     MUSIC_TICK_MS,
+    MUSIC_BPM_MAX,
+    MUSIC_SNAP_BEATS,
+    FORWARD_SPEED,
     ORB_BASE_SEMITONES
 } from '../src/game/config/constants';
 import { semitonesFor, voiceFor } from '../src/game/config/audio';
-import { barNotes, beatsOf, LOOP_BARS, THEME } from '../src/game/config/music';
+import { barDistance, barNotes, barStart, beatRows, beatsOf, LOOP_BARS, THEME } from '../src/game/config/music';
+import { LEVELS } from '../src/game/config/levels';
+import { buildLevel, ORB_ROW_SPACING } from '../src/game/config/level';
 import { decayOf } from '../src/game/systems/voice';
 
 /** Every note the backing can play, anywhere in its loop. */
@@ -328,6 +333,176 @@ describe('the last ten seconds of a level', () => {
 
 });
 
+describe('the tempo, taken from the road', () => {
+
+    //  Every level the game ships, at its own speed and its own row spacing.
+    const shipped = LEVELS.map((spec) => ({
+        name: spec.name,
+        spacing: spec.rowSpacing ?? ORB_ROW_SPACING,
+        speed: spec.forwardSpeed ?? FORWARD_SPEED
+    }));
+
+    it('makes a beat a whole number of rows', () => {
+
+        for (const level of shipped)
+        {
+            const rows = beatRows(level.spacing, level.speed);
+
+            expect(rows, level.name).toBeGreaterThanOrEqual(1);
+            expect(rows % 1, level.name).toBe(0);
+        }
+
+    });
+
+    //  The point of the whole thing: a collected orb lands on a beat, or on an
+    //  exact half or third of one, rather than wherever it happens to fall.
+    it('puts a bar on a whole number of rows too', () => {
+
+        for (const level of shipped)
+        {
+            const bar = barDistance(level.spacing, level.speed);
+
+            expect(bar % level.spacing, level.name).toBeCloseTo(0);
+            expect(bar / level.spacing, level.name)
+                .toBe(beatRows(level.spacing, level.speed) * MUSIC_BEATS_PER_BAR);
+        }
+
+    });
+
+    it('lands every level at a tempo music can actually sit at', () => {
+
+        for (const level of shipped)
+        {
+            const beat = (level.spacing * beatRows(level.spacing, level.speed)) / level.speed;
+            const bpm = 60 / beat;
+
+            expect(bpm, level.name).toBeLessThanOrEqual(MUSIC_BPM_MAX);
+
+            //  And not so slow that a bar is longer than the player's memory
+            //  of the last one.
+            expect(bpm, level.name).toBeGreaterThan(50);
+        }
+
+    });
+
+    //  A level whose rows come three times as fast should feel three times as
+    //  fast musically, rather than being given three times as many beats.
+    it('gives the quicker levels the quicker tempo', () => {
+
+        const bpm = (level: { spacing: number; speed: number }) =>
+            60 / ((level.spacing * beatRows(level.spacing, level.speed)) / level.speed);
+
+        const first = bpm(shipped[0]);
+        const last = bpm(shipped[shipped.length - 1]);
+
+        expect(last).toBeGreaterThan(first);
+
+    });
+
+    it('answers for a road that has no speed rather than dividing by it', () => {
+
+        expect(Number.isFinite(beatRows(175, 0))).toBe(true);
+        expect(Number.isFinite(barDistance(175, 0))).toBe(true);
+
+    });
+
+});
+
+describe('bars pulled onto the road', () => {
+
+    const rows = [ 100, 200, 300, 460, 560 ];
+
+    it('leaves a bar where it is when no row is near it', () => {
+
+        expect(barStart(380, rows, 10)).toBe(380);
+        expect(barStart(1000, rows, 10)).toBe(1000);
+        expect(barStart(0, rows, 10)).toBe(0);
+
+    });
+
+    it('pulls it onto a row that is within reach', () => {
+
+        expect(barStart(205, rows, 10)).toBe(200);
+        expect(barStart(295, rows, 10)).toBe(300);
+
+    });
+
+    it('takes the nearer of two rows', () => {
+
+        expect(barStart(240, rows, 100)).toBe(200);
+        expect(barStart(260, rows, 100)).toBe(300);
+
+    });
+
+    it('never reaches further than it is allowed to', () => {
+
+        expect(barStart(211, rows, 10)).toBe(211);
+        expect(barStart(210, rows, 10)).toBe(200);
+
+    });
+
+    it('answers with the bar itself when there is no road to pull onto', () => {
+
+        expect(barStart(500, [], 50)).toBe(500);
+
+    });
+
+    //  The whole point, held against the levels the game actually ships: a bar
+    //  that re-phases onto the rows lands on far more of them than one of a
+    //  fixed length does. Neither is perfect - that would need the levels
+    //  themselves laid on one grid - but this costs nothing on the road.
+    it('lands on more rows than a bar of fixed length would', () => {
+
+        let pulled = 0;
+        let fixed = 0;
+        let total = 0;
+
+        for (const spec of LEVELS)
+        {
+            const spacing = spec.rowSpacing ?? ORB_ROW_SPACING;
+            const speed = spec.forwardSpeed ?? FORWARD_SPEED;
+            const length = barDistance(spacing, speed);
+            const beat = length / MUSIC_BEATS_PER_BAR;
+
+            const rowsOf = [ ...new Set(buildLevel(spec).orbs.map((orb) => orb.distance)) ]
+                .sort((a, b) => a - b);
+
+            const beatsFrom = (step: (at: number) => number) => {
+
+                const beats = new Set<number>();
+
+                let at = rowsOf[0];
+
+                while (at < rowsOf[rowsOf.length - 1])
+                {
+                    for (let k = 0; k < MUSIC_BEATS_PER_BAR; k++)
+                    {
+                        beats.add(Math.round(at + (k * beat)));
+                    }
+
+                    at = step(at);
+                }
+
+                return beats;
+            };
+
+            const onGrid = beatsFrom((at) => at + length);
+            const onRows = beatsFrom((at) => barStart(at + length, rowsOf, beat * MUSIC_SNAP_BEATS));
+
+            const hits = (beats: Set<number>) =>
+                rowsOf.filter((row) => [ ...beats ].some((at) => Math.abs(at - row) < beat * 0.05)).length;
+
+            fixed += hits(onGrid);
+            pulled += hits(onRows);
+            total += rowsOf.length;
+        }
+
+        expect(pulled / total, 'rows landed on').toBeGreaterThan((fixed / total) * 1.5);
+
+    });
+
+});
+
 describe('how the backing is handed to the clock', () => {
 
     //  Music written a frame at a time limps: a busy frame puts a note late and
@@ -341,12 +516,20 @@ describe('how the backing is handed to the clock', () => {
 
     //  Bars are written whole, so what has to be true is that the timer comes
     //  round several times inside one - a tick that took as long as a bar
-    //  would be one missed wake-up away from a silence.
+    //  would be one missed wake-up away from a silence. Measured on the
+    //  fastest level, which is the one with the shortest bars.
     it('wakes up many times inside a single bar', () => {
 
-        const barSeconds = (60 / MUSIC_BPM) * MUSIC_BEATS_PER_BAR;
+        const quickest = Math.min(...LEVELS.map((spec) => {
 
-        expect(MUSIC_TICK_MS / 1000).toBeLessThan(barSeconds / 4);
+            const spacing = spec.rowSpacing ?? ORB_ROW_SPACING;
+            const speed = spec.forwardSpeed ?? FORWARD_SPEED;
+
+            return barDistance(spacing, speed) / speed;
+
+        }));
+
+        expect(MUSIC_TICK_MS / 1000).toBeLessThan(quickest / 4);
 
     });
 

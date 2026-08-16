@@ -1,4 +1,4 @@
-import { FINALE_LIFT, MUSIC_BEATS_PER_BAR, MUSIC_BPM, ORB_BASE_SEMITONES } from './constants';
+import { FINALE_LIFT, MUSIC_BEATS_PER_BAR, MUSIC_BPM, MUSIC_BPM_MAX, ORB_BASE_SEMITONES } from './constants';
 import { Strike } from './audio';
 import { Timbre } from '../systems/voice';
 
@@ -59,6 +59,46 @@ export function beatsOf (seconds: number): number
 }
 
 /**
+ * How many rows of orbs there are to a beat.
+ *
+ * The tempo is not a number somebody chose; it is taken from the road. A level
+ * places its rows a fixed distance apart, so the time between two rows is a
+ * unit the level already has - and making the beat a whole number of those
+ * puts every collected orb on a beat or an exact half or third of one.
+ *
+ * Which multiple is whichever brings the tempo under the ceiling: two rows to
+ * the beat on the early levels, three or four on the late ones, where the rows
+ * come three times as fast.
+ */
+export function beatRows (rowSpacing: number, speed: number): number
+{
+    const rowSeconds = rowSpacing / Math.max(1, speed);
+
+    let rows = 1;
+
+    while ((60 / (rowSeconds * rows)) > MUSIC_BPM_MAX && rows < 16)
+    {
+        rows++;
+    }
+
+    return rows;
+}
+
+/**
+ * How long a bar of this level is, in track pixels.
+ *
+ * In pixels rather than in seconds because that is what the rest of this game
+ * measures with - the jump, the trail, the whole world are laid out in
+ * distance, so that a pause, an uneven frame rate and a speed boost cannot
+ * pull them apart. Music kept on the clock instead was the one thing that
+ * drifted out of step with the road the moment a level sped up.
+ */
+export function barDistance (rowSpacing: number, speed: number): number
+{
+    return rowSpacing * beatRows(rowSpacing, speed) * MUSIC_BEATS_PER_BAR;
+}
+
+/**
  * The chords the backing circles through, one to a bar.
  *
  * i - III - VII - v, which is the minor loop behind more or less every big
@@ -85,6 +125,50 @@ const CHORDS: Array<{ root: number; shape: number[]; extra: number[] }> = [
 
 /** How many bars before the whole thing comes round again. */
 export const LOOP_BARS = 8;
+
+/**
+ * Where a bar due at `wanted` actually starts.
+ *
+ * The nearest row of orbs, if one is within `reach`, and `wanted` itself
+ * otherwise. This is what keeps the music on the road: the levels are laid out
+ * on a grid of rows, but not on *one* grid - a section join is a fixed
+ * distance rather than a whole number of rows, and there are twenty to forty
+ * joins in a level - so bars of a fixed length walk off the rows within a few
+ * sections however well the tempo was chosen.
+ *
+ * Rather than move anything on the road, the bar moves: the music re-phases
+ * itself against the level, by a fraction of a beat at a time.
+ */
+export function barStart (wanted: number, rows: number[], reach: number): number
+{
+    let low = 0;
+    let high = rows.length - 1;
+    let best = wanted;
+    let bestOff = reach;
+
+    while (low <= high)
+    {
+        const middle = (low + high) >> 1;
+        const off = Math.abs(rows[middle] - wanted);
+
+        if (off <= bestOff)
+        {
+            best = rows[middle];
+            bestOff = off;
+        }
+
+        if (rows[middle] < wanted)
+        {
+            low = middle + 1;
+        }
+        else
+        {
+            high = middle - 1;
+        }
+    }
+
+    return best;
+}
 
 /** A note in the backing: which note, which beat of the bar, how hard. */
 export interface Beat

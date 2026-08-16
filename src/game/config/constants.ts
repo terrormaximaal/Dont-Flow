@@ -1824,6 +1824,13 @@ export const REVERB_SEED = 8317;
 //  Slow, because it plays for as long as the level does and anything with a
 //  pulse the player can tap along to becomes a metronome they are trying to
 //  collect in time with.
+//  The tempo a level is played at is not written here: it is taken from the
+//  level's own row spacing, so that a beat is a whole number of rows and a
+//  collected orb lands on one. This is the ceiling that choice is made under -
+//  a beat is however many rows it takes to bring the tempo under it.
+export const MUSIC_BPM_MAX = 112;
+
+/** Where the tempo sits when there is no road to take it from: the menu. */
 export const MUSIC_BPM = 80;
 export const MUSIC_BEATS_PER_BAR = 4;
 
@@ -1840,6 +1847,21 @@ export const MUSIC_GAIN = 0.5;
 //  is the only way to get music in time out of a browser: notes are handed to
 //  the audio clock before they are due, so a busy frame cannot delay one.
 export const MUSIC_LOOKAHEAD = 1.5;
+
+/**
+ * How far a bar may be pulled to land on a row of orbs, as a share of a beat.
+ *
+ * The levels are laid out on a grid of rows, but not on *one* grid: a section
+ * join is a fixed distance rather than a whole number of rows, and there are
+ * twenty to forty of those in a level. So bars of a fixed length walk off the
+ * rows within a few sections however well the tempo is chosen.
+ *
+ * Rather than move anything on the road, each bar starts on the nearest row if
+ * one is close enough - the music re-phasing itself against the level. A
+ * quarter of a beat is a sixteenth of a bar: enough to catch the joins, small
+ * enough that it is heard as the music breathing rather than as it stumbling.
+ */
+export const MUSIC_SNAP_BEATS = 0.25;
 
 //  The run-in to the finish.
 //
