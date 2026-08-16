@@ -33,8 +33,7 @@ import {
 } from '../config/constants';
 import { buildLevel, drainAt, HazardZone, LEAD_IN, LevelSpec, ORB_ROW_SPACING, speedAt, SpeedZone } from '../config/level';
 import { listenForGesture, play, wakeAudio } from '../systems/Audio';
-import { barDistance } from '../config/music';
-import { addRows, setFinale, setRoad, startMusic, stopMusic } from '../systems/Music';
+import { setFinale, startMusic, stopMusic } from '../systems/Music';
 import { Coach } from '../ui/Coach';
 import { firstForcedJump, isPrompting } from '../systems/coach';
 import { formOf } from '../config/form';
@@ -73,12 +72,6 @@ import { RunFailed } from '../ui/RunFailed';
 import { PauseButton } from '../ui/PauseButton';
 import { PauseOverlay } from '../ui/PauseOverlay';
 import { arrive, leaveTo } from '../ui/transition';
-
-/** Where the rows of orbs are, with the several orbs in a row counted once. */
-function rowsOf (orbs: Array<{ distance: number }>): number[]
-{
-    return [ ...new Set(orbs.map((orb) => orb.distance)) ].sort((a, b) => a - b);
-}
 
 /**
  * The one and only scene for now. It owns the single piece of shared state -
@@ -152,15 +145,6 @@ export class Play extends Scene
 
     /** This level's forward speed, which may override the global default. */
     private forwardSpeed = FORWARD_SPEED;
-
-    /** How far apart this level's rows are, which is what the music counts in. */
-    private rowSpacing = ORB_ROW_SPACING;
-
-    /** Where the backing's first bar begins: the level's first row of orbs. */
-    private barFrom = 0;
-
-    /** Every row of orbs, which is what the bars are laid onto. */
-    private barRows: number[] = [];
 
     /** Distance travelled in track pixels. Everything else is placed from this. */
     private distance = 0;
@@ -323,8 +307,7 @@ export class Play extends Scene
         this.finishDistance = course.finishDistance;
 
         //  Nine rows' worth, whatever this level's rows are spaced at.
-        this.rowSpacing = level.rowSpacing ?? ORB_ROW_SPACING;
-        this.rainbowSpan = RAINBOW_ROWS * this.rowSpacing;
+        this.rainbowSpan = RAINBOW_ROWS * (level.rowSpacing ?? ORB_ROW_SPACING);
 
         this.course = new Course(this, course, {
             onGate: (color) => this.onGate(color),
@@ -338,14 +321,9 @@ export class Play extends Scene
         this.input.on('pointerdown', wakeAudio);
         listenForGesture();
 
-        //  From the top with the level, and stopped with it: the backing is
+        //  From the top with the level, and stopped with it: the soundtrack is
         //  this run's music rather than something the game leaves playing.
-        //
-        //  It is laid along the road rather than played to a clock: a bar is a
-        //  whole number of rows of this level's own spacing, starting at the
-        //  first row. So an orb lands on a beat, a level whose rows come
-        //  faster gets faster music, and a boost speeds the music with it.
-        this.startBacking(course.orbs[0]?.distance ?? LEAD_IN, rowsOf(course.orbs));
+        startMusic();
 
         this.input_ = new InputSystem(
             this,
@@ -708,7 +686,7 @@ export class Play extends Scene
         }
         else
         {
-            this.startBacking(this.barFrom, this.barRows);
+            startMusic();
         }
 
         if (paused)
@@ -761,18 +739,13 @@ export class Play extends Scene
      * shorten the warning.
      */
     /**
-     * Starts the backing on this level's own grid.
+     * How far into the run-in to the finish the level is, 0 to 1.
      *
-     * @param from Distance the first bar begins at.
+     * Measured against how long the road left would take at the pace being run
+     * now, rather than against a number of pixels. Ten seconds is ten seconds
+     * whatever speed a level runs at, and a boost near the line should not
+     * shorten the warning.
      */
-    private startBacking (from: number, rows: number[] = []): void
-    {
-        this.barFrom = from;
-        this.barRows = rows;
-
-        startMusic(barDistance(this.rowSpacing, this.forwardSpeed), from, rows);
-    }
-
     private finaleAmount (): number
     {
         const window = this.forwardSpeed * this.pace * FINALE_SECONDS;
@@ -948,11 +921,6 @@ export class Play extends Scene
 
         this.course.extend(batch);
 
-        //  The new road's rows, so the backing can go on landing its bars on
-        //  them rather than walking off the end of what it was given.
-        this.barRows = [ ...this.barRows, ...rowsOf(batch.orbs) ];
-
-        addRows(rowsOf(batch.orbs));
         this.hazardField.setZones([ ...this.hazards, ...batch.hazards ]);
         this.hazards = [ ...this.hazards, ...batch.hazards ];
         this.zones = [ ...this.zones, ...batch.zones ];
@@ -1066,9 +1034,6 @@ export class Play extends Scene
         //  announce, and announcing it anyway would be the game lying.
         setFinale(this.survival ? 0 : this.finaleAmount());
 
-        //  The music is laid along the road, so it needs to know where the
-        //  road has got to and how fast it is going - not what time it is.
-        setRoad(this.distance, this.forwardSpeed * this.speed.scale * this.pace);
 
         this.chargeForGround(moved);
 

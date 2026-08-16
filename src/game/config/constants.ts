@@ -1717,20 +1717,23 @@ export const DEPTH_OVERLAY = 50;
 //  plays: no files, the same way every picture in it is drawn rather than
 //  loaded.
 //
-//  The instrument is the oldest recipe in synthesis: two sawtooths a few cents
-//  apart through a resonant lowpass, with an envelope on the *cutoff* rather
-//  than on the volume. Detuning is what makes it sound like a machine with
-//  parts in it rather than like arithmetic - two saws that agree exactly are
-//  one saw - and the filter opening and shutting is the whole character.
+//  The instrument is a cabinet in an arcade in 1987: square waves, a triangle
+//  under the bass, noise for the drums, and nothing held longer than a beat.
+//  There is almost no reverb, because an arcade machine has none - and because
+//  a game whose sound has no depth in it cannot sound muddy however much is
+//  happening.
+//
+//  The division of labour is the other half of it. The music carries the
+//  rhythm and the tune; the game only ticks along on top. What the player does
+//  is not narrated by the sound - it is on the screen.
 
 /** Everything the game plays passes through this. */
 export const SOUND_MASTER = 0.9;
 
 //  The limiter across the master. Notes are triggered by how the player is
 //  doing rather than by an arrangement, so a good run overlaps half a dozen of
-//  them and their tails - which without this adds up past what the speaker can
-//  give and is heard as a crackle. Set gently: it holds the peaks of a busy
-//  moment down, and does nothing at all to a single note.
+//  them - which without this adds up past what the speaker can give and is
+//  heard as a crackle.
 export const SOUND_COMPRESSOR_THRESHOLD = -14;
 export const SOUND_COMPRESSOR_KNEE = 12;
 export const SOUND_COMPRESSOR_RATIO = 6;
@@ -1741,80 +1744,74 @@ export const SOUND_COMPRESSOR_RELEASE = 0.25;
 export const SOUND_ROOT_HZ = 261.63;
 
 /**
- * Where a streak starts.
+ * The note a collected orb plays. Always this one.
  *
- * A fifth below the root, which puts a collected orb in the middle of the
- * range rather than at the top of it. It used to be an octave higher: bright,
- * easy to hear over everything - and a bright note repeated once a second with
- * three seconds of room behind it is not a reward, it is a smoke alarm.
+ * It used to climb with the streak, and that was wrong twice over: it was the
+ * sound heard most often in the game, and it was the one that changed most. It
+ * is the root of the key, two octaves up - the one note that is in every chord
+ * of the loop, so it can land at any moment without ever being wrong.
  */
-export const ORB_BASE_SEMITONES = -5;
+export const ORB_SEMITONES = 19;
 
-/** How far above that a streak may climb. One octave. */
-export const ORB_MAX_SEMITONES = 12;
+//  The bass: a square with a triangle an octave below it. The triangle is
+//  what gives it a body on a phone, where the square alone is a buzz.
+export const BASS_ATTACK = 0.004;
+export const BASS_HOLD = 0.05;
+export const BASS_DECAY = 0.16;
 
-//  How far apart the two sawtooths are, in cents. Wider on the pad, because a
-//  pad is meant to be a mass rather than a note; narrow on a pluck, or the
-//  beating between them is heard as being out of tune rather than as width.
-export const SYNTH_DETUNE = 7;
-export const SYNTH_PAD_DETUNE = 14;
+//  The second channel, which plays the tune. A shade longer than the bass
+//  notes so it sings over them rather than clicking along with them.
+export const LEAD_ATTACK = 0.005;
+export const LEAD_HOLD = 0.08;
+export const LEAD_DECAY = 0.22;
+export const LEAD_DETUNE = 4;
 
-//  Where the filter opens to and shuts down to, as multiples of the note's own
-//  pitch, and how fast. On a pluck that sweep is over in half a second and is
-//  the "wow" at the front of every note; on the pad it takes seconds and is
-//  heard as the weather changing rather than as a filter.
-export const SYNTH_OPEN = 9;
-export const SYNTH_SHUT = 1.6;
-export const SYNTH_SWEEP = 0.5;
-export const SYNTH_Q = 3.2;
+/** The tick a collected orb makes: one short square and nothing else. */
+export const TICK_ATTACK = 0.003;
+export const TICK_DECAY = 0.07;
 
-export const SYNTH_ATTACK = 0.006;
-export const SYNTH_DECAY_SPAN = 240;
-export const SYNTH_DECAY_BASE = 0.5;
-export const SYNTH_DECAY_MAX = 1.8;
-
-//  The pad: the same two saws with the attack opened right out, a gentler
-//  filter, and a sweep that takes most of a bar. It is the backing, and it has
-//  no rhythm of its own at all.
-export const PAD_OPEN = 5;
-export const PAD_SHUT = 1.8;
-export const PAD_Q = 1.2;
-export const PAD_ATTACK = 0.9;
-export const PAD_HOLD = 0.8;
-export const PAD_DECAY = 3.2;
-
-//  The bass: short, hard, and with a sine an octave down under it so the low
-//  end is felt rather than only heard. A saw that low would be mud.
-export const BASS_ATTACK = 0.01;
-export const BASS_DECAY = 1.4;
-export const BASS_SUB = 0.4;
+//  The kit. A kick is a sine dropped from a high pitch to a low one in a
+//  twentieth of a second - that fall *is* a kick drum, there is nothing else
+//  to it. A snare and a hat are both noise; what separates them is where the
+//  filter sits and how long they last.
+export const KICK_FROM = 150;
+export const KICK_TO = 45;
+export const KICK_FALL = 0.06;
+export const KICK_DECAY = 0.14;
+export const SNARE_BAND = 1900;
+export const SNARE_DECAY = 0.12;
+export const SNARE_TONE = 210;
+export const HAT_BAND = 7000;
+export const HAT_DECAY = 0.035;
 
 /** Headroom every note is played at, so a busy moment has somewhere to go. */
-export const SOUND_GAIN = 0.8;
+export const SOUND_GAIN = 0.85;
 
 //  The room. Long and wide - the tail is most of the sound, and a note landing
 //  in it is what makes a streak feel like one phrase rather than a row of beeps.
-export const REVERB_SECONDS = 3.0;
+export const REVERB_SECONDS = 0.55;
 
 /** How sharply the tail falls away. Higher is a smaller, deader room. */
-export const REVERB_DECAY = 2.0;
+export const REVERB_DECAY = 3.5;
 
 /** Silence between the note and its room, in seconds. */
-export const REVERB_PREDELAY = 0.024;
+export const REVERB_PREDELAY = 0.005;
 
 //  Less than it was. A big room under single bright notes is atmosphere; the
 //  same room under chords that are already holding is a smear, and the two
 //  together were most of why the game sounded busy.
-export const REVERB_WET = 0.34;
-export const REVERB_DRY = 0.66;
+export const REVERB_WET = 0.09;
+export const REVERB_DRY = 0.95;
 
 //  A short echo, quiet and dark. Water in a space repeats before it blurs -
 //  a single reflection is the difference between a room and a cave, and it is
 //  what fills the gaps between collects without adding anything to play.
-export const ECHO_SECONDS = 0.375;
-export const ECHO_FEEDBACK = 0.34;
-export const ECHO_WET = 0.16;
-export const ECHO_DAMP = 1600;
+//  A single quiet repeat, an eighth note behind. Any more than this and
+//  the cabinet starts to sound like a cathedral.
+export const ECHO_SECONDS = 0.234;
+export const ECHO_FEEDBACK = 0.12;
+export const ECHO_WET = 0.07;
+export const ECHO_DAMP = 3000;
 
 /** Seed for the room's noise, so the reverb is identical on every device. */
 export const REVERB_SEED = 8317;
@@ -1824,14 +1821,15 @@ export const REVERB_SEED = 8317;
 //  Slow, because it plays for as long as the level does and anything with a
 //  pulse the player can tap along to becomes a metronome they are trying to
 //  collect in time with.
-//  The tempo a level is played at is not written here: it is taken from the
-//  level's own row spacing, so that a beat is a whole number of rows and a
-//  collected orb lands on one. This is the ceiling that choice is made under -
-//  a beat is however many rows it takes to bring the tempo under it.
-export const MUSIC_BPM_MAX = 112;
-
-/** Where the tempo sits when there is no road to take it from: the menu. */
-export const MUSIC_BPM = 80;
+//  One tempo for the whole game, and it does not follow the road.
+//
+//  It was derived from each level's own row spacing for a while, so that a
+//  collected orb landed on a beat. That is a lovely idea and it is not what
+//  this game wants: it put the early levels at sixty beats a minute, and an
+//  arcade cabinet does not play at sixty. A soundtrack that keeps its own time
+//  is what every game of this kind has always done - none of them ever
+//  synchronised the music to the enemies.
+export const MUSIC_BPM = 128;
 export const MUSIC_BEATS_PER_BAR = 4;
 
 /**
@@ -1841,27 +1839,15 @@ export const MUSIC_BEATS_PER_BAR = 4;
  * listened to - and everything that matters to the player is a cue over the
  * top of it.
  */
-export const MUSIC_GAIN = 0.5;
+//  Under the game's own tick even at the loudest point of the run-in. The
+//  soundtrack carries the run; it never competes with the thing the player
+//  did.
+export const MUSIC_GAIN = 0.42;
 
 //  Scheduled a little ahead of the sound card and topped up on a timer, which
 //  is the only way to get music in time out of a browser: notes are handed to
 //  the audio clock before they are due, so a busy frame cannot delay one.
 export const MUSIC_LOOKAHEAD = 1.5;
-
-/**
- * How far a bar may be pulled to land on a row of orbs, as a share of a beat.
- *
- * The levels are laid out on a grid of rows, but not on *one* grid: a section
- * join is a fixed distance rather than a whole number of rows, and there are
- * twenty to forty of those in a level. So bars of a fixed length walk off the
- * rows within a few sections however well the tempo is chosen.
- *
- * Rather than move anything on the road, each bar starts on the nearest row if
- * one is close enough - the music re-phasing itself against the level. A
- * quarter of a beat is a sixteenth of a bar: enough to catch the joins, small
- * enough that it is heard as the music breathing rather than as it stumbling.
- */
-export const MUSIC_SNAP_BEATS = 0.25;
 
 //  The run-in to the finish.
 //

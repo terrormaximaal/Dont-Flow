@@ -1,174 +1,90 @@
-import { FINALE_LIFT, MUSIC_BEATS_PER_BAR, MUSIC_BPM, MUSIC_BPM_MAX, ORB_BASE_SEMITONES } from './constants';
+import { FINALE_LIFT, MUSIC_BEATS_PER_BAR } from './constants';
 import { Strike } from './audio';
 import { Timbre } from '../systems/voice';
 
-//  The tune, and the music under a run.
+//  The soundtrack, as numbers.
 //
-//  Both are written here as numbers - which note, on which beat, how hard -
-//  and played by the same struck voice as everything else. Nothing in this
-//  file makes a sound; `systems/Music` hands it to the clock.
+//  Sixteen bars in two halves. The first eight walk a minor line down a
+//  semitone at a time - the thing "One", Skyfall and the Bond vamp all have in
+//  common - and the second eight lift into the relative major: the same notes
+//  heard from three semitones up, so it brightens without leaving the key.
 //
-//  Everything is in semitones from the root, and every note is drawn from the
-//  same five-note scale the game's own sounds use. That is the whole reason
-//  the backing can be left running while the player collects: a collected orb
-//  cannot land a semitone away from the chord under it, because neither of
-//  them has a note the other lacks.
-
-/**
- * The key the whole game is in: wherever a collected orb starts.
- *
- * Everything - the tune, the chords under it, every cue - is written from
- * here, which is what makes the guarantee hold. The five notes a streak plays
- * and the five the backing is built from are the same five, so no note the
- * player triggers can land a semitone against whatever the room is still
- * holding. Written in one place because two keys a fifth apart sound perfectly
- * fine on their own and awful together.
- */
-const HOME = ORB_BASE_SEMITONES;
-
-/**
- * The theme.
- *
- * Minor, and it does not resolve: it climbs to the octave, falls back, and
- * ends on the fifth rather than on the root - hanging, the way a synth line
- * over a title card does. A tune that comes home says the story is over, and
- * this one is played before the player has started.
- */
-export const THEME: Strike[] = [
-    { semitones: HOME, at: 0, gain: 0.7 },
-    { semitones: HOME + 3, at: 0.20, gain: 0.7 },
-    { semitones: HOME + 7, at: 0.40, gain: 0.75 },
-    { semitones: HOME + 10, at: 0.60, gain: 0.8 },
-    { semitones: HOME + 7, at: 0.90, gain: 0.7 },
-    { semitones: HOME + 12, at: 1.10, gain: 0.85 },
-    { semitones: HOME + 10, at: 1.45, gain: 0.7 },
-    { semitones: HOME + 7, at: 1.65, gain: 0.7 },
-    { semitones: HOME + 3, at: 1.90, gain: 0.7 },
-    { semitones: HOME + 7, at: 2.20, gain: 0.9 },
-
-    //  The floor under it, struck twice, which is what makes the line sound
-    //  like it is standing on something.
-    { semitones: HOME - 12, at: 0, gain: 0.5, timbre: 'bass' },
-    { semitones: HOME - 12, at: 1.10, gain: 0.45, timbre: 'bass' }
-];
-
-/** Seconds as beats, for anything written in one that is played in the other. */
-export function beatsOf (seconds: number): number
-{
-    return (seconds * MUSIC_BPM) / 60;
-}
-
-/**
- * How many rows of orbs there are to a beat.
- *
- * The tempo is not a number somebody chose; it is taken from the road. A level
- * places its rows a fixed distance apart, so the time between two rows is a
- * unit the level already has - and making the beat a whole number of those
- * puts every collected orb on a beat or an exact half or third of one.
- *
- * Which multiple is whichever brings the tempo under the ceiling: two rows to
- * the beat on the early levels, three or four on the late ones, where the rows
- * come three times as fast.
- */
-export function beatRows (rowSpacing: number, speed: number): number
-{
-    const rowSeconds = rowSpacing / Math.max(1, speed);
-
-    let rows = 1;
-
-    while ((60 / (rowSeconds * rows)) > MUSIC_BPM_MAX && rows < 16)
-    {
-        rows++;
-    }
-
-    return rows;
-}
-
-/**
- * How long a bar of this level is, in track pixels.
- *
- * In pixels rather than in seconds because that is what the rest of this game
- * measures with - the jump, the trail, the whole world are laid out in
- * distance, so that a pause, an uneven frame rate and a speed boost cannot
- * pull them apart. Music kept on the clock instead was the one thing that
- * drifted out of step with the road the moment a level sped up.
- */
-export function barDistance (rowSpacing: number, speed: number): number
-{
-    return rowSpacing * beatRows(rowSpacing, speed) * MUSIC_BEATS_PER_BAR;
-}
-
-/**
- * The chords the backing circles through, one to a bar.
- *
- * i - III - VII - v, which is the minor loop behind more or less every big
- * minor-key song of the last twenty years. It walks away from home and leans
- * back towards it without ever arriving, which is what a backing wants - a
- * progression that lands every four bars announces itself, and anything that
- * announces itself during a level is competing with the level.
- */
-const CHORDS: Array<{ root: number; shape: number[]; extra: number[] }> = [
-    //  `extra` is what the chord grows in the run-in to the finish: more of
-    //  itself, never anything new. Every one of these is a note of the same
-    //  five-note scale the player is collecting in, for the reason below.
-    { root: HOME, shape: [ 0, 3, 7 ], extra: [ 10, 15 ] },
-    { root: HOME + 3, shape: [ 0, 4, 7 ], extra: [ 12, 16 ] },
-
-    //  These two are voiced without their thirds - fourths and fifths stacked
-    //  instead. A third would be a semitone away from a note the player can
-    //  play, and with a three-second room something is always still sounding:
-    //  the chord under a run has to be built from the same five notes the run
-    //  is, or a good streak lands on a clash sooner or later.
-    { root: HOME + 10, shape: [ 0, 5, 7 ], extra: [ 12, 17 ] },
-    { root: HOME + 7, shape: [ 0, 3, 5 ], extra: [ 12, 15 ] }
-];
+//  Two sections is what stops a loop being a loop. Four bars comes round every
+//  seven seconds and the ear has it memorised inside a level; sixteen takes
+//  half a minute, and by then something has happened on the road.
+//
+//  Nothing here makes a sound. `systems/Music` hands it to the clock.
 
 /** How many bars before the whole thing comes round again. */
-export const LOOP_BARS = 8;
+export const LOOP_BARS = 16;
+
+/** The drums have no pitch worth the name; this is what they are given. */
+const DRUM = 0;
 
 /**
- * Where a bar due at `wanted` actually starts.
+ * Where the bass sits in each bar of the two halves.
  *
- * The nearest row of orbs, if one is within `reach`, and `wanted` itself
- * otherwise. This is what keeps the music on the road: the levels are laid out
- * on a grid of rows, but not on *one* grid - a section join is a fixed
- * distance rather than a whole number of rows, and there are twenty to forty
- * joins in a level - so bars of a fixed length walk off the rows within a few
- * sections however well the tempo was chosen.
- *
- * Rather than move anything on the road, the bar moves: the music re-phases
- * itself against the level, by a fraction of a beat at a time.
+ * Two bars to a chord, so the line moves half as often as the tune does - the
+ * whole point of a descending bass is that it is slow enough to be followed.
  */
-export function barStart (wanted: number, rows: number[], reach: number): number
-{
-    let low = 0;
-    let high = rows.length - 1;
-    let best = wanted;
-    let bestOff = reach;
+const LINE = [
+    [ -12, -12, -13, -13, -14, -14, -16, -16 ],
+    [ -9, -9, -10, -10, -12, -12, -14, -14 ]
+];
 
-    while (low <= high)
-    {
-        const middle = (low + high) >> 1;
-        const off = Math.abs(rows[middle] - wanted);
+/**
+ * The tune, in eighths, as a question and an answer.
+ *
+ * Eight bars of the same shape twice over, the second time ending differently:
+ * that is how a chip soundtrack keeps two channels interesting for twenty
+ * minutes, and it is the cheapest way there is to stop something sounding like
+ * a loop. `null` is a rest, and there are a lot of them on purpose.
+ */
+const TUNE: Array<Array<Array<number | null>>> = [
+    [
+        [ 0, null, 3, null, 7, null, 3, null ],
+        [ 5, null, 3, null, 2, null, null, null ],
+        [ 0, null, 3, null, 7, null, 10, null ],
+        [ 7, null, null, null, null, null, null, null ],
+        [ 12, null, 10, null, 7, null, 10, null ],
+        [ 5, null, 7, null, 3, null, null, null ],
+        [ 0, null, 3, null, 7, null, 12, null ],
+        [ 10, null, 7, null, 3, null, 0, null ]
+    ],
+    [
+        [ 15, null, 12, null, 10, null, 12, null ],
+        [ 15, null, null, 17, null, 15, null, null ],
+        [ 12, null, 15, null, 19, null, 15, null ],
+        [ 12, null, null, null, 10, null, null, null ],
+        [ 19, null, 17, null, 15, null, 12, null ],
+        [ 15, null, 12, null, 10, null, null, null ],
+        [ 12, null, 15, null, 19, null, 22, null ],
+        [ 19, null, 15, null, 12, null, 10, null ]
+    ]
+];
 
-        if (off <= bestOff)
-        {
-            best = rows[middle];
-            bestOff = off;
-        }
+/** What the bass plays across a bar, as offsets from that bar's own note. */
+const WALK = [ 0, 0, 12, 0, 7, 0, 12, 0 ];
 
-        if (rows[middle] < wanted)
-        {
-            low = middle + 1;
-        }
-        else
-        {
-            high = middle - 1;
-        }
-    }
+/** And on the eighth bar, where it runs back up instead: the turnaround. */
+const TURN = [ 0, 0, 12, 0, 7, 0, 3, 5 ];
 
-    return best;
-}
+/**
+ * The title tune: the opening phrase, with a hit under it.
+ *
+ * Written in seconds because a title screen has no bars - it is played once,
+ * on its own, while nothing is moving.
+ */
+export const THEME: Strike[] = [
+    ...[ 0, 3, 7, 3, 5, 3, 2 ].map((semitones, i) => ({
+        semitones, at: i * 0.14, gain: 0.7, timbre: 'lead' as Timbre
+    })),
+    { semitones: DRUM, at: 0, gain: 0.8, timbre: 'kick' },
+    { semitones: DRUM, at: 0.56, gain: 0.5, timbre: 'snare' },
+    { semitones: -12, at: 1.02, gain: 0.9, timbre: 'bass' },
+    { semitones: DRUM, at: 1.02, gain: 0.85, timbre: 'kick' },
+    { semitones: 0, at: 1.04, gain: 0.8, timbre: 'lead' }
+];
 
 /** A note in the backing: which note, which beat of the bar, how hard. */
 export interface Beat
@@ -180,82 +96,83 @@ export interface Beat
 
     gain: number;
 
-    /** The backing is never the sound the player triggers. */
-    timbre?: Timbre;
+    timbre: Timbre;
 }
 
 /**
- * One bar of the backing: a chord, and the bass it stands on.
- *
- * The bass is struck twice a bar and the chord once, and that is the entire
- * rhythm of it. The game already makes a sound every time an orb goes past -
- * up to eight a second on the hardest levels - and a backing with a pattern of
- * its own underneath that is what made the whole thing sound busy.
+ * One bar of the soundtrack: drums, a walking bass, and the tune over them.
  *
  * @param bar    Which bar of the run, counted from the first. Loops on its own.
  * @param finale How far into the run-in to the finish, 0 to 1. Above zero the
- *               bar changes chord halfway through and each chord carries more
- *               of itself - see `chordAt`.
+ *               hats double up and the fills come every bar - the drummer
+ *               telling the player it is nearly over, which is what a drummer
+ *               is for.
  */
 export function barNotes (bar: number, finale = 0): Beat[]
 {
     const step = ((bar % LOOP_BARS) + LOOP_BARS) % LOOP_BARS;
-    const half = MUSIC_BEATS_PER_BAR / 2;
+    const half = step >= 8 ? 1 : 0;
+    const place = step % 8;
+    const last = place === 7;
     const lift = 1 + (FINALE_LIFT * finale);
 
-    const notes: Beat[] = [
-        { semitones: CHORDS[step % CHORDS.length].root - 12, beat: 0, gain: 0.7 * lift, timbre: 'bass' }
-    ];
+    const notes: Beat[] = [];
 
-    //  Ordinarily one chord a bar with the bass struck again halfway through.
-    //  In the run-in the halfway point becomes the next chord instead, so the
-    //  progression moves at twice the speed without a single new sound being
-    //  introduced - which is what makes it read as arriving rather than as
-    //  something else starting.
-    laid(CHORDS[step % CHORDS.length], 0, finale, lift, notes);
+    //  Kick on one and three, snare on two and four. The beat every arcade
+    //  game has ever had, and the reason everything else can be this simple.
+    for (const beat of [ 0, 2 ]) { notes.push({ semitones: DRUM, beat, gain: 0.8, timbre: 'kick' }); }
+    for (const beat of [ 1, 3 ]) { notes.push({ semitones: DRUM, beat, gain: 0.55, timbre: 'snare' }); }
 
-    if (finale > 0)
+    const hats = finale > 0 ? 16 : 8;
+
+    for (let i = 0; i < hats; i++)
     {
-        const next = CHORDS[(step + 1) % CHORDS.length];
-
-        notes.push({ semitones: next.root - 12, beat: half, gain: 0.55 * lift, timbre: 'bass' });
-        laid(next, half, finale, lift, notes);
-    }
-    else
-    {
-        notes.push({ semitones: CHORDS[step % CHORDS.length].root - 12, beat: half, gain: 0.45, timbre: 'bass' });
+        notes.push({
+            semitones: DRUM,
+            beat: i * (MUSIC_BEATS_PER_BAR / hats),
+            gain: (i % 2 === 0 ? 0.5 : 0.3) * lift,
+            timbre: 'hat'
+        });
     }
 
-    return notes.filter((note) => note.beat < MUSIC_BEATS_PER_BAR);
-}
+    //  The fill: the last beat of the eighth bar is snare drops instead of the
+    //  pattern, which is what tells the ear the loop is coming round. In the
+    //  run-in to the finish, every bar gets one.
+    if (last || finale > 0.5)
+    {
+        for (const beat of [ 3, 3.25, 3.5, 3.75 ])
+        {
+            notes.push({ semitones: DRUM, beat, gain: (0.3 + ((beat - 3) * 0.7)) * lift, timbre: 'snare' });
+        }
+    }
 
-/**
- * Lays one chord down at `beat`, with as much of it as the finale asks for.
- *
- * The extra notes come in one at a time rather than all at once, so the last
- * ten seconds of a level are a chord thickening rather than a switch being
- * thrown.
- */
-function laid (
-    chord: { root: number; shape: number[]; extra: number[] },
-    beat: number,
-    finale: number,
-    lift: number,
-    into: Beat[]
-): void
-{
-    const grown = chord.extra.slice(0, Math.round(finale * chord.extra.length));
+    const root = LINE[half][place];
+    const walk = last ? TURN : WALK;
 
-    //  Laid down together, barely spread, so the chord is heard as one thing
-    //  rather than as several notes that happen to agree.
-    [ ...chord.shape, ...grown ].forEach((interval, i) => {
+    for (let i = 0; i < 8; i++)
+    {
+        notes.push({
+            semitones: root + walk[i],
+            beat: i * 0.5,
+            gain: (i === 0 ? 0.85 : (i % 2 === 0 ? 0.6 : 0.38)) * lift,
+            timbre: 'bass'
+        });
+    }
 
-        into.push({
-            semitones: chord.root + interval,
-            beat: beat + (0.05 * i),
-            gain: (i < chord.shape.length ? 0.4 : 0.3) * lift,
-            timbre: 'pad'
+    TUNE[half][place].forEach((semitones, i) => {
+
+        if (semitones === null) { return; }
+
+        //  The bright half is played a shade softer, or the lift reads as the
+        //  game getting louder rather than as it getting brighter.
+        notes.push({
+            semitones,
+            beat: i * 0.5,
+            gain: (half ? 0.36 : 0.42) * lift,
+            timbre: 'lead'
         });
 
     });
+
+    return notes.filter((note) => note.beat < MUSIC_BEATS_PER_BAR);
 }

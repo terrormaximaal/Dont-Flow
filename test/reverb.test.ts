@@ -79,10 +79,14 @@ describe('the room a note is played into', () => {
 
     });
 
-    it('is long enough for a note to hang in', () => {
+    //  It used to be three and a half seconds, and that room was most of why
+    //  the game became unbearable to listen to: everything the player did was
+    //  still sounding while they did the next thing. An arcade cabinet has no
+    //  reverb worth the name, and this one barely does either.
+    it('is a cabinet rather than a cathedral', () => {
 
-        //  The point of the effect, and the thing the user asked for by name.
-        expect(REVERB_SECONDS).toBeGreaterThan(2);
+        expect(REVERB_SECONDS).toBeLessThan(1);
+        expect(REVERB_SECONDS).toBeGreaterThan(0.2);
 
     });
 

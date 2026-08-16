@@ -155,9 +155,12 @@ export function setMuted (value: boolean): void
  * Silent and harmless when muted, when there is no context, or when the context
  * has not been woken yet - all three are ordinary states rather than errors.
  *
- * @param combo Where the run's streak is, for the cues whose pitch follows it.
+ * @param _combo Where the run's streak is. Nothing reads it any more - the
+ *               tick a collected orb makes is the same note however well the
+ *               run is going - but every caller passes it, and taking it out
+ *               would touch a dozen call sites to say nothing.
  */
-export function play (cue: Cue, combo = 0): void
+export function play (cue: Cue, _combo = 0): void
 {
     if (muted)
     {
@@ -189,7 +192,11 @@ export function play (cue: Cue, combo = 0): void
         const now = ctx.currentTime;
         const gap = lastCueAt < 0 ? Infinity : now - lastCueAt;
         const crowded = variesOnRepeat(cue) && gap < CROWD_SECONDS;
-        const notes = crowded ? thinned(voiceFor(cue, combo), gap) : voiceFor(cue, combo);
+        //  `combo` is no longer a pitch: the tick is the same note however
+        //  well the run is going, so nothing here reads it any more. It is
+        //  kept in the signature because every caller passes it and taking it
+        //  out would touch a dozen call sites to say nothing.
+        const notes = crowded ? thinned(voiceFor(cue), gap) : voiceFor(cue);
 
         lastCueAt = now;
 

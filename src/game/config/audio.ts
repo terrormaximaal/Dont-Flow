@@ -1,4 +1,4 @@
-import { ORB_BASE_SEMITONES, ORB_MAX_SEMITONES, SOUND_ROOT_HZ } from './constants';
+import { ORB_SEMITONES, SOUND_ROOT_HZ } from './constants';
 import { THEME } from './music';
 import { Timbre } from '../systems/voice';
 
@@ -7,17 +7,12 @@ import { Timbre } from '../systems/voice';
 //  Synthesised rather than sampled. The game ships no assets at all - every
 //  world, every drop, every panel is drawn from numbers - and a folder of wav
 //  files would be the first thing in it, plus a loading screen to fetch them
-//  with. Oscillators cost nothing, load instantly, work offline, and can be
-//  tuned by changing a number here rather than by opening an audio editor.
+//  with.
 //
-//  One instrument plays all of it: a struck note built from three partials,
-//  into a long room. That is `systems/voice`; this file is only what is played
-//  on it and when - which is a design decision, and design decisions that live
-//  inside a Web Audio call are ones nobody can check.
-//
-//  Everything is written as a count of semitones from the root rather than as a
-//  frequency, so the whole game can be moved to another key by changing one
-//  number, and so two sounds can be compared by reading them.
+//  The division of labour matters more than any of the sounds. The music
+//  carries the tune and the beat; the game only ticks along on top of it. What
+//  the player did is on the screen, so the sound does not need to narrate it -
+//  and a game that narrates every input is a game people mute.
 
 /** One note in a cue: how high, how far into the cue, and how hard. */
 export interface Strike
@@ -55,7 +50,7 @@ export const DETUNE_CENTS = 9;
 /** Whether a cue is nudged off pitch on repeat. */
 export function variesOnRepeat (cue: Cue): boolean
 {
-    return cue !== 'fail' && cue !== 'finish' && cue !== 'title';
+    return cue !== 'fail' && cue !== 'finish' && cue !== 'title' && cue !== 'life';
 }
 
 /** Everything the game can make a noise about. */
@@ -73,65 +68,17 @@ export type Cue =
     | 'title';
 
 /**
- * Minor pentatonic.
+ * The note a collected orb plays, which is the same note every time.
  *
- * The point of it is what it leaves out: there is no semitone anywhere in the
- * scale, so no two notes in it can sound wrong together however they are
- * ordered or overlapped. A streak plays whatever the player happens to collect
- * at whatever speed they collect it, and the room holds each note into the next
- * few - with a scale that has a fourth or a seventh in it, that is a matter of
- * luck, and it comes out sour often enough to be noticed.
+ * It used to climb with the streak. That was the single most-heard sound in
+ * the game and also the one that changed most, which is backwards: the score
+ * is on the screen, and a tick that is different every time is a tick the ear
+ * cannot stop listening to. It is the root of the key, so it fits every chord
+ * of the backing and can land at any moment.
  */
-const PENTATONIC = [ 0, 3, 5, 7, 10 ];
-
-/**
- * The figure a streak plays once it has climbed as far as it may.
- *
- * All of it inside the top fifth and landing on the ceiling twice, so it reads
- * as arriving rather than as slipping back down the scale.
- */
-const CROWN = [ 12, 10, 12, 7, 10, 12 ];
-
-/** The step the climb reaches the ceiling on, after which the figure takes over. */
-export const CROWN_FROM = 5;
-
-/**
- * The note an orb is worth, from the combo it lands on, in semitones.
- *
- * Capped two octaves up. Past that it stops being a reward and starts being a
- * noise complaint.
- *
- * The cap is on the whole interval rather than on the octave, which is where
- * the first version of this was wrong: clamping the octave while letting the
- * note carry on cycling meant the top of the second octave overshot the cap and
- * then *fell* when the octave clamped - a fifteen-orb streak sounded lower than
- * a fourteen-orb one. Clamping the total holds the last note instead, which is
- * what "stops climbing" is supposed to mean.
- */
-export function semitonesFor (combo: number): number
+export function semitonesFor (): number
 {
-    const step = Math.max(0, Math.floor(combo));
-    const note = PENTATONIC[step % PENTATONIC.length];
-    const octave = Math.floor(step / PENTATONIC.length);
-
-    const climbed = note + (octave * 12);
-
-    if (climbed < ORB_MAX_SEMITONES)
-    {
-        return ORB_BASE_SEMITONES + climbed;
-    }
-
-    //  At the top it turns around the top rather than repeating the top note.
-    //
-    //  Holding one note was the honest reading of "it stops climbing", and it
-    //  is what a long streak actually sounds like: the same note, once an orb,
-    //  for as long as the player keeps playing well. Rewarding a good run with
-    //  the most monotonous sound in the game is exactly backwards. This keeps
-    //  it up there and keeps it moving - a small figure that always comes back
-    //  to the top note, so the ceiling is still heard as a ceiling.
-    const turned = step - CROWN_FROM;
-
-    return ORB_BASE_SEMITONES + CROWN[((turned % CROWN.length) + CROWN.length) % CROWN.length];
+    return ORB_SEMITONES;
 }
 
 export function frequencyOf (semitones: number): number
@@ -139,14 +86,11 @@ export function frequencyOf (semitones: number): number
     return SOUND_ROOT_HZ * Math.pow(2, semitones / 12);
 }
 
-/** The note an orb is worth, in hertz. */
-export function pitchFor (combo: number): number
+/** The pitch of the tick, in hertz. */
+export function pitchFor (): number
 {
-    return frequencyOf(semitonesFor(combo));
+    return frequencyOf(ORB_SEMITONES);
 }
-
-/** Where a streak starts, in hertz. */
-export const ORB_BASE_HZ = frequencyOf(ORB_BASE_SEMITONES);
 
 /**
  * The sound each moment makes.
@@ -157,87 +101,81 @@ export const ORB_BASE_HZ = frequencyOf(ORB_BASE_SEMITONES);
  * something, and wrong for the ones that happen while the player is reading the
  * road.
  */
-export function voiceFor (cue: Cue, combo = 0): Strike[]
+export function voiceFor (cue: Cue): Strike[]
 {
     switch (cue)
     {
-        //  The one sound the player hears constantly, and the one the whole
-        //  instrument is tuned around.
+        //  The tick. Always the same, always quiet: this is the sound of the
+        //  game agreeing with you, not the sound of the game congratulating
+        //  you.
         case 'orb':
-            return [ { semitones: semitonesFor(combo), at: 0, gain: 0.75 } ];
+            return [ { semitones: ORB_SEMITONES, at: 0, gain: 0.55 } ];
 
-        //  A tritone below the root, with the bottom of the range under it.
-        //  In a minor palette it is the only interval that sounds like a
-        //  warning rather than like music, which is exactly the job.
+        //  The only cue that has to cut through the music, and the only one
+        //  that is not in the key: a semitone under the root, with the bottom
+        //  of the bass under it.
         case 'wrong':
             return [
-                { semitones: -11, at: 0, gain: 0.8 },
-                { semitones: -23, at: 0.02, gain: 0.6, timbre: 'bass' }
+                { semitones: -1, at: 0, gain: 0.7 },
+                { semitones: -13, at: 0.04, gain: 0.75, timbre: 'bass' },
+                { semitones: 0, at: 0, gain: 0.5, timbre: 'snare' }
             ];
 
-        //  A doorway is not a reward or a mistake - it is a door opening, and
-        //  at a dozen a level it has to stay under whatever the streak is
-        //  doing above it.
+        //  A doorway, at a dozen a level, is the hi-hat of the game: heard
+        //  without ever being listened to.
         case 'gate':
-            return [
-                { semitones: -17, at: 0, gain: 0.34, timbre: 'pad' },
-                { semitones: -10, at: 0.02, gain: 0.26, timbre: 'pad' }
-            ];
+            return [ { semitones: 0, at: 0, gain: 0.3, timbre: 'hat' } ];
 
+        //  Nothing at all. Jumping is a thing the player did on purpose and
+        //  can see happening; a sound on top of it is the game repeating
+        //  itself back at them.
         case 'jump':
-            return [ { semitones: 15, at: 0, gain: 0.34 } ];
+            return [];
 
-        //  Lower and quieter than the take-off, so an arc reads as one gesture
-        //  with two ends rather than as two events.
         case 'land':
-            return [ { semitones: 3, at: 0, gain: 0.26 } ];
+            return [];
 
-        //  The one cue that is unmistakably good news: a run up the whole
-        //  scale, which is the only time the game plays more than one note at
-        //  the player in a row.
         case 'rainbow':
-            return [ 0, 3, 7, 10, 12, 15 ].map((semitones, i) => ({
-                semitones, at: i * 0.07, gain: 0.42
+            return [ 12, 19, 24, 31 ].map((semitones, i) => ({
+                semitones, at: i * 0.05, gain: 0.5, timbre: 'lead' as Timbre
             }));
 
-        //  The heaviest thing in the game, because losing one of three chances
-        //  is the most important thing that happens in a run.
+        //  A chance gone: the kick and the bottom of the bass together, which
+        //  is the heaviest thing this instrument can do.
         case 'life':
             return [
-                { semitones: -17, at: 0, gain: 0.85 },
-                { semitones: -24, at: 0.03, gain: 0.7, timbre: 'bass' }
+                { semitones: 0, at: 0, gain: 0.9, timbre: 'kick' },
+                { semitones: -13, at: 0.02, gain: 0.7, timbre: 'bass' },
+                { semitones: -25, at: 0.14, gain: 0.6, timbre: 'bass' }
             ];
 
-        //  Running out: down, and deliberately not ugly. The run ending is
-        //  already clear from everything else on the screen, and a harsh sound
-        //  on top of it makes the player want to stop playing rather than
-        //  press retry.
+        //  Running out: three notes down, and the machine stopping.
         case 'fail':
             return [
-                { semitones: -5, at: 0, gain: 0.7 },
-                { semitones: -9, at: 0.16, gain: 0.65 },
-                { semitones: -12, at: 0.34, gain: 0.8 },
-                { semitones: -24, at: 0.36, gain: 0.5, timbre: 'bass' }
+                { semitones: -1, at: 0, gain: 0.7, timbre: 'lead' },
+                { semitones: -5, at: 0.14, gain: 0.65, timbre: 'lead' },
+                { semitones: -12, at: 0.3, gain: 0.75, timbre: 'bass' },
+                { semitones: 0, at: 0.3, gain: 0.7, timbre: 'kick' }
             ];
 
-        //  Reaching the finish: up through the octave, over a chord that opens
-        //  underneath it.
+        //  Reaching the finish: up the chord, and a hit under it.
         case 'finish':
             return [
-                { semitones: -12, at: 0, gain: 0.5, timbre: 'bass' },
-                { semitones: 0, at: 0.02, gain: 0.35, timbre: 'pad' },
-                { semitones: 0, at: 0.04, gain: 0.6 },
-                { semitones: 7, at: 0.16, gain: 0.6 },
-                { semitones: 12, at: 0.28, gain: 0.7 },
-                { semitones: 19, at: 0.44, gain: 0.8 }
+                { semitones: 0, at: 0, gain: 0.9, timbre: 'kick' },
+                { semitones: -12, at: 0, gain: 0.8, timbre: 'bass' },
+                { semitones: 12, at: 0.08, gain: 0.6, timbre: 'lead' },
+                { semitones: 15, at: 0.16, gain: 0.6, timbre: 'lead' },
+                { semitones: 19, at: 0.24, gain: 0.65, timbre: 'lead' },
+                { semitones: 0, at: 0.32, gain: 0.6, timbre: 'snare' },
+                { semitones: 24, at: 0.32, gain: 0.75, timbre: 'lead' }
             ];
 
         //  Barely there. A menu that clicks loudly is a menu people turn off.
         case 'press':
-            return [ { semitones: 7, at: 0, gain: 0.2 } ];
+            return [ { semitones: 12, at: 0, gain: 0.22 } ];
 
-        //  The game's tune, whole. It is also what the backing is built from,
-        //  so the title is where the player learns it.
+        //  The game's tune, unaccompanied, the way a cabinet announces itself
+        //  across a room.
         case 'title':
             return THEME;
     }
