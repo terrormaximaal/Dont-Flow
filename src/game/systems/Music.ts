@@ -9,7 +9,7 @@ import {
 } from '../config/constants';
 import { Beat, barNotes } from '../config/music';
 import { selectBar } from '../config/musicMenu';
-import { audioTime, fadeMusic, playAt } from './Audio';
+import { audioTime, playAt, setMusicPlaying } from './Audio';
 
 //  The soundtrack, handed to the clock a bar or so before it is due.
 //
@@ -55,6 +55,11 @@ export function startMusic (which: Track = 'play'): void
     nextBarAt = 0;
     finale = 0;
 
+    //  Back up before the first bar is written, so a piece starting straight
+    //  after one was stopped is not faded in from wherever the last fade had
+    //  got to.
+    setMusicPlaying(true);
+
     timer = setInterval(fill, MUSIC_TICK_MS);
 
     fill();
@@ -78,7 +83,10 @@ export function stopMusic (): void
         timer = null;
     }
 
-    fadeMusic();
+    //  Unconditional, and outside the guard above. A bar is written to the
+    //  audio clock a second or two before it is due, so there is something
+    //  left to silence even when the writer had already been stopped.
+    setMusicPlaying(false);
 }
 
 /** Whether the soundtrack is running, which is what a paused run has to know. */

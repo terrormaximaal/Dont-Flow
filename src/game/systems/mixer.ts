@@ -48,6 +48,17 @@ export interface Mixer
      * for silence is asking for.
      */
     master: GainNode;
+
+    /**
+     * The soundtrack's way in to the two junctions above, and the only thing
+     * that can silence it without silencing the game with it.
+     *
+     * Set together, always to the same value. Two of them only because a note
+     * chooses its junction by what it is, so there is no single point upstream
+     * of that choice to put one bus at.
+     */
+    musicBoth: GainNode;
+    musicAiry: GainNode;
 }
 
 /**
@@ -159,5 +170,23 @@ export function buildMixer (ctx: BaseAudioContext, destination: AudioNode): Mixe
     airy.connect(airySend);
     airySend.connect(send);
 
-    return { dry, send, both, airy, master };
+    //  The soundtrack's own way in to the two junctions above.
+    //
+    //  Two nodes rather than one because a note picks its junction by what it
+    //  is - the tune takes the wetter one - and a single bus upstream of that
+    //  choice cannot exist. They are always set together and always to the
+    //  same value, which is why they read as one control everywhere else.
+    //
+    //  Nothing is mixed here: both sit at 1 and pass the music straight
+    //  through. They exist so that the music, and only the music, can be
+    //  turned off - the bars are written to the audio clock a second or two
+    //  before they are due, so stopping the writer leaves everything already
+    //  booked to play out, over a pause or over the phrase that ends a run.
+    const musicBoth = ctx.createGain();
+    const musicAiry = ctx.createGain();
+
+    musicBoth.connect(both);
+    musicAiry.connect(airy);
+
+    return { dry, send, both, airy, master, musicBoth, musicAiry };
 }

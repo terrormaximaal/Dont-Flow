@@ -9,13 +9,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 //  up, which vitest drives.
 let now = 0;
 
-/** Every time the music was told to fade out what it had already booked. */
-let faded = 0;
+//  Every export of the sound system that the music reaches for. A mock listing
+//  them one by one fails loudly the moment the music starts using another, and
+//  it did: setMusicPlaying arrived from a parallel change, the merge of the two
+//  was textually clean, and these four tests were how the break showed up.
+/** What the music last told the sound system about whether it is sounding. */
+let sounding: boolean[] = [];
 
 vi.mock('../src/game/systems/Audio', () => ({
     audioTime: () => now,
     playAt: () => undefined,
-    fadeMusic: () => { faded += 1; }
+    setMusicPlaying: (playing: boolean) => { sounding.push(playing); }
 }));
 
 const {
@@ -53,7 +57,7 @@ describe('the music the menus share', () => {
         stopMusic();
 
         now = 0;
-        faded = 0;
+        sounding = [];
 
     });
 
@@ -65,35 +69,38 @@ describe('the music the menus share', () => {
 
     });
 
-    //  Stopping the timer is only half of stopping. A piece is written to the
-    //  clock a bar and a half early, so up to three seconds of it are already
-    //  booked and will play whatever the timer does - which is exactly what the
-    //  menu did over the opening of a level.
-    it('fades out what it has already booked when it stops', () => {
+    //  Stopping the writer is only half of stopping. A piece is written to the
+    //  clock a bar and a half early, so a second or two of it is already booked
+    //  and will play whatever the timer does - over a pause, over the phrase
+    //  that ends a run, or over the opening of a level.
+    it('silences what it has already booked when it stops', () => {
 
         startMenuMusic();
 
         pass(BAR_SECONDS * 2);
 
-        faded = 0;
+        sounding = [];
 
         stopMusic();
 
-        expect(faded, 'told the sound system to let go of it').toBe(1);
+        expect(sounding, 'told the sound system to let go of it').toContain(false);
 
     });
 
-    it('does that when a run takes it over, too', () => {
+    it('does that when a run takes it over, and comes back up for it', () => {
 
         startMenuMusic();
 
         pass(BAR_SECONDS * 2);
 
-        faded = 0;
+        sounding = [];
 
         startMusic('play');
 
-        expect(faded, 'the menu piece is not left sounding over the level').toBe(1);
+        //  Down for the piece that is going, and up again before the first bar
+        //  of the one arriving - or the level would fade in from wherever the
+        //  last fade had got to.
+        expect(sounding).toEqual([ false, true ]);
 
     });
 

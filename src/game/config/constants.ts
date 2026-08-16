@@ -1792,6 +1792,17 @@ export const SOUND_MASTER = 0.9;
  */
 export const MUTE_FADE = 0.04;
 
+/**
+ * How long the soundtrack takes to go when it is stopped.
+ *
+ * Longer than the mute, because this one happens while the player is listening
+ * to something else - a pause overlay opening, or the phrase that ends a run -
+ * and a backing that disappears between two samples is heard as a fault rather
+ * than as a decision. Still short enough to be gone before the thing it is
+ * making room for has finished.
+ */
+export const MUSIC_FADE = 0.12;
+
 //  The limiter across the master. Notes are triggered by how the player is
 //  doing rather than by an arrangement, so a good run overlaps half a dozen of
 //  them - which without this adds up past what the speaker can give and is
@@ -2127,18 +2138,3 @@ export const FINALE_LIFT = 0.35;
 export const BODY_TOP = 0.3;
 export const BODY_INNER = 0.24;
 export const MUSIC_TICK_MS = 250;
-
-/**
- * How long one piece takes to give way to the next, in seconds.
- *
- * A piece is handed to the clock a bar and a half before it is due, so a scene
- * that only stops its timer leaves up to three seconds of music booked and
- * sounding - which is what the menu did over the opening of a level. Nothing
- * can unschedule a note, so the music plays through a gain of its own and
- * stopping it turns that gain down.
- *
- * Not instant: one piece giving way to another is a transition, and a third of
- * a second is long enough to read as one and short enough that the level has
- * its own music by the time anybody has looked at the road.
- */
-export const MUSIC_FADE = 0.35;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MUSIC_LOOKAHEAD, MUTE_FADE, ORB_SEMITONES, SOUND_MASTER } from '../src/game/config/constants';
+import { MUSIC_BPM, MUSIC_FADE, MUSIC_LOOKAHEAD, MUTE_FADE, ORB_SEMITONES, SOUND_MASTER } from '../src/game/config/constants';
 import {
     CROWD_DUCK,
     CROWD_SECONDS,
@@ -43,6 +43,36 @@ describe('turning the sound off', () => {
     it('is a fade rather than a cut', () => {
 
         expect(MUTE_FADE, 'seconds').toBeGreaterThan(0);
+
+    });
+
+});
+
+describe('stopping the soundtrack', () => {
+
+    //  Same root as the mute: clearing the timer that writes bars down cannot
+    //  unwrite the bars already on the audio clock. Measured through the pause
+    //  button, the backing was still due to play for 1.73 seconds after the
+    //  game had stopped - under a pause overlay, and over the phrase that ends
+    //  a failed run, both of which the play scene's own comments say it should
+    //  not be.
+    it('is gone well inside a beat', () => {
+
+        const beat = 60 / MUSIC_BPM;
+
+        expect(MUSIC_FADE, 'against one beat').toBeLessThan(beat / 2);
+        expect(MUSIC_FADE, 'against the lookahead it exists to cut')
+            .toBeLessThan(MUSIC_LOOKAHEAD / 5);
+
+    });
+
+    //  Slower than the mute, deliberately. Mute is a player asking for silence
+    //  and wanting it now; this happens while they are listening to something
+    //  else, and a backing that vanishes between two samples is heard as a
+    //  fault rather than as a decision.
+    it('goes more gently than the sound being turned off', () => {
+
+        expect(MUSIC_FADE).toBeGreaterThan(MUTE_FADE);
 
     });
 
