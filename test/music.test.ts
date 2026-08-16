@@ -5,13 +5,14 @@ import {
     MUSIC_BPM,
     MUSIC_GAIN,
     MUSIC_LOOKAHEAD,
+    MENU_TUNE_CEILING,
     MUSIC_SELECT_GAIN,
     MUSIC_TICK_MS
 } from '../src/game/config/constants';
 import { voiceFor } from '../src/game/config/audio';
 import { barNotes, LOOP_BARS } from '../src/game/config/music';
 import { MENU_BARS, selectBar, SELECT_BARS } from '../src/game/config/musicMenu';
-import { BACKING_BARS, CHORUS_FROM, CHORUS_TO } from '../src/game/config/score';
+import { BACKING_BARS, CHORUS_FROM, CHORUS_TO, TOPLINE } from '../src/game/config/score';
 import { decayOf } from '../src/game/systems/voice';
 
 /** Every note the run's music plays in one time round its loop. */
@@ -303,12 +304,38 @@ describe('the music on the level select', () => {
 
     //  Nobody is playing on that screen. A beat there is a screen telling
     //  somebody reading a map of twenty levels to hurry up.
-    it('has chords and a tune, and no drums', () => {
+    it('has chords, a tune and a bell, and no drums', () => {
 
-        for (const note of wholeMenu())
-        {
-            expect(note.timbre === 'chord' || note.timbre === 'lead', `${note.timbre}`).toBe(true);
-        }
+        const voices = new Set(wholeMenu().map((note) => note.timbre));
+
+        expect([ ...voices ].sort()).toEqual([ 'chord', 'lead', 'pluck' ]);
+
+    });
+
+    //  A decoration that can be picked out from across a room has stopped
+    //  being a decoration. One note every other bar, quieter than the tune.
+    it('keeps the bell to an ornament rather than a part', () => {
+
+        const bells = wholeMenu().filter((note) => note.timbre === 'pluck');
+        const tune = wholeMenu().filter((note) => note.timbre === 'lead');
+
+        expect(bells.length).toBe(MENU_BARS / 2);
+        expect(bells.length, 'far rarer than the tune').toBeLessThan(tune.length / 3);
+        expect(Math.max(...bells.map((n) => n.gain)))
+            .toBeLessThan(Math.max(...tune.map((n) => n.gain)));
+
+    });
+
+    //  Asked for by ear: the written tune climbs an octave and a half above
+    //  the verse, which put the chorus up where a phone speaker is at its most
+    //  piercing. Folding it back leaves the shape and lowers the register.
+    it('keeps the tune inside one register', () => {
+
+        const notes = wholeMenu().filter((note) => note.timbre === 'lead');
+        const written = Math.max(...TOPLINE.flat().map(([ , semitones ]) => semitones));
+
+        expect(Math.max(...notes.map((n) => n.semitones)), 'lower than written').toBeLessThan(written);
+        expect(Math.max(...notes.map((n) => n.semitones))).toBeLessThanOrEqual(MENU_TUNE_CEILING);
 
     });
 

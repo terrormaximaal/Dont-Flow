@@ -9,7 +9,7 @@ import {
 } from '../config/constants';
 import { Beat, barNotes } from '../config/music';
 import { selectBar } from '../config/musicMenu';
-import { audioTime, playAt } from './Audio';
+import { audioTime, fadeMusic, playAt } from './Audio';
 
 //  The soundtrack, handed to the clock a bar or so before it is due.
 //
@@ -60,7 +60,15 @@ export function startMusic (which: Track = 'play'): void
     fill();
 }
 
-/** Stops it, and forgets where it was. */
+/**
+ * Stops it, and forgets where it was.
+ *
+ * Clearing the timer is only half of stopping. Bars are written to the clock a
+ * bar and a half before they are due, so up to three seconds of the piece are
+ * already booked when this is called - which is why the menu could still be
+ * heard over the opening of a level. The other half is fading out what is
+ * already on its way.
+ */
 export function stopMusic (): void
 {
     if (timer !== null)
@@ -69,6 +77,8 @@ export function stopMusic (): void
 
         timer = null;
     }
+
+    fadeMusic();
 }
 
 /** Whether the soundtrack is running, which is what a paused run has to know. */

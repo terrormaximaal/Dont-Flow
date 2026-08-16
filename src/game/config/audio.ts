@@ -1,5 +1,5 @@
 import { MUSIC_BPM, ORB_SEMITONES, SOUND_ROOT_HZ } from './constants';
-import { flourish, jingle } from './musicMenu';
+import { flourish, jingle } from './jingles';
 import { Timbre } from '../systems/voice';
 
 //  What the game sounds like.

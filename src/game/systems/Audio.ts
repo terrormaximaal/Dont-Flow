@@ -2,6 +2,7 @@ import { Cue, DETUNE_CENTS, Strike, thinned, variesOnRepeat, voiceFor } from '..
 import { CROWD_SECONDS } from '../config/audio';
 import { MUTE_FADE, SOUND_GAIN, SOUND_MASTER } from '../config/constants';
 import { buildMixer, Mixer } from './mixer';
+import { fadeMusicBus, musicInto, resetMusicBus } from './musicBus';
 import { strike } from './voice';
 
 //  The thing that makes the noise.
@@ -198,7 +199,7 @@ export function play (cue: Cue, _combo = 0): void
 
         lastCueAt = now;
 
-        schedule(ctx, notes, now, SOUND_GAIN, drift, !crowded);
+        schedule(ctx, notes, now, SOUND_GAIN, drift, !crowded, false);
     }
     catch
     {
@@ -241,12 +242,25 @@ export function playAt (notes: Strike[], when: number, gain = 1): void
 
     try
     {
-        schedule(ctx, notes, when, gain * SOUND_GAIN, 0, true);
+        schedule(ctx, notes, when, gain * SOUND_GAIN, 0, true, true);
     }
     catch
     {
         //  As above: a sound that will not play is not worth a broken run.
     }
+}
+
+/**
+ * Fades out whatever music has already been handed to the clock.
+ *
+ * The same trap the mute switch fell into, one layer along: a piece is written
+ * down a bar and a half before it is due, so a scene simply stopping its timer
+ * leaves up to three seconds of it booked and sounding. That is what the menu
+ * did over the opening of a level.
+ */
+export function fadeMusic (): void
+{
+    if (context !== null) { fadeMusicBus(context); }
 }
 
 /**
@@ -260,7 +274,8 @@ function schedule (
     from: number,
     gain: number,
     drift: number,
-    room: boolean
+    room: boolean,
+    music: boolean
 ): void
 {
     //  Built at whatever the switch currently says. Nothing reaches here
@@ -280,7 +295,8 @@ function schedule (
     //  twice, once per side. A note built twice is a note that costs twice, and
     //  on the busiest stretch of a level that was the difference between a
     //  phone keeping up and a phone dropping the music.
-    const into = room ? chain.both : chain.dry;
+    const bus = music ? musicInto(ctx, chain) : null;
+    const into = bus !== null ? bus.plain : (room ? chain.both : chain.dry);
 
     for (const note of notes)
     {
@@ -295,9 +311,10 @@ function schedule (
         //  The tune takes the wetter of the two junctions. It is the only
         //  voice that is blown rather than struck, and the only one a room
         //  flatters instead of blurring.
-        const bus = room && note.timbre === 'lead' ? chain.airy : into;
+        const wetter = bus !== null ? bus.airy : chain.airy;
+        const where = room && note.timbre === 'lead' ? wetter : into;
 
-        strike(ctx, bus, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
+        strike(ctx, where, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
     }
 }
 
@@ -310,4 +327,6 @@ export function resetAudioForTest (): void
     muted = false;
     listening = false;
     lastCueAt = -1;
+
+    resetMusicBus();
 }

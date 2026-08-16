@@ -9,9 +9,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 //  up, which vitest drives.
 let now = 0;
 
+/** Every time the music was told to fade out what it had already booked. */
+let faded = 0;
+
 vi.mock('../src/game/systems/Audio', () => ({
     audioTime: () => now,
-    playAt: () => undefined
+    playAt: () => undefined,
+    fadeMusic: () => { faded += 1; }
 }));
 
 const {
@@ -49,6 +53,7 @@ describe('the music the menus share', () => {
         stopMusic();
 
         now = 0;
+        faded = 0;
 
     });
 
@@ -57,6 +62,38 @@ describe('the music the menus share', () => {
         stopMusic();
 
         vi.useRealTimers();
+
+    });
+
+    //  Stopping the timer is only half of stopping. A piece is written to the
+    //  clock a bar and a half early, so up to three seconds of it are already
+    //  booked and will play whatever the timer does - which is exactly what the
+    //  menu did over the opening of a level.
+    it('fades out what it has already booked when it stops', () => {
+
+        startMenuMusic();
+
+        pass(BAR_SECONDS * 2);
+
+        faded = 0;
+
+        stopMusic();
+
+        expect(faded, 'told the sound system to let go of it').toBe(1);
+
+    });
+
+    it('does that when a run takes it over, too', () => {
+
+        startMenuMusic();
+
+        pass(BAR_SECONDS * 2);
+
+        faded = 0;
+
+        startMusic('play');
+
+        expect(faded, 'the menu piece is not left sounding over the level').toBe(1);
 
     });
 

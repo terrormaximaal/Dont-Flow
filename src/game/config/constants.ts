@@ -1889,6 +1889,20 @@ export const CHORD_DECAY = 0.13;
 //  A whole-number ratio, so what comes out is still the note that went in. The
 //  depth collapses in a fortieth of a second: bright at the strike, a plain
 //  sine by the time the next eighth arrives. That collapse is the hammer.
+/**
+ * The bell: the same two oscillators, at a ratio belonging to no scale.
+ *
+ * A whole-number ratio gives a note; this one gives a struck bar - the partials
+ * land between the harmonics rather than on them, which is what an ear files
+ * under metal. Longer than anything else here, because a bell that stops when
+ * it is struck is a click, and the ring is the whole ornament.
+ */
+export const PLUCK_ATTACK = 0.002;
+export const PLUCK_DECAY = 0.85;
+export const PLUCK_FM_RATIO = 2.76;
+export const PLUCK_FM_INDEX = 1.1;
+export const PLUCK_FM_FALL = 0.14;
+
 export const CHORD_FM_RATIO = 2;
 export const CHORD_FM_INDEX = 2.6;
 export const CHORD_FM_FALL = 0.025;
@@ -2029,6 +2043,25 @@ export const MUSIC_SELECT_GAIN = 0.85;
 export const MENU_TUNE_GAIN = 0.3;
 
 /**
+ * The highest the tune is allowed to sit, in semitones over the root.
+ *
+ * As written it climbs an octave and a half above the verse, which put the
+ * chorus up where a phone speaker is at its most piercing. Anything over this
+ * drops an octave - the one transposition that leaves a melody inside its own
+ * harmony - so the phrase keeps its shape and simply happens lower down.
+ */
+export const MENU_TUNE_CEILING = 15;
+
+/**
+ * And how loud the bell over it is.
+ *
+ * Quieter than the tune. It rings for the better part of a second with nothing
+ * else up there to argue with, and a decoration that can be picked out from
+ * across a room has stopped being a decoration.
+ */
+export const MENU_BELL_GAIN = 0.22;
+
+/**
  * How quiet the first note of a jingle is against its last.
  *
  * The written velocities climb by about a fifth. That is a shade on a piano
@@ -2073,3 +2106,18 @@ export const FINALE_LIFT = 0.35;
 export const BODY_TOP = 0.3;
 export const BODY_INNER = 0.24;
 export const MUSIC_TICK_MS = 250;
+
+/**
+ * How long one piece takes to give way to the next, in seconds.
+ *
+ * A piece is handed to the clock a bar and a half before it is due, so a scene
+ * that only stops its timer leaves up to three seconds of music booked and
+ * sounding - which is what the menu did over the opening of a level. Nothing
+ * can unschedule a note, so the music plays through a gain of its own and
+ * stopping it turns that gain down.
+ *
+ * Not instant: one piece giving way to another is a transition, and a third of
+ * a second is long enough to read as one and short enough that the level has
+ * its own music by the time anybody has looked at the road.
+ */
+export const MUSIC_FADE = 0.35;

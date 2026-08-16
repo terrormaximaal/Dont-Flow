@@ -10,6 +10,11 @@ import {
     CHORD_FM_RATIO,
     CHORD_HOLD,
     HAT_DECAY,
+    PLUCK_ATTACK,
+    PLUCK_DECAY,
+    PLUCK_FM_FALL,
+    PLUCK_FM_INDEX,
+    PLUCK_FM_RATIO,
     KICK_DECAY,
     LEAD_ATTACK,
     LEAD_DECAY,
@@ -46,7 +51,7 @@ import { kick, rattle } from './kit';
  * struck key out of a browser is to have one bend the other. 'tick' is the one
  * sound the player's own playing makes, and the drums live in `systems/kit`.
  */
-export type Timbre = 'bass' | 'lead' | 'chord' | 'tick' | 'kick' | 'snare' | 'hat';
+export type Timbre = 'bass' | 'lead' | 'chord' | 'pluck' | 'tick' | 'kick' | 'snare' | 'hat';
 
 /**
  * How long a sound of this kind lasts, in seconds.
@@ -61,6 +66,7 @@ export function decayOf (_semitones: number, timbre: Timbre = 'tick', held = 0):
         case 'bass': return BASS_ATTACK + BASS_HOLD + BASS_DECAY;
         case 'lead': return LEAD_ATTACK + LEAD_HOLD + ringing(held) + LEAD_DECAY;
         case 'chord': return CHORD_ATTACK + CHORD_HOLD + CHORD_DECAY;
+        case 'pluck': return PLUCK_ATTACK + PLUCK_DECAY;
         case 'kick': return KICK_DECAY;
         case 'snare': return SNARE_DECAY;
         case 'hat': return HAT_DECAY;
@@ -114,6 +120,10 @@ export function strike (
     if (timbre === 'lead') { lead(ctx, destination, frequency, at, gain, ringing(held)); return; }
 
     if (timbre === 'chord') { struck(ctx, destination, frequency, at, gain * 0.5, CHORD_FM_RATIO, CHORD_FM_INDEX, CHORD_FM_FALL, CHORD_ATTACK, CHORD_HOLD, CHORD_DECAY); return; }
+
+    //  A struck bell, plucked: the same two oscillators at a ratio that belongs
+    //  to no scale, and a tail long enough to ring after the hand has gone.
+    if (timbre === 'pluck') { struck(ctx, destination, frequency, at, gain * 0.4, PLUCK_FM_RATIO, PLUCK_FM_INDEX, PLUCK_FM_FALL, PLUCK_ATTACK, 0, PLUCK_DECAY); return; }
 
     struck(ctx, destination, frequency, at, gain * 0.6, TICK_FM_RATIO, TICK_FM_INDEX, TICK_DECAY * 0.4, TICK_ATTACK, 0, TICK_DECAY + TICK_TAIL);
 }
