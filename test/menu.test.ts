@@ -3,14 +3,17 @@ import {
     BUTTON_GAP,
     BUTTON_HEIGHT,
     GAME_HEIGHT,
+    GAME_WIDTH,
     MUTE_LINE,
     MUTE_MARGIN,
     CHIP_HEIGHT,
     CHIP_LABEL_SIZE,
+    CHIP_TOUCH_PAD,
     CHIP_WIDTH,
     TITLE_DROP_RADIUS,
     TITLE_TAGLINE_SIZE
 } from '../src/game/config/constants';
+import { chipAnswersOver } from '../src/game/ui/chipHit';
 import {
     ENTER_BUTTON_MS,
     ENTER_BUTTON_STAGGER,
@@ -158,25 +161,127 @@ describe('the switches in the corner', () => {
 
     });
 
-    //  The reason the line spacing is what it is. Two adjacent switches whose
-    //  areas overlap are worse than two small ones: the player does not get the
-    //  thing they aimed at, and one of these two is the setting that some
-    //  players cannot read the game without.
-    it('are spaced so that neither can be hit by aiming at the other', () => {
+    //  A finger is a patch, not a point, and it covers the very edge it is
+    //  aiming at. So each switch answers past its own pill - and that has to be
+    //  measured against the spacing, not the drawing.
+    //
+    //  This is the guard that used to read the pill. It passed at a line spacing
+    //  of 47 against a 46-tall pill, because the pills did not overlap; what a
+    //  finger answered to was never in it.
+    it('answers to a finger without either switch reaching the other', () => {
 
-        expect(MUTE_LINE, 'line spacing against touch height').toBeGreaterThanOrEqual(CHIP_HEIGHT);
+        const touch = CHIP_HEIGHT + (CHIP_TOUCH_PAD * 2);
+
+        //  Apple asks 44 points and Android 48, which on the phones this is
+        //  played on is around a ninth of the screen's width. Stated as a
+        //  fraction because the canvas is letterboxed into whatever the device
+        //  has - a figure in CSS pixels would only be true of one phone.
+        expect(touch / GAME_WIDTH, 'touch height against the screen').toBeGreaterThan(0.113);
+        expect((CHIP_WIDTH + (CHIP_TOUCH_PAD * 2)) / GAME_WIDTH, 'touch width').toBeGreaterThan(0.113);
+
+        //  And two of them that overlap are worse than two small ones: the
+        //  player does not get the thing they aimed at, and one of these two is
+        //  the setting some players cannot read the game without.
+        expect(MUTE_LINE, 'spacing against what answers').toBeGreaterThan(touch);
 
     });
 
-    //  And the pair still has to stay out of the composition. This is the
-    //  ceiling on how big they can be: the drop is the first thing the eye
-    //  lands on and a switch reaching into it would be a worse trade.
-    it('stay clear of the drop above the wordmark', () => {
+    //  Where the switch actually answers, worked out the way Phaser works it out.
+    //
+    //  Before it tests a point, Phaser translates it into the object's own space
+    //  and then adds the object's display origin - and a Container's display
+    //  origin is hard-coded to half its size, whatever size you set. So the
+    //  rectangle handed to setInteractive is not measured from the pill's corner
+    //  but from a point half a pill up and to the left of it.
+    //
+    //  This has now been got wrong in both directions. Measured on the running
+    //  game, a rectangle at (0, 0, 150, 46) answered over x 237-387 while the
+    //  pill stood at 312-462: a quarter of the switch responded and the rest of
+    //  the area was empty sky beside it.
+    const answersOver = (chipY: number) => chipAnswersOver(GAME_WIDTH, MUTE_MARGIN, chipY);
 
-        //  The bottom of the lower pill, which hangs one line below the margin.
-        const lowest = MUTE_MARGIN + MUTE_LINE + CHIP_HEIGHT;
+    it('answers over the pill itself, and not beside it', () => {
 
-        expect(lowest, 'bottom of the lower switch').toBeLessThan(MENU_LAYOUT.dropY - TITLE_DROP_RADIUS);
+        const pill = {
+            left: GAME_WIDTH - MUTE_MARGIN - CHIP_WIDTH,
+            right: GAME_WIDTH - MUTE_MARGIN,
+            top: MUTE_MARGIN,
+            bottom: MUTE_MARGIN + CHIP_HEIGHT
+        };
+
+        const area = answersOver(MUTE_MARGIN);
+
+        expect(area.left, 'left edge').toBe(pill.left - CHIP_TOUCH_PAD);
+        expect(area.right, 'right edge').toBe(pill.right + CHIP_TOUCH_PAD);
+        expect(area.top, 'top edge').toBe(pill.top - CHIP_TOUCH_PAD);
+        expect(area.bottom, 'bottom edge').toBe(pill.bottom + CHIP_TOUCH_PAD);
+
+    });
+
+    //  And the two of them, once they are where they really are, still may not
+    //  meet. The player does not get the thing they aimed at, and one of these
+    //  two is the setting some players cannot read the game without.
+    it('leaves the two areas clear of each other', () => {
+
+        const sound = answersOver(MUTE_MARGIN);
+        const shapes = answersOver(MUTE_MARGIN + MUTE_LINE);
+
+        expect(shapes.top, 'shapes starts below where sound ends').toBeGreaterThan(sound.bottom);
+
+    });
+
+    //  The pills themselves have to look like two controls, not one block with a
+    //  line through it. At 47 against 46 the gap was a single pixel.
+    it('leaves daylight between the two pills', () => {
+
+        expect(MUTE_LINE - CHIP_HEIGHT, 'gap between the pills').toBeGreaterThan(CHIP_HEIGHT * 0.25);
+
+    });
+
+    //  And the pair still has to stay out of the composition: the drop is the
+    //  first thing the eye lands on, and a switch reaching into it would be a
+    //  worse trade than a small switch.
+    //
+    //  As two rectangles, because that is the claim. This compared heights
+    //  alone before, which made the drop a ceiling across the whole screen -
+    //  and the drop is centred while the switches hang off the right edge, so
+    //  the two are 38 pixels apart and could never have touched. That saturated
+    //  version left 0.18 pixels of headroom and no room to space the pair at
+    //  all, for a collision that was not possible.
+    it('never reaches into the drop', () => {
+
+        const pad = CHIP_TOUCH_PAD;
+        const switches = {
+            left: GAME_WIDTH - MUTE_MARGIN - CHIP_WIDTH - pad,
+            right: GAME_WIDTH - MUTE_MARGIN + pad,
+            top: MUTE_MARGIN - pad,
+            bottom: MUTE_MARGIN + MUTE_LINE + CHIP_HEIGHT + pad
+        };
+
+        const drop = {
+            left: (GAME_WIDTH / 2) - TITLE_DROP_RADIUS,
+            right: (GAME_WIDTH / 2) + TITLE_DROP_RADIUS,
+            top: MENU_LAYOUT.dropY - TITLE_DROP_RADIUS,
+            bottom: MENU_LAYOUT.dropY + TITLE_DROP_RADIUS
+        };
+
+        const apart = switches.left >= drop.right
+            || switches.right <= drop.left
+            || switches.top >= drop.bottom
+            || switches.bottom <= drop.top;
+
+        expect(apart, 'the switches and the drop share no ground').toBe(true);
+
+    });
+
+    //  The real ceiling underneath them, which is the wordmark: nothing in the
+    //  corner may come down as far as the word the screen is named after.
+    it('stays above the wordmark', () => {
+
+        const lowest = MUTE_MARGIN + MUTE_LINE + CHIP_HEIGHT + CHIP_TOUCH_PAD;
+
+        expect(lowest, 'bottom of what the lower switch answers to')
+            .toBeLessThan(MENU_LAYOUT.markTopY);
 
     });
 

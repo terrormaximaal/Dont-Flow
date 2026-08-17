@@ -20,6 +20,7 @@ import {
 } from '../config/constants';
 import { COLOR_BUTTON_GHOST } from '../config/menuTheme';
 import { drawSpeaker, drawShapes } from './chipGlyphs';
+import { chipHitArea } from './chipHit';
 
 /** Which drawing sits on the left of the chip. */
 export type ChipIcon = 'sound' | 'shapes';
@@ -104,19 +105,16 @@ export class ToggleChip
 
         this.container.add([ this.skin, this.glyph, this.text ]);
 
-        //  The whole pill answers, not the word: the hit area is the shape the
-        //  player can see, which is the only arrangement that never surprises.
+        //  The whole pill answers, not the word - and a margin past it as well.
         //
-        //  From the container's own origin rather than centred on it, because
-        //  the pill is drawn from there outwards. A rectangle centred on the
-        //  origin covers half the pill and the same width of empty air beside
-        //  it, which is a switch that misses when you aim at it and fires when
-        //  you do not.
+        //  A finger lands as a patch rather than a point, and the player cannot
+        //  see where under it the contact falls, so a press aimed at the edge of
+        //  the pill can register just outside it. The margin turns that from a
+        //  miss into a hit, and it stays off the drawing: the pill is the right
+        //  size to look at, and only the part you cannot see has to be bigger
+        //  than it looks.
         this.container.setSize(CHIP_WIDTH, CHIP_HEIGHT);
-        this.container.setInteractive(
-            new Geom.Rectangle(0, 0, CHIP_WIDTH, CHIP_HEIGHT),
-            Geom.Rectangle.Contains
-        );
+        this.container.setInteractive(new Geom.Rectangle(...chipHitArea()), Geom.Rectangle.Contains);
 
         this.container.on('pointerdown', () => {
 

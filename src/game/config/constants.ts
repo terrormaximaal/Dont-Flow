@@ -1531,35 +1531,6 @@ export const COACH_ALPHA = 0.82;
 /** The sound toggle: a corner label rather than a button. */
 export const MUTE_MARGIN = 18;
 
-/**
- * Line spacing for the switches stacked in the corner.
- *
- * Set by the size of a thumb rather than by the size of the type. At 20 these
- * two sat six pixels apart, which on a phone is one target: a player reaching
- * for the sound had a real chance of turning the shape marks off instead, and
- * those marks are the thing some players cannot play without.
- */
-export const MUTE_LINE = 47;
-
-
-/**
- * What a corner switch is worth touching, as opposed to what it is worth
- * looking at.
- *
- * The label is thirteen pixels of type and its glyph box is fourteen tall,
- * which was also, until this existed, the entire area that responded to a
- * finger. Apple asks for 44 points and Android for 48; fourteen game pixels is
- * about twelve of either. It was measured rather than noticed - the buttons on
- * the same screen are 246 by 62, so nothing about the screen looked wrong.
- *
- * These are game pixels, and the canvas is letterboxed into whatever the phone
- * has: 46 lands near 41 CSS pixels on a 430-wide screen and near 36 on a
- * 375-wide one. Short of the guideline, and three times what was there. Taller
- * would collide with the drop, which is the composition rather than furniture,
- * so the height is what the corner has to give and the width - far more
- * generous than the words need - is where the rest of the forgiveness comes
- * from.
- */
 //  The switches in the corner, and the one in the pause overlay.
 //
 //  They were two dim words with an invisible hit area behind them, which reads
@@ -1575,6 +1546,39 @@ export const CHIP_LABEL_SIZE = '12px';
 export const CHIP_FILL_ALPHA = 0.16;
 export const CHIP_EDGE_ALPHA = 0.4;
 export const CHIP_GLYPH_WIDTH = 1.6;
+
+/**
+ * How far past its own edge a switch still answers, in every direction.
+ *
+ * The pill is what the player aims at, and 46 by 150 is a fair size to look at.
+ * A finger is not a pointer, though: it lands as a patch about a centimetre
+ * across and the player cannot see where under it the contact falls. Apple asks
+ * for 44 points and Android for 48, which on the phones this is played on comes
+ * to something near a ninth of the screen's width - and the pill's height alone
+ * is a little under that, whatever the screen.
+ *
+ * Padding the area rather than growing the pill, because the pill is the right
+ * size to look at already. This costs nothing on screen, and there is empty air
+ * on all four sides of both of them.
+ */
+export const CHIP_TOUCH_PAD = 6;
+
+/**
+ * Line spacing for the switches stacked in the corner.
+ *
+ * Set by the size of a thumb rather than by the size of the type. At 20 these
+ * two sat six pixels apart, which on a phone is one target: a player reaching
+ * for the sound had a real chance of turning the shape marks off instead, and
+ * those marks are the thing some players cannot play without.
+ *
+ * Then it was 47 against a 46-tall pill. That is a one pixel gap: the pair read
+ * as one divided block rather than as two controls, and there was no room for
+ * the areas above to widen into without them overlapping - which would have put
+ * back the exact fault the spacing exists to prevent. Sixteen now, which leaves
+ * four clear pixels between the two areas a finger answers to and enough
+ * daylight between the pills to see that they are two things.
+ */
+export const MUTE_LINE = CHIP_HEIGHT + 16;
 
 /**
  * How far back a switch is drawn when it is off.
