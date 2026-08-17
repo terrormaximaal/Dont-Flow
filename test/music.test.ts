@@ -404,6 +404,30 @@ describe('the music on the level select', () => {
 
     });
 
+    //  Bringing the tune down into one register may move a bar. It may never
+    //  change the bar's *shape* - the steps between its notes are what makes it
+    //  that phrase and not another one.
+    //
+    //  This is not hypothetical. The rule ran per note, and exactly one bar in
+    //  the thirty-two crosses the ceiling on its way down: the last bar of the
+    //  chorus, written 22, 17, 14. The first two dropped an octave and the third
+    //  did not, so a line falling by a fourth and a third came out falling a
+    //  fourth and then leaping up a sixth - to the highest note anywhere near
+    //  it. It was heard, and reported, as one note sticking out of the tune.
+    it('keeps every bar of the written shape, wherever it puts it', () => {
+
+        const steps = (notes: number[]) => notes.slice(1).map((s, i) => s - notes[i]);
+
+        for (let bar = 0; bar < MENU_BARS; bar++)
+        {
+            const written = TOPLINE[bar].map(([ , semitones ]) => semitones);
+            const sounded = tuneOf(bar).map((note) => note.semitones);
+
+            expect(steps(sounded), `bar ${bar} keeps its shape`).toEqual(steps(written));
+        }
+
+    });
+
     it('stays quieter than the game it is a menu for', () => {
 
         const loudest = Math.max(...wholeMenu().map((note) => note.gain));

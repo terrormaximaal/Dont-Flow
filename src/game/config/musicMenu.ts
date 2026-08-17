@@ -1,6 +1,6 @@
 import { MENU_TUNE_CEILING, MENU_TUNE_GAIN } from './constants';
 import { Beat } from './music';
-import { SELECT, TOPLINE } from './score';
+import { SELECT, TOPLINE, Written } from './score';
 
 //  The music the menus play.
 //
@@ -58,30 +58,43 @@ export function selectBar (bar: number): Beat[]
     //  the sound - a bell rings for as long as a bell rings - but a note
     //  written long still keeps the room to itself, which is most of what being
     //  written long meant.
-    for (const [ beat, semitones, held ] of TOPLINE[step])
+    const tune = TOPLINE[step];
+    const drop = octaveDrop(tune);
+
+    for (const [ beat, semitones, held ] of tune)
     {
-        notes.push({ semitones: folded(semitones), beat, gain: MENU_TUNE_GAIN, timbre: 'pluck', held });
+        notes.push({ semitones: semitones - drop, beat, gain: MENU_TUNE_GAIN, timbre: 'pluck', held });
     }
 
     return notes;
 }
 
 /**
- * The tune brought down into one register.
+ * How far this bar of the tune comes down, so it sits in one register.
  *
- * As written it climbs a long way: the verse sits around the root and the
+ * As written the tune climbs a long way: the verse sits around the root and the
  * chorus is an octave and a half over it, which put the high half up where a
  * phone speaker is at its most piercing and made the tune the loudest thing on
- * a screen where it is meant to be company.
+ * a screen where it is meant to be company. A bar that reaches above the ceiling
+ * drops an octave, which is the one transposition that leaves a melody in its
+ * own harmony.
  *
- * Anything above the ceiling drops an octave, which is the one transposition
- * that leaves a melody in its own harmony. The shape of the phrase survives
- * exactly - the chorus is still the higher half, still rises and falls in the
- * same places - it simply happens lower down.
+ * A whole bar at a time, and that is the point. The rule used to be applied to
+ * each note on its own, which is fine until a bar crosses the ceiling on its way
+ * down - and exactly one in the thirty-two does. The last bar of the chorus is
+ * written 22, 17, 14: down a fourth, then down a third, handing the tune back to
+ * the verse. Note by note the first two dropped an octave and the third did not,
+ * so what came out was 10, 5, 14 - down a fourth, then *up* a sixth to the
+ * highest note anywhere near it. A closing line turned into the one note in the
+ * piece that sticks out, and it was reported as exactly that.
+ *
+ * Deciding per bar keeps the written shape whatever the tune does: the steps
+ * between the notes are what a melody is, and moving all of them by the same
+ * octave is the only move that leaves those alone.
  */
-function folded (semitones: number): number
+function octaveDrop (bar: Written[]): number
 {
-    return semitones > MENU_TUNE_CEILING ? semitones - 12 : semitones;
+    return bar.some(([ , semitones ]) => semitones > MENU_TUNE_CEILING) ? 12 : 0;
 }
 
 /**
