@@ -25,7 +25,7 @@ export class Rainbow
 {
     readonly distance: number;
 
-    /** Screen x, fixed - it sits in the centre of its lane. */
+    /** Track x, fixed - it sits in the centre of its lane. Never projected. */
     readonly x: number;
 
     /** True once taken, so it can only count once. */

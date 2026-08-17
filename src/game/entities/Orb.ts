@@ -65,7 +65,7 @@ export class Orb
     readonly distance: number;
     readonly color: ColorId;
 
-    /** Screen x, fixed - orbs sit in the centre of their lane. */
+    /** Track x, fixed - orbs sit in the centre of their lane. Never projected. */
     readonly x: number;
 
     /** True once collected or hit, so it can only count once. */

@@ -60,6 +60,8 @@ import { SaveSystem } from '../systems/SaveSystem';
 import { ScoreSystem } from '../systems/ScoreSystem';
 import { HazardField } from '../systems/HazardField';
 import { TrackScroller } from '../systems/TrackScroller';
+import { phasesFor } from '../systems/bend';
+import { lookAlong, lookStraight } from '../systems/Projection';
 import { Trail } from '../systems/Trail';
 import { rainbowAt } from '../utils/color';
 import { easeTowards } from '../utils/math';
@@ -115,6 +117,15 @@ export class Play extends Scene
 
     /** Which level of LEVELS is being played. Carried across restarts as scene data. */
     private levelIndex = 0;
+
+    /**
+     * How this level's river winds, which is a look and never a rule.
+     *
+     * Per level, so no two of them wander the same way. Survival gets the one
+     * for the level it began from, which is as arbitrary as anything else and
+     * at least stays put for the length of a run.
+     */
+    private river: number[] = [];
 
     /** Whether this is an endless run rather than one of the twenty levels. */
     private survival = false;
@@ -253,6 +264,8 @@ export class Play extends Scene
         //  still comes back to the right place.
         this.save.setCurrentLevel(this.levelIndex);
 
+        this.river = phasesFor(this.levelIndex);
+
         //  Laid out before anything that draws or collides exists, since all of
         //  them ask where a lane is.
         useLanes(level.lanes ?? DEFAULT_LANES);
@@ -362,6 +375,11 @@ export class Play extends Scene
 
             this.input_.destroy();
             stopMusic();
+
+            //  Straighten the view on the way out. The projection holds the
+            //  river in module state - it is the camera - and a menu drawn
+            //  through a level's bend would be a strange thing to debug.
+            lookStraight();
 
         });
 
@@ -1063,6 +1081,14 @@ export class Play extends Scene
         this.cameras.main.setZoom(easeTowards(this.cameras.main.zoom, target, BOOST_ZOOM_SMOOTHING, dt));
 
         this.teach();
+
+        //  Point the view along the river before anything is drawn.
+        //
+        //  The bend is a picture and nothing else: it moves where things are
+        //  drawn and never where they are. Everything above this line has
+        //  already decided what was hit, on the straight road the course is
+        //  authored on, so no ordering here can leak a bend into a rule.
+        lookAlong(this.distance, this.river);
 
         this.environment.update(this.distance, delta);
         this.track.update(this.distance);

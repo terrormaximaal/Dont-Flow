@@ -23,7 +23,7 @@ import {
 } from '../config/constants';
 import { WorldSpec } from '../config/worlds';
 import { RoadSurface, resolveSurface } from './roadSurface';
-import { depthScale, fillProjectedQuad, projectX, VANISH_X } from './Projection';
+import { depthScale, fillProjectedQuad, projectX, strokeProjectedLine, VANISH_X } from './Projection';
 import { laneCount, laneWidth } from './Lanes';
 import { visibleStrips } from './strips';
 import { airAtHorizon, hazeHorizon } from './horizon';
@@ -228,7 +228,7 @@ export class TrackScroller
 
             for (const x of [ TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH ])
             {
-                gfx.lineBetween(projectX(x, far), far, projectX(x, near), near);
+                strokeProjectedLine(gfx, x, far, near);
             }
         }
     }
@@ -272,9 +272,7 @@ export class TrackScroller
 
             for (let i = 1; i < laneCount(); i++)
             {
-                const x = TRACK_LEFT + (i * laneWidth());
-
-                gfx.lineBetween(projectX(x, far), far, projectX(x, near), near);
+                strokeProjectedLine(gfx, TRACK_LEFT + (i * laneWidth()), far, near);
             }
         }
 
@@ -282,7 +280,7 @@ export class TrackScroller
 
         for (const x of [ TRACK_LEFT, TRACK_LEFT + TRACK_WIDTH ])
         {
-            gfx.lineBetween(projectX(x, far), far, projectX(x, near), near);
+            strokeProjectedLine(gfx, x, far, near);
         }
     }
 

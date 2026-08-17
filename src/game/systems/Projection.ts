@@ -2,8 +2,11 @@ import {
     GAME_WIDTH,
     HORIZON_Y,
     PROJECTION_PIVOT_Y,
+    RIVER_STRIP,
+    RIVER_STRIP_LIMIT,
     VANISH_OFFSET
 } from '../config/constants';
+import { River, riverAt, swingOnScreen } from './bend';
 
 //  Track space to screen space.
 //
@@ -22,6 +25,49 @@ import {
 export const VANISH_X = (GAME_WIDTH / 2) - VANISH_OFFSET;
 
 const SPAN = PROJECTION_PIVOT_Y - HORIZON_Y;
+
+/**
+ * The river the view is currently taken along, if the road is winding.
+ *
+ * State in a module that is otherwise a pure function of its arguments, and
+ * deliberately: it is the camera. A caller hands over a lane and a screen depth
+ * and has no idea how far the player has come, so threading it through would
+ * mean changing forty-seven call sites to carry a number none of them cares
+ * about - and missing one would leave a single object hanging off the side of
+ * the road, which is exactly the bug this arrangement cannot have.
+ *
+ * Null on the menus, and null in every test that has not asked for a river, so
+ * a straight road stays bit-for-bit the straight road it was.
+ */
+let river: River | null = null;
+
+/**
+ * Point the view along the river at where the player has got to.
+ *
+ * Called once a frame, before anything is drawn. What it works out is the half
+ * of the swing that depends only on the player's own position, so the drawing
+ * that follows pays three cosines a point instead of a dozen.
+ */
+export function lookAlong (travelled: number, phases: number[]): void
+{
+    river = riverAt(travelled, phases);
+}
+
+/** Straighten it again, which is what a menu and an unasked test both want. */
+export function lookStraight (): void
+{
+    river = null;
+}
+
+/**
+ * How far the road has swung sideways by the time it is this far down screen,
+ * in screen pixels - so it is added after the projection has narrowed things
+ * rather than before.
+ */
+function swing (depth: number): number
+{
+    return river === null ? 0 : swingOnScreen(river, depth);
+}
 
 export interface Projected
 {
@@ -56,7 +102,9 @@ export function depthScale (screenY: number): number
  */
 export function projectX (trackX: number, screenY: number): number
 {
-    return VANISH_X + ((trackX - VANISH_X) * depthScale(screenY));
+    const scale = depthScale(screenY);
+
+    return VANISH_X + ((trackX - VANISH_X) * scale) + swing(scale);
 }
 
 export function project (trackX: number, screenY: number): Projected
@@ -64,7 +112,7 @@ export function project (trackX: number, screenY: number): Projected
     const scale = depthScale(screenY);
 
     return {
-        x: VANISH_X + ((trackX - VANISH_X) * scale),
+        x: VANISH_X + ((trackX - VANISH_X) * scale) + swing(scale),
         y: screenY,
         scale
     };
@@ -88,11 +136,76 @@ export function fillProjectedQuad (
     nearY: number
 ): void
 {
-    const leftFar = projectX(left, farY);
-    const rightFar = projectX(right, farY);
-    const leftNear = projectX(left, nearY);
-    const rightNear = projectX(right, nearY);
+    const steps = stepsFor(farY, nearY);
 
-    gfx.fillTriangle(leftFar, farY, rightFar, farY, rightNear, nearY);
-    gfx.fillTriangle(leftFar, farY, rightNear, nearY, leftNear, nearY);
+    let topLeft = projectX(left, farY);
+    let topRight = projectX(right, farY);
+    let topY = farY;
+
+    for (let step = 1; step <= steps; step++)
+    {
+        const y = farY + ((nearY - farY) * (step / steps));
+        const bottomLeft = projectX(left, y);
+        const bottomRight = projectX(right, y);
+
+        gfx.fillTriangle(topLeft, topY, topRight, topY, bottomRight, y);
+        gfx.fillTriangle(topLeft, topY, bottomRight, y, bottomLeft, y);
+
+        topLeft = bottomLeft;
+        topRight = bottomRight;
+        topY = y;
+    }
+}
+
+/**
+ * A line running down the road at a fixed lane position - a divider, an edge.
+ *
+ * Two points on a straight road, and a chain of them on a winding one. The
+ * caller sets the stroke.
+ */
+export function strokeProjectedLine (
+    gfx: Phaser.GameObjects.Graphics,
+    trackX: number,
+    farY: number,
+    nearY: number
+): void
+{
+    const steps = stepsFor(farY, nearY);
+
+    let fromX = projectX(trackX, farY);
+    let fromY = farY;
+
+    for (let step = 1; step <= steps; step++)
+    {
+        const y = farY + ((nearY - farY) * (step / steps));
+        const x = projectX(trackX, y);
+
+        gfx.lineBetween(fromX, fromY, x, y);
+
+        fromX = x;
+        fromY = y;
+    }
+}
+
+/**
+ * How many pieces a surface running from one depth to another is drawn in.
+ *
+ * One, on a straight road: two points define a straight line and the projection
+ * is linear in screen y, so there is nothing in between to get wrong. That is
+ * the whole reason the road was ever two triangles.
+ *
+ * A winding road is not linear in screen y, so a shape drawn as one piece comes
+ * out as a straight thing at an angle rather than as a curve. Cut by how much
+ * screen it covers rather than by a fixed count, so the road pays for its
+ * length and a gate two hundred pixels deep still costs one quad. Measured
+ * against the real curve, the road in one piece is sixteen pixels out at worst
+ * and in pieces this size under one.
+ */
+function stepsFor (farY: number, nearY: number): number
+{
+    if (river === null) { return 1; }
+
+    const across = Math.abs(nearY - farY) / RIVER_STRIP;
+
+    return Math.max(1, Math.min(RIVER_STRIP_LIMIT, Math.round(across)));
 }

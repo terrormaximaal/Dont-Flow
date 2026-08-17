@@ -84,6 +84,43 @@ export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
  */
 export const PERSPECTIVE_DEPTH = 1200;
 
+/**
+ * How long one wave of the river's wandering runs, in track pixels.
+ *
+ * Three of them, with lengths that do not divide into one another, so they
+ * never come back round together inside a run and the bend reads as wandering
+ * rather than as a rhythm. Long: the shortest is about six seconds of road at
+ * the speed a level is played, which is a bend you steer through rather than a
+ * wobble you notice.
+ */
+export const RIVER_PERIODS = [ 2600, 4100, 6700 ];
+
+/**
+ * How far each of those waves turns the river, in radians.
+ *
+ * The far end of the road ends up beside the vanishing point by the depth of
+ * the projection times the heading, so the three of them together move it about
+ * fifty-five pixels at their fullest - a fifth of the road's own near width,
+ * which is a river that winds and not a slalom. They fall off in size so the
+ * long wave carries the shape and the short ones only unsettle it.
+ */
+export const RIVER_HEADINGS = [ 0.022, 0.014, 0.010 ];
+
+/**
+ * How much screen one piece of a curved surface covers, in pixels.
+ *
+ * A straight road is two triangles because the projection is linear in screen
+ * y; a winding one is not, so anything spanning real depth has to be cut up or
+ * it comes out straight and merely tilted. Measured against the true curve, the
+ * road drawn in one piece is sixteen pixels out at its worst, and in pieces
+ * this size under one - which is the point at which no more cutting is worth
+ * paying for.
+ */
+export const RIVER_STRIP = 40;
+
+/** However long a surface is, this many pieces is enough for any of it. */
+export const RIVER_STRIP_LIMIT = 32;
+
 /** How fast something already passed drops away below the screen. */
 export const BEHIND_RATE = 0.55;
 
