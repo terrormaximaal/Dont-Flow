@@ -30,6 +30,7 @@ import { paintPageColors } from '../systems/PageBackdrop';
 import { EnergySystem } from '../systems/EnergySystem';
 import { MenuSky } from '../systems/MenuSky';
 import { SaveSystem } from '../systems/SaveSystem';
+import { energyChanged } from '../systems/energyWatch';
 import { Button } from '../ui/Button';
 //  Aliased: this scene already has a local called play - the PLAY button.
 import { listenForGesture, setMuted } from '../systems/Audio';
@@ -62,6 +63,17 @@ export class Title extends Scene
     /** Seconds on screen, so the drop ripples and shifts hue on its own clock. */
     private elapsed = 0;
 
+    /**
+     * The energy system this screen was built against, and the answer it gave.
+     *
+     * The PLAY and SURVIVAL buttons are built locked or live from a single
+     * reading taken while the scene is created, and never asked again - so a
+     * player waiting out the countdown here watched the meter credit them and
+     * went on looking at two buttons saying NO ENERGY.
+     */
+    private energy: EnergySystem;
+    private couldPlay = false;
+
     constructor ()
     {
         super('Title');
@@ -83,6 +95,9 @@ export class Title extends Scene
         //  "Continue" only means something if there is somewhere to continue to.
         const canContinue = RESUME_AT_LAST_LEVEL && resumeLevel > 0;
         const canPlay = energy.mayStart();
+
+        this.energy = energy;
+        this.couldPlay = canPlay;
 
         this.elapsed = 0;
 
@@ -327,5 +342,14 @@ export class Title extends Scene
 
         this.sky.update(delta);
         this.meter.update();
+
+        //  The moment the wait ends. A rebuild rather than a relabel: the
+        //  buttons differ by variant and by what pressing them does, not just
+        //  by their words, and the screen arriving again is a fair way to say
+        //  that something has changed.
+        if (energyChanged(this.energy, this.couldPlay))
+        {
+            this.scene.restart();
+        }
     }
 }

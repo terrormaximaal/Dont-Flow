@@ -44,6 +44,7 @@ import { MenuSky } from '../systems/MenuSky';
 import { startMenuMusic } from '../systems/Music';
 import { paintPageColors } from '../systems/PageBackdrop';
 import { SaveSystem } from '../systems/SaveSystem';
+import { energyChanged } from '../systems/energyWatch';
 import { mixColor } from '../utils/color';
 import { Button } from '../ui/Button';
 import { arrive, leaveTo } from '../ui/transition';
@@ -120,9 +121,28 @@ export class LevelSelect extends Scene
 
     private elapsed = 0;
 
+    /**
+     * The energy system this screen was built against, and the answer it gave.
+     *
+     * Held so the screen can notice the wait ending. A stop only gets a hit
+     * area if it was startable when it was built, so without this a player who
+     * waits out the countdown here is left on a screen where nothing can be
+     * tapped, however much energy they now have.
+     */
+    private energy: EnergySystem;
+    private couldPlay = false;
+
+    /** Where the route was left, so refreshing does not throw the scroll away. */
+    private openAt: number | null = null;
+
     constructor ()
     {
         super('LevelSelect');
+    }
+
+    init (data: { scroll?: number })
+    {
+        this.openAt = data?.scroll ?? null;
     }
 
     create ()
@@ -139,6 +159,9 @@ export class LevelSelect extends Scene
         const energy = new EnergySystem(save);
         const furthest = save.getFurthestLevel();
         const canPlay = energy.mayStart();
+
+        this.energy = energy;
+        this.couldPlay = canPlay;
 
         this.walked = LEVELS.length > 1 ? furthest / (LEVELS.length - 1) : 0;
 
@@ -172,8 +195,11 @@ export class LevelSelect extends Scene
         });
 
         //  Opened on the level the player is up to, not on the first one -
-        //  which after fifteen levels is a long way from where they are.
-        this.scrollTo(-scrollToShow(furthest, LEVELS.length));
+        //  which after fifteen levels is a long way from where they are. Unless
+        //  the screen is being rebuilt under the player, in which case it opens
+        //  exactly where they left it: a route that jumped back to the start
+        //  because energy arrived would be a worse answer than not noticing.
+        this.scrollTo(this.openAt ?? -scrollToShow(furthest, LEVELS.length));
 
         this.enableDrag();
 
@@ -594,6 +620,15 @@ export class LevelSelect extends Scene
         this.sky.update(delta);
         this.meter.update();
         this.drawMotes();
+
+        //  The moment the wait ends. Rebuilt rather than patched in place,
+        //  because what changes is not a label but whether every stop on the
+        //  route has a hit area at all - and the scroll is carried across so
+        //  the screen comes back exactly where it was.
+        if (energyChanged(this.energy, this.couldPlay))
+        {
+            this.scene.restart({ scroll: this.scroll });
+        }
     }
 }
 
