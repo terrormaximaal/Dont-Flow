@@ -1,6 +1,6 @@
 import { Cue, DETUNE_CENTS, Strike, thinned, variesOnRepeat, voiceFor } from '../config/audio';
 import { CROWD_SECONDS } from '../config/audio';
-import { MUSIC_FADE, MUTE_FADE, SOUND_GAIN, SOUND_MASTER } from '../config/constants';
+import { MUSIC_FADE, MUSIC_RELEASE, MUTE_FADE, SOUND_GAIN, SOUND_MASTER } from '../config/constants';
 import { buildMixer, Mixer } from './mixer';
 import { strike } from './voice';
 
@@ -156,6 +156,48 @@ export function setMuted (value: boolean): void
 }
 
 /**
+ * The pair of gains the music currently plays through, if any.
+ *
+ * A fresh pair per piece rather than one pair turned down and up again. Turning
+ * a shared pair down and straight back up is what starting a level does -
+ * `startMusic` stops the old piece and starts the new one in the same tick -
+ * and on one audio clock reading the fade-out is cancelled by the fade-in
+ * before it has moved at all. Read off the real graph: cancel, ramp to 0, then
+ * cancel, ramp to 1, every one of them landing on 4.0925. The menu's bars were
+ * already written a second or two ahead, so they carried on at full volume over
+ * the opening of the level - which is exactly what it sounded like.
+ *
+ * Letting go of the pair instead means the old piece cannot be brought back by
+ * anything the new one does.
+ */
+let musicBus: { plain: GainNode; airy: GainNode } | null = null;
+
+/**
+ * That pair, made on demand - which is what makes a new piece start at full.
+ *
+ * Two rather than one, because a note picks its junction by what it is: the
+ * tune takes the wetter one, so there is no single point upstream of that
+ * choice to put one bus at.
+ */
+function musicInto (ctx: BaseAudioContext, chain: Mixer): { plain: GainNode; airy: GainNode }
+{
+    if (musicBus !== null)
+    {
+        return musicBus;
+    }
+
+    const plain = ctx.createGain();
+    const airy = ctx.createGain();
+
+    plain.connect(chain.musicBoth);
+    airy.connect(chain.musicAiry);
+
+    musicBus = { plain, airy };
+
+    return musicBus;
+}
+
+/**
  * Bring the soundtrack in or take it away, leaving the game's own sounds alone.
  *
  * Clearing the timer that writes bars down does not unwrite the bars already
@@ -176,20 +218,53 @@ export function setMusicPlaying (playing: boolean): void
     //  in some browsers never resumes. With no mixer there is no soundtrack to
     //  bring in or take away, and the first note builds both.
     const ctx = context;
+    const going = musicBus;
 
-    if (mixer === null || ctx === null)
+    if (ctx === null)
     {
         return;
     }
 
-    for (const node of [ mixer.musicBoth, mixer.musicAiry ])
+    if (playing)
     {
-        const gain = node.gain;
+        //  Nothing to raise: the next bar written will build a pair, at full.
+        //  A piece that was never let go of is brought back up instead, which
+        //  is what a run resuming after a pause wants.
+        if (going === null) { return; }
 
-        gain.cancelScheduledValues(ctx.currentTime);
-        gain.setValueAtTime(gain.value, ctx.currentTime);
-        gain.linearRampToValueAtTime(playing ? 1 : 0, ctx.currentTime + MUSIC_FADE);
+        for (const node of [ going.plain, going.airy ])
+        {
+            node.gain.cancelScheduledValues(ctx.currentTime);
+            node.gain.setValueAtTime(node.gain.value, ctx.currentTime);
+            node.gain.linearRampToValueAtTime(1, ctx.currentTime + MUSIC_FADE);
+        }
+
+        return;
     }
+
+    if (going === null)
+    {
+        return;
+    }
+
+    //  Let go of it first, so nothing that happens next can find it again.
+    musicBus = null;
+
+    for (const node of [ going.plain, going.airy ])
+    {
+        node.gain.cancelScheduledValues(ctx.currentTime);
+        node.gain.setValueAtTime(node.gain.value, ctx.currentTime);
+        node.gain.linearRampToValueAtTime(0, ctx.currentTime + MUSIC_FADE);
+    }
+
+    //  And unhook it once everything that was written to it has been and gone,
+    //  or a long session would leave a silent pair behind per level started.
+    setTimeout(() => {
+
+        going.plain.disconnect();
+        going.airy.disconnect();
+
+    }, MUSIC_RELEASE * 1000);
 }
 
 /**
@@ -321,7 +396,8 @@ function schedule (
     //  The soundtrack goes in through its own pair, which is what lets it be
     //  turned off on its own. Everything else plays straight into the
     //  junctions, exactly as before.
-    const into = room ? (music ? chain.musicBoth : chain.both) : chain.dry;
+    const bus = music ? musicInto(ctx, chain) : null;
+    const into = room ? (bus !== null ? bus.plain : chain.both) : chain.dry;
 
     for (const note of notes)
     {
@@ -343,11 +419,11 @@ function schedule (
         //  test tone. Everything else is a short event, which a room only
         //  smears.
         const sings = note.timbre === 'lead' || note.timbre === 'pluck';
-        const bus = note.hall === true
+        const where = note.hall === true
             ? chain.hall
-            : (room && sings ? (music ? chain.musicAiry : chain.airy) : into);
+            : (room && sings ? (bus !== null ? bus.airy : chain.airy) : into);
 
-        strike(ctx, bus, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
+        strike(ctx, where, note.semitones + drift, note.at + offset, note.gain * gain, note.timbre, note.held);
     }
 }
 
@@ -360,4 +436,5 @@ export function resetAudioForTest (): void
     muted = false;
     listening = false;
     lastCueAt = -1;
+    musicBus = null;
 }

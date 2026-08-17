@@ -1836,6 +1836,16 @@ export const MUTE_FADE = 0.04;
  */
 export const MUSIC_FADE = 0.12;
 
+/**
+ * How long a retired piece is left hanging on the graph, in seconds.
+ *
+ * Long enough for everything that was written to it to have been and gone -
+ * bars are handed to the clock a second or two early and the notes themselves
+ * ring after that - and then it is unhooked, or a long session leaves a silent
+ * pair of gains behind for every level started.
+ */
+export const MUSIC_RELEASE = 5;
+
 //  The limiter across the master. Notes are triggered by how the player is
 //  doing rather than by an arrangement, so a good run overlaps half a dozen of
 //  them - which without this adds up past what the speaker can give and is
