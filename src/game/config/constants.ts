@@ -87,24 +87,64 @@ export const PERSPECTIVE_DEPTH = 1200;
 /**
  * How long one wave of the river's wandering runs, in track pixels.
  *
- * Three of them, with lengths that do not divide into one another, so they
- * never come back round together inside a run and the bend reads as wandering
- * rather than as a rhythm. Long: the shortest is about six seconds of road at
- * the speed a level is played, which is a bend you steer through rather than a
- * wobble you notice.
+ * Three of them, with lengths that do not divide into one another, so they never
+ * come back round together inside a run and the bend reads as wandering rather
+ * than as a rhythm.
+ *
+ * Long, and longer than the first attempt by more than double. Perspective
+ * squeezes the far half of the river into the top of the view, so a wave that is
+ * comfortable underfoot is finer than a screen pixel by the time it is a few
+ * hundred pixels off - and a wave the road cannot be cut finely enough to draw
+ * comes out as a row of kinks. Measured against the true curve over all twenty
+ * levels: at the original lengths the road was out by a fifth of its own width
+ * at worst, and at these it is out by a twentieth.
+ *
+ * The cost is fewer bends: two changes of direction across the first level and
+ * eleven across the last, where the short waves gave six and twenty-nine. That
+ * is the right trade for a river - it is meant to wander, not to slalom.
  */
-export const RIVER_PERIODS = [ 2600, 4100, 6700 ];
+export const RIVER_PERIODS = [ 6000, 9500, 15000 ];
 
 /**
- * How far each of those waves turns the river, in radians.
+ * How far each of those waves carries the river sideways, in track pixels.
  *
- * The far end of the road ends up beside the vanishing point by the depth of
- * the projection times the heading, so the three of them together move it about
- * fifty-five pixels at their fullest - a fifth of the road's own near width,
- * which is a river that winds and not a slalom. They fall off in size so the
- * long wave carries the shape and the short ones only unsettle it.
+ * A position rather than a turn, and the difference is the whole reason the
+ * bends were rebuilt: describing the river by how sharply it turns, and then
+ * pointing the camera along that, swings the vanishing point across the screen
+ * while the sky stays still. Describing where its middle *is* leaves the horizon
+ * alone and simply moves the water.
+ *
+ * The long wave carries most of it and the short ones only unsettle it, which is
+ * what keeps the result reading as a river rather than as a slalom. Together
+ * they put the middle at most fifty-seven pixels either side of straight ahead -
+ * about half a lane, and a sixth of the river's own width.
  */
-export const RIVER_HEADINGS = [ 0.022, 0.014, 0.010 ];
+export const RIVER_SWAY = [ 14, 21, 31 ];
+
+/**
+ * How far apart a wave's crests must land on screen to be worth drawing, in
+ * pixels.
+ *
+ * Below this a wave turns over faster than the road is cut into pieces, so it
+ * cannot be drawn - it comes out as a shimmer that no amount of finer cutting
+ * fixes, because there is nothing smooth up there to find. Faded away instead.
+ *
+ * Several times the height of one piece of road, and it has to be. Set at the
+ * height of a piece it looked sufficient and was not: a wave a piece and a half
+ * across is drawn at full strength and sampled at two points, which is exactly
+ * how you get a kink. Measured across the twenty levels, the road's worst
+ * departure from the true curve falls from a fifth of its own width to a
+ * twentieth as this rises to here.
+ *
+ * The price is paid where it cannot be seen. Fading a wave in as it approaches
+ * means it grows a little rather than only sliding towards you, which is the
+ * fault the whole rebuild was for - but a wave being faded is by definition one
+ * whose crests are too close together to make out, and the whole effect measures
+ * two pixels across an entire approach. The first version faded the *whole*
+ * meander by the square of the depth over the *entire* road, so the bend a
+ * player was looking straight at swelled as it came.
+ */
+export const RIVER_READABLE = 240;
 
 /**
  * How much screen one piece of a curved surface covers, in pixels.

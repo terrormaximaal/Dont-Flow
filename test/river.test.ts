@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
     DROP_SCREEN_Y,
+    PERSPECTIVE_DEPTH,
     GAME_HEIGHT,
     GAME_WIDTH,
     HORIZON_Y,
-    PERSPECTIVE_DEPTH,
-    RIVER_HEADINGS,
+    RIVER_SWAY,
     TRACK_LEFT,
     TRACK_WIDTH
 } from '../src/game/config/constants';
-import { headingAt, phasesFor, riverAt, swingOnScreen } from '../src/game/systems/bend';
+import { middleAt, phasesFor, riverAt, swingOnScreen } from '../src/game/systems/bend';
 import { depthScale, lookAlong, lookStraight, projectX, VANISH_X } from '../src/game/systems/Projection';
 import { laneWidth } from '../src/game/systems/Lanes';
 import { LEVELS } from '../src/game/config/levels';
@@ -112,8 +112,10 @@ describe('the river winding', () => {
         //  between reaching one and missing it.
         expect(worstNear, 'swing over the last stretch').toBeLessThan(laneWidth() / 4);
 
-        //  And in the distance it is a real bend and not a rounding error.
-        expect(worstFar, 'swing in the distance').toBeGreaterThan(TRACK_WIDTH / 8);
+        //  And out in front of you it is a real bend and not a rounding error.
+        //  Around twenty-nine pixels as it stands - a lane's worth of water
+        //  moving across the view.
+        expect(worstFar, 'swing in the distance').toBeGreaterThan(TRACK_WIDTH / 16);
 
     });
 
@@ -187,19 +189,68 @@ describe('the river winding', () => {
 
     });
 
-    //  How far the far end may ever swing, from the numbers rather than from a
-    //  screenshot: the depth of the projection times the sharpest the river
-    //  turns. Everything else about the bend is bounded by this.
-    it('keeps the far end within a fifth of the road width of centre', () => {
+    //  The one the rebuild was for.
+    //
+    //  The first version pointed the camera along the river's heading, which
+    //  swung the vanishing point about fifty pixels from side to side as the
+    //  player travelled - while the sun, the mountains and the stars stayed
+    //  exactly where they were. The road said the world was turning and the
+    //  horizon said it was not, and that is what made it dizzying.
+    //
+    //  The river moves now and the horizon does not.
+    it('never moves the horizon', () => {
 
-        let sharpest = 0;
-
-        for (const { travelled, phases } of everyRiver(101))
+        for (const { level, travelled, phases } of everyRiver(311))
         {
-            sharpest = Math.max(sharpest, Math.abs(headingAt(travelled, phases)));
+            lookAlong(travelled, phases);
+
+            for (const trackX of [ TRACK_LEFT, TRACK_LEFT + (TRACK_WIDTH / 2), TRACK_LEFT + TRACK_WIDTH ])
+            {
+                expect(projectX(trackX, HORIZON_Y), `level ${level} at ${travelled}`).toBeCloseTo(VANISH_X, 9);
+            }
         }
 
-        expect(sharpest * PERSPECTIVE_DEPTH, 'furthest the vanishing point moves').toBeLessThan(TRACK_WIDTH / 4);
+    });
+
+    //  And a bend has to arrive the way everything else does: a fixed point on
+    //  the river slides and swells towards you, it does not grow a bend as it
+    //  comes. That is what the first version got wrong - it damped the whole
+    //  meander by the square of the depth, so the same stretch of water was
+    //  drawn with more bend in it the nearer it got, over the whole road.
+    //
+    //  Checked as a projection ought to be: the drawn offset of one fixed point
+    //  on the river, watched as the player closes on it, against its real
+    //  distance from the river's middle times the depth.
+    it('lets a bend flow towards you rather than grow as it arrives', () => {
+
+        const phases = phasesFor(4);
+        const point = 9000;
+
+        let worst = 0;
+
+        for (let travelled = 0; travelled <= point - 200; travelled += 173)
+        {
+            const river = riverAt(travelled, phases);
+            const depth = PERSPECTIVE_DEPTH / ((point - travelled) + PERSPECTIVE_DEPTH);
+
+            const drawn = swingOnScreen(river, depth);
+            const real = (middleAt(point, phases) - middleAt(travelled, phases)) * depth;
+
+            worst = Math.max(worst, Math.abs(drawn - real));
+
+            //  Over the road a player is reading - everything from a third of
+            //  the way up the view down - it is the projection exactly. Every
+            //  wave is fully drawn by then.
+            if (depth >= 0.35)
+            {
+                expect(drawn, `closing on ${point} from ${travelled}`).toBeCloseTo(real, 6);
+            }
+        }
+
+        //  Further off than that a wave may still be fading in, so it grows a
+        //  little as well as sliding. Two pixels across the whole approach, at
+        //  depths where the road is a few dozen pixels wide and hazed.
+        expect(worst, 'departure from a true projection, anywhere').toBeLessThan(3);
 
     });
 
@@ -230,8 +281,8 @@ describe('the river winding', () => {
 
 });
 
-/** The furthest the vanishing point can move, from the headings themselves. */
+/** The furthest the river's middle can ever lie from straight ahead. */
 function reach (): number
 {
-    return PERSPECTIVE_DEPTH * RIVER_HEADINGS.reduce((sum, turn) => sum + turn, 0);
+    return RIVER_SWAY.reduce((sum: number, sway: number) => sum + sway, 0);
 }
