@@ -2083,52 +2083,28 @@ export const PLUCK_FM_INDEX = 2.4;
 export const PLUCK_FM_FALL = 0.26;
 
 /**
- * The glass: a celesta, for the voice that opens the phrase out.
+ * The piano in the phrase that ends a level.
  *
- * Whole-number ratio, like everything else here that plays a tune. The bell
- * above says why: at the ratio a real bell has, the partials land between the
- * harmonics and the phrase measures out of tune against the chords under it even
- * with the root dead on pitch. At seven the sidebands fall on the sixth and
- * eighth harmonics - three octaves and a bit up, pure and glittering, and in
- * tune with the bell it is standing next to.
+ * The same two oscillators as the backing's electric piano and the same ratio -
+ * a whole number, so every partial lands on a harmonic and the note that comes
+ * out is the note that went in. The bell beside it says why that matters: tuned
+ * once to 2.76, the ratio a real bell has, its partials fell between the
+ * harmonics and the phrase measured out of tune against its own chords.
  *
- * The index is set against the ratio, not on its own. How strong the sidebands
- * come out depends on the depth divided by the rate that drives it, so the same
- * index at a higher ratio is a fainter instrument: at 1.2 against 7 this
- * measured as a plain sine with four per cent of anything else in it, which is
- * a beep, not a celesta. Here it works out near two thirds, a shade under the
- * bell, which is bright without being clangy.
+ * What is different is the length. The backing's piano is let go in an eighth of
+ * a second because eight of them sound to a bar and anything with a tail turns
+ * the lot to mud. Here there is one, four times, in a room with nothing else in
+ * it - so it is allowed to ring like a struck string, which is the only thing
+ * that makes a piano read as a piano rather than as a click.
+ *
+ * A shade brighter at the strike than the backing is, and slower to lose it. The
+ * collapse is the hammer, and a hammer heard once wants to be heard.
  */
-export const GLASS_FM_RATIO = 7;
-export const GLASS_FM_INDEX = 4.2;
-export const GLASS_FM_FALL = 0.18;
-export const GLASS_ATTACK = 0.002;
-export const GLASS_DECAY = 0.55;
-
-/**
- * The wood: a marimba, for the body of the phrase.
- *
- * A marimba bar is carved until its first overtone sits two octaves above the
- * note, so that partial is the instrument. It takes a ratio of five to put one
- * there: the sidebands land at the ratio either side of the note, so five gives
- * the fourth and sixth harmonics. Four would give the third and fifth and miss
- * the very thing being aimed at, which is what it did on the first attempt.
- *
- * The bell next door is at three, so its partials are the second and fourth.
- * The three voices have three different signatures, which is the whole point of
- * having three of them.
- *
- * What makes it wood rather than glass is everything after the strike: the
- * brightness is gone in three hundredths of a second and the note itself in
- * under a third of one. It lands and stops, which is exactly what a phrase needs
- * underneath it - the wind that used to hold this line is what made the ending
- * sound sombre, and a struck bar gives the weight without the holding.
- */
-export const WOOD_FM_RATIO = 5;
-export const WOOD_FM_INDEX = 3.6;
-export const WOOD_FM_FALL = 0.045;
-export const WOOD_ATTACK = 0.003;
-export const WOOD_DECAY = 0.28;
+export const PIANO_FM_RATIO = 2;
+export const PIANO_FM_INDEX = 3.1;
+export const PIANO_FM_FALL = 0.16;
+export const PIANO_ATTACK = 0.003;
+export const PIANO_DECAY = 1.1;
 
 export const CHORD_FM_RATIO = 2;
 export const CHORD_FM_INDEX = 2.6;
@@ -2225,7 +2201,7 @@ export const ECHO_DAMP = 3000;
  * the road has stopped and the music has been taken away, with nothing left
  * for it to blur. A big space is most of what makes an ending sound like one.
  */
-export const HALL_SECONDS = 4;
+export const HALL_SECONDS = 3.1;
 
 /** Slower to empty than the cabinet, which is what "large" means to an ear. */
 export const HALL_DECAY = 1.9;
@@ -2233,13 +2209,14 @@ export const HALL_DECAY = 1.9;
 /**
  * How much of the ending goes into it, and how much stays in front.
  *
- * More of the space than of the phrase, now that the phrase is bells alone.
- * Struck metal has an attack sharp enough to survive being sent this far back -
- * it is heard at the front whatever the balance says - so the room can be the
- * louder of the two without the notes going distant with it.
+ * Pulled back from having more room than phrase in it. That balance was set when
+ * the ending had a kick and a bass note holding its bottom down; with those gone
+ * there is less to anchor the tail against, and the same wash reads as too much
+ * of it. Measured on the phrase, the tail runs 2.4 seconds past the loudest note
+ * now instead of 3.1.
  */
-export const HALL_WET = 0.85;
-export const HALL_DRY = 0.7;
+export const HALL_WET = 0.62;
+export const HALL_DRY = 0.82;
 
 /**
  * The silence between the phrase and the space answering it, in seconds.
