@@ -2082,6 +2082,54 @@ export const PLUCK_FM_RATIO = 3;
 export const PLUCK_FM_INDEX = 2.4;
 export const PLUCK_FM_FALL = 0.26;
 
+/**
+ * The glass: a celesta, for the voice that opens the phrase out.
+ *
+ * Whole-number ratio, like everything else here that plays a tune. The bell
+ * above says why: at the ratio a real bell has, the partials land between the
+ * harmonics and the phrase measures out of tune against the chords under it even
+ * with the root dead on pitch. At seven the sidebands fall on the sixth and
+ * eighth harmonics - three octaves and a bit up, pure and glittering, and in
+ * tune with the bell it is standing next to.
+ *
+ * The index is set against the ratio, not on its own. How strong the sidebands
+ * come out depends on the depth divided by the rate that drives it, so the same
+ * index at a higher ratio is a fainter instrument: at 1.2 against 7 this
+ * measured as a plain sine with four per cent of anything else in it, which is
+ * a beep, not a celesta. Here it works out near two thirds, a shade under the
+ * bell, which is bright without being clangy.
+ */
+export const GLASS_FM_RATIO = 7;
+export const GLASS_FM_INDEX = 4.2;
+export const GLASS_FM_FALL = 0.18;
+export const GLASS_ATTACK = 0.002;
+export const GLASS_DECAY = 0.55;
+
+/**
+ * The wood: a marimba, for the body of the phrase.
+ *
+ * A marimba bar is carved until its first overtone sits two octaves above the
+ * note, so that partial is the instrument. It takes a ratio of five to put one
+ * there: the sidebands land at the ratio either side of the note, so five gives
+ * the fourth and sixth harmonics. Four would give the third and fifth and miss
+ * the very thing being aimed at, which is what it did on the first attempt.
+ *
+ * The bell next door is at three, so its partials are the second and fourth.
+ * The three voices have three different signatures, which is the whole point of
+ * having three of them.
+ *
+ * What makes it wood rather than glass is everything after the strike: the
+ * brightness is gone in three hundredths of a second and the note itself in
+ * under a third of one. It lands and stops, which is exactly what a phrase needs
+ * underneath it - the wind that used to hold this line is what made the ending
+ * sound sombre, and a struck bar gives the weight without the holding.
+ */
+export const WOOD_FM_RATIO = 5;
+export const WOOD_FM_INDEX = 3.6;
+export const WOOD_FM_FALL = 0.045;
+export const WOOD_ATTACK = 0.003;
+export const WOOD_DECAY = 0.28;
+
 export const CHORD_FM_RATIO = 2;
 export const CHORD_FM_INDEX = 2.6;
 export const CHORD_FM_FALL = 0.025;

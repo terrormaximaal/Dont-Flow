@@ -442,8 +442,13 @@ describe('the two jingles', () => {
 
     /** The melody alone: the top voice, since a jingle is now three of them. */
     /** Everything in a jingle that carries a pitch, whichever voice plays it. */
+    //  The instruments that carry a pitch, as opposed to the kit under them.
+    //  Written out rather than inferred, so adding a voice to the phrase has to
+    //  be a deliberate edit here too.
+    const PITCHED = new Set([ 'lead', 'pluck', 'glass', 'wood' ]);
+
     const sung = (cue: 'finish' | 'fail' | 'rainbow') =>
-        voiceFor(cue).filter((note) => note.timbre === 'lead' || note.timbre === 'pluck');
+        voiceFor(cue).filter((note) => PITCHED.has(note.timbre ?? ''));
 
     const melody = (cue: 'finish' | 'fail' | 'rainbow') => loudestAt(sung(cue));
 
@@ -509,31 +514,53 @@ describe('the two jingles', () => {
 
     });
 
-    //  Bells, and nothing but. A wind held the body of this until it was
-    //  described as sombre, and it is the holding that does that: a wind is the
-    //  one voice here that stays, and a held note under struck ones reads as
-    //  weight. Struck metal arrives, rings, and leaves the space to answer.
-    it('are carried by bells alone, with no wind under them', () => {
+    //  A group rather than one instrument played four times over.
+    //
+    //  It was four bells - the tune, a harmony, a body and an octave over the
+    //  top - and four copies of a bell in parallel is a thicker bell, not a
+    //  section. What tells struck instruments apart is what each does after it
+    //  is struck, so they are checked by name rather than by counting: a bell
+    //  that rings on, a celesta that is bright and gone, a marimba that lands
+    //  and stops.
+    //
+    //  And no wind anywhere. One held this line until it was described as
+    //  sombre, and the holding is what did it: a note that stays, under notes
+    //  that are struck, reads as weight.
+    it('are played by a group of instruments rather than one of them', () => {
+
+        for (const cue of [ 'finish', 'fail' ] as const)
+        {
+            const kinds = new Set(sung(cue).map((note) => note.timbre));
+
+            expect(kinds.has('lead'), `${cue} has a held voice in it`).toBe(false);
+            expect(kinds.size, `${cue} is played by this many instruments`).toBeGreaterThan(1);
+        }
+
+        //  And the two endings are not the same group either, which is most of
+        //  what makes them read as two different pieces of news.
+        const ends = ([ 'finish', 'fail' ] as const)
+            .map((cue) => [ ...new Set(sung(cue).map((n) => n.timbre)) ].sort().join());
+
+        expect(ends[0], 'finishing and not finishing use different instruments').not.toBe(ends[1]);
+
+    });
+
+    //  The body sits an octave under the tune, whichever instrument is on it.
+    //  Height is what makes a struck note bright: played down where the body is,
+    //  the same instrument measures darker than the wind it replaced, which is
+    //  how this was got wrong the first time.
+    it('keeps the body an octave under the tune', () => {
 
         for (const cue of [ 'finish', 'fail' ] as const)
         {
             const tune = melody(cue);
-            const body = sung(cue).filter((note) => note.timbre !== 'pluck');
-
-            expect(tune.every((note) => note.timbre === 'pluck'), `${cue} melody`).toBe(true);
-            expect(body.map((n) => n.timbre), `${cue} has a held voice in it`).toEqual([]);
-
-            //  The body an octave under the tune, note for note. Height is what
-            //  makes a bell bright: played down where the body sits, the same
-            //  instrument measures darker than the wind it replaced - which is
-            //  how this was got wrong the first time.
             const under = sung(cue).filter((note) => !tune.includes(note));
 
             for (const note of tune)
             {
-                const held = under.find((w) => w.at === note.at && w.semitones === note.semitones - JINGLE_LIFT);
+                const body = under.find((w) => w.at === note.at && w.semitones === note.semitones - JINGLE_LIFT);
 
-                expect(held, `body an octave under the bell at ${note.at}`).toBeDefined();
+                expect(body, `body an octave under the note at ${note.at}`).toBeDefined();
             }
         }
 
@@ -550,9 +577,7 @@ describe('the two jingles', () => {
         {
             for (const note of voiceFor(cue))
             {
-                const pitched = note.timbre === 'lead' || note.timbre === 'pluck';
-
-                expect(note.hall === true, `${cue} ${note.timbre}`).toBe(pitched);
+                expect(note.hall === true, `${cue} ${note.timbre}`).toBe(PITCHED.has(note.timbre ?? ''));
             }
         }
 

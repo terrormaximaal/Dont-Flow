@@ -34,7 +34,7 @@ const DRUM = 0;
  */
 export function flourish (beatSeconds: number): Strike[]
 {
-    return band(JINGLE_WIN, JINGLE_WIN_GAINS, WIN_HARMONY, beatSeconds, 0.55, 4);
+    return band(JINGLE_WIN, JINGLE_WIN_GAINS, WIN_HARMONY, beatSeconds, 0.55, 4, WON);
 }
 
 /**
@@ -53,7 +53,9 @@ export function jingle (win: boolean, beatSeconds: number): Strike[]
         win ? JINGLE_WIN_GAINS : JINGLE_LOSE_GAINS,
         win ? WIN_HARMONY : LOSE_HARMONY,
         beatSeconds,
-        0.8
+        0.8,
+        written.length,
+        win ? WON : LOST
     );
 
     //  The kit stays out of the space: a drum with a two-second tail on it is
@@ -77,14 +79,59 @@ const WIN_HARMONY = [ 7, 3, 7, 10, 10, 7, 7 ];
 const LOSE_HARMONY = [ 7, 3, 2, 3, 0, -2, -5 ];
 
 /**
+ * Which instrument plays which line, and it is not one instrument four times.
+ *
+ * The phrase was four bells - the tune, a harmony under it, a body an octave
+ * down and an octave over the top - and four of the same thing in parallel is
+ * one thick instrument rather than a group. Three now, and they are told apart
+ * by what happens *after* the strike rather than by pitch: the bell rings on,
+ * the celesta is bright and gone, the marimba lands and stops.
+ *
+ * The two endings differ too, and by the harmony, which is the line that carries
+ * the mood. Finishing, it is glass - a second bright thing beside the bell, and
+ * the phrase opens out. Not finishing, it is wood, which takes the sparkle off
+ * without making the phrase sad: the notes already fall, and an ending that
+ * announces its own disappointment is one a player stops wanting to hear.
+ * Measured across the two, the band an ear hears melody in carries a quarter of
+ * the winning phrase and a twentieth of the other.
+ *
+ * The octave over the top is the bell in both, and that was a measurement rather
+ * than a choice. The celesta seemed the brighter thing to put up there and is
+ * not: it is gone in a third of a second where the bell rings for half again as
+ * long, so the bell leaves more behind it that high up. Swapping it in measured
+ * *darker*.
+ */
+interface Palette
+{
+    /** The line itself, an octave over where it is written. */
+    tune: Timbre;
+
+    /** A third or a fifth under it, the second instrument of the pair. */
+    harmony: Timbre;
+
+    /** At the written height, for the weight that lets a phrase land. */
+    body: Timbre;
+
+    /** An octave over the top, arriving late. */
+    over: Timbre;
+}
+
+const WON: Palette = { tune: 'pluck', harmony: 'glass', body: 'wood', over: 'glass' };
+const LOST: Palette = { tune: 'pluck', harmony: 'wood', body: 'wood', over: 'pluck' };
+
+/**
  * A phrase as a section rather than a soloist, played into the large space.
  *
- * Bells, three of them in parallel, and no wind anywhere. A phrase that ends a
+ * A bell, a celesta and a marimba, and no wind anywhere. A phrase that ends a
  * level wants to be bright and to lift, and winds are neither: they are warm,
  * they hold, and holding is what makes a thing sound settled rather than opened
- * out - described, when they carried this, as sombre. Struck metal does the
- * opposite: it arrives, rings, and leaves the space to answer, which is the
- * whole reason the ending is the one thing here with a space of its own.
+ * out - described, when they carried this, as sombre. Struck instruments do the
+ * opposite: they arrive, ring, and leave the space to answer, which is the whole
+ * reason the ending is the one thing here with a space of its own.
+ *
+ * Three of them rather than one played four times over, because four copies of a
+ * bell is a thicker bell and not a group. What tells them apart is what each
+ * does after it is struck, which is where an ear looks for an instrument.
  *
  * The written velocities already climb. They are stretched rather than used
  * flat, because a phrase that ends a level has one job - to arrive - and an ear
@@ -101,7 +148,8 @@ function band (
     harmony: number[],
     beatSeconds: number,
     loudest: number,
-    upTo = written.length
+    upTo = written.length,
+    voices: Palette = WON
 ): Strike[]
 {
     const notes: Strike[] = [];
@@ -127,35 +175,36 @@ function band (
             semitones: semitones + JINGLE_LIFT,
             at,
             gain: grown * loudest,
-            timbre: 'pluck',
+            timbre: voices.tune,
             hall: true,
             held: rings
         });
 
-        //  A second bell a third or a fifth under it: two of them in parallel
-        //  is a section, and one is a signal.
+        //  A second instrument a third or a fifth under it: two lines in
+        //  parallel is a section, and one is a signal. A different instrument
+        //  rather than the same one again, so the two are heard as two.
         notes.push({
             semitones: harmony[i] + JINGLE_LIFT,
             at,
             gain: grown * loudest * JINGLE_HARMONY,
-            timbre: 'pluck' as Timbre,
+            timbre: voices.harmony,
             hall: true,
             held: rings
         });
 
-        //  And a third bell at the height the tune is written, for the body a
-        //  phrase needs to land rather than only ring.
+        //  And the body at the height the tune is written, on the marimba.
         //
-        //  A wind held this line until now, and it was the wind that made the
-        //  ending sound sombre: it is the one voice here that stays, and a held
-        //  note under struck ones reads as weight. The body is real all the
-        //  same - bells are all front and no middle - so it is kept, an octave
-        //  down from the tune and struck like the rest of it.
+        //  A wind held this line once, and it was the wind that made the ending
+        //  sound sombre: it is the one voice that stays, and a held note under
+        //  struck ones reads as weight. Then it was a third bell, which gave the
+        //  body back but made the whole phrase one instrument. A struck bar is
+        //  both answers at once - it lands and stops, and it is plainly not the
+        //  bell above it.
         notes.push({
             semitones,
             at,
             gain: grown * loudest * JINGLE_UNDER,
-            timbre: 'pluck' as Timbre,
+            timbre: voices.body,
             hall: true,
             held: rings
         });
@@ -177,7 +226,7 @@ function band (
                 semitones: semitones + (JINGLE_LIFT * 2),
                 at,
                 gain: grown * loudest * JINGLE_OVER * into,
-                timbre: 'pluck' as Timbre,
+                timbre: voices.over,
                 hall: true,
                 held: rings
             });

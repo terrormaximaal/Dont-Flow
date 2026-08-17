@@ -9,6 +9,11 @@ import {
     CHORD_FM_INDEX,
     CHORD_FM_RATIO,
     CHORD_HOLD,
+    GLASS_ATTACK,
+    GLASS_DECAY,
+    GLASS_FM_FALL,
+    GLASS_FM_INDEX,
+    GLASS_FM_RATIO,
     HAT_DECAY,
     PLUCK_ATTACK,
     PLUCK_DECAY,
@@ -25,7 +30,12 @@ import {
     TICK_DECAY,
     TICK_FM_INDEX,
     TICK_FM_RATIO,
-    TICK_TAIL
+    TICK_TAIL,
+    WOOD_ATTACK,
+    WOOD_DECAY,
+    WOOD_FM_FALL,
+    WOOD_FM_INDEX,
+    WOOD_FM_RATIO
 } from '../config/constants';
 import { bass, struck } from './instruments';
 import { lead } from './wind';
@@ -50,8 +60,15 @@ import { kick, rattle } from './kit';
  * backing, which is two oscillators rather than a shape - the only way to get a
  * struck key out of a browser is to have one bend the other. 'tick' is the one
  * sound the player's own playing makes, and the drums live in `systems/kit`.
+ *
+ * 'pluck', 'glass' and 'wood' are a bell, a celesta and a marimba, and they are
+ * the same two oscillators as the chord with different numbers in front of them.
+ * They exist so the phrase that ends a level is played by a group rather than by
+ * one instrument four times over.
  */
-export type Timbre = 'bass' | 'lead' | 'chord' | 'pluck' | 'tick' | 'kick' | 'snare' | 'hat';
+export type Timbre =
+    | 'bass' | 'lead' | 'chord' | 'pluck' | 'glass' | 'wood' | 'tick'
+    | 'kick' | 'snare' | 'hat';
 
 /**
  * How long a sound of this kind lasts, in seconds.
@@ -67,6 +84,8 @@ export function decayOf (_semitones: number, timbre: Timbre = 'tick', held = 0):
         case 'lead': return LEAD_ATTACK + LEAD_HOLD + ringing(held) + LEAD_DECAY;
         case 'chord': return CHORD_ATTACK + CHORD_HOLD + CHORD_DECAY;
         case 'pluck': return PLUCK_ATTACK + PLUCK_DECAY;
+        case 'glass': return GLASS_ATTACK + GLASS_DECAY;
+        case 'wood': return WOOD_ATTACK + WOOD_DECAY;
         case 'kick': return KICK_DECAY;
         case 'snare': return SNARE_DECAY;
         case 'hat': return HAT_DECAY;
@@ -124,6 +143,13 @@ export function strike (
     //  A struck bell, plucked: the same two oscillators at a ratio that belongs
     //  to no scale, and a tail long enough to ring after the hand has gone.
     if (timbre === 'pluck') { struck(ctx, destination, frequency, at, gain * 0.4, PLUCK_FM_RATIO, PLUCK_FM_INDEX, PLUCK_FM_FALL, PLUCK_ATTACK, 0, PLUCK_DECAY); return; }
+
+    //  A celesta and a marimba, the same two oscillators again. What separates
+    //  the three is the ratio and how fast the brightness collapses, which is
+    //  most of what separates any two struck instruments.
+    if (timbre === 'glass') { struck(ctx, destination, frequency, at, gain * 0.4, GLASS_FM_RATIO, GLASS_FM_INDEX, GLASS_FM_FALL, GLASS_ATTACK, 0, GLASS_DECAY); return; }
+
+    if (timbre === 'wood') { struck(ctx, destination, frequency, at, gain * 0.55, WOOD_FM_RATIO, WOOD_FM_INDEX, WOOD_FM_FALL, WOOD_ATTACK, 0, WOOD_DECAY); return; }
 
     struck(ctx, destination, frequency, at, gain * 0.6, TICK_FM_RATIO, TICK_FM_INDEX, TICK_DECAY * 0.4, TICK_ATTACK, 0, TICK_DECAY + TICK_TAIL);
 }
