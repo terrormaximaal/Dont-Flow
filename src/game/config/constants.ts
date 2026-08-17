@@ -70,8 +70,19 @@ export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
 /**
  * World distance at which something sits halfway between the horizon and the
  * player. Smaller bunches the far field harder into the distance.
+ *
+ * Raised from nine hundred, which made things swell too fast as they arrived.
+ * The projection itself was never wrong - ahead of the drop the sideways scale
+ * is the same divide that sets the height, so it is a true perspective - but
+ * how quickly a thing grows in the last stretch is this number and nothing
+ * else. Measured over the final three hundred pixels of road, an object grew
+ * 1.33 times its size; here it grows 1.25.
+ *
+ * It costs a little speed, since something that swells more gently also reads
+ * as coming at you more gently. That is the trade, and it is why the far end
+ * moved with it: the same change puts more road inside the view.
  */
-export const PERSPECTIVE_DEPTH = 900;
+export const PERSPECTIVE_DEPTH = 1200;
 
 /** How fast something already passed drops away below the screen. */
 export const BEHIND_RATE = 0.55;
@@ -1750,7 +1761,10 @@ export const CULL_MARGIN = 200;
  * drawing it turns the far distance into an unreadable stack of portals rather
  * than a road running away.
  */
-export const DRAW_DISTANCE = 3400;
+//  Moved with the perspective depth above rather than on its own. Flattening
+//  the near field without reaching further only trades one thing for nothing:
+//  the road stops rushing and no more of it appears.
+export const DRAW_DISTANCE = 4200;
 
 /** The last stretch of the draw distance, over which something fades in. */
 export const FADE_IN_DISTANCE = 900;
