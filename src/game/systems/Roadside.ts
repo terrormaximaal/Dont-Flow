@@ -17,7 +17,7 @@ import { LayerShape, RoadsideSpec } from '../config/worlds';
 import { mixColor } from '../utils/color';
 import { fogAt } from '../ui/lighting';
 import { depthScale, projectX } from './Projection';
-import { drawStrength, screenYFor } from './World';
+import { screenYFor } from './World';
 
 /**
  * Props stand between the ground and the road, so they are rooted in the world
@@ -25,8 +25,44 @@ import { drawStrength, screenYFor } from './World';
  */
 const ROADSIDE_DEPTH = DEPTH_ROADSIDE;
 
-/** How far back props are placed, in world distance. */
-const ROADSIDE_VIEW = 3400;
+/**
+ * How far back props are placed, in world distance.
+ *
+ * Was 3400, which put the furthest one 120 pixels below the horizon - a wide
+ * band of bare ground between the last tree and the sky, and the thing that
+ * made the road look cut off. Raising it costs almost nothing, because what
+ * props cost is drawing them and the far ones are thinned out below.
+ */
+export const ROADSIDE_VIEW = 16000;
+
+/**
+ * The stretch at the back of that over which a prop fades in, in world distance.
+ *
+ * Long, because the far end of the view is where the projection is at its most
+ * compressed: this is fifteen pixels of screen, so a short fade would be a pop.
+ * Its own rather than the one gameplay objects use - that one stops dead at the
+ * draw distance, which is less than a third of the way back from here.
+ */
+const ROADSIDE_FADE = 6000;
+
+/**
+ * The least a prop may be from the one behind it on screen, in pixels.
+ *
+ * Props are laid at a fixed spacing in the world, so the further back they are
+ * the closer together they land - past the draw distance they stack dozens deep
+ * into a few pixels, and dozens of silhouettes at nine tenths alpha is not a row
+ * of trees but a dark band along the horizon. Thinning them by screen distance
+ * keeps the row reading as a row and caps what the far view can cost, however
+ * far back it goes.
+ *
+ * Only the far ones are touched: a prop close enough to sweep past the player is
+ * ninety pixels from its neighbour, so nothing that carries the sense of moving
+ * is ever dropped.
+ */
+const ROADSIDE_MIN_GAP = 3;
+
+/** A shadow shorter than this across is not a shadow, and an ellipse is dear. */
+const MIN_SHADOW_PIXELS = 1.5;
 
 /**
  * Scenery standing along the road: trees, rocks, towers, whatever the world
@@ -82,6 +118,10 @@ export class Roadside
         const first = Math.floor(travelled / spec.spacing);
         const last = Math.ceil((travelled + ROADSIDE_VIEW) / spec.spacing);
 
+        //  Where the last prop drawn stands, so the ones stacking up behind it
+        //  can be thinned. Starts above the horizon, which nothing reaches.
+        let lastDrawn = 0;
+
         for (let index = last; index >= first; index--)
         {
             const distance = index * spec.spacing;
@@ -89,13 +129,19 @@ export class Roadside
 
             if (y > GAME_HEIGHT + 200) { continue; }
 
+            //  Walking far to near, so this is the gap opened since the last one
+            //  that was kept.
+            if (y - lastDrawn < ROADSIDE_MIN_GAP) { continue; }
+
             const scale = depthScale(y);
 
             if (scale <= 0.02) { continue; }
 
-            const strength = drawStrength(distance, travelled);
+            const strength = fadeIn(distance - travelled);
 
             if (strength <= 0) { continue; }
+
+            lastDrawn = y;
 
             //  Both sides, mirrored, with each prop varied from its index so the
             //  roadside never repeats visibly.
@@ -132,13 +178,22 @@ export class Roadside
 
         //  Its shadow first, thrown along the ground away from the light, so
         //  the prop stands on the world rather than in front of it.
-        gfx.fillStyle(0x000000, PROP_SHADOW_ALPHA * alpha);
-        gfx.fillEllipse(
-            x - (LIGHT_X * width * PROP_SHADOW_LENGTH),
-            y,
-            width * 2.2,
-            width * 2.2 * PROP_SHADOW_SQUASH
-        );
+        //
+        //  Only while there is a shadow to see. An ellipse is the most expensive
+        //  thing drawn here - it is tessellated into a fan of triangles, where
+        //  the prop itself is two or three - and at the back of the view it comes
+        //  out a couple of pixels across and squashed to a fifth of that, which
+        //  is nothing at all for the same price.
+        if (width * 2.2 * PROP_SHADOW_SQUASH >= MIN_SHADOW_PIXELS)
+        {
+            gfx.fillStyle(0x000000, PROP_SHADOW_ALPHA * alpha);
+            gfx.fillEllipse(
+                x - (LIGHT_X * width * PROP_SHADOW_LENGTH),
+                y,
+                width * 2.2,
+                width * 2.2 * PROP_SHADOW_SQUASH
+            );
+        }
 
         //  Distance fades a prop into the world's own air, exactly as it does
         //  the road. Without it, scenery beside a road receding into haze reads
@@ -246,7 +301,11 @@ export class Roadside
         height: number
     ): void
     {
-        const steps = 12;
+        //  As many steps as the hump is wide enough to show, up to a dozen. A
+        //  fixed count spends the same twelve triangles on a hump four pixels
+        //  across as on one that fills a third of the screen, and at the back of
+        //  the view most of a world's props are the small kind.
+        const steps = Math.max(3, Math.min(12, Math.round(width / 3)));
 
         let previousX = x - width;
         let previousY = y;
@@ -266,6 +325,23 @@ export class Roadside
             previousY = nextY;
         }
     }
+}
+
+/**
+ * How strongly a prop that far ahead is drawn, 0 at the limit of the view and 1
+ * once it is well inside it.
+ *
+ * The world's haze alone will not do this. It washes a prop towards the colour
+ * of the air but tops out at the world's own haze alpha - 0.16 in the thinnest
+ * of them - so a prop at the horizon would still be five sixths its own colour,
+ * and the horizon would carry a dark fringe of them.
+ */
+function fadeIn (ahead: number): number
+{
+    if (ahead <= ROADSIDE_VIEW - ROADSIDE_FADE) { return 1; }
+    if (ahead >= ROADSIDE_VIEW) { return 0; }
+
+    return (ROADSIDE_VIEW - ahead) / ROADSIDE_FADE;
 }
 
 /** Deterministic -1..1 from an index, so a prop is identical on every run. */

@@ -26,6 +26,7 @@ import { RoadSurface, resolveSurface } from './roadSurface';
 import { depthScale, fillProjectedQuad, projectX, VANISH_X } from './Projection';
 import { laneCount, laneWidth } from './Lanes';
 import { visibleStrips } from './strips';
+import { airAtHorizon, hazeHorizon } from './horizon';
 import { screenYFor } from './World';
 
 /** The corridor's own colours, which each world re-tints. */
@@ -40,8 +41,16 @@ export interface TrackPalette
 /** Drawn past the bottom of the screen so the road's near end is never seen. */
 const OVERDRAW = 260;
 
-/** How far ahead the road is drawn, in world distance. */
-const VIEW_DISTANCE = 26000;
+//  The road used to be drawn out to a fixed distance - 26000 - and stop there.
+//  Measured, that left its far end 20 pixels short of the horizon and still 15
+//  pixels wide: a blunt stub with a wedge of bare ground above it, which is
+//  what "the road doesn't reach the horizon" looked like. There is no distance
+//  that fixes it, because the projection only approaches the horizon - it would
+//  take 553000 to come within a pixel.
+//
+//  So the far end is the horizon itself, which is exactly where a flat straight
+//  road converges. The quad closes to a point there rather than a stub, and the
+//  haze bands wash the last of it into the world's own air.
 
 /** Dashes shorter than this on screen are a dotted line, not a divider. */
 const MIN_DASH_PIXELS = 3;
@@ -80,6 +89,9 @@ export class TrackScroller
     /** The world's own atmosphere, which the far end of the road fades into. */
     private readonly haze: number;
 
+    /** The sky's colour at the horizon, which is where all of it ends up. */
+    private readonly air: number;
+
     constructor (scene: Scene, world: WorldSpec)
     {
         this.palette = world;
@@ -88,6 +100,7 @@ export class TrackScroller
         //  and dimmed, which keeps the path sitting *in* the world.
         this.ground = world.groundColor ?? world.track;
         this.haze = world.hazeColor;
+        this.air = airAtHorizon(world);
 
         this.surface = resolveSurface(world.surface);
 
@@ -102,7 +115,7 @@ export class TrackScroller
     {
         const gfx = this.gfx;
         const near = GAME_HEIGHT + OVERDRAW;
-        const far = screenYFor(distance + VIEW_DISTANCE, distance);
+        const far = HORIZON_Y;
 
         gfx.clear();
         this.groundGfx.clear();
@@ -119,6 +132,11 @@ export class TrackScroller
         this.strokeRails(gfx, near, far);
         this.strokeDashes(gfx, distance, near);
         this.glowEdges(gfx, near, far);
+
+        //  Last, over the road, the scenery and the ground alike: the far end of
+        //  all three going to air together is what makes them one distance
+        //  rather than three things that each stop somewhere.
+        hazeHorizon(gfx, this.air);
     }
 
     /**

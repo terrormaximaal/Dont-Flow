@@ -10,6 +10,7 @@ import {
 } from '../src/game/config/constants';
 import { depthScale, project, projectX, VANISH_X } from '../src/game/systems/Projection';
 import { drawStrength, screenYFor } from '../src/game/systems/World';
+import { ROADSIDE_VIEW } from '../src/game/systems/Roadside';
 
 //  The one place distance becomes a picture.
 //
@@ -182,6 +183,26 @@ describe('the sideways half of the same picture', () => {
 
         expect(at(DROP_SCREEN_Y + 100)).toBeGreaterThan(at(DROP_SCREEN_Y));
         expect(at(DROP_SCREEN_Y)).toBeGreaterThan(at(HORIZON_Y + 20));
+
+    });
+
+    //  The scenery has to end where the road does, or it does not end at all -
+    //  it stops, and the gap between the last tree and the sky reads as the road
+    //  being cut off. Measured when this was 3400, the furthest prop stood 120
+    //  pixels below the horizon: an eighth of the screen of bare ground with a
+    //  blunt stub of road in the middle of it.
+    //
+    //  Guarded in screen pixels rather than in world distance, because distance
+    //  is not what went wrong. The projection was flattened and every distance
+    //  quietly moved further from the horizon; the number here did not change,
+    //  and nothing noticed.
+    it('runs the scenery back as far as the road goes', () => {
+
+        const short = screenYFor(ROADSIDE_VIEW, 0) - HORIZON_Y;
+
+        //  32 pixels as it stands, and the props are already faded out well
+        //  before that. 120 was the state this is here to catch.
+        expect(short, 'the furthest prop stands this far below the horizon').toBeLessThan(40);
 
     });
 
