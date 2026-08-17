@@ -485,30 +485,31 @@ describe('the two jingles', () => {
 
     });
 
-    //  Bells carry it and a wind holds it up from underneath. A section of
-    //  winds is warm and it holds, and holding is what makes a thing sound
-    //  settled rather than opened out; struck metal arrives, rings, and leaves
-    //  the space to answer.
-    it('are carried by bells over a wind, rather than by winds alone', () => {
+    //  Bells, and nothing but. A wind held the body of this until it was
+    //  described as sombre, and it is the holding that does that: a wind is the
+    //  one voice here that stays, and a held note under struck ones reads as
+    //  weight. Struck metal arrives, rings, and leaves the space to answer.
+    it('are carried by bells alone, with no wind under them', () => {
 
         for (const cue of [ 'finish', 'fail' ] as const)
         {
             const tune = melody(cue);
-            const winds = sung(cue).filter((note) => note.timbre === 'lead');
+            const body = sung(cue).filter((note) => note.timbre !== 'pluck');
 
             expect(tune.every((note) => note.timbre === 'pluck'), `${cue} melody`).toBe(true);
-            expect(winds.length, `${cue} has a wind under it`).toBeGreaterThan(0);
+            expect(body.map((n) => n.timbre), `${cue} has a held voice in it`).toEqual([]);
 
-            //  An octave over the wind, note for note. Height is what makes a
-            //  bell bright: played where the wind is, the same instrument
-            //  measures darker than the wind it replaced - which is how this
-            //  was got wrong the first time.
+            //  The body an octave under the tune, note for note. Height is what
+            //  makes a bell bright: played down where the body sits, the same
+            //  instrument measures darker than the wind it replaced - which is
+            //  how this was got wrong the first time.
+            const under = sung(cue).filter((note) => !tune.includes(note));
+
             for (const note of tune)
             {
-                const under = winds.find((w) => w.at === note.at);
+                const held = under.find((w) => w.at === note.at && w.semitones === note.semitones - JINGLE_LIFT);
 
-                expect(under, `a wind under the bell at ${note.at}`).toBeDefined();
-                expect(note.semitones - (under?.semitones ?? 0), 'an octave over it').toBe(JINGLE_LIFT);
+                expect(held, `body an octave under the bell at ${note.at}`).toBeDefined();
             }
         }
 

@@ -2096,14 +2096,21 @@ export const ECHO_DAMP = 3000;
  * the road has stopped and the music has been taken away, with nothing left
  * for it to blur. A big space is most of what makes an ending sound like one.
  */
-export const HALL_SECONDS = 2.8;
+export const HALL_SECONDS = 4;
 
 /** Slower to empty than the cabinet, which is what "large" means to an ear. */
-export const HALL_DECAY = 2.2;
+export const HALL_DECAY = 1.9;
 
-/** How much of the ending goes into it, and how much stays in front. */
-export const HALL_WET = 0.5;
-export const HALL_DRY = 0.8;
+/**
+ * How much of the ending goes into it, and how much stays in front.
+ *
+ * More of the space than of the phrase, now that the phrase is bells alone.
+ * Struck metal has an attack sharp enough to survive being sent this far back -
+ * it is heard at the front whatever the balance says - so the room can be the
+ * louder of the two without the notes going distant with it.
+ */
+export const HALL_WET = 0.85;
+export const HALL_DRY = 0.7;
 
 /**
  * The silence between the phrase and the space answering it, in seconds.

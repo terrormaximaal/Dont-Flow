@@ -69,9 +69,9 @@ export function jingle (win: boolean, beatSeconds: number): Strike[]
 /**
  * The voice under the tune in each jingle: a third or a fifth below, in key.
  *
- * Two instruments playing the same phrase in parallel is what a section of
- * winds is, and it is why a jingle played by one of them sounds like a signal
- * while the same notes played by three sound like an ending.
+ * Two instruments playing the same phrase in parallel is what a section is, and
+ * it is why a jingle played by one of them sounds like a signal while the same
+ * notes played by three sound like an ending.
  */
 const WIN_HARMONY = [ 7, 3, 7, 10, 10, 7, 7 ];
 const LOSE_HARMONY = [ 7, 3, 2, 3, 0, -2, -5 ];
@@ -79,12 +79,12 @@ const LOSE_HARMONY = [ 7, 3, 2, 3, 0, -2, -5 ];
 /**
  * A phrase as a section rather than a soloist, played into the large space.
  *
- * Bells carry it and a wind holds it up from underneath. A phrase that ends a
- * level wants to be bright and to lift, and a section of winds is neither: they
- * are warm, they hold, and holding is what makes a thing sound settled rather
- * than opened out. Struck metal does the opposite - it arrives, rings, and
- * leaves the space to answer, which is the whole reason the ending is the one
- * thing here with a space of its own.
+ * Bells, three of them in parallel, and no wind anywhere. A phrase that ends a
+ * level wants to be bright and to lift, and winds are neither: they are warm,
+ * they hold, and holding is what makes a thing sound settled rather than opened
+ * out - described, when they carried this, as sombre. Struck metal does the
+ * opposite: it arrives, rings, and leaves the space to answer, which is the
+ * whole reason the ending is the one thing here with a space of its own.
  *
  * The written velocities already climb. They are stretched rather than used
  * flat, because a phrase that ends a level has one job - to arrive - and an ear
@@ -143,14 +143,19 @@ function band (
             held: rings
         });
 
-        //  And the wind, at the height the tune is written, holding underneath.
-        //  Bells alone have no body - they are all front and no middle, and a
-        //  phrase made only of them rings without ever landing.
+        //  And a third bell at the height the tune is written, for the body a
+        //  phrase needs to land rather than only ring.
+        //
+        //  A wind held this line until now, and it was the wind that made the
+        //  ending sound sombre: it is the one voice here that stays, and a held
+        //  note under struck ones reads as weight. The body is real all the
+        //  same - bells are all front and no middle - so it is kept, an octave
+        //  down from the tune and struck like the rest of it.
         notes.push({
             semitones,
             at,
             gain: grown * loudest * JINGLE_UNDER,
-            timbre: 'lead' as Timbre,
+            timbre: 'pluck' as Timbre,
             hall: true,
             held: rings
         });
