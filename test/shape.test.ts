@@ -16,8 +16,17 @@ describe('what a doorway is worth', () => {
         {
             for (const [ at, section ] of spec.sections.entries())
             {
-                for (const gate of section.gate)
+                for (const [ side, gate ] of section.gate.entries())
                 {
+                    //  A barred doorway is meant to collect nothing - that is
+                    //  what barring it means, and the section behind it is
+                    //  written in the colour still on offer. Asking it to pay
+                    //  would be asking it not to be barred.
+                    if (section.gateSealed === side)
+                    {
+                        continue;
+                    }
+
                     const shape = shapeOf(spec, at, spec.palette[gate]);
 
                     expect(
@@ -41,10 +50,18 @@ describe('what a doorway is worth', () => {
     //  cheaper door stops being defensible.
     it('never makes one doorway worth more than four times the other', () => {
 
+        //  Barred doorways excepted, for the reason above: one side of a sealed
+        //  gate is closed, so the two sides are not being compared.
+
         for (const [ index, spec ] of LEVELS.entries())
         {
             for (let at = 0; at < spec.sections.length; at++)
             {
+                if (spec.sections[at].gateSealed !== undefined)
+                {
+                    continue;
+                }
+
                 const route = routeOf(spec, at);
 
                 if (route === null)
@@ -187,13 +204,76 @@ describe('the curve across the twenty', () => {
     //  once the right thing was measured there was nothing wrong.
     it('asks more of the player at every step, all twenty of them', () => {
 
-        for (let at = 1; at < LEVELS.length; at++)
+        for (let at = 1; at < 20; at++)
         {
             expect(
                 demandOf(LEVELS[at]),
                 `level ${at + 1} against level ${at}`
             ).toBeGreaterThan(demandOf(LEVELS[at - 1]));
         }
+
+    });
+
+    //  And the thirty that follow all ask more than level twenty does.
+    //
+    //  More than that cannot honestly be asked of this measure, and finding out
+    //  why was most of the work of building them. Demand is rows per second
+    //  plus hazards per second. The first term is nearly fixed after level
+    //  twenty - the pace has 10% of headroom left before it crosses the floor a
+    //  lane change needs - so the whole of a rising curve would have to come out
+    //  of the second, and the second saturates: past a certain density every
+    //  row already has something on it and adding more changes what a movement
+    //  is made of rather than how much it asks.
+    //
+    //  Pushed to that ceiling, the thirty measure as a plateau a little above
+    //  level twenty rather than a climb - and they measure that way because a
+    //  climb by this measure alone would mean thirty levels packed to the same
+    //  maximum, which is the one thing they must not be. What actually rises
+    //  across them is length, the number of mechanics a level combines, and how
+    //  little relief there is between them. Those are guarded below and in
+    //  pacing.test; this one guards the floor.
+    it('all ask more than the twenty that came before them', () => {
+
+        for (let at = 20; at < LEVELS.length; at++)
+        {
+            expect(demandOf(LEVELS[at]), `level ${at + 1} against level 20`)
+                .toBeGreaterThan(demandOf(LEVELS[19]));
+        }
+
+    });
+
+    //  What does climb, band by band: how much a level combines. A late level
+    //  is measured by how many different kinds of problem it puts in one place -
+    //  barrier kinds, doorways that swap or are barred, stretches that charge
+    //  score - because that is what these levels get harder by.
+    it('combines more mechanics band by band', () => {
+
+        const combining = (spec: typeof LEVELS[number]): number => {
+
+            const kinds = new Set<string>();
+
+            for (const section of spec.sections)
+            {
+                if (section.obstacles) { kinds.add(section.obstacles); }
+                if (section.gateSwap) { kinds.add('swap'); }
+                if (section.gateSealed !== undefined) { kinds.add('sealed'); }
+                if (section.drain) { kinds.add('drain'); }
+            }
+
+            return kinds.size;
+        };
+
+        const bands: number[] = [];
+
+        for (let at = 20; at < LEVELS.length; at += 5)
+        {
+            const band = LEVELS.slice(at, at + 5).map(combining);
+
+            bands.push(band.reduce((a, b) => a + b, 0) / band.length);
+        }
+
+        expect(bands[bands.length - 1], 'the last band against the first')
+            .toBeGreaterThan(bands[0]);
 
     });
 

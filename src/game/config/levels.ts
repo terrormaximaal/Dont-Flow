@@ -1,3 +1,4 @@
+import { LATE_LEVELS } from './levelsLate';
 import { LevelSpec } from './level';
 
 //  The game's ten levels, in order.
@@ -1924,6 +1925,10 @@ export const LEVELS: LevelSpec[] = [
         ]
     }
 ];
+
+//  And the thirty that come after them, which are written in their own file
+//  and in their own way - see levelsLate.ts for why.
+LEVELS.push(...LATE_LEVELS);
 
 export const LEVEL_COUNT = LEVELS.length;
 

@@ -263,18 +263,21 @@ describe('rowHasSafeLane', () => {
 
 describe('the shipped levels', () => {
 
-    it('are twenty, in order', () => {
+    it('are fifty, in order', () => {
 
-        expect(LEVELS).toHaveLength(20);
+        expect(LEVELS).toHaveLength(50);
         expect(LEVELS.map((level) => level.name))
-            .toEqual(Array.from({ length: 20 }, (_, i) => String(i + 1)));
+            .toEqual(Array.from({ length: 50 }, (_, i) => String(i + 1)));
 
     });
 
-    //  Ten worlds and twenty levels, so every world is played exactly twice -
-    //  once by day and once, much later and much harder, after dark. Twice and
-    //  no more: a third visit is a place the game has run out of ideas about.
-    it('visit each world at most twice, and never twice by the same light', () => {
+    //  Ten worlds and fifty levels, so every world is played five times. It was
+    //  twice while there were twenty levels - once by day and once, much later,
+    //  after dark - and that rule cannot survive fifty levels with two
+    //  lightings. What it was for does survive: a world is never seen twice
+    //  running under the same light, so a return always looks like a different
+    //  place rather than like the level before it.
+    it('never show a world twice running under the same light', () => {
 
         const seen = new Map<string, string[]>();
 
@@ -289,8 +292,12 @@ describe('the shipped levels', () => {
 
         for (const [ world, visits ] of seen)
         {
-            expect(visits.length, `world ${world}`).toBeLessThanOrEqual(2);
-            expect(new Set(visits).size, `world ${world} lighting`).toBe(visits.length);
+            expect(visits.length, `world ${world}`).toBeLessThanOrEqual(5);
+
+            for (let i = 1; i < visits.length; i++)
+            {
+                expect(visits[i], `world ${world}, visit ${i + 1}`).not.toBe(visits[i - 1]);
+            }
         }
 
     });
@@ -481,17 +488,45 @@ describe('the shipped levels', () => {
 
     });
 
+    //  The first twenty levels climb: every one runs faster and packs its rows
+    //  closer than the last. That ramp has an end, and level twenty is nearly
+    //  at it - a row every 141ms against the 126ms that survival's ceiling is
+    //  held to as the tightest the game may fairly ask. Carrying the same climb
+    //  thirty levels further would reach a row every 86ms, which is less than a
+    //  lane change takes.
+    //
+    //  So the rule changes shape at twenty rather than being dropped. Through
+    //  the first twenty it is what it always was. After that the pace may
+    //  plateau but never slacken, and what is guarded instead is that it never
+    //  crosses the floor - the late levels get harder by what is on the road.
     it('get harder without relying on speed alone', () => {
 
         const speeds = LEVELS.map((level) => level.forwardSpeed ?? 420);
         const spacings = LEVELS.map((level) => level.rowSpacing ?? ORB_ROW_SPACING);
         const colours = LEVELS.map((level) => level.palette.length);
 
-        for (let i = 1; i < LEVELS.length; i++)
+        for (let i = 1; i < 20; i++)
         {
             expect(speeds[i], `level ${i + 1} speed`).toBeGreaterThan(speeds[i - 1]);
             expect(spacings[i], `level ${i + 1} spacing`).toBeLessThan(spacings[i - 1]);
+        }
+
+        for (let i = 20; i < LEVELS.length; i++)
+        {
+            expect(speeds[i], `level ${i + 1} speed`).toBeGreaterThanOrEqual(speeds[i - 1]);
+            expect(spacings[i], `level ${i + 1} spacing`).toBeLessThanOrEqual(spacings[i - 1]);
+        }
+
+        for (let i = 1; i < LEVELS.length; i++)
+        {
             expect(colours[i], `level ${i + 1} colours`).toBeGreaterThanOrEqual(colours[i - 1]);
+        }
+
+        //  And the floor itself, stated where the ramp is stated.
+        for (let i = 0; i < LEVELS.length; i++)
+        {
+            expect((spacings[i] / speeds[i]) * 1000, `level ${i + 1} milliseconds a row`)
+                .toBeGreaterThan(126);
         }
 
     });

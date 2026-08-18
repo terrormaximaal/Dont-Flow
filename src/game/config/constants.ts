@@ -1153,7 +1153,13 @@ export const ROUTE_SWING = 92;
  * twenty stops this puts every neighbour a full swing apart, which is as far
  * as the shape allows.
  */
-export const ROUTE_CYCLES = 4.75;
+/**
+ * How far the route swings sideways, per level rather than per route.
+ *
+ * Was 4.75 across the whole route while the whole route was twenty levels.
+ * Held per level so the weave looks the same however many there are.
+ */
+export const ROUTE_CYCLES_PER_LEVEL = 4.75 / 19;
 export const ROUTE_PHASE = 0;
 
 /** The stop itself, and the ring drawn around the one you would play next. */
@@ -1196,7 +1202,16 @@ export const ROUTE_MOTE_SECONDS = 7.5;
 
 /** How the stops arrive: staggered down the route, in the order they are walked. */
 export const ROUTE_ENTER_MS = 420;
-export const ROUTE_ENTER_STAGGER = 26;
+/**
+ * The most a stop may wait behind the one before it, and the budget the whole
+ * entrance has to finish inside.
+ *
+ * The stagger itself is worked out from these and the number of levels, in
+ * route.ts - a fixed one read well across twenty stops and took a second and a
+ * half across fifty.
+ */
+export const ROUTE_ENTER_STAGGER_MAX = 26;
+export const ROUTE_ENTER_BUDGET = 1000;
 export const ROUTE_ENTER_FROM = 0.55;
 
 /** The dip a stop takes when it is pressed, before the screen washes out. */

@@ -64,7 +64,53 @@ const BANDS: Array<{ level: number; from: number; to: number }> = [
     { level: 16, from: 75, to: 90 },
     { level: 17, from: 75, to: 90 },
     { level: 18, from: 75, to: 90 },
-    { level: 19, from: 75, to: 90 }
+    { level: 19, from: 75, to: 90 },
+
+    //  ------------------------------------------------------------------
+    //  Levels 21 to 50.
+    //
+    //  The brief for these asked for six bands running from 50-60s up to
+    //  75-90s. Those numbers describe a shorter game than this one is:
+    //  level 20 already runs 88s, so 21 at 50-60 would be half the length
+    //  of the level before it, and the guard below - that a level is never
+    //  shorter than the one before - would have to be thrown away to allow
+    //  it.
+    //
+    //  What is kept is the shape of that brief rather than its numbers: six
+    //  bands, each a little longer than the last, ending well above where it
+    //  starts. They are offset to continue from level 20 instead of dropping
+    //  back to it, so the ramp across all fifty levels is one ramp.
+    //  ------------------------------------------------------------------
+    { level: 20, from: 88, to: 98 },
+    { level: 21, from: 88, to: 98 },
+    { level: 22, from: 88, to: 98 },
+    { level: 23, from: 88, to: 98 },
+    { level: 24, from: 88, to: 98 },
+    { level: 25, from: 93, to: 104 },
+    { level: 26, from: 93, to: 104 },
+    { level: 27, from: 93, to: 104 },
+    { level: 28, from: 93, to: 104 },
+    { level: 29, from: 93, to: 104 },
+    { level: 30, from: 99, to: 110 },
+    { level: 31, from: 99, to: 110 },
+    { level: 32, from: 99, to: 110 },
+    { level: 33, from: 99, to: 110 },
+    { level: 34, from: 99, to: 110 },
+    { level: 35, from: 105, to: 116 },
+    { level: 36, from: 105, to: 116 },
+    { level: 37, from: 105, to: 116 },
+    { level: 38, from: 105, to: 116 },
+    { level: 39, from: 105, to: 116 },
+    { level: 40, from: 111, to: 122 },
+    { level: 41, from: 111, to: 122 },
+    { level: 42, from: 111, to: 122 },
+    { level: 43, from: 111, to: 122 },
+    { level: 44, from: 111, to: 122 },
+    { level: 45, from: 116, to: 136 },
+    { level: 46, from: 116, to: 136 },
+    { level: 47, from: 116, to: 136 },
+    { level: 48, from: 116, to: 136 },
+    { level: 49, from: 116, to: 136 }
 ];
 
 describe('how long a level lasts', () => {

@@ -186,8 +186,19 @@ describe('level palettes', () => {
             //  Against the world as this level sees it: a night visit draws
             //  from its world's night set, which is the same claim - a level's
             //  colours come from its world - asked of the right list.
-            expect(level.palette, `level ${level.name}`)
-                .toEqual(applyVariant(WORLDS[level.world], level.variant).palette);
+            const declared = applyVariant(WORLDS[level.world], level.variant).palette;
+
+            //  A world's own colours come first, in the world's own order. The
+            //  first twenty levels stop there. The late ones top the palette up
+            //  to five, because the colour count has climbed every level to
+            //  twenty and must not fall back - and the early worlds declare only
+            //  two or three. What is guarded is that the world still leads:
+            //  nothing is reordered and nothing is dropped.
+            expect(level.palette.slice(0, declared.length), `level ${level.name}`)
+                .toEqual(declared);
+
+            expect(level.palette.length, `level ${level.name} palette size`)
+                .toBeLessThanOrEqual(5);
         }
 
     });

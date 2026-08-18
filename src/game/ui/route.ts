@@ -1,10 +1,14 @@
+import { LEVEL_COUNT } from '../config/levels';
 import {
     GAME_HEIGHT,
     GAME_WIDTH,
-    ROUTE_CYCLES,
+    ROUTE_CYCLES_PER_LEVEL,
     ROUTE_FADE_BAND,
-    ROUTE_FIRST_Y,
-    ROUTE_LAST_Y,
+    ROUTE_FIRST_Y as ROUTE_FIRST,
+    ROUTE_STEP_Y,
+    ROUTE_ENTER_BUDGET,
+    ROUTE_ENTER_MS,
+    ROUTE_ENTER_STAGGER_MAX,
     ROUTE_PHASE,
     ROUTE_SWING,
     ROUTE_VIEW_BOTTOM,
@@ -19,6 +23,43 @@ import {
 //  already with the grid this replaces.
 
 const TAU = Math.PI * 2;
+
+/** Kept, so the rest of this file reads as it did. */
+const ROUTE_FIRST_Y = ROUTE_FIRST;
+
+/**
+ * How many times the route swings across the screen.
+ *
+ * Per level rather than per route. Fixed at 4.75 while there were twenty
+ * levels, it put fifty stops through the same number of swings - which left
+ * pairs of beads sitting almost directly above one another, and a route that
+ * has stopped moving sideways has stopped being a journey.
+ */
+const ROUTE_CYCLES = ROUTE_CYCLES_PER_LEVEL * Math.max(1, LEVEL_COUNT - 1);
+
+/**
+ * Where the last stop sits.
+ *
+ * One step per level rather than a fixed length. It was pinned to nineteen
+ * steps while there were twenty levels, which meant adding thirty more crammed
+ * fifty beads into the same stretch of road and left them overlapping - the
+ * route stops being a journey the moment two stops touch.
+ */
+export const ROUTE_LAST_Y = ROUTE_FIRST_Y + (ROUTE_STEP_Y * Math.max(1, LEVEL_COUNT - 1));
+
+/**
+ * How long each stop waits behind the one before it as the route arrives.
+ *
+ * Derived rather than fixed, because the whole entrance has to finish before a
+ * player could get bored of watching it - and a fixed stagger that read well
+ * across twenty stops took over a second and a half across fifty. Held to the
+ * same budget whatever the route's length, so adding levels lengthens the road
+ * and not the wait.
+ */
+export const ROUTE_ENTER_STAGGER = Math.min(
+    ROUTE_ENTER_STAGGER_MAX,
+    (ROUTE_ENTER_BUDGET - ROUTE_ENTER_MS) / Math.max(1, LEVEL_COUNT - 1)
+);
 
 /**
  * Where the way out sits.
