@@ -165,7 +165,12 @@ describe('the river winding', () => {
         //  depth it is drawn at. A bend, not a slalom.
         expect(worst, 'furthest the bend ever moves an edge').toBeLessThan(TRACK_WIDTH / 3);
 
-    });
+    //  Given room to run rather than sampled more coarsely. This walks every
+    //  level's whole length at every depth on both edges, which is the whole
+    //  point of it, and the game went from twenty levels to fifty - so it now
+    //  takes about fifteen seconds where it used to take six. Thinning the walk
+    //  would trade the guard's value for its runtime.
+    }, 60000);
 
     //  The horizon is where the inverse of the projection blows up - the road is
     //  infinitely far away and has swung infinitely far sideways - and it is
