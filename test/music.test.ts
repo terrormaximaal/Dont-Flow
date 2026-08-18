@@ -442,8 +442,12 @@ describe('the two jingles', () => {
 
     /** The melody alone: the top voice, since a jingle is now three of them. */
     /** Everything in a jingle that carries a pitch, whichever voice plays it. */
+    //  The instruments that carry a pitch. Written out rather than inferred, so
+    //  adding a voice to the phrase has to be a deliberate edit here too.
+    const PITCHED = new Set([ 'lead', 'pluck', 'piano' ]);
+
     const sung = (cue: 'finish' | 'fail' | 'rainbow') =>
-        voiceFor(cue).filter((note) => note.timbre === 'lead' || note.timbre === 'pluck');
+        voiceFor(cue).filter((note) => PITCHED.has(note.timbre ?? ''));
 
     const melody = (cue: 'finish' | 'fail' | 'rainbow') => loudestAt(sung(cue));
 
@@ -509,50 +513,70 @@ describe('the two jingles', () => {
 
     });
 
-    //  Bells, and nothing but. A wind held the body of this until it was
-    //  described as sombre, and it is the holding that does that: a wind is the
-    //  one voice here that stays, and a held note under struck ones reads as
-    //  weight. Struck metal arrives, rings, and leaves the space to answer.
-    it('are carried by bells alone, with no wind under them', () => {
+    //  Bells over a piano, and nothing else. A wind held the body of this until
+    //  it was described as sombre, and the holding is what did it: a note that
+    //  stays, under notes that are struck, reads as weight.
+    it('is carried by struck instruments, with nothing held under them', () => {
 
         for (const cue of [ 'finish', 'fail' ] as const)
         {
             const tune = melody(cue);
-            const body = sung(cue).filter((note) => note.timbre !== 'pluck');
+            const kinds = new Set(sung(cue).map((note) => note.timbre));
 
             expect(tune.every((note) => note.timbre === 'pluck'), `${cue} melody`).toBe(true);
-            expect(body.map((n) => n.timbre), `${cue} has a held voice in it`).toEqual([]);
+            expect(kinds.has('lead'), `${cue} has a held voice in it`).toBe(false);
+            expect(kinds.has('piano'), `${cue} has a piano under it`).toBe(true);
+        }
 
-            //  The body an octave under the tune, note for note. Height is what
-            //  makes a bell bright: played down where the body sits, the same
-            //  instrument measures darker than the wind it replaced - which is
-            //  how this was got wrong the first time.
+    });
+
+    //  The body sits an octave under the tune. Height is what makes a struck
+    //  note bright: played down where the body is, the same instrument measures
+    //  darker than the wind it replaced, which is how this was got wrong once.
+    it('keeps the body an octave under the tune', () => {
+
+        for (const cue of [ 'finish', 'fail' ] as const)
+        {
+            const tune = melody(cue);
             const under = sung(cue).filter((note) => !tune.includes(note));
 
             for (const note of tune)
             {
-                const held = under.find((w) => w.at === note.at && w.semitones === note.semitones - JINGLE_LIFT);
+                const body = under.find((w) => w.at === note.at && w.semitones === note.semitones - JINGLE_LIFT);
 
-                expect(held, `body an octave under the bell at ${note.at}`).toBeDefined();
+                expect(body, `body an octave under the note at ${note.at}`).toBeDefined();
+            }
+        }
+
+    });
+
+    //  Nothing but pitched voices. There was a kick on the first beat, another
+    //  under the last note and a bass note with it - a floor under the phrase,
+    //  and the floor was the trouble. A drum is the sound of the game being
+    //  played and this plays once the playing has stopped.
+    it('has no drum and no bass in it', () => {
+
+        for (const cue of [ 'finish', 'fail', 'rainbow' ] as const)
+        {
+            for (const note of voiceFor(cue))
+            {
+                expect(PITCHED.has(note.timbre ?? ''), `${cue} plays a ${note.timbre}`).toBe(true);
             }
         }
 
     });
 
     //  The one phrase in the game with a space of its own. It plays once, with
-    //  the road stopped and the music taken away, so there is nothing for a
-    //  long tail to blur - and a big space is most of what makes an ending
-    //  sound like one. The kit stays out of it: a drum with a two-second tail
-    //  is not a drum.
-    it('are played into the large space, drums excepted', () => {
+    //  the road stopped and the music taken away, so there is nothing for a long
+    //  tail to blur - and a big space is most of what makes an ending sound like
+    //  one. Everything in it is pitched now, so everything goes into the room.
+    it('is played into the large space, all of it', () => {
 
         for (const cue of [ 'finish', 'fail' ] as const)
         {
             for (const note of voiceFor(cue))
             {
-                const pitched = note.timbre === 'lead' || note.timbre === 'pluck';
-
-                expect(note.hall === true, `${cue} ${note.timbre}`).toBe(pitched);
+                expect(note.hall === true, `${cue} ${note.timbre}`).toBe(true);
             }
         }
 

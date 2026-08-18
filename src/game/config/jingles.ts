@@ -17,9 +17,6 @@ import { Timbre } from '../systems/voice';
 //  once coming down - so the game only has to say which of the two happened and
 //  the music says the rest.
 
-/** The drums have no pitch worth the name; this is what they are given. */
-const DRUM = 0;
-
 /**
  * The rising half of the win jingle, for the one moment in a run that has
  * earned a phrase.
@@ -38,32 +35,27 @@ export function flourish (beatSeconds: number): Strike[]
 }
 
 /**
- * One of the two jingles, in seconds, with the kit under its last note.
+ * One of the two jingles, in seconds.
+ *
+ * Pitched voices only. There was a kick on the first beat, a second under the
+ * last note and a bass note with it, to put a floor under the phrase - and the
+ * floor is what was wrong with it. A drum is the sound of the game being played
+ * and this plays when the playing has stopped; the bass sat two octaves below
+ * everything else, which on a phone speaker is not a low note but a thud with no
+ * pitch in it. What is left is the group and the room it stands in.
  *
  * @param beatSeconds How long a beat is, since a cue is written in seconds and
  *                    the jingles were written in beats.
  */
 export function jingle (win: boolean, beatSeconds: number): Strike[]
 {
-    const written: Written[] = win ? JINGLE_WIN : JINGLE_LOSE;
-    const last = written[written.length - 1];
-
-    const notes = band(
-        written,
+    return band(
+        win ? JINGLE_WIN : JINGLE_LOSE,
         win ? JINGLE_WIN_GAINS : JINGLE_LOSE_GAINS,
         win ? WIN_HARMONY : LOSE_HARMONY,
         beatSeconds,
         0.8
     );
-
-    //  The kit stays out of the space: a drum with a two-second tail on it is
-    //  not a drum, and what the hit is there for is to put a floor under the
-    //  phrase rather than to ring with it.
-    notes.push({ semitones: DRUM, at: 0, gain: 0.5, timbre: 'kick' });
-    notes.push({ semitones: last[1] - 24, at: last[0] * beatSeconds, gain: 0.8, timbre: 'bass' });
-    notes.push({ semitones: DRUM, at: last[0] * beatSeconds, gain: 0.85, timbre: 'kick' });
-
-    return notes;
 }
 
 /**
@@ -79,12 +71,12 @@ const LOSE_HARMONY = [ 7, 3, 2, 3, 0, -2, -5 ];
 /**
  * A phrase as a section rather than a soloist, played into the large space.
  *
- * Bells, three of them in parallel, and no wind anywhere. A phrase that ends a
- * level wants to be bright and to lift, and winds are neither: they are warm,
- * they hold, and holding is what makes a thing sound settled rather than opened
- * out - described, when they carried this, as sombre. Struck metal does the
- * opposite: it arrives, rings, and leaves the space to answer, which is the
- * whole reason the ending is the one thing here with a space of its own.
+ * Bells over a piano, and no wind anywhere. A phrase that ends a level wants to
+ * be bright and to lift, and winds are neither: they are warm, they hold, and
+ * holding is what makes a thing sound settled rather than opened out - described,
+ * when they carried this, as sombre. Struck things do the opposite: they arrive,
+ * ring, and leave the space to answer, which is the whole reason the ending is
+ * the one thing here with a space of its own.
  *
  * The written velocities already climb. They are stretched rather than used
  * flat, because a phrase that ends a level has one job - to arrive - and an ear
@@ -143,19 +135,23 @@ function band (
             held: rings
         });
 
-        //  And a third bell at the height the tune is written, for the body a
-        //  phrase needs to land rather than only ring.
+        //  And a piano at the height the tune is written, for the body a phrase
+        //  needs to land rather than only ring.
         //
-        //  A wind held this line until now, and it was the wind that made the
-        //  ending sound sombre: it is the one voice here that stays, and a held
-        //  note under struck ones reads as weight. The body is real all the
-        //  same - bells are all front and no middle - so it is kept, an octave
-        //  down from the tune and struck like the rest of it.
+        //  Three things have held this line. A wind, which is what made the
+        //  ending sound sombre - it is the one voice that stays, and a held note
+        //  under struck ones reads as weight. Then a third bell, which fixed
+        //  that but made the whole phrase one instrument played four times over.
+        //  A struck string is both answers at once: it has a hammer on it, so it
+        //  lands, and it is plainly not the bell above it.
+        //
+        //  It is also what is left carrying the bottom of the phrase now that
+        //  the kick and the bass have gone.
         notes.push({
             semitones,
             at,
             gain: grown * loudest * JINGLE_UNDER,
-            timbre: 'pluck' as Timbre,
+            timbre: 'piano' as Timbre,
             hall: true,
             held: rings
         });

@@ -87,7 +87,7 @@ export class Course
 
     /**
      * @param travelled Distance the drop has covered.
-     * @param dropX     Current screen x of the drop.
+     * @param dropX     Current track x of the drop, never a projected one.
      * @param targetX   Centre of the lane the drop is heading for.
      * @param dropColor The drop's colour, or null before its first gate.
      * @param wild      Whether a rainbow drop is in hand, which matches every

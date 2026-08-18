@@ -38,7 +38,12 @@ export function laneWidth (): number
 }
 
 /**
- * Screen x of the centre of a lane. Lane 0 is the left-most lane.
+ * Track x of the centre of a lane. Lane 0 is the left-most lane.
+ *
+ * Track space, not screen space, and the distinction now matters: the road is
+ * drawn along a river that winds, so where a lane appears moves with depth
+ * while this does not move at all. Every rule in the game is settled on these
+ * numbers, and nothing that decides anything may ever be handed a projected one.
  */
 export function laneCenterX (lane: number): number
 {

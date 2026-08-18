@@ -84,6 +84,83 @@ export const PROJECTION_PIVOT_Y = DROP_SCREEN_Y;
  */
 export const PERSPECTIVE_DEPTH = 1200;
 
+/**
+ * How long one wave of the river's wandering runs, in track pixels.
+ *
+ * Three of them, with lengths that do not divide into one another, so they never
+ * come back round together inside a run and the bend reads as wandering rather
+ * than as a rhythm.
+ *
+ * Long, and longer than the first attempt by more than double. Perspective
+ * squeezes the far half of the river into the top of the view, so a wave that is
+ * comfortable underfoot is finer than a screen pixel by the time it is a few
+ * hundred pixels off - and a wave the road cannot be cut finely enough to draw
+ * comes out as a row of kinks. Measured against the true curve over all twenty
+ * levels: at the original lengths the road was out by a fifth of its own width
+ * at worst, and at these it is out by a twentieth.
+ *
+ * The cost is fewer bends: two changes of direction across the first level and
+ * eleven across the last, where the short waves gave six and twenty-nine. That
+ * is the right trade for a river - it is meant to wander, not to slalom.
+ */
+export const RIVER_PERIODS = [ 6000, 9500, 15000 ];
+
+/**
+ * How far each of those waves carries the river sideways, in track pixels.
+ *
+ * A position rather than a turn, and the difference is the whole reason the
+ * bends were rebuilt: describing the river by how sharply it turns, and then
+ * pointing the camera along that, swings the vanishing point across the screen
+ * while the sky stays still. Describing where its middle *is* leaves the horizon
+ * alone and simply moves the water.
+ *
+ * The long wave carries most of it and the short ones only unsettle it, which is
+ * what keeps the result reading as a river rather than as a slalom. Together
+ * they put the middle at most fifty-seven pixels either side of straight ahead -
+ * about half a lane, and a sixth of the river's own width.
+ */
+export const RIVER_SWAY = [ 14, 21, 31 ];
+
+/**
+ * How far apart a wave's crests must land on screen to be worth drawing, in
+ * pixels.
+ *
+ * Below this a wave turns over faster than the road is cut into pieces, so it
+ * cannot be drawn - it comes out as a shimmer that no amount of finer cutting
+ * fixes, because there is nothing smooth up there to find. Faded away instead.
+ *
+ * Several times the height of one piece of road, and it has to be. Set at the
+ * height of a piece it looked sufficient and was not: a wave a piece and a half
+ * across is drawn at full strength and sampled at two points, which is exactly
+ * how you get a kink. Measured across the twenty levels, the road's worst
+ * departure from the true curve falls from a fifth of its own width to a
+ * twentieth as this rises to here.
+ *
+ * The price is paid where it cannot be seen. Fading a wave in as it approaches
+ * means it grows a little rather than only sliding towards you, which is the
+ * fault the whole rebuild was for - but a wave being faded is by definition one
+ * whose crests are too close together to make out, and the whole effect measures
+ * two pixels across an entire approach. The first version faded the *whole*
+ * meander by the square of the depth over the *entire* road, so the bend a
+ * player was looking straight at swelled as it came.
+ */
+export const RIVER_READABLE = 240;
+
+/**
+ * How much screen one piece of a curved surface covers, in pixels.
+ *
+ * A straight road is two triangles because the projection is linear in screen
+ * y; a winding one is not, so anything spanning real depth has to be cut up or
+ * it comes out straight and merely tilted. Measured against the true curve, the
+ * road drawn in one piece is sixteen pixels out at its worst, and in pieces
+ * this size under one - which is the point at which no more cutting is worth
+ * paying for.
+ */
+export const RIVER_STRIP = 40;
+
+/** However long a surface is, this many pieces is enough for any of it. */
+export const RIVER_STRIP_LIMIT = 32;
+
 /** How fast something already passed drops away below the screen. */
 export const BEHIND_RATE = 0.55;
 
@@ -2020,6 +2097,30 @@ export const PLUCK_FM_RATIO = 3;
 export const PLUCK_FM_INDEX = 2.4;
 export const PLUCK_FM_FALL = 0.26;
 
+/**
+ * The piano in the phrase that ends a level.
+ *
+ * The same two oscillators as the backing's electric piano and the same ratio -
+ * a whole number, so every partial lands on a harmonic and the note that comes
+ * out is the note that went in. The bell beside it says why that matters: tuned
+ * once to 2.76, the ratio a real bell has, its partials fell between the
+ * harmonics and the phrase measured out of tune against its own chords.
+ *
+ * What is different is the length. The backing's piano is let go in an eighth of
+ * a second because eight of them sound to a bar and anything with a tail turns
+ * the lot to mud. Here there is one, four times, in a room with nothing else in
+ * it - so it is allowed to ring like a struck string, which is the only thing
+ * that makes a piano read as a piano rather than as a click.
+ *
+ * A shade brighter at the strike than the backing is, and slower to lose it. The
+ * collapse is the hammer, and a hammer heard once wants to be heard.
+ */
+export const PIANO_FM_RATIO = 2;
+export const PIANO_FM_INDEX = 3.1;
+export const PIANO_FM_FALL = 0.16;
+export const PIANO_ATTACK = 0.003;
+export const PIANO_DECAY = 1.1;
+
 export const CHORD_FM_RATIO = 2;
 export const CHORD_FM_INDEX = 2.6;
 export const CHORD_FM_FALL = 0.025;
@@ -2115,7 +2216,7 @@ export const ECHO_DAMP = 3000;
  * the road has stopped and the music has been taken away, with nothing left
  * for it to blur. A big space is most of what makes an ending sound like one.
  */
-export const HALL_SECONDS = 4;
+export const HALL_SECONDS = 3.1;
 
 /** Slower to empty than the cabinet, which is what "large" means to an ear. */
 export const HALL_DECAY = 1.9;
@@ -2123,13 +2224,14 @@ export const HALL_DECAY = 1.9;
 /**
  * How much of the ending goes into it, and how much stays in front.
  *
- * More of the space than of the phrase, now that the phrase is bells alone.
- * Struck metal has an attack sharp enough to survive being sent this far back -
- * it is heard at the front whatever the balance says - so the room can be the
- * louder of the two without the notes going distant with it.
+ * Pulled back from having more room than phrase in it. That balance was set when
+ * the ending had a kick and a bass note holding its bottom down; with those gone
+ * there is less to anchor the tail against, and the same wash reads as too much
+ * of it. Measured on the phrase, the tail runs 2.4 seconds past the loudest note
+ * now instead of 3.1.
  */
-export const HALL_WET = 0.85;
-export const HALL_DRY = 0.7;
+export const HALL_WET = 0.62;
+export const HALL_DRY = 0.82;
 
 /**
  * The silence between the phrase and the space answering it, in seconds.
