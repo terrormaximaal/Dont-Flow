@@ -80,7 +80,7 @@ describe('levels being different from each other', () => {
                 expect(
                     sharing(a, b),
                     `levels ${a + 1} and ${b + 1}`
-                ).toBeLessThan(0.56);
+                ).toBeLessThan(0.52);
             }
         }
 
@@ -89,6 +89,10 @@ describe('levels being different from each other', () => {
     //  And the one the brief actually asked for: that a level does not feel
     //  like the level before it. Held tighter than the pairs above, because two
     //  levels twenty apart being alike is a much smaller sin than two in a row.
+    //
+    //  Both numbers are set just above where the levels actually sit rather
+    //  than at a round figure, so the guard is a ratchet: the next change to
+    //  these levels can improve on it and cannot quietly undo it.
     it('never lets a level repeat the one before it', () => {
 
         for (let at = 21; at < LEVELS.length; at++)
@@ -96,7 +100,7 @@ describe('levels being different from each other', () => {
             expect(
                 sharing(at - 1, at),
                 `level ${at + 1} against level ${at}`
-            ).toBeLessThan(0.45);
+            ).toBeLessThan(0.43);
         }
 
     });

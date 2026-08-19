@@ -254,7 +254,9 @@ export function vault (a: number, b: number, h: number, v = 0): string[]
 
     return pick(v, [
         [ bar, bar, `..${orb(b)}`, `${orb(a)}.${orb(b)}`, `${orb(b)}..`, `..${orb(a)}`, `${orb(b)}.${orb(a)}`, `.${orb(a)}.` ],
-        [ bar, bar, `${orb(a)}..`, `${orb(b)}.${orb(a)}`, `..${orb(b)}`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `..${orb(a)}` ]
+        [ bar, bar, `${orb(a)}..`, `${orb(b)}.${orb(a)}`, `..${orb(b)}`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `..${orb(a)}` ],
+        [ bar, bar, `${orb(b)}.${orb(a)}`, `..${orb(a)}`, `${orb(b)}..`, `${orb(a)}.${orb(b)}`, `..${orb(b)}`, `${orb(a)}..` ],
+        [ bar, bar, `.${orb(a)}.`, `${orb(b)}..`, `${orb(a)}.${orb(b)}`, `..${orb(a)}`, `${orb(b)}..`, `..${orb(b)}` ]
     ]);
 }
 
