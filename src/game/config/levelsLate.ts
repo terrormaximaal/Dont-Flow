@@ -234,20 +234,20 @@ export const LATE_LEVELS: LevelSpec[] = [];
 //  than the two movements either side of it put together.
 LATE_LEVELS.push(late(21, [
     movement(38, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(44, run(chain(1, 2), narrows(1, 2, 1)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(40, posts(2, 3, 0), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(44, run(chain(3, 4), narrows(3, 4, 3)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(38, run(fork(4, 0), narrows(4, 0, 4)), { splitAfterLane: 0, gate: [ 4, 0 ], obstacles: 'static' }),
-    movement(40, drum(0, 1, 2), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'static' }),
-    movement(36, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(44, run(chain(3, 2), narrows(3, 2, 2), narrows(3, 2, 3)), { splitAfterLane: 1, gate: [ 3, 2 ], obstacles: 'static' }),
-    movement(38, run(weave(2, 4), narrows(2, 4, 3), narrows(2, 4, 4)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(40, drum(4, 0, 1), { splitAfterLane: 1, gate: [ 4, 0 ], obstacles: 'static' }),
-    movement(38, run(fork(0, 2), narrows(0, 2, 0), narrows(0, 2, 1)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(40, run(posts(2, 1, 3), narrows(2, 1, 0)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
-    movement(36, gift(1, 4), { splitAfterLane: 0, gate: [ 1, 4 ] }),
+    movement(44, run(chain(1, 2, 4), narrows(1, 2, 1, 5)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(40, posts(2, 3, 0, 5), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(44, run(chain(3, 4, 0), narrows(3, 4, 3, 1)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(38, run(fork(4, 0, 1), narrows(4, 0, 4, 2)), { splitAfterLane: 0, gate: [ 4, 0 ], obstacles: 'static' }),
+    movement(40, drum(0, 1, 2, 2), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'static' }),
+    movement(36, gift(1, 3, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(44, run(chain(3, 2, 4), narrows(3, 2, 2, 5), narrows(3, 2, 3, 0)), { splitAfterLane: 1, gate: [ 3, 2 ], obstacles: 'static' }),
+    movement(38, run(weave(2, 4, 5), narrows(2, 4, 3, 0), narrows(2, 4, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(40, drum(4, 0, 1, 0), { splitAfterLane: 1, gate: [ 4, 0 ], obstacles: 'static' }),
+    movement(38, run(fork(0, 2, 1), narrows(0, 2, 0, 2), narrows(0, 2, 1, 3)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(40, run(posts(2, 1, 3, 2), narrows(2, 1, 0, 3)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(36, gift(1, 4, 3), { splitAfterLane: 0, gate: [ 1, 4 ] }),
     //  The finale: the line again, tighter, with the level's only walls in it.
-    movement(46, run(chain(4, 3), narrows(4, 3, 3), narrows(4, 3, 4)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'static', rowSpacing: 102 })
+    movement(46, run(chain(4, 3, 4), narrows(4, 3, 3, 5), narrows(4, 3, 4, 0)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'static', rowSpacing: 102 })
 ]));
 
 //  22. Moving walls.
@@ -258,19 +258,19 @@ LATE_LEVELS.push(late(21, [
 //  is never where it was a moment ago.
 LATE_LEVELS.push(late(22, [
     movement(37, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(41, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
-    movement(39, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(43, run(drum(3, 4, 0), posts(3, 4, 3)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
-    movement(39, run(weave(4, 0), narrows(4, 0, 4)), { splitAfterLane: 0, gate: [ 4, 0 ], obstacles: 'static' }),
-    movement(43, posts(0, 1, 1), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'slider' }),
-    movement(37, gift(1, 2), { splitAfterLane: 0, gate: [ 1, 2 ] }),
-    movement(41, drum(2, 3, 4), { splitAfterLane: 1, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(45, posts(3, 0, 0), { splitAfterLane: 0, gate: [ 3, 0 ], obstacles: 'slider' }),
-    movement(39, run(weave(0, 4), narrows(0, 4, 4), narrows(0, 4, 0)), { splitAfterLane: 1, gate: [ 0, 4 ], obstacles: 'static' }),
-    movement(43, posts(4, 2, 2), { splitAfterLane: 0, gate: [ 4, 2 ], obstacles: 'slider' }),
-    movement(37, gift(2, 1), { splitAfterLane: 1, gate: [ 2, 1 ] }),
-    movement(41, run(drum(1, 3, 0), posts(1, 3, 2)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'slider' }),
-    movement(49, run(posts(3, 4, 4)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider', rowSpacing: 101 })
+    movement(41, posts(1, 2, 2, 5), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
+    movement(39, run(fork(2, 3, 0), narrows(2, 3, 2, 1)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(43, run(drum(3, 4, 0, 1), posts(3, 4, 3, 2)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
+    movement(39, run(weave(4, 0, 2), narrows(4, 0, 4, 3)), { splitAfterLane: 0, gate: [ 4, 0 ], obstacles: 'static' }),
+    movement(43, posts(0, 1, 1, 3), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'slider' }),
+    movement(37, gift(1, 2, 4), { splitAfterLane: 0, gate: [ 1, 2 ] }),
+    movement(41, drum(2, 3, 4, 5), { splitAfterLane: 1, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(45, posts(3, 0, 0, 0), { splitAfterLane: 0, gate: [ 3, 0 ], obstacles: 'slider' }),
+    movement(39, run(weave(0, 4, 1), narrows(0, 4, 4, 2), narrows(0, 4, 0, 3)), { splitAfterLane: 1, gate: [ 0, 4 ], obstacles: 'static' }),
+    movement(43, posts(4, 2, 2, 2), { splitAfterLane: 0, gate: [ 4, 2 ], obstacles: 'slider' }),
+    movement(37, gift(2, 1, 3), { splitAfterLane: 1, gate: [ 2, 1 ] }),
+    movement(41, run(drum(1, 3, 0, 4), posts(1, 3, 2, 5)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'slider' }),
+    movement(49, run(posts(3, 4, 4, 5)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider', rowSpacing: 101 })
 ]));
 
 //  23. Over the top.
@@ -280,19 +280,19 @@ LATE_LEVELS.push(late(22, [
 //  movement 11, where the orb after every bar is in the far lane.
 LATE_LEVELS.push(late(23, [
     movement(37, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(43, hurdles(1, 2, 0), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(39, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(43, hurdles(3, 4, 1), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(37, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(41, posts(0, 2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(43, hurdles(2, 1, 3), { splitAfterLane: 0, gate: [ 2, 1 ], obstacles: 'static' }),
-    movement(39, run(weave(1, 3), narrows(1, 3, 2), narrows(1, 3, 3)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(43, holes(3, 0), { splitAfterLane: 0, gate: [ 3, 0 ], obstacles: 'static' }),
-    movement(37, gift(0, 4), { splitAfterLane: 1, gate: [ 0, 4 ] }),
-    movement(45, vault(4, 2, 0), { splitAfterLane: 0, gate: [ 4, 2 ], obstacles: 'static' }),
-    movement(39, run(fork(2, 1), narrows(2, 1, 1), narrows(2, 1, 2)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
-    movement(43, run(hurdles(1, 4, 4), narrows(1, 4, 3)), { splitAfterLane: 0, gate: [ 1, 4 ], obstacles: 'static' }),
-    movement(49, run(vault(4, 3, 2), hurdles(4, 3, 3)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'static', rowSpacing: 103 })
+    movement(43, hurdles(1, 2, 0, 0), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(39, run(fork(2, 3, 1), narrows(2, 3, 2, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(43, hurdles(3, 4, 1, 2), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(37, gift(4, 0, 3), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(41, posts(0, 2, 2, 4), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(43, hurdles(2, 1, 3, 5), { splitAfterLane: 0, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(39, run(weave(1, 3, 0), narrows(1, 3, 2, 1), narrows(1, 3, 3, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(43, holes(3, 0, 1), { splitAfterLane: 0, gate: [ 3, 0 ], obstacles: 'static' }),
+    movement(37, gift(0, 4, 2), { splitAfterLane: 1, gate: [ 0, 4 ] }),
+    movement(45, vault(4, 2, 0, 3), { splitAfterLane: 0, gate: [ 4, 2 ], obstacles: 'static' }),
+    movement(39, run(fork(2, 1, 4), narrows(2, 1, 1, 5), narrows(2, 1, 2, 0)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(43, run(hurdles(1, 4, 4, 5), narrows(1, 4, 3, 0)), { splitAfterLane: 0, gate: [ 1, 4 ], obstacles: 'static' }),
+    movement(49, run(vault(4, 3, 2, 0), hurdles(4, 3, 3, 1)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'static', rowSpacing: 103 })
 ]));
 
 //  24. The narrows.
@@ -302,19 +302,19 @@ LATE_LEVELS.push(late(23, [
 //  the open lane never stops walking and there is nowhere else to be.
 LATE_LEVELS.push(late(24, [
     movement(38, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(42, narrows(1, 2, 0), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(40, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(44, narrows(3, 4, 1), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(38, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(42, pinch(0, 2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(40, run(weave(2, 1), narrows(2, 1, 1)), { splitAfterLane: 0, gate: [ 2, 1 ], obstacles: 'static' }),
-    movement(44, narrows(1, 3, 3), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(38, gift(3, 0), { splitAfterLane: 0, gate: [ 3, 0 ] }),
-    movement(42, drum(0, 4, 1), { splitAfterLane: 1, gate: [ 0, 4 ], obstacles: 'static' }),
-    movement(40, run(fork(4, 2), narrows(4, 2, 0), narrows(4, 2, 1)), { splitAfterLane: 0, gate: [ 4, 2 ], obstacles: 'static' }),
-    movement(51, run(narrows(2, 0, 0), narrows(2, 0, 4)), { splitAfterLane: 1, gate: [ 2, 0 ], obstacles: 'static' }),
-    movement(38, gift(0, 3), { splitAfterLane: 0, gate: [ 0, 3 ] }),
-    movement(51, run(narrows(3, 4, 4), pinch(3, 4, 4)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static', rowSpacing: 102 })
+    movement(42, narrows(1, 2, 0, 1), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(40, run(fork(2, 3, 2), narrows(2, 3, 2, 3)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(44, narrows(3, 4, 1, 3), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(38, gift(4, 0, 4), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(42, pinch(0, 2, 2, 5), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(40, run(weave(2, 1, 0), narrows(2, 1, 1, 1)), { splitAfterLane: 0, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(44, narrows(1, 3, 3, 1), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(38, gift(3, 0, 2), { splitAfterLane: 0, gate: [ 3, 0 ] }),
+    movement(42, drum(0, 4, 1, 3), { splitAfterLane: 1, gate: [ 0, 4 ], obstacles: 'static' }),
+    movement(40, run(fork(4, 2, 4), narrows(4, 2, 0, 5), narrows(4, 2, 1, 0)), { splitAfterLane: 0, gate: [ 4, 2 ], obstacles: 'static' }),
+    movement(51, run(narrows(2, 0, 0, 5), narrows(2, 0, 4, 0)), { splitAfterLane: 1, gate: [ 2, 0 ], obstacles: 'static' }),
+    movement(38, gift(0, 3, 0), { splitAfterLane: 0, gate: [ 0, 3 ] }),
+    movement(51, run(narrows(3, 4, 4, 1), pinch(3, 4, 4, 2)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static', rowSpacing: 102 })
 ]));
 
 //  25. Colour and air.
@@ -324,19 +324,19 @@ LATE_LEVELS.push(late(24, [
 //  finale, where a vault sits inside a pulse movement.
 LATE_LEVELS.push(late(25, [
     movement(38, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(43, vault(1, 2, 0), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(40, posts(2, 3, 3), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'pulse' }),
-    movement(45, vault(3, 4, 1), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(38, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(45, drum(0, 1, 2), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'pulse' }),
-    movement(40, run(fork(1, 3), narrows(1, 3, 1)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(45, hurdles(3, 2, 4), { splitAfterLane: 1, gate: [ 3, 2 ], obstacles: 'pulse' }),
-    movement(40, run(weave(2, 4), narrows(2, 4, 3), narrows(2, 4, 4)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(45, vault(4, 0, 3), { splitAfterLane: 1, gate: [ 4, 0 ], obstacles: 'static' }),
-    movement(38, gift(0, 2), { splitAfterLane: 0, gate: [ 0, 2 ] }),
-    movement(45, run(pinch(2, 1, 1), narrows(2, 1, 0)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'pulse' }),
-    movement(40, run(fork(1, 4), narrows(1, 4, 2), narrows(1, 4, 3)), { splitAfterLane: 0, gate: [ 1, 4 ], obstacles: 'static' }),
-    movement(53, run(vault(4, 3, 0), drum(4, 3, 1)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'pulse', rowSpacing: 102 })
+    movement(43, vault(1, 2, 0, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(40, posts(2, 3, 3, 3), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'pulse' }),
+    movement(45, vault(3, 4, 1, 4), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(38, gift(4, 0, 5), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(45, drum(0, 1, 2, 0), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'pulse' }),
+    movement(40, run(fork(1, 3, 1), narrows(1, 3, 1, 2)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(45, hurdles(3, 2, 4, 2), { splitAfterLane: 1, gate: [ 3, 2 ], obstacles: 'pulse' }),
+    movement(40, run(weave(2, 4, 3), narrows(2, 4, 3, 4), narrows(2, 4, 4, 5)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(45, vault(4, 0, 3, 4), { splitAfterLane: 1, gate: [ 4, 0 ], obstacles: 'static' }),
+    movement(38, gift(0, 2, 5), { splitAfterLane: 0, gate: [ 0, 2 ] }),
+    movement(45, run(pinch(2, 1, 1, 0), narrows(2, 1, 0, 1)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'pulse' }),
+    movement(40, run(fork(1, 4, 1), narrows(1, 4, 2, 2), narrows(1, 4, 3, 3)), { splitAfterLane: 0, gate: [ 1, 4 ], obstacles: 'static' }),
+    movement(53, run(vault(4, 3, 0, 2), drum(4, 3, 1, 3)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'pulse', rowSpacing: 102 })
 ]));
 
 //  ---------------------------------------------------------------------------
@@ -355,19 +355,19 @@ LATE_LEVELS.push(late(25, [
 //  for the bar to go edge-on and then take both lanes at once.
 LATE_LEVELS.push(late(26, [
     movement(39, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(45, flank(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'rotor' }),
-    movement(41, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(45, drum(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
-    movement(39, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(45, flank(0, 3, 3), { splitAfterLane: 1, gate: [ 0, 3 ], obstacles: 'rotor' }),
-    movement(41, run(weave(3, 1), narrows(3, 1, 1)), { splitAfterLane: 0, gate: [ 3, 1 ], obstacles: 'static' }),
-    movement(43, run(drum(1, 2, 4), narrows(1, 2, 1)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(50, run(flank(2, 0, 0), flank(2, 0, 2)), { splitAfterLane: 0, gate: [ 2, 0 ], obstacles: 'rotor' }),
-    movement(39, gift(0, 4), { splitAfterLane: 1, gate: [ 0, 4 ] }),
-    movement(45, flank(4, 1, 1), { splitAfterLane: 0, gate: [ 4, 1 ], obstacles: 'rotor' }),
-    movement(41, run(fork(1, 3), narrows(1, 3, 1), narrows(1, 3, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(45, drum(3, 2, 0), { splitAfterLane: 0, gate: [ 3, 2 ], obstacles: 'rotor' }),
-    movement(54, run(flank(2, 4, 4), drum(2, 4, 1), flank(2, 4, 0)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'rotor', rowSpacing: 101 })
+    movement(45, flank(1, 2, 2, 3), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'rotor' }),
+    movement(41, run(fork(2, 3, 4), narrows(2, 3, 2, 5)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(45, drum(3, 4, 0, 5), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
+    movement(39, gift(4, 0, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(45, flank(0, 3, 3, 1), { splitAfterLane: 1, gate: [ 0, 3 ], obstacles: 'rotor' }),
+    movement(41, run(weave(3, 1, 2), narrows(3, 1, 1, 3)), { splitAfterLane: 0, gate: [ 3, 1 ], obstacles: 'static' }),
+    movement(43, run(drum(1, 2, 4, 3), narrows(1, 2, 1, 4), narrows(1, 2, 3, 5)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(50, run(flank(2, 0, 0, 4), flank(2, 0, 2, 5)), { splitAfterLane: 0, gate: [ 2, 0 ], obstacles: 'rotor' }),
+    movement(39, gift(0, 4, 5), { splitAfterLane: 1, gate: [ 0, 4 ] }),
+    movement(45, run(flank(4, 1, 1, 0), flank(4, 1, 1, 2)), { splitAfterLane: 0, gate: [ 4, 1 ], obstacles: 'rotor' }),
+    movement(41, run(fork(1, 3, 1), narrows(1, 3, 1, 2), narrows(1, 3, 2, 3), narrows(1, 3, 4, 4)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(45, run(flank(3, 2, 0, 1), flank(3, 2, 2, 3)), { splitAfterLane: 0, gate: [ 3, 2 ], obstacles: 'rotor' }),
+    movement(54, run(flank(2, 4, 4, 3), drum(2, 4, 1, 4), flank(2, 4, 0, 5)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'rotor', rowSpacing: 101 })
 ]));
 
 //  27. The tide.
@@ -378,19 +378,19 @@ LATE_LEVELS.push(late(26, [
 //  the single open lane widens and closes as the drop runs down it.
 LATE_LEVELS.push(late(27, [
     movement(39, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(47, drum(1, 2, 3), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'pulse' }),
-    movement(42, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(49, posts(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'pulse' }),
-    movement(39, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(47, posts(0, 2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'pulse' }),
-    movement(42, run(weave(2, 4), narrows(2, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(47, run(drum(4, 1, 3), narrows(4, 1, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'pulse' }),
-    movement(39, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(47, run(hurdles(3, 0, 0), narrows(3, 0, 3)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
-    movement(42, run(fork(0, 2), narrows(0, 2, 0), narrows(0, 2, 1), narrows(0, 2, 2)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(53, run(narrows(2, 4, 4), pinch(2, 4, 0)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'pulse' }),
-    movement(39, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(56, run(pinch(1, 3, 3), drum(1, 3, 0), narrows(1, 3, 1)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'pulse', rowSpacing: 101 })
+    movement(47, drum(1, 2, 3, 4), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'pulse' }),
+    movement(42, run(fork(2, 3, 5), narrows(2, 3, 2, 0)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(49, posts(3, 4, 0, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'pulse' }),
+    movement(39, gift(4, 0, 1), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(47, posts(0, 2, 2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'pulse' }),
+    movement(42, run(weave(2, 4, 3), narrows(2, 4, 1, 4)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(47, run(drum(4, 1, 3, 4), narrows(4, 1, 2, 5)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'pulse' }),
+    movement(39, gift(1, 3, 5), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(47, run(hurdles(3, 0, 0, 0), narrows(3, 0, 3, 1)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
+    movement(42, run(fork(0, 2, 1), narrows(0, 2, 0, 2), narrows(0, 2, 1, 3), narrows(0, 2, 2, 4)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(53, run(narrows(2, 4, 4, 2), pinch(2, 4, 0, 3)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'pulse' }),
+    movement(39, gift(4, 1, 3), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(56, run(pinch(1, 3, 3, 4), drum(1, 3, 0, 5), narrows(1, 3, 1, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'pulse', rowSpacing: 101 })
 ]));
 
 //  28. Alternating.
@@ -401,19 +401,19 @@ LATE_LEVELS.push(late(27, [
 //  orbs alternate outside lanes while a slider crosses between them.
 LATE_LEVELS.push(late(28, [
     movement(40, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(46, drum(1, 2, 4), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
-    movement(42, run(weave(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(46, posts(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
-    movement(40, gift(4, 2), { splitAfterLane: 0, gate: [ 4, 2 ] }),
-    movement(48, posts(2, 1, 1), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'slider' }),
-    movement(42, run(fork(1, 3), narrows(1, 3, 1)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(46, run(drum(3, 0, 2), narrows(3, 0, 3)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'pulse' }),
-    movement(42, run(weave(0, 4), narrows(0, 4, 3), narrows(0, 4, 4), narrows(0, 4, 0)), { splitAfterLane: 0, gate: [ 0, 4 ], obstacles: 'static' }),
-    movement(46, run(hurdles(4, 1, 1), narrows(4, 1, 4)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(40, gift(1, 2), { splitAfterLane: 0, gate: [ 1, 2 ] }),
-    movement(46, run(posts(2, 3, 3), posts(2, 3, 1)), { splitAfterLane: 1, gate: [ 2, 3 ], obstacles: 'slider' }),
-    movement(50, run(fork(3, 0), posts(3, 0, 2), posts(3, 0, 3), posts(3, 0, 4)), { splitAfterLane: 0, gate: [ 3, 0 ], obstacles: 'slider' }),
-    movement(56, run(drum(0, 4, 2), posts(0, 4, 4), posts(0, 4, 2)), { splitAfterLane: 1, gate: [ 0, 4 ], obstacles: 'slider', rowSpacing: 101 })
+    movement(46, drum(1, 2, 4, 5), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
+    movement(42, run(weave(2, 3, 0), narrows(2, 3, 2, 1)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(46, posts(3, 4, 0, 1), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
+    movement(40, gift(4, 2, 2), { splitAfterLane: 0, gate: [ 4, 2 ] }),
+    movement(48, posts(2, 1, 1, 3), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'slider' }),
+    movement(42, run(fork(1, 3, 4), narrows(1, 3, 1, 5)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(46, run(drum(3, 0, 2, 5), narrows(3, 0, 3, 0)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'pulse' }),
+    movement(42, run(weave(0, 4, 0), narrows(0, 4, 3, 1), narrows(0, 4, 4, 2), narrows(0, 4, 0, 3)), { splitAfterLane: 0, gate: [ 0, 4 ], obstacles: 'static' }),
+    movement(46, run(hurdles(4, 1, 1, 1), narrows(4, 1, 4, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(40, gift(1, 2, 2), { splitAfterLane: 0, gate: [ 1, 2 ] }),
+    movement(46, run(posts(2, 3, 3, 3), posts(2, 3, 1, 4)), { splitAfterLane: 1, gate: [ 2, 3 ], obstacles: 'slider' }),
+    movement(50, run(fork(3, 0, 4), posts(3, 0, 2, 5), posts(3, 0, 3, 0), posts(3, 0, 4, 1)), { splitAfterLane: 0, gate: [ 3, 0 ], obstacles: 'slider' }),
+    movement(56, run(drum(0, 4, 2, 5), posts(0, 4, 4, 0), posts(0, 4, 2, 1)), { splitAfterLane: 1, gate: [ 0, 4 ], obstacles: 'slider', rowSpacing: 101 })
 ]));
 
 //  29. Quick air.
@@ -424,19 +424,19 @@ LATE_LEVELS.push(late(28, [
 //  vaults for fifty rows at the tightest spacing in the band.
 LATE_LEVELS.push(late(29, [
     movement(41, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(48, vault(1, 2, 3), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(43, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(48, holes(3, 4), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(41, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(50, vault(0, 1, 2), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'static' }),
-    movement(43, run(weave(1, 3), narrows(1, 3, 1)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(48, run(drum(3, 4, 0), narrows(3, 4, 4)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'pulse' }),
-    movement(48, run(vault(4, 2, 1), narrows(4, 2, 0)), { splitAfterLane: 0, gate: [ 4, 2 ], obstacles: 'static' }),
-    movement(41, gift(2, 0), { splitAfterLane: 1, gate: [ 2, 0 ] }),
-    movement(48, holes(0, 3), { splitAfterLane: 0, gate: [ 0, 3 ], obstacles: 'static' }),
-    movement(43, run(fork(3, 1), narrows(3, 1, 1), narrows(3, 1, 2), narrows(3, 1, 3)), { splitAfterLane: 1, gate: [ 3, 1 ], obstacles: 'static' }),
-    movement(48, hurdles(1, 4, 4), { splitAfterLane: 0, gate: [ 1, 4 ], obstacles: 'static' }),
-    movement(59, run(vault(4, 3, 0), narrows(4, 3, 4)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'static', rowSpacing: 101 })
+    movement(48, vault(1, 2, 3, 0), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(43, run(fork(2, 3, 1), narrows(2, 3, 2, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(48, holes(3, 4, 2), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(41, gift(4, 0, 3), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(50, vault(0, 1, 2, 4), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'static' }),
+    movement(43, run(weave(1, 3, 5), narrows(1, 3, 1, 0)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(48, run(drum(3, 4, 0, 0), narrows(3, 4, 4, 1)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'pulse' }),
+    movement(48, run(vault(4, 2, 1, 1), narrows(4, 2, 0, 2)), { splitAfterLane: 0, gate: [ 4, 2 ], obstacles: 'static' }),
+    movement(41, gift(2, 0, 2), { splitAfterLane: 1, gate: [ 2, 0 ] }),
+    movement(48, holes(0, 3, 3), { splitAfterLane: 0, gate: [ 0, 3 ], obstacles: 'static' }),
+    movement(43, run(fork(3, 1, 4), narrows(3, 1, 1, 5), narrows(3, 1, 2, 0), narrows(3, 1, 3, 1)), { splitAfterLane: 1, gate: [ 3, 1 ], obstacles: 'static' }),
+    movement(48, hurdles(1, 4, 4, 5), { splitAfterLane: 0, gate: [ 1, 4 ], obstacles: 'static' }),
+    movement(59, run(vault(4, 3, 0, 0), narrows(4, 3, 4, 1)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'static', rowSpacing: 101 })
 ]));
 
 //  30. The gauntlet.
@@ -448,21 +448,21 @@ LATE_LEVELS.push(late(29, [
 //  consecutive movements here are the same kind of problem.
 LATE_LEVELS.push(late(30, [
     movement(37, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(42, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(42, drum(2, 3, 0), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'slider' }),
-    movement(42, pinch(3, 4, 4), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'pulse' }),
-    movement(40, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(44, flank(0, 1, 1), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'rotor' }),
-    movement(44, hurdles(1, 3, 3), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(44, run(holes(3, 2), narrows(3, 2, 0)), { splitAfterLane: 1, gate: [ 3, 2 ], obstacles: 'static' }),
-    movement(46, run(narrows(2, 4, 4), narrows(2, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(40, gift(4, 1), { splitAfterLane: 1, gate: [ 4, 1 ] }),
-    movement(44, vault(1, 0, 2), { splitAfterLane: 0, gate: [ 1, 0 ], obstacles: 'static' }),
-    movement(44, drum(0, 3, 1), { splitAfterLane: 1, gate: [ 0, 3 ], obstacles: 'rotor' }),
-    movement(44, run(chain(3, 2), narrows(3, 2, 2), narrows(3, 2, 3), narrows(3, 2, 4)), { splitAfterLane: 0, gate: [ 3, 2 ], obstacles: 'static' }),
-    movement(44, posts(2, 0, 0), { splitAfterLane: 1, gate: [ 2, 0 ], obstacles: 'slider' }),
+    movement(42, posts(1, 2, 2, 1), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(42, drum(2, 3, 0, 2), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'slider' }),
+    movement(42, pinch(3, 4, 4, 3), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'pulse' }),
+    movement(40, gift(4, 0, 4), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(44, flank(0, 1, 1, 5), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'rotor' }),
+    movement(44, hurdles(1, 3, 3, 0), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(44, run(holes(3, 2, 1), narrows(3, 2, 0, 2)), { splitAfterLane: 1, gate: [ 3, 2 ], obstacles: 'static' }),
+    movement(46, run(narrows(2, 4, 4, 2), narrows(2, 4, 1, 3)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(40, gift(4, 1, 3), { splitAfterLane: 1, gate: [ 4, 1 ] }),
+    movement(44, vault(1, 0, 2, 4), { splitAfterLane: 0, gate: [ 1, 0 ], obstacles: 'static' }),
+    movement(44, drum(0, 3, 1, 5), { splitAfterLane: 1, gate: [ 0, 3 ], obstacles: 'rotor' }),
+    movement(44, run(chain(3, 2, 0), narrows(3, 2, 2, 1), narrows(3, 2, 3, 2), narrows(3, 2, 4, 3)), { splitAfterLane: 0, gate: [ 3, 2 ], obstacles: 'static' }),
+    movement(44, posts(2, 0, 0, 1), { splitAfterLane: 1, gate: [ 2, 0 ], obstacles: 'slider' }),
     //  The finale takes one row from each of the four kinds in turn.
-    movement(57, run(vault(0, 4, 1), pinch(0, 4, 4), drum(0, 4, 2), narrows(0, 4, 1)), { splitAfterLane: 0, gate: [ 0, 4 ], obstacles: 'pulse', rowSpacing: 101 })
+    movement(57, run(vault(0, 4, 1, 2), pinch(0, 4, 4, 3), drum(0, 4, 2, 4), narrows(0, 4, 1, 5)), { splitAfterLane: 0, gate: [ 0, 4 ], obstacles: 'pulse', rowSpacing: 101 })
 ]));
 
 //  ---------------------------------------------------------------------------
@@ -483,19 +483,19 @@ LATE_LEVELS.push(late(30, [
 //  outside lane runs directly into a pinch that has closed that lane.
 LATE_LEVELS.push(late(31, [
     movement(43, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(48, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(46, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(53, run(seam(4, 2), pinch(3, 4, 0), seam(3, 0), pinch(3, 4, 1)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(43, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(51, run(seam(2, 0), seam(0, 2), posts(0, 2, 3)), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(46, run(weave(2, 4), narrows(2, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(51, run(seam(1, 2), narrows(4, 1, 1), narrows(4, 1, 4)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(43, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(51, run(drum(3, 0, 2), posts(3, 0, 1)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'slider' }),
-    movement(46, run(fork(0, 2), narrows(0, 2, 0), narrows(0, 2, 1), narrows(0, 2, 2)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(53, run(seam(4, 0), pinch(2, 4, 4), seam(2, 2), pinch(2, 4, 3), narrows(2, 4, 3)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(43, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(58, run(seam(3, 2), narrows(1, 3, 0), seam(1, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 102 })
+    movement(48, posts(1, 2, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(46, run(fork(2, 3, 3), narrows(2, 3, 2, 4)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(53, run(seam(4, 2), pinch(3, 4, 0, 4), seam(3, 0), pinch(3, 4, 1, 5)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(43, gift(4, 0, 5), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(51, run(seam(2, 0), seam(0, 2), posts(0, 2, 3, 0)), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(46, run(weave(2, 4, 1), narrows(2, 4, 1, 2)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(51, run(seam(1, 2), narrows(4, 1, 1, 2), narrows(4, 1, 4, 3)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(43, gift(1, 3, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(51, run(drum(3, 0, 2, 4), posts(3, 0, 1, 5)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'slider' }),
+    movement(46, run(fork(0, 2, 5), narrows(0, 2, 0, 0), narrows(0, 2, 1, 1), narrows(0, 2, 2, 2)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(53, run(seam(4, 0), pinch(2, 4, 4, 0), seam(2, 2), pinch(2, 4, 3, 1), narrows(2, 4, 3, 2)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(43, gift(4, 1, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(58, run(seam(3, 2), narrows(1, 3, 0, 2), seam(1, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 102 })
 ]));
 
 //  32. Second thoughts.
@@ -506,19 +506,19 @@ LATE_LEVELS.push(late(31, [
 //  section is forty rows of the colour that was on the other side.
 LATE_LEVELS.push(late(32, [
     movement(44, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(48, chain(1, 2), { splitAfterLane: 1, gate: [ 1, 2 ], gateSwap: true }),
-    movement(46, posts(2, 3, 3), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(51, drum(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], gateSwap: true, obstacles: 'static' }),
-    movement(44, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(51, fork(0, 2), { splitAfterLane: 1, gate: [ 0, 2 ], gateSwap: true }),
-    movement(46, run(weave(2, 1), narrows(2, 1, 1)), { splitAfterLane: 0, gate: [ 2, 1 ], obstacles: 'static' }),
-    movement(51, run(pinch(1, 3, 3), narrows(1, 3, 4)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'pulse' }),
-    movement(44, gift(3, 0), { splitAfterLane: 0, gate: [ 3, 0 ] }),
-    movement(51, run(drum(0, 4, 1), posts(0, 4, 1)), { splitAfterLane: 1, gate: [ 0, 4 ], gateSwap: true, obstacles: 'slider' }),
-    movement(53, run(chain(4, 2), narrows(4, 2, 0), narrows(4, 2, 1), narrows(4, 2, 2)), { splitAfterLane: 0, gate: [ 4, 2 ], gateSwap: true }),
-    movement(46, run(fork(2, 1), narrows(2, 1, 1), narrows(2, 1, 2), narrows(2, 1, 3)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
-    movement(51, run(narrows(1, 3, 3), narrows(1, 3, 4)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(60, run(chain(3, 0), narrows(3, 0, 3), narrows(3, 0, 4), narrows(3, 0, 0)), { splitAfterLane: 1, gate: [ 3, 0 ], gateSwap: true, obstacles: 'static', rowSpacing: 102 })
+    movement(48, chain(1, 2, 3), { splitAfterLane: 1, gate: [ 1, 2 ], gateSwap: true }),
+    movement(46, posts(2, 3, 3, 4), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(51, drum(3, 4, 0, 5), { splitAfterLane: 1, gate: [ 3, 4 ], gateSwap: true, obstacles: 'static' }),
+    movement(44, gift(4, 0, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(51, fork(0, 2, 1), { splitAfterLane: 1, gate: [ 0, 2 ], gateSwap: true }),
+    movement(46, run(weave(2, 1, 2), narrows(2, 1, 1, 3)), { splitAfterLane: 0, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(51, run(pinch(1, 3, 3, 3), narrows(1, 3, 4, 4)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'pulse' }),
+    movement(44, gift(3, 0, 4), { splitAfterLane: 0, gate: [ 3, 0 ] }),
+    movement(51, run(drum(0, 4, 1, 5), posts(0, 4, 1, 0)), { splitAfterLane: 1, gate: [ 0, 4 ], gateSwap: true, obstacles: 'slider' }),
+    movement(53, run(chain(4, 2, 0), narrows(4, 2, 0, 1), narrows(4, 2, 1, 2), narrows(4, 2, 2, 3)), { splitAfterLane: 0, gate: [ 4, 2 ], gateSwap: true }),
+    movement(46, run(fork(2, 1, 1), narrows(2, 1, 1, 2), narrows(2, 1, 2, 3), narrows(2, 1, 3, 4)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(51, run(narrows(1, 3, 3, 2), narrows(1, 3, 4, 3)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(60, run(chain(3, 0, 3), narrows(3, 0, 3, 4), narrows(3, 0, 4, 5), narrows(3, 0, 0, 0)), { splitAfterLane: 1, gate: [ 3, 0 ], gateSwap: true, obstacles: 'static', rowSpacing: 102 })
 ]));
 
 //  33. The vanishing.
@@ -529,19 +529,19 @@ LATE_LEVELS.push(late(32, [
 //  the solid ones are the same shape on the road until they blink.
 LATE_LEVELS.push(late(33, [
     movement(44, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(49, holes(1, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(47, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(52, holes(3, 4), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'blinker' }),
-    movement(44, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(52, posts(0, 2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'blinker' }),
-    movement(47, run(weave(2, 4), narrows(2, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(52, run(hurdles(4, 1, 1), narrows(4, 1, 4)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(44, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(52, run(drum(3, 0, 2), narrows(3, 0, 1)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'blinker' }),
-    movement(47, run(fork(0, 2), narrows(0, 2, 0), narrows(0, 2, 1), narrows(0, 2, 2), narrows(0, 2, 3)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(56, run(holes(2, 4), pinch(2, 4, 4), narrows(2, 4, 3)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'blinker' }),
-    movement(44, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(61, run(holes(1, 3), vault(1, 3, 0), narrows(1, 3, 3), narrows(1, 3, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'blinker', rowSpacing: 102 })
+    movement(49, holes(1, 2, 4), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(47, run(fork(2, 3, 5), narrows(2, 3, 2, 0)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(52, holes(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'blinker' }),
+    movement(44, gift(4, 0, 1), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(52, posts(0, 2, 2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'blinker' }),
+    movement(47, run(weave(2, 4, 3), narrows(2, 4, 1, 4)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(52, run(hurdles(4, 1, 1, 4), narrows(4, 1, 4, 5)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(44, gift(1, 3, 5), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(52, run(drum(3, 0, 2, 0), narrows(3, 0, 1, 1)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'blinker' }),
+    movement(47, run(fork(0, 2, 1), narrows(0, 2, 0, 2), narrows(0, 2, 1, 3), narrows(0, 2, 2, 4), narrows(0, 2, 3, 5)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(56, run(holes(2, 4, 2), pinch(2, 4, 4, 3), narrows(2, 4, 3, 4)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'blinker' }),
+    movement(44, gift(4, 1, 3), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(61, run(holes(1, 3, 4), vault(1, 3, 0, 5), narrows(1, 3, 3, 0), narrows(1, 3, 0, 1)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'blinker', rowSpacing: 102 })
 ]));
 
 //  34. The wrong door.
@@ -553,19 +553,19 @@ LATE_LEVELS.push(late(33, [
 //  on the side the previous four gates all rewarded.
 LATE_LEVELS.push(late(34, [
     movement(45, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(50, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(48, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(50, drum(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
-    movement(45, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(52, chain(2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'static' }),
-    movement(48, run(weave(2, 1), narrows(2, 1, 1)), { splitAfterLane: 0, gate: [ 2, 1 ], obstacles: 'static' }),
-    movement(52, run(chain(3, 3), narrows(1, 3, 2), narrows(1, 3, 3), narrows(1, 3, 4), narrows(1, 3, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], gateSealed: 0, obstacles: 'pulse' }),
-    movement(45, gift(3, 0), { splitAfterLane: 0, gate: [ 3, 0 ] }),
-    movement(52, run(pinch(0, 4, 4), narrows(0, 4, 1)), { splitAfterLane: 1, gate: [ 0, 4 ], obstacles: 'static' }),
-    movement(52, run(chain(4, 4), narrows(4, 2, 0), narrows(4, 2, 1), narrows(4, 2, 2), narrows(4, 2, 3)), { splitAfterLane: 0, gate: [ 4, 2 ], gateSealed: 1, obstacles: 'static' }),
-    movement(48, run(fork(2, 1), narrows(2, 1, 1), narrows(2, 1, 2), narrows(2, 1, 3), narrows(2, 1, 4)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
-    movement(52, run(narrows(1, 3, 3), narrows(1, 3, 4)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(60, run(chain(0, 0), pinch(3, 0, 2), narrows(3, 0, 4), narrows(3, 0, 0)), { splitAfterLane: 1, gate: [ 3, 0 ], gateSealed: 0, obstacles: 'static', rowSpacing: 102 })
+    movement(50, posts(1, 2, 2, 5), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(48, run(fork(2, 3, 0), narrows(2, 3, 2, 1)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(50, drum(3, 4, 0, 1), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
+    movement(45, gift(4, 0, 2), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(52, chain(2, 2, 3), { splitAfterLane: 1, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'static' }),
+    movement(48, run(weave(2, 1, 4), narrows(2, 1, 1, 5)), { splitAfterLane: 0, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(52, run(chain(3, 3, 5), narrows(1, 3, 2, 0), narrows(1, 3, 3, 1), narrows(1, 3, 4, 2), narrows(1, 3, 0, 3)), { splitAfterLane: 1, gate: [ 1, 3 ], gateSealed: 0, obstacles: 'pulse' }),
+    movement(45, gift(3, 0, 0), { splitAfterLane: 0, gate: [ 3, 0 ] }),
+    movement(52, run(pinch(0, 4, 4, 1), narrows(0, 4, 1, 2)), { splitAfterLane: 1, gate: [ 0, 4 ], obstacles: 'static' }),
+    movement(52, run(chain(4, 4, 2), narrows(4, 2, 0, 3), narrows(4, 2, 1, 4), narrows(4, 2, 2, 5), narrows(4, 2, 3, 0)), { splitAfterLane: 0, gate: [ 4, 2 ], gateSealed: 1, obstacles: 'static' }),
+    movement(48, run(fork(2, 1, 3), narrows(2, 1, 1, 4), narrows(2, 1, 2, 5), narrows(2, 1, 3, 0), narrows(2, 1, 4, 1)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(52, run(narrows(1, 3, 3, 4), narrows(1, 3, 4, 5)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(60, run(chain(0, 0, 5), pinch(3, 0, 2, 0), narrows(3, 0, 4, 1), narrows(3, 0, 0, 2)), { splitAfterLane: 1, gate: [ 3, 0 ], gateSealed: 0, obstacles: 'static', rowSpacing: 102 })
 ]));
 
 //  35. The long con.
@@ -577,19 +577,19 @@ LATE_LEVELS.push(late(34, [
 //  only place in the game where two gates in a row are both not what they seem.
 LATE_LEVELS.push(late(35, [
     movement(45, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(50, run(seam(2, 0), posts(1, 2, 2)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(48, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(53, drum(3, 4, 1), { splitAfterLane: 1, gate: [ 3, 4 ], gateSwap: true, obstacles: 'static' }),
-    movement(45, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(53, chain(2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'slider' }),
-    movement(48, run(weave(2, 4), narrows(2, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(53, run(seam(1, 2), narrows(4, 1, 0), narrows(4, 1, 4)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(45, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(53, run(drum(3, 0, 4), narrows(3, 0, 1), narrows(3, 0, 3)), { splitAfterLane: 1, gate: [ 3, 0 ], gateSwap: true, obstacles: 'pulse' }),
-    movement(53, run(chain(2, 2), narrows(0, 2, 0), narrows(0, 2, 1), narrows(0, 2, 2), narrows(0, 2, 3)), { splitAfterLane: 0, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'static' }),
-    movement(48, run(fork(2, 1), narrows(2, 1, 1), narrows(2, 1, 2), narrows(2, 1, 3), narrows(2, 1, 4)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
-    movement(55, run(seam(3, 2), pinch(1, 3, 3), seam(1, 0), narrows(1, 3, 4)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'blinker' }),
-    movement(62, run(chain(4, 4), narrows(3, 4, 3), narrows(3, 4, 4), narrows(3, 4, 0), narrows(3, 4, 1)), { splitAfterLane: 1, gate: [ 3, 4 ], gateSealed: 0, obstacles: 'static', rowSpacing: 102 })
+    movement(50, run(seam(2, 0), posts(1, 2, 2, 0)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(48, run(fork(2, 3, 1), narrows(2, 3, 2, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(53, drum(3, 4, 1, 2), { splitAfterLane: 1, gate: [ 3, 4 ], gateSwap: true, obstacles: 'static' }),
+    movement(45, gift(4, 0, 3), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(53, chain(2, 2, 4), { splitAfterLane: 1, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'slider' }),
+    movement(48, run(weave(2, 4, 5), narrows(2, 4, 1, 0)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(53, run(seam(1, 2), narrows(4, 1, 0, 0), narrows(4, 1, 4, 1)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(45, gift(1, 3, 1), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(53, run(drum(3, 0, 4, 2), narrows(3, 0, 1, 3), narrows(3, 0, 3, 4)), { splitAfterLane: 1, gate: [ 3, 0 ], gateSwap: true, obstacles: 'pulse' }),
+    movement(53, run(chain(2, 2, 3), narrows(0, 2, 0, 4), narrows(0, 2, 1, 5), narrows(0, 2, 2, 0), narrows(0, 2, 3, 1)), { splitAfterLane: 0, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'static' }),
+    movement(48, run(fork(2, 1, 4), narrows(2, 1, 1, 5), narrows(2, 1, 2, 0), narrows(2, 1, 3, 1), narrows(2, 1, 4, 2)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(55, run(seam(3, 2), pinch(1, 3, 3, 5), seam(1, 0), narrows(1, 3, 4, 0)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'blinker' }),
+    movement(62, run(chain(4, 4, 0), narrows(3, 4, 3, 1), narrows(3, 4, 4, 2), narrows(3, 4, 0, 3), narrows(3, 4, 1, 4)), { splitAfterLane: 1, gate: [ 3, 4 ], gateSealed: 0, obstacles: 'static', rowSpacing: 102 })
 ]));
 
 //  ---------------------------------------------------------------------------
@@ -609,19 +609,19 @@ LATE_LEVELS.push(late(35, [
 //  lane is paved with orbs and walled in, and the inside lane is empty and free.
 LATE_LEVELS.push(late(36, [
     movement(46, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(51, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(49, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(58, run(seam(4, 2), pinch(3, 4, 0), seam(3, 2)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(46, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(55, run(seam(2, 0), narrows(0, 2, 3)), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(49, run(weave(2, 4), narrows(2, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(55, run(drum(4, 1, 0), posts(4, 1, 4)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'slider' }),
-    movement(46, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(58, run(seam(0, 0), seam(3, 0), pinch(3, 0, 2), narrows(3, 0, 1)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'pulse' }),
-    movement(49, run(fork(0, 2), narrows(0, 2, 0), narrows(0, 2, 1), narrows(0, 2, 2), narrows(0, 2, 3)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(55, run(hurdles(2, 4, 4), narrows(2, 4, 1), narrows(2, 4, 3)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(46, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(65, run(seam(3, 2), pinch(1, 3, 3), seam(1, 2), narrows(1, 3, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 103 })
+    movement(51, posts(1, 2, 2, 1), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(49, run(fork(2, 3, 2), narrows(2, 3, 2, 3)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(58, run(seam(4, 2), pinch(3, 4, 0, 3), seam(3, 2)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(46, gift(4, 0, 4), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(55, run(seam(2, 0), narrows(0, 2, 3, 5)), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(49, run(weave(2, 4, 0), narrows(2, 4, 1, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(55, run(drum(4, 1, 0, 1), posts(4, 1, 4, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'slider' }),
+    movement(46, gift(1, 3, 2), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(58, run(seam(0, 0), seam(3, 0), pinch(3, 0, 2, 3), narrows(3, 0, 1, 4)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'pulse' }),
+    movement(49, run(fork(0, 2, 4), narrows(0, 2, 0, 5), narrows(0, 2, 1, 0), narrows(0, 2, 2, 1), narrows(0, 2, 3, 2)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(55, run(hurdles(2, 4, 4, 5), narrows(2, 4, 1, 0), narrows(2, 4, 3, 1)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(46, gift(4, 1, 0), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(65, run(seam(3, 2), pinch(1, 3, 3, 1), seam(1, 2), narrows(1, 3, 0, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 103 })
 ]));
 
 //  37. The toll.
@@ -633,19 +633,19 @@ LATE_LEVELS.push(late(36, [
 //  it are worth more than the toll only to a player who takes nearly all of them.
 LATE_LEVELS.push(late(37, [
     movement(47, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(52, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(50, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(52, drum(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
-    movement(47, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(58, gift(0, 2), { splitAfterLane: 1, gate: [ 0, 2 ], drain: 12 }),
-    movement(50, run(weave(2, 4), narrows(2, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(56, run(gift(4, 1), pinch(4, 1, 3)), { splitAfterLane: 1, gate: [ 4, 1 ], drain: 12, obstacles: 'static' }),
-    movement(47, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(56, narrows(3, 0, 0), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
-    movement(50, run(fork(0, 2), narrows(0, 2, 0), narrows(0, 2, 1), narrows(0, 2, 2), narrows(0, 2, 3)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(58, run(gift(2, 4), narrows(2, 4, 1)), { splitAfterLane: 1, gate: [ 2, 4 ], drain: 14, drainColor: 4, obstacles: 'static' }),
-    movement(47, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(66, run(gift(1, 3), pinch(1, 3, 0), drum(1, 3, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], drain: 12, obstacles: 'static', rowSpacing: 103 })
+    movement(52, posts(1, 2, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(50, run(fork(2, 3, 3), narrows(2, 3, 2, 4)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(52, drum(3, 4, 0, 4), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
+    movement(47, gift(4, 0, 5), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(58, gift(0, 2, 0), { splitAfterLane: 1, gate: [ 0, 2 ], drain: 12 }),
+    movement(50, run(weave(2, 4, 1), narrows(2, 4, 1, 2)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(56, run(gift(4, 1, 2), pinch(4, 1, 3, 3)), { splitAfterLane: 1, gate: [ 4, 1 ], drain: 12, obstacles: 'static' }),
+    movement(47, gift(1, 3, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(56, narrows(3, 0, 0, 4), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
+    movement(50, run(fork(0, 2, 5), narrows(0, 2, 0, 0), narrows(0, 2, 1, 1), narrows(0, 2, 2, 2), narrows(0, 2, 3, 3)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(58, run(gift(2, 4, 0), narrows(2, 4, 1, 1)), { splitAfterLane: 1, gate: [ 2, 4 ], drain: 14, drainColor: 4, obstacles: 'static' }),
+    movement(47, gift(4, 1, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(66, run(gift(1, 3, 2), pinch(1, 3, 0, 3), drum(1, 3, 2, 4)), { splitAfterLane: 1, gate: [ 1, 3 ], drain: 12, obstacles: 'static', rowSpacing: 103 })
 ]));
 
 //  38. The shortcut.
@@ -657,19 +657,19 @@ LATE_LEVELS.push(late(37, [
 //  with nothing, or come down into the lane and collect.
 LATE_LEVELS.push(late(38, [
     movement(47, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(53, vault(1, 2, 3), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(51, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(56, run(seam(4, 0), hurdles(3, 4, 4)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(47, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(56, holes(0, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(61, run(seam(4, 2), hurdles(2, 4, 1), seam(2, 0), hurdles(2, 4, 3)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(51, run(weave(4, 1), narrows(4, 1, 2), narrows(4, 1, 3), narrows(4, 1, 4), narrows(4, 1, 0)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(47, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(56, vault(3, 0, 2), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
-    movement(51, run(fork(0, 2), narrows(0, 2, 0), narrows(0, 2, 1), narrows(0, 2, 2), narrows(0, 2, 3)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(59, run(seam(4, 0), holes(2, 4), seam(2, 2)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(47, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(66, run(seam(3, 2), vault(1, 3, 0), seam(1, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 103 })
+    movement(53, vault(1, 2, 3, 3), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(51, run(fork(2, 3, 4), narrows(2, 3, 2, 5)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(56, run(seam(4, 0), hurdles(3, 4, 4, 5)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(47, gift(4, 0, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(56, holes(0, 2, 1), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(61, run(seam(4, 2), hurdles(2, 4, 1, 2), seam(2, 0), hurdles(2, 4, 3, 3)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(51, run(weave(4, 1, 3), narrows(4, 1, 2, 4), narrows(4, 1, 3, 5), narrows(4, 1, 4, 0), narrows(4, 1, 0, 1)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(47, gift(1, 3, 4), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(56, vault(3, 0, 2, 5), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
+    movement(51, run(fork(0, 2, 0), narrows(0, 2, 0, 1), narrows(0, 2, 1, 2), narrows(0, 2, 2, 3), narrows(0, 2, 3, 4)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(59, run(seam(4, 0), holes(2, 4, 1), seam(2, 2)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(47, gift(4, 1, 2), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(66, run(seam(3, 2), vault(1, 3, 0, 3), seam(1, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 103 })
 ]));
 
 //  39. The narrow bridge.
@@ -681,19 +681,19 @@ LATE_LEVELS.push(late(38, [
 //  walking single lane with the drain on the whole way.
 LATE_LEVELS.push(late(39, [
     movement(48, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(54, narrows(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(50, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(57, run(gift(3, 4), pinch(3, 4, 0)), { splitAfterLane: 1, gate: [ 3, 4 ], drain: 12 }),
-    movement(48, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(57, narrows(0, 2, 3), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(50, run(weave(2, 4), narrows(2, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(57, run(drum(4, 1, 0), flank(4, 1, 2), flank(4, 1, 3)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'rotor' }),
-    movement(48, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(62, run(narrows(3, 0, 0), narrows(3, 0, 4), narrows(3, 0, 3)), { splitAfterLane: 1, gate: [ 3, 0 ], drain: 12, obstacles: 'static' }),
-    movement(50, run(fork(0, 2), narrows(0, 2, 0), narrows(0, 2, 1), narrows(0, 2, 2), narrows(0, 2, 3), narrows(0, 2, 4)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(57, run(seam(4, 1), posts(2, 4, 4), posts(2, 4, 1), posts(2, 4, 3), posts(2, 4, 0)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'slider' }),
-    movement(48, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(70, run(narrows(1, 3, 0), pinch(1, 3, 2), narrows(1, 3, 4)), { splitAfterLane: 1, gate: [ 1, 3 ], drain: 12, obstacles: 'static', rowSpacing: 103 })
+    movement(54, narrows(1, 2, 2, 4), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(50, run(fork(2, 3, 5), narrows(2, 3, 2, 0)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(57, run(gift(3, 4, 0), pinch(3, 4, 0, 1)), { splitAfterLane: 1, gate: [ 3, 4 ], drain: 12 }),
+    movement(48, gift(4, 0, 1), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(57, narrows(0, 2, 3, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(50, run(weave(2, 4, 3), narrows(2, 4, 1, 4)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(57, run(drum(4, 1, 0, 4), flank(4, 1, 2, 5), flank(4, 1, 3, 0)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'rotor' }),
+    movement(48, gift(1, 3, 5), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(62, run(narrows(3, 0, 0, 0), narrows(3, 0, 4, 1), narrows(3, 0, 3, 2)), { splitAfterLane: 1, gate: [ 3, 0 ], drain: 12, obstacles: 'static' }),
+    movement(50, run(fork(0, 2, 1), narrows(0, 2, 0, 2), narrows(0, 2, 1, 3), narrows(0, 2, 2, 4), narrows(0, 2, 3, 5), narrows(0, 2, 4, 0)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(57, run(seam(4, 1), posts(2, 4, 4, 2), posts(2, 4, 1, 3), posts(2, 4, 3, 4), posts(2, 4, 0, 5)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'slider' }),
+    movement(48, gift(4, 1, 3), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(70, run(narrows(1, 3, 0, 4), pinch(1, 3, 2, 5), narrows(1, 3, 4, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], drain: 12, obstacles: 'static', rowSpacing: 103 })
 ]));
 
 //  40. What it is worth.
@@ -705,19 +705,19 @@ LATE_LEVELS.push(late(39, [
 //  is the only route in the game whose rich side is worth less than it costs.
 LATE_LEVELS.push(late(40, [
     movement(48, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(54, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
-    movement(60, run(seam(3, 0), seam(2, 0), pinch(2, 3, 3)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(52, run(fork(3, 4), narrows(3, 4, 3)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(48, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(57, drum(0, 2, 1), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'rotor' }),
-    movement(60, run(gift(2, 4), pinch(2, 4, 0)), { splitAfterLane: 0, gate: [ 2, 4 ], drain: 12 }),
-    movement(52, run(weave(4, 1), narrows(4, 1, 2), narrows(4, 1, 3), narrows(4, 1, 4), narrows(4, 1, 0), narrows(4, 1, 1)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(48, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(57, hurdles(3, 0, 0), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
-    movement(52, run(fork(0, 2), narrows(0, 2, 0), narrows(0, 2, 1), narrows(0, 2, 2), narrows(0, 2, 3), narrows(0, 2, 4)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(62, run(seam(4, 2), narrows(2, 4, 4), seam(2, 0)), { splitAfterLane: 1, gate: [ 2, 4 ], drain: 14, drainColor: 2, obstacles: 'static' }),
-    movement(48, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(70, run(gift(1, 3), narrows(1, 3, 0), vault(1, 3, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 104 })
+    movement(54, posts(1, 2, 2, 5), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
+    movement(60, run(seam(3, 0), seam(2, 0), pinch(2, 3, 3, 0)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(52, run(fork(3, 4, 1), narrows(3, 4, 3, 2)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(48, gift(4, 0, 2), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(57, drum(0, 2, 1, 3), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'rotor' }),
+    movement(60, run(gift(2, 4, 4), pinch(2, 4, 0, 5)), { splitAfterLane: 0, gate: [ 2, 4 ], drain: 12 }),
+    movement(52, run(weave(4, 1, 5), narrows(4, 1, 2, 0), narrows(4, 1, 3, 1), narrows(4, 1, 4, 2), narrows(4, 1, 0, 3), narrows(4, 1, 1, 4)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(48, gift(1, 3, 0), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(57, hurdles(3, 0, 0, 1), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
+    movement(52, run(fork(0, 2, 2), narrows(0, 2, 0, 3), narrows(0, 2, 1, 4), narrows(0, 2, 2, 5), narrows(0, 2, 3, 0), narrows(0, 2, 4, 1)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(62, run(seam(4, 2), narrows(2, 4, 4, 3), seam(2, 0)), { splitAfterLane: 1, gate: [ 2, 4 ], drain: 14, drainColor: 2, obstacles: 'static' }),
+    movement(48, gift(4, 1, 4), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(70, run(gift(1, 3, 5), narrows(1, 3, 0, 0), vault(1, 3, 2, 1)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 104 })
 ]));
 
 //  ---------------------------------------------------------------------------
@@ -738,19 +738,19 @@ LATE_LEVELS.push(late(40, [
 //  movement in it, and it is the third of fifteen.
 LATE_LEVELS.push(late(41, [
     movement(47, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(56, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
-    movement(47, gift(2, 3), { splitAfterLane: 0, gate: [ 2, 3 ] }),
-    movement(59, drum(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
-    movement(56, pinch(4, 0, 1), { splitAfterLane: 0, gate: [ 4, 0 ], obstacles: 'pulse' }),
-    movement(59, narrows(0, 2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(56, hurdles(2, 4, 3), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(59, gift(4, 1), { splitAfterLane: 1, gate: [ 4, 1 ] }),
-    movement(56, vault(1, 3, 2), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
-    movement(59, flank(3, 0, 0), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'rotor' }),
-    movement(56, holes(0, 2), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'blinker' }),
-    movement(59, narrows(2, 4, 4), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(56, drum(4, 1, 3), { splitAfterLane: 0, gate: [ 4, 1 ], obstacles: 'pulse' }),
-    movement(69, run(vault(1, 3, 0), posts(1, 3, 3), drum(1, 3, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'slider', rowSpacing: 104 })
+    movement(56, posts(1, 2, 2, 0), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
+    movement(47, gift(2, 3, 1), { splitAfterLane: 0, gate: [ 2, 3 ] }),
+    movement(59, drum(3, 4, 0, 2), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
+    movement(56, pinch(4, 0, 1, 3), { splitAfterLane: 0, gate: [ 4, 0 ], obstacles: 'pulse' }),
+    movement(59, narrows(0, 2, 2, 4), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(56, hurdles(2, 4, 3, 5), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(59, gift(4, 1, 0), { splitAfterLane: 1, gate: [ 4, 1 ] }),
+    movement(56, vault(1, 3, 2, 1), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static' }),
+    movement(59, flank(3, 0, 0, 2), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'rotor' }),
+    movement(56, holes(0, 2, 3), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'blinker' }),
+    movement(59, narrows(2, 4, 4, 4), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(56, drum(4, 1, 3, 5), { splitAfterLane: 0, gate: [ 4, 1 ], obstacles: 'pulse' }),
+    movement(69, run(vault(1, 3, 0, 0), posts(1, 3, 3, 1), drum(1, 3, 2, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'slider', rowSpacing: 104 })
 ]));
 
 //  42. The squeeze.
@@ -762,19 +762,19 @@ LATE_LEVELS.push(late(41, [
 //  last, ending at the closest rows in the game.
 LATE_LEVELS.push(late(42, [
     movement(52, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(57, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(55, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(60, drum(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
-    movement(52, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(60, pinch(0, 2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'pulse' }),
-    movement(55, run(weave(2, 4), narrows(2, 4, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(52, gift(4, 1), { splitAfterLane: 1, gate: [ 4, 1 ] }),
-    movement(60, run(drum(1, 3, 0), narrows(1, 3, 2), narrows(1, 3, 4)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 108 }),
-    movement(60, run(posts(3, 0, 2), posts(3, 0, 4), posts(3, 0, 1)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'slider', rowSpacing: 106 }),
-    movement(60, narrows(0, 2, 4), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static', rowSpacing: 104 }),
-    movement(60, run(drum(2, 4, 1), flank(2, 4, 3), flank(2, 4, 0)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'rotor', rowSpacing: 104 }),
-    movement(52, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(75, run(pinch(1, 3, 3), vault(1, 3, 0), drum(1, 3, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'pulse', rowSpacing: 104 })
+    movement(57, posts(1, 2, 2, 1), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(55, run(fork(2, 3, 2), narrows(2, 3, 2, 3)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(60, drum(3, 4, 0, 3), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'slider' }),
+    movement(52, gift(4, 0, 4), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(60, pinch(0, 2, 2, 5), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'pulse' }),
+    movement(55, run(weave(2, 4, 0), narrows(2, 4, 1, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(52, gift(4, 1, 1), { splitAfterLane: 1, gate: [ 4, 1 ] }),
+    movement(60, run(drum(1, 3, 0, 2), narrows(1, 3, 2, 3), narrows(1, 3, 4, 4)), { splitAfterLane: 0, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 108 }),
+    movement(60, run(posts(3, 0, 2, 3), posts(3, 0, 4, 4), posts(3, 0, 1, 5)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'slider', rowSpacing: 106 }),
+    movement(60, narrows(0, 2, 4, 4), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static', rowSpacing: 104 }),
+    movement(60, run(drum(2, 4, 1, 5), flank(2, 4, 3, 0), flank(2, 4, 0, 1)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'rotor', rowSpacing: 104 }),
+    movement(52, gift(4, 1, 0), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(75, run(pinch(1, 3, 3, 1), vault(1, 3, 0, 2), drum(1, 3, 2, 3)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'pulse', rowSpacing: 104 })
 ]));
 
 //  43. Crosswinds.
@@ -785,19 +785,19 @@ LATE_LEVELS.push(late(42, [
 //  straight into a turning one and the gap between them is four rows.
 LATE_LEVELS.push(late(43, [
     movement(51, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(59, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
-    movement(54, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(59, drum(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
-    movement(51, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(62, posts(0, 2, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'slider' }),
-    movement(59, flank(2, 4, 4), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'rotor' }),
-    movement(54, run(weave(4, 1), narrows(4, 1, 2), narrows(4, 1, 3), narrows(4, 1, 4), narrows(4, 1, 0), narrows(4, 1, 1)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(51, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(62, drum(3, 0, 2), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'slider' }),
-    movement(59, flank(0, 2, 4), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'rotor' }),
-    movement(67, run(posts(2, 4, 0), posts(2, 4, 4)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'slider' }),
-    movement(51, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(73, run(drum(1, 3, 0), flank(1, 3, 3), flank(1, 3, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'rotor', rowSpacing: 104 })
+    movement(59, posts(1, 2, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
+    movement(54, run(fork(2, 3, 3), narrows(2, 3, 2, 4)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(59, drum(3, 4, 0, 4), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
+    movement(51, gift(4, 0, 5), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(62, posts(0, 2, 2, 0), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'slider' }),
+    movement(59, flank(2, 4, 4, 1), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'rotor' }),
+    movement(54, run(weave(4, 1, 2), narrows(4, 1, 2, 3), narrows(4, 1, 3, 4), narrows(4, 1, 4, 5), narrows(4, 1, 0, 0), narrows(4, 1, 1, 1)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(51, gift(1, 3, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(62, drum(3, 0, 2, 4), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'slider' }),
+    movement(59, flank(0, 2, 4, 5), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'rotor' }),
+    movement(67, run(posts(2, 4, 0, 0), posts(2, 4, 4, 1)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'slider' }),
+    movement(51, gift(4, 1, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(73, run(drum(1, 3, 0, 2), flank(1, 3, 3, 3), flank(1, 3, 2, 4)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'rotor', rowSpacing: 104 })
 ]));
 
 //  44. The drumline.
@@ -808,19 +808,19 @@ LATE_LEVELS.push(late(43, [
 //  instead of every sixth and nothing on the road says so beforehand.
 LATE_LEVELS.push(late(44, [
     movement(51, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(60, hurdles(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(54, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(62, vault(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(51, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(60, holes(0, 2), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(60, hurdles(2, 4, 3), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'pulse' }),
-    movement(54, run(weave(4, 1), narrows(4, 1, 2), narrows(4, 1, 3), narrows(4, 1, 4), narrows(4, 1, 0), narrows(4, 1, 1)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(51, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(62, vault(3, 0, 2), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
-    movement(65, run(vault(0, 2, 1), vault(0, 2, 3)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(60, holes(2, 4), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'blinker' }),
-    movement(51, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(77, run(vault(1, 3, 0), hurdles(1, 3, 2), holes(1, 3)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 105 })
+    movement(60, hurdles(1, 2, 2, 3), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(54, run(fork(2, 3, 4), narrows(2, 3, 2, 5)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(62, vault(3, 4, 0, 5), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(51, gift(4, 0, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(60, holes(0, 2, 1), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(60, hurdles(2, 4, 3, 2), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'pulse' }),
+    movement(54, run(weave(4, 1, 3), narrows(4, 1, 2, 4), narrows(4, 1, 3, 5), narrows(4, 1, 4, 0), narrows(4, 1, 0, 1), narrows(4, 1, 1, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(51, gift(1, 3, 4), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(62, vault(3, 0, 2, 5), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
+    movement(65, run(vault(0, 2, 1, 0), vault(0, 2, 3, 1)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(60, holes(2, 4, 1), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'blinker' }),
+    movement(51, gift(4, 1, 2), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(77, run(vault(1, 3, 0, 3), hurdles(1, 3, 2, 4), holes(1, 3, 5)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'static', rowSpacing: 105 })
 ]));
 
 //  45. Colour under fire.
@@ -832,19 +832,19 @@ LATE_LEVELS.push(late(44, [
 //  colour choice and the lane choice are the same input.
 LATE_LEVELS.push(late(45, [
     movement(51, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(60, drum(1, 2, 3), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(60, run(fork(2, 3), posts(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'slider' }),
-    movement(62, drum(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'pulse' }),
-    movement(51, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(62, run(fork(0, 2), flank(0, 2, 0)), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'rotor' }),
-    movement(60, run(drum(2, 4, 1), narrows(2, 4, 3)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(54, run(weave(4, 1), narrows(4, 1, 2), narrows(4, 1, 3), narrows(4, 1, 4), narrows(4, 1, 0), narrows(4, 1, 1), narrows(4, 1, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(51, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(62, run(fork(3, 0), narrows(3, 0, 4), narrows(3, 0, 0), narrows(3, 0, 1), narrows(3, 0, 2), narrows(3, 0, 3), narrows(3, 0, 4)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'pulse' }),
-    movement(60, run(vault(0, 2, 4), narrows(0, 2, 1)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(68, run(fork(2, 4), posts(2, 4, 1), posts(2, 4, 2), posts(2, 4, 3), posts(2, 4, 4), posts(2, 4, 0), posts(2, 4, 1)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'slider' }),
-    movement(51, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(77, run(fork(1, 3), drum(1, 3, 0), drum(1, 3, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'rotor', rowSpacing: 105 })
+    movement(60, drum(1, 2, 3, 4), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(60, run(fork(2, 3, 5), posts(2, 3, 2, 0)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'slider' }),
+    movement(62, drum(3, 4, 0, 0), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'pulse' }),
+    movement(51, gift(4, 0, 1), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(62, run(fork(0, 2, 2), flank(0, 2, 0, 3)), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'rotor' }),
+    movement(60, run(drum(2, 4, 1, 3), narrows(2, 4, 3, 4)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(54, run(weave(4, 1, 4), narrows(4, 1, 2, 5), narrows(4, 1, 3, 0), narrows(4, 1, 4, 1), narrows(4, 1, 0, 2), narrows(4, 1, 1, 3), narrows(4, 1, 2, 4)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(51, gift(1, 3, 5), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(62, run(fork(3, 0, 0), narrows(3, 0, 4, 1), narrows(3, 0, 0, 2), narrows(3, 0, 1, 3), narrows(3, 0, 2, 4), narrows(3, 0, 3, 5), narrows(3, 0, 4, 0)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'pulse' }),
+    movement(60, run(vault(0, 2, 4, 1), narrows(0, 2, 1, 2)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(68, run(fork(2, 4, 2), posts(2, 4, 1, 3), posts(2, 4, 2, 4), posts(2, 4, 3, 5), posts(2, 4, 4, 0), posts(2, 4, 0, 1), posts(2, 4, 1, 2)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'slider' }),
+    movement(51, gift(4, 1, 3), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(77, run(fork(1, 3, 4), drum(1, 3, 0, 5), drum(1, 3, 2, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'rotor', rowSpacing: 105 })
 ]));
 
 //  ---------------------------------------------------------------------------
@@ -865,19 +865,19 @@ LATE_LEVELS.push(late(45, [
 //  there is exactly one phase of the turn that both can be answered in.
 LATE_LEVELS.push(late(46, [
     movement(52, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(60, flank(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'rotor' }),
-    movement(55, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(63, hurdles(3, 4, 4), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
-    movement(52, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(63, drum(0, 2, 1), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'rotor' }),
-    movement(63, vault(2, 4, 3), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(55, run(weave(4, 1), narrows(4, 1, 2), narrows(4, 1, 3), narrows(4, 1, 4), narrows(4, 1, 0), narrows(4, 1, 1), narrows(4, 1, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(52, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(63, flank(3, 0, 0), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'rotor' }),
-    movement(63, narrows(0, 2, 2), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(73, run(flank(2, 4, 4), drum(2, 4, 1)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'rotor' }),
-    movement(52, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(81, run(drum(1, 3, 0), flank(1, 3, 3), flank(1, 3, 2), flank(1, 3, 1)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'rotor', rowSpacing: 105 })
+    movement(60, flank(1, 2, 2, 5), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'rotor' }),
+    movement(55, run(fork(2, 3, 0), narrows(2, 3, 2, 1)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(63, hurdles(3, 4, 4, 1), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
+    movement(52, gift(4, 0, 2), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(63, drum(0, 2, 1, 3), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'rotor' }),
+    movement(63, vault(2, 4, 3, 4), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(55, run(weave(4, 1, 5), narrows(4, 1, 2, 0), narrows(4, 1, 3, 1), narrows(4, 1, 4, 2), narrows(4, 1, 0, 3), narrows(4, 1, 1, 4), narrows(4, 1, 2, 5)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(52, gift(1, 3, 0), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(63, flank(3, 0, 0, 1), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'rotor' }),
+    movement(63, narrows(0, 2, 2, 2), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(73, run(flank(2, 4, 4, 3), drum(2, 4, 1, 4)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'rotor' }),
+    movement(52, gift(4, 1, 4), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(81, run(drum(1, 3, 0, 5), flank(1, 3, 3, 0), flank(1, 3, 2, 1), flank(1, 3, 1, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'rotor', rowSpacing: 105 })
 ]));
 
 //  47. Moving holes.
@@ -889,19 +889,19 @@ LATE_LEVELS.push(late(46, [
 //  hole two rows ago.
 LATE_LEVELS.push(late(47, [
     movement(53, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(61, holes(1, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
-    movement(56, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(64, holes(3, 4), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'blinker' }),
-    movement(53, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(64, drum(0, 2, 1), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'slider' }),
-    movement(64, driftHoles(2, 4), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'slider' }),
-    movement(56, run(weave(4, 1), narrows(4, 1, 2), narrows(4, 1, 3), narrows(4, 1, 4), narrows(4, 1, 0), narrows(4, 1, 1), narrows(4, 1, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(53, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(64, vault(3, 0, 2), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
-    movement(64, pinch(0, 2, 4), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'blinker' }),
-    movement(77, run(holes(2, 4), drum(2, 4, 0)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'blinker' }),
-    movement(53, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(82, run(holes(1, 3), vault(1, 3, 0), narrows(1, 3, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'blinker', rowSpacing: 105 })
+    movement(61, holes(1, 2, 0), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(56, run(fork(2, 3, 1), narrows(2, 3, 2, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(64, holes(3, 4, 2), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'blinker' }),
+    movement(53, gift(4, 0, 3), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(64, drum(0, 2, 1, 4), { splitAfterLane: 1, gate: [ 0, 2 ], obstacles: 'slider' }),
+    movement(64, driftHoles(2, 4, 5), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'slider' }),
+    movement(56, run(weave(4, 1, 0), narrows(4, 1, 2, 1), narrows(4, 1, 3, 2), narrows(4, 1, 4, 3), narrows(4, 1, 0, 4), narrows(4, 1, 1, 5), narrows(4, 1, 2, 0)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(53, gift(1, 3, 1), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(64, vault(3, 0, 2, 2), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'static' }),
+    movement(64, pinch(0, 2, 4, 3), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'blinker' }),
+    movement(77, run(holes(2, 4, 4), drum(2, 4, 0, 5)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'blinker' }),
+    movement(53, gift(4, 1, 5), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(82, run(holes(1, 3, 0), vault(1, 3, 0, 1), narrows(1, 3, 2, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'blinker', rowSpacing: 105 })
 ]));
 
 //  48. The false floor.
@@ -913,19 +913,19 @@ LATE_LEVELS.push(late(47, [
 //  movement 11, a barred doorway opening onto a blinking floor.
 LATE_LEVELS.push(late(48, [
     movement(54, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(63, posts(1, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
-    movement(57, run(fork(2, 3), narrows(2, 3, 2)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(66, drum(3, 4, 0), { splitAfterLane: 1, gate: [ 3, 4 ], gateSwap: true, obstacles: 'rotor' }),
-    movement(54, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(66, run(seam(2, 0), narrows(0, 2, 1)), { splitAfterLane: 1, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'static' }),
-    movement(66, holes(2, 4), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'blinker' }),
-    movement(57, run(weave(4, 1), narrows(4, 1, 2), narrows(4, 1, 3), narrows(4, 1, 4), narrows(4, 1, 0), narrows(4, 1, 1), narrows(4, 1, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(54, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(66, pinch(3, 0, 0), { splitAfterLane: 1, gate: [ 3, 0 ], gateSwap: true, obstacles: 'pulse' }),
-    movement(75, run(chain(2, 2), holes(0, 2)), { splitAfterLane: 0, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'blinker' }),
-    movement(66, run(seam(4, 2), posts(2, 4, 1)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'slider' }),
-    movement(54, gift(4, 1), { splitAfterLane: 0, gate: [ 4, 1 ] }),
-    movement(84, run(chain(3, 3), holes(1, 3), narrows(1, 3, 0), narrows(1, 3, 3)), { splitAfterLane: 1, gate: [ 1, 3 ], gateSealed: 0, obstacles: 'blinker', rowSpacing: 106 })
+    movement(63, posts(1, 2, 2, 1), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
+    movement(57, run(fork(2, 3, 2), narrows(2, 3, 2, 3)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(66, drum(3, 4, 0, 3), { splitAfterLane: 1, gate: [ 3, 4 ], gateSwap: true, obstacles: 'rotor' }),
+    movement(54, gift(4, 0, 4), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(66, run(seam(2, 0), narrows(0, 2, 1, 5)), { splitAfterLane: 1, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'static' }),
+    movement(66, holes(2, 4, 0), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'blinker' }),
+    movement(57, run(weave(4, 1, 1), narrows(4, 1, 2, 2), narrows(4, 1, 3, 3), narrows(4, 1, 4, 4), narrows(4, 1, 0, 5), narrows(4, 1, 1, 0), narrows(4, 1, 2, 1)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(54, gift(1, 3, 2), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(66, pinch(3, 0, 0, 3), { splitAfterLane: 1, gate: [ 3, 0 ], gateSwap: true, obstacles: 'pulse' }),
+    movement(75, run(chain(2, 2, 4), holes(0, 2, 5)), { splitAfterLane: 0, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'blinker' }),
+    movement(66, run(seam(4, 2), posts(2, 4, 1, 5)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'slider' }),
+    movement(54, gift(4, 1, 0), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(84, run(chain(3, 3, 1), holes(1, 3, 2), narrows(1, 3, 0, 3), narrows(1, 3, 3, 4)), { splitAfterLane: 1, gate: [ 1, 3 ], gateSealed: 0, obstacles: 'blinker', rowSpacing: 106 })
 ]));
 
 //  49. Everything at once.
@@ -937,19 +937,19 @@ LATE_LEVELS.push(late(48, [
 //  is a pair.
 LATE_LEVELS.push(late(49, [
     movement(54, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(66, run(fork(1, 2), posts(1, 2, 1)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
-    movement(66, run(vault(2, 3, 0), narrows(2, 3, 4)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(66, run(driftHoles(3, 4), drum(3, 4, 1)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
-    movement(54, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(69, run(seam(2, 0), pinch(0, 2, 2), fork(0, 2)), { splitAfterLane: 1, gate: [ 0, 2 ], gateSwap: true, obstacles: 'pulse' }),
-    movement(69, run(hurdles(2, 4, 1), narrows(2, 4, 4)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'blinker' }),
-    movement(66, run(fork(4, 1), posts(4, 1, 2), posts(4, 1, 3), posts(4, 1, 4), posts(4, 1, 0), posts(4, 1, 1), posts(4, 1, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'slider' }),
-    movement(54, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(69, run(chain(0, 0), flank(3, 0, 4), flank(3, 0, 0), flank(3, 0, 1), flank(3, 0, 2), flank(3, 0, 3), flank(3, 0, 4)), { splitAfterLane: 1, gate: [ 3, 0 ], gateSealed: 0, obstacles: 'rotor' }),
-    movement(69, run(vault(0, 2, 4), narrows(0, 2, 1), holes(0, 2), narrows(0, 2, 3), narrows(0, 2, 0), narrows(0, 2, 2)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'blinker' }),
-    movement(69, run(flank(2, 4, 0), fork(2, 4), flank(2, 4, 3), drum(2, 4, 1), flank(2, 4, 2)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'rotor' }),
-    movement(54, run(gift(4, 1), narrows(4, 1, 2), narrows(4, 1, 0)), { splitAfterLane: 0, gate: [ 4, 1 ], obstacles: 'static' }),
-    movement(87, run(vault(1, 3, 0), posts(1, 3, 3), driftHoles(1, 3), posts(1, 3, 0), fork(1, 3), posts(1, 3, 2), posts(1, 3, 4)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'slider', rowSpacing: 106 })
+    movement(66, run(fork(1, 2, 2), posts(1, 2, 1, 3)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
+    movement(66, run(vault(2, 3, 0, 3), narrows(2, 3, 4, 4)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(66, run(driftHoles(3, 4, 4), drum(3, 4, 1, 5)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
+    movement(54, gift(4, 0, 5), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(69, run(seam(2, 0), pinch(0, 2, 2, 0), fork(0, 2, 1)), { splitAfterLane: 1, gate: [ 0, 2 ], gateSwap: true, obstacles: 'pulse' }),
+    movement(69, run(hurdles(2, 4, 1, 1), narrows(2, 4, 4, 2)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'blinker' }),
+    movement(66, run(fork(4, 1, 2), posts(4, 1, 2, 3), posts(4, 1, 3, 4), posts(4, 1, 4, 5), posts(4, 1, 0, 0), posts(4, 1, 1, 1), posts(4, 1, 2, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], obstacles: 'slider' }),
+    movement(54, gift(1, 3, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(69, run(chain(0, 0, 4), flank(3, 0, 4, 5), flank(3, 0, 0, 0), flank(3, 0, 1, 1), flank(3, 0, 2, 2), flank(3, 0, 3, 3), flank(3, 0, 4, 4)), { splitAfterLane: 1, gate: [ 3, 0 ], gateSealed: 0, obstacles: 'rotor' }),
+    movement(69, run(vault(0, 2, 4, 5), narrows(0, 2, 1, 0), holes(0, 2, 1), narrows(0, 2, 3, 2), narrows(0, 2, 0, 3), narrows(0, 2, 2, 4)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'blinker' }),
+    movement(69, run(flank(2, 4, 0, 0), fork(2, 4, 1), flank(2, 4, 3, 2), drum(2, 4, 1, 3), flank(2, 4, 2, 4)), { splitAfterLane: 1, gate: [ 2, 4 ], obstacles: 'rotor' }),
+    movement(54, run(gift(4, 1, 1), narrows(4, 1, 2, 2), narrows(4, 1, 0, 3)), { splitAfterLane: 0, gate: [ 4, 1 ], obstacles: 'static' }),
+    movement(87, run(vault(1, 3, 0, 2), posts(1, 3, 3, 3), driftHoles(1, 3, 4), posts(1, 3, 0, 5), fork(1, 3, 0), posts(1, 3, 2, 1), posts(1, 3, 4, 2)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'slider', rowSpacing: 106 })
 ]));
 
 //  50. DON'T FLOW.
@@ -970,19 +970,19 @@ LATE_LEVELS.push(late(49, [
 LATE_LEVELS.push(late(50, [
     //  An opening that could be level one, for exactly four rows.
     movement(51, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(65, run(fork(1, 2), posts(1, 2, 1)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
-    movement(69, run(vault(2, 3, 4), narrows(2, 3, 0)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
-    movement(69, run(drum(3, 4, 1), flank(3, 4, 0)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
-    movement(54, gift(4, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
-    movement(72, run(chain(2, 2), holes(0, 2), narrows(0, 2, 1)), { splitAfterLane: 1, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'blinker' }),
-    movement(69, run(seam(4, 0), pinch(2, 4, 1), seam(2, 2)), { splitAfterLane: 0, gate: [ 2, 4 ], drain: 12, obstacles: 'static' }),
-    movement(69, run(fork(4, 1), narrows(4, 1, 2), narrows(4, 1, 3), narrows(4, 1, 4), narrows(4, 1, 0), narrows(4, 1, 1), narrows(4, 1, 2)), { splitAfterLane: 1, gate: [ 4, 1 ], gateSwap: true, obstacles: 'pulse' }),
-    movement(69, gift(1, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(72, run(flank(3, 0, 2), fork(3, 0), flank(3, 0, 4)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'rotor' }),
-    movement(69, run(vault(0, 2, 1), driftHoles(0, 2), drum(0, 2, 4)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'slider' }),
-    movement(72, run(chain(4, 4), narrows(2, 4, 3), holes(2, 4)), { splitAfterLane: 1, gate: [ 2, 4 ], gateSealed: 0, obstacles: 'blinker' }),
+    movement(65, run(fork(1, 2, 3), posts(1, 2, 1, 4)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
+    movement(69, run(vault(2, 3, 4, 4), narrows(2, 3, 0, 5)), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
+    movement(69, run(drum(3, 4, 1, 5), flank(3, 4, 0, 0)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'rotor' }),
+    movement(54, gift(4, 0, 0), { splitAfterLane: 0, gate: [ 4, 0 ] }),
+    movement(72, run(chain(2, 2, 1), holes(0, 2, 2), narrows(0, 2, 1, 3)), { splitAfterLane: 1, gate: [ 0, 2 ], gateSealed: 0, obstacles: 'blinker' }),
+    movement(69, run(seam(4, 0), pinch(2, 4, 1, 2), seam(2, 2)), { splitAfterLane: 0, gate: [ 2, 4 ], drain: 12, obstacles: 'static' }),
+    movement(69, run(fork(4, 1, 3), narrows(4, 1, 2, 4), narrows(4, 1, 3, 5), narrows(4, 1, 4, 0), narrows(4, 1, 0, 1), narrows(4, 1, 1, 2), narrows(4, 1, 2, 3)), { splitAfterLane: 1, gate: [ 4, 1 ], gateSwap: true, obstacles: 'pulse' }),
+    movement(69, gift(1, 3, 4), { splitAfterLane: 0, gate: [ 1, 3 ] }),
+    movement(72, run(flank(3, 0, 2, 5), fork(3, 0, 0), flank(3, 0, 4, 1)), { splitAfterLane: 1, gate: [ 3, 0 ], obstacles: 'rotor' }),
+    movement(69, run(vault(0, 2, 1, 0), driftHoles(0, 2, 1), drum(0, 2, 4, 2)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'slider' }),
+    movement(72, run(chain(4, 4, 1), narrows(2, 4, 3, 2), holes(2, 4, 3)), { splitAfterLane: 1, gate: [ 2, 4 ], gateSealed: 0, obstacles: 'blinker' }),
     //  The rest. Open road and nothing else, so the finale is taken on purpose.
-    movement(60, run(gift(4, 1), breath()), { splitAfterLane: 0, gate: [ 4, 1 ] }),
+    movement(60, run(gift(4, 1, 2), breath()), { splitAfterLane: 0, gate: [ 4, 1 ] }),
     //  The finale. Every mechanic the game has, at the closest spacing in it.
-    movement(87, run(drum(1, 3, 0), flank(1, 3, 3), driftHoles(1, 3), flank(1, 3, 2), fork(1, 3), drum(1, 3, 4), flank(1, 3, 0)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'rotor', rowSpacing: 106 })
+    movement(87, run(drum(1, 3, 0, 3), flank(1, 3, 3, 4), driftHoles(1, 3, 5), flank(1, 3, 2, 0), fork(1, 3, 1), drum(1, 3, 4, 2), flank(1, 3, 0, 3)), { splitAfterLane: 1, gate: [ 1, 3 ], obstacles: 'rotor', rowSpacing: 106 })
 ]));

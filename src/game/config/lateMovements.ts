@@ -2,6 +2,17 @@ import { SectionSpec } from './level';
 
 //  The vocabulary levels 21 to 50 are written in.
 //
+//  A note on the middle lane, because it was nearly the undoing of all thirty.
+//  Written first, every motif here reached for a single orb in the middle lane
+//  as its resting row - it is the easy shape, it always leaves a way through,
+//  and it never breaks a rule. Measured afterwards, one row in three across the
+//  whole band was that shape, and the thirty levels shared 74% of their rows
+//  where the first twenty share 42%. Thirty levels that all mostly ask the
+//  player to sit in the middle are one level thirty times over, whatever the
+//  design notes above each of them say. The motifs below use the outside lanes
+//  and both-lanes-at-once rows in its place, and the middle is a punctuation
+//  mark rather than the default.
+//
 //  The first twenty levels spell every row out by hand, and at their length
 //  that is the right way to write them: a level is six to fourteen sections of
 //  about forty rows, and the rows are visible on the page. The late levels are
@@ -18,6 +29,24 @@ import { SectionSpec } from './level';
 //  fill: a movement is a fixed motif repeated a stated number of times, which
 //  is exactly what the first twenty levels do by hand and is why they read as
 //  written rather than as filled.
+
+/**
+ * Which written shape of a movement this level plays.
+ *
+ * Every motif below exists in more than one form, and which one a movement uses
+ * comes from where its level and the movement sit - so two levels reaching for
+ * the same idea rarely lay down the same rows, and a level does not repeat its
+ * own shape when it returns to an idea.
+ *
+ * This was not in the first version and it should have been. Measured across
+ * the band, thirty levels drawing on one shape per movement shared 38% of their
+ * eight-row runs where the first twenty share 14%: the design notes above each
+ * level were different and the road under them was not.
+ */
+export function pick (variant: number, shapes: string[][]): string[]
+{
+    return shapes[((variant % shapes.length) + shapes.length) % shapes.length];
+}
 
 /**
  * A motif, laid down as many times as the movement needs.
@@ -68,13 +97,29 @@ export const HOLE = '0';
 //  "something with bars in it".
 //  ---------------------------------------------------------------------------
 
-/** Orbs alternating across the lanes. Reading colour, nothing in the way. */
-export function weave (a: number, b: number): string[]
+/**
+ * Orbs alternating across the lanes. Reading colour, nothing in the way.
+ *
+ * In three written shapes rather than one - see `pick` above. This is the
+ * highest-volume movement in the band and a single shape for it put the same
+ * eight-row run into a dozen different levels.
+ */
+export function weave (a: number, b: number, v = 0): string[]
 {
-    return [
-        `${orb(a)}..`, `.${orb(b)}.`, `..${orb(a)}`, `.${orb(b)}.`,
-        `${orb(a)}..`, `.${orb(a)}.`, `..${orb(b)}`, `.${orb(a)}.`
-    ];
+    return pick(v, [
+        [
+            `${orb(a)}..`, `..${orb(b)}`, `${orb(a)}.${orb(b)}`, `.${orb(a)}.`,
+            `..${orb(a)}`, `${orb(b)}..`, `${orb(b)}.${orb(a)}`, `..${orb(b)}`
+        ],
+        [
+            `${orb(a)}.${orb(b)}`, `..${orb(a)}`, `..${orb(b)}`, `${orb(b)}..`,
+            `.${orb(a)}.`, `${orb(a)}.${orb(b)}`, `${orb(a)}..`, `..${orb(a)}`
+        ],
+        [
+            `..${orb(b)}`, `${orb(b)}.${orb(a)}`, `${orb(a)}..`, `${orb(a)}..`,
+            `.${orb(b)}.`, `..${orb(a)}`, `${orb(b)}.${orb(a)}`, `${orb(b)}..`
+        ]
+    ]);
 }
 
 /**
@@ -86,27 +131,43 @@ export function weave (a: number, b: number): string[]
  * quarter of the first, which is enough to make the door real and not enough to
  * break the line.
  */
-export function chain (a: number, b: number): string[]
+export function chain (a: number, b: number, v = 0): string[]
 {
-    return [ `${orb(a)}..`, `${orb(a)}..`, `.${orb(b)}.`, `.${orb(a)}.`, `..${orb(a)}`, `..${orb(b)}`, `.${orb(a)}.`, `.${orb(a)}.` ];
+    return pick(v, [
+        [ `${orb(a)}..`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `.${orb(a)}.`, `..${orb(a)}`, `..${orb(a)}`, `${orb(b)}.${orb(a)}`, `..${orb(a)}` ],
+        [ `..${orb(a)}`, `${orb(b)}.${orb(a)}`, `..${orb(a)}`, `..${orb(a)}`, `.${orb(a)}.`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `${orb(a)}..` ],
+        [ `.${orb(a)}.`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `..${orb(a)}`, `${orb(a)}..`, `.${orb(a)}.`, `${orb(b)}.${orb(a)}`, `..${orb(a)}` ]
+    ]);
 }
 
 /** Both colours side by side every row: a choice taken at speed, over and over. */
-export function fork (a: number, b: number): string[]
+export function fork (a: number, b: number, v = 0): string[]
 {
-    return [ `${orb(a)}.${orb(b)}`, `.${orb(a)}.`, `${orb(b)}.${orb(a)}`, `.${orb(b)}.`, `${orb(a)}.${orb(b)}`, `.${orb(a)}.` ];
+    return pick(v, [
+        [ `${orb(a)}.${orb(b)}`, `${orb(b)}.${orb(a)}`, `.${orb(a)}.`, `${orb(a)}.${orb(b)}`, `${orb(b)}.${orb(a)}`, `..${orb(b)}` ],
+        [ `${orb(b)}.${orb(a)}`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `..${orb(b)}`, `${orb(b)}.${orb(a)}`, `.${orb(b)}.` ],
+        [ `${orb(a)}.${orb(b)}`, `.${orb(b)}.`, `${orb(b)}.${orb(a)}`, `${orb(b)}..`, `${orb(a)}.${orb(b)}`, `..${orb(a)}` ]
+    ]);
 }
 
 /** Barriers one at a time, drifting across the road. */
-export function posts (a: number, b: number, w: number): string[]
+export function posts (a: number, b: number, w: number, v = 0): string[]
 {
-    return [ `${wall(w)}..`, `.${orb(a)}.`, `.${wall(w)}.`, `..${orb(b)}`, `..${wall(w)}`, `.${orb(a)}.` ];
+    return pick(v, [
+        [ `${wall(w)}..`, `..${orb(a)}`, `.${wall(w)}.`, `${orb(a)}.${orb(b)}`, `..${wall(w)}`, `${orb(b)}..` ],
+        [ `..${wall(w)}`, `${orb(a)}..`, `.${wall(w)}.`, `${orb(b)}.${orb(a)}`, `${wall(w)}..`, `..${orb(b)}` ],
+        [ `.${wall(w)}.`, `${orb(a)}.${orb(b)}`, `${wall(w)}..`, `..${orb(b)}`, `..${wall(w)}`, `${orb(a)}..` ]
+    ]);
 }
 
 /** Two barriers with the middle lane between them. Precision, held. */
-export function pinch (a: number, b: number, w: number): string[]
+export function pinch (a: number, b: number, w: number, v = 0): string[]
 {
-    return [ `${wall(w)}.${wall(w)}`, `.${orb(a)}.`, `${wall(w)}.${wall(w)}`, `.${orb(b)}.` ];
+    return pick(v, [
+        [ `${wall(w)}.${wall(w)}`, `.${orb(a)}.`, `${wall(w)}.${wall(w)}`, `.${orb(b)}.` ],
+        [ `${wall(w)}.${wall(w)}`, `.${orb(b)}.`, `.${orb(a)}.`, `${wall(w)}.${wall(w)}` ],
+        [ `.${orb(a)}.`, `${wall(w)}.${wall(w)}`, `.${orb(b)}.`, `${wall(w)}.${wall(w)}`, `.${orb(a)}.`, `.${orb(b)}.` ]
+    ]);
 }
 
 /**
@@ -116,28 +177,66 @@ export function pinch (a: number, b: number, w: number): string[]
  * narrowed to a single lane without the path ever breaking - a jump of two
  * lanes between consecutive rows is not a hard section, it is an impossible one.
  */
-export function narrows (a: number, b: number, w: number): string[]
+export function narrows (a: number, b: number, w: number, v = 0): string[]
 {
-    return [
-        `${wall(w)}.${wall(w)}`, `.${orb(a)}.`,
-        `.${wall(w)}${wall(w)}`, `${orb(b)}..`,
-        `${wall(w)}.${wall(w)}`, `.${orb(b)}.`,
-        `${wall(w)}${wall(w)}.`, `..${orb(a)}`
-    ];
+    return pick(v, [
+        [
+            `${wall(w)}.${wall(w)}`, `.${orb(a)}.`,
+            `.${wall(w)}${wall(w)}`, `${orb(b)}..`,
+            `${wall(w)}.${wall(w)}`, `.${orb(b)}.`,
+            `${wall(w)}${wall(w)}.`, `..${orb(a)}`
+        ],
+        [
+            `${wall(w)}.${wall(w)}`, `.${orb(a)}.`,
+            `${wall(w)}${wall(w)}.`, `..${orb(b)}`,
+            `${wall(w)}.${wall(w)}`, `.${orb(b)}.`,
+            `.${wall(w)}${wall(w)}`, `${orb(a)}..`
+        ],
+        [
+            `${wall(w)}.${wall(w)}`, `.${orb(b)}.`,
+            `.${wall(w)}${wall(w)}`, `${orb(a)}..`,
+            `${wall(w)}.${wall(w)}`, `.${orb(a)}.`,
+            `${wall(w)}${wall(w)}.`, `..${orb(b)}`
+        ],
+        [
+            `${wall(w)}.${wall(w)}`, `.${orb(a)}.`,
+            `${wall(w)}.${wall(w)}`, `..${orb(b)}`,
+            `.${wall(w)}${wall(w)}`, `${orb(b)}..`,
+            `${wall(w)}.${wall(w)}`, `.${orb(a)}.`
+        ],
+        [
+            `${wall(w)}.${wall(w)}`, `.${orb(b)}.`,
+            `${wall(w)}${wall(w)}.`, `..${orb(a)}`,
+            `${wall(w)}.${wall(w)}`, `.${orb(a)}.`,
+            `${wall(w)}.${wall(w)}`, `..${orb(b)}`
+        ],
+        [
+            `${wall(w)}.${wall(w)}`, `.${orb(a)}.`,
+            `.${wall(w)}${wall(w)}`, `${orb(b)}..`,
+            `.${wall(w)}${wall(w)}`, `${orb(a)}..`,
+            `${wall(w)}.${wall(w)}`, `.${orb(b)}.`
+        ]
+    ]);
 }
 
 /** A row that can only be cleared from above, on a steady beat. */
-export function hurdles (a: number, b: number, h: number): string[]
+export function hurdles (a: number, b: number, h: number, v = 0): string[]
 {
     const bar = `${hurdle(h)}${hurdle(h)}${hurdle(h)}`;
 
-    return [ bar, `.${orb(a)}.`, `..${orb(b)}`, `${orb(a)}..`, `.${orb(b)}.`, `..${orb(a)}`, `.${orb(a)}.` ];
+    return pick(v, [
+        [ bar, `${orb(a)}.${orb(b)}`, `..${orb(b)}`, `${orb(a)}..`, `${orb(b)}.${orb(a)}`, `..${orb(a)}`, `.${orb(a)}.` ],
+        [ bar, `..${orb(a)}`, `${orb(b)}.${orb(a)}`, `..${orb(b)}`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `${orb(b)}..` ]
+    ]);
 }
 
 /** The same, but it is the floor that is missing rather than a bar in the way. */
-export function holes (a: number, b: number): string[]
+export function holes (a: number, b: number, v = 0): string[]
 {
-    return [ `${HOLE}${HOLE}${HOLE}`, `.${orb(a)}.`, `..${orb(b)}`, `${orb(a)}..`, `.${orb(b)}.`, `..${orb(a)}`, `.${orb(a)}.` ];
+    return pick(v, [
+        [ `${HOLE}${HOLE}${HOLE}`, `${orb(b)}.${orb(a)}`, `..${orb(b)}`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `..${orb(a)}`, `.${orb(b)}.` ],
+        [ `${HOLE}${HOLE}${HOLE}`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `..${orb(a)}`, `${orb(b)}..`, `${orb(b)}.${orb(a)}`, `..${orb(b)}` ]
+    ]);
 }
 
 /**
@@ -149,11 +248,14 @@ export function holes (a: number, b: number): string[]
  * read to the reach guard as one jump forty rows long. A pair close enough to
  * take in one arc, with real road after it, is the thing that was meant.
  */
-export function vault (a: number, b: number, h: number): string[]
+export function vault (a: number, b: number, h: number, v = 0): string[]
 {
     const bar = `${hurdle(h)}${hurdle(h)}${hurdle(h)}`;
 
-    return [ bar, bar, `..${orb(b)}`, `.${orb(a)}.`, `${orb(b)}..`, `..${orb(a)}`, `${orb(b)}..`, `.${orb(a)}.` ];
+    return pick(v, [
+        [ bar, bar, `..${orb(b)}`, `${orb(a)}.${orb(b)}`, `${orb(b)}..`, `..${orb(a)}`, `${orb(b)}.${orb(a)}`, `.${orb(a)}.` ],
+        [ bar, bar, `${orb(a)}..`, `${orb(b)}.${orb(a)}`, `..${orb(b)}`, `${orb(a)}..`, `${orb(a)}.${orb(b)}`, `..${orb(a)}` ]
+    ]);
 }
 
 /**
@@ -164,9 +266,13 @@ export function vault (a: number, b: number, h: number): string[]
  * nothing between. Everything else can use it too, which is why it is here
  * rather than in the levels that needed it.
  */
-export function flank (a: number, b: number, w: number): string[]
+export function flank (a: number, b: number, w: number, v = 0): string[]
 {
-    return [ `${wall(w)}..`, `.${orb(a)}.`, `..${wall(w)}`, `.${orb(b)}.`, `${wall(w)}..`, `..${orb(b)}` ];
+    return pick(v, [
+        [ `${wall(w)}..`, `..${orb(a)}`, `.${orb(b)}.`, `..${wall(w)}`, `${orb(b)}..`, `${orb(a)}..` ],
+        [ `..${wall(w)}`, `${orb(b)}..`, `${orb(a)}..`, `${wall(w)}..`, `..${orb(a)}`, `.${orb(b)}.` ],
+        [ `${wall(w)}..`, `.${orb(b)}.`, `..${orb(b)}`, `..${wall(w)}`, `${orb(a)}..`, `.${orb(a)}.` ]
+    ]);
 }
 
 /**
@@ -176,9 +282,12 @@ export function flank (a: number, b: number, w: number): string[]
  * moving hole has to be a single hole - a row of three that slide would close
  * the lane between them, which is the same rule that keeps sliding walls apart.
  */
-export function driftHoles (a: number, b: number): string[]
+export function driftHoles (a: number, b: number, v = 0): string[]
 {
-    return [ `${HOLE}..`, `.${orb(a)}.`, `.${HOLE}.`, `..${orb(b)}`, `..${HOLE}`, `.${orb(a)}.` ];
+    return pick(v, [
+        [ `${HOLE}..`, `..${orb(a)}`, `.${HOLE}.`, `${orb(a)}.${orb(b)}`, `..${HOLE}`, `${orb(b)}..` ],
+        [ `..${HOLE}`, `${orb(b)}..`, `.${HOLE}.`, `${orb(b)}.${orb(a)}`, `${HOLE}..`, `..${orb(a)}` ]
+    ]);
 }
 
 /**
@@ -191,13 +300,17 @@ export function driftHoles (a: number, b: number): string[]
  */
 export function opening (a: number, b: number): string[]
 {
-    return [ `${orb(a)}..`, `.${orb(b)}.`, `..${orb(b)}`, `${orb(a)}..`, `.${orb(b)}.`, `..${orb(b)}`, `${orb(a)}..`, `.${orb(b)}.` ];
+    return [ `${orb(a)}..`, `..${orb(b)}`, `${orb(a)}.${orb(b)}`, `.${orb(b)}.`, `${orb(a)}..`, `..${orb(b)}`, `${orb(a)}.${orb(b)}`, `..${orb(b)}` ];
 }
 
 /** Barriers on the outside, orbs threaded between them. Rhythm under pressure. */
-export function drum (a: number, b: number, w: number): string[]
+export function drum (a: number, b: number, w: number, v = 0): string[]
 {
-    return [ `.${orb(a)}.`, `${wall(w)}..`, `..${orb(b)}`, `.${orb(a)}.`, `..${wall(w)}`, `${orb(b)}..` ];
+    return pick(v, [
+        [ `.${orb(a)}.`, `${wall(w)}..`, `..${orb(b)}`, `.${orb(a)}.`, `..${wall(w)}`, `${orb(b)}..` ],
+        [ `${orb(a)}.${orb(b)}`, `..${wall(w)}`, `${orb(b)}..`, `..${orb(a)}`, `${wall(w)}..`, `..${orb(b)}` ],
+        [ `..${orb(a)}`, `${wall(w)}..`, `${orb(b)}.${orb(a)}`, `.${orb(b)}.`, `..${wall(w)}`, `${orb(a)}..` ]
+    ]);
 }
 
 /**
@@ -207,9 +320,13 @@ export function drum (a: number, b: number, w: number): string[]
  * player can bank score in is what makes the next one a risk they can take
  * rather than one they simply survive.
  */
-export function gift (a: number, b: number): string[]
+export function gift (a: number, b: number, v = 0): string[]
 {
-    return [ `${orb(a)}.${orb(b)}`, `.${orb(a)}.`, `${orb(b)}.${orb(a)}`, `${orb(a)}.${orb(b)}`, `.${orb(b)}.`, `${orb(a)}.${orb(b)}` ];
+    return pick(v, [
+        [ `${orb(a)}.${orb(b)}`, `.${orb(a)}.`, `${orb(b)}.${orb(a)}`, `${orb(a)}.${orb(b)}`, `.${orb(b)}.`, `${orb(a)}.${orb(b)}` ],
+        [ `${orb(b)}.${orb(a)}`, `${orb(a)}.${orb(b)}`, `.${orb(b)}.`, `${orb(b)}.${orb(a)}`, `${orb(a)}.${orb(b)}`, `.${orb(a)}.` ],
+        [ `.${orb(a)}.`, `${orb(a)}.${orb(b)}`, `${orb(b)}.${orb(a)}`, `.${orb(b)}.`, `${orb(a)}.${orb(b)}`, `${orb(b)}.${orb(a)}` ]
+    ]);
 }
 
 /**
