@@ -234,28 +234,31 @@ export const LATE_LEVELS: LevelSpec[] = [];
 //  than the two movements either side of it put together.
 LATE_LEVELS.push(late(21, [
     movement(38, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
-    movement(44, run(chain(1, 2, 4), pinch(1, 2, 4, 4), pinch(1, 2, 0, 5)), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
+    movement(44, chain(1, 2, 4), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
     movement(40, posts(2, 3, 0, 5), { splitAfterLane: 0, gate: [ 2, 3 ], obstacles: 'static' }),
     movement(44, run(chain(3, 4, 0), pinch(3, 4, 0, 0), pinch(3, 4, 1, 1)), { splitAfterLane: 1, gate: [ 3, 4 ], obstacles: 'static' }),
     movement(38, run(fork(4, 0, 1), pinch(4, 0, 1, 1), pinch(4, 0, 2, 2)), { splitAfterLane: 0, gate: [ 4, 0 ], obstacles: 'static' }),
     movement(40, drum(0, 1, 2, 2), { splitAfterLane: 1, gate: [ 0, 1 ], obstacles: 'static' }),
     movement(36, gift(1, 3, 3), { splitAfterLane: 0, gate: [ 1, 3 ] }),
-    movement(44, run(chain(3, 2, 4), pinch(3, 2, 4, 4), pinch(3, 2, 0, 5), pinch(3, 2, 1, 0)), { splitAfterLane: 1, gate: [ 3, 2 ], obstacles: 'static' }),
-    movement(38, run(weave(2, 4, 5), pinch(2, 4, 0, 5), pinch(2, 4, 1, 0), pinch(2, 4, 2, 1)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
-    movement(40, drum(4, 0, 1, 0), { splitAfterLane: 1, gate: [ 4, 0 ], obstacles: 'static' }),
-    movement(38, run(fork(0, 2, 1), pinch(0, 2, 1, 1), pinch(0, 2, 2, 2), pinch(0, 2, 3, 3)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
-    movement(40, run(posts(2, 1, 3, 2), narrows(2, 1, 0, 3)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
+    movement(44, run(chain(3, 2, 4), pinch(3, 2, 0, 4), pinch(3, 2, 1, 5), pinch(3, 2, 2, 0), pinch(3, 2, 3, 1), pinch(3, 2, 4, 2)), { splitAfterLane: 1, gate: [ 3, 2 ], obstacles: 'static' }),
+    movement(38, run(weave(2, 4, 5), pinch(2, 4, 0, 5), pinch(2, 4, 1, 0), pinch(2, 4, 2, 1), pinch(2, 4, 3, 2), pinch(2, 4, 4, 3)), { splitAfterLane: 0, gate: [ 2, 4 ], obstacles: 'static' }),
+    movement(40, run(drum(4, 0, 1, 0), pinch(4, 0, 2, 1), pinch(4, 0, 3, 2)), { splitAfterLane: 1, gate: [ 4, 0 ], obstacles: 'static' }),
+    movement(38, run(fork(0, 2, 1), pinch(0, 2, 0, 1), pinch(0, 2, 1, 2), pinch(0, 2, 2, 3), pinch(0, 2, 3, 4), pinch(0, 2, 4, 5)), { splitAfterLane: 0, gate: [ 0, 2 ], obstacles: 'static' }),
+    movement(40, run(posts(2, 1, 3, 2), narrows(2, 1, 0, 3), pinch(2, 1, 1, 4), pinch(2, 1, 2, 5)), { splitAfterLane: 1, gate: [ 2, 1 ], obstacles: 'static' }),
     movement(36, gift(1, 4, 3), { splitAfterLane: 0, gate: [ 1, 4 ] }),
     //  The finale: the line again, tighter, with the level's only walls in it.
-    movement(46, run(chain(4, 3, 4), pinch(4, 3, 4, 4), pinch(4, 3, 0, 5), pinch(4, 3, 1, 0)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'static', rowSpacing: 102 })
+    movement(46, run(chain(4, 3, 4), pinch(4, 3, 0, 4), pinch(4, 3, 1, 5), pinch(4, 3, 2, 0), pinch(4, 3, 3, 1), pinch(4, 3, 4, 2)), { splitAfterLane: 1, gate: [ 4, 3 ], obstacles: 'static', rowSpacing: 102 })
 ]));
 
 //  22. Moving walls.
 //
 //  Main: sliders. Secondary: lane precision between them.
 //  Hard at: timing a lane change against something that is itself moving.
-//  Built around movement 9 - a pinch whose two walls slide, so the safe lane
-//  is never where it was a moment ago.
+//  Built around movement 9 - forty-five rows of single sliding walls, one to a
+//  row, drifting across the road so the safe lane is never where it was a
+//  moment ago. Written first as a pinch whose two walls slide, which the game
+//  does not allow and never could: two sliders on one row travel on the same
+//  clock and would shut the lane between them.
 LATE_LEVELS.push(late(22, [
     movement(37, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
     movement(41, posts(1, 2, 2, 5), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
@@ -298,7 +301,7 @@ LATE_LEVELS.push(late(23, [
 //  24. The narrows.
 //
 //  Main: a road one lane wide. Secondary: static walls either side of it.
-//  Hard at: holding a line. Built around movement 12 - forty-eight rows where
+//  Hard at: holding a line. Built around movement 12 - fifty-one rows where
 //  the open lane never stops walking and there is nowhere else to be.
 LATE_LEVELS.push(late(24, [
     movement(38, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
@@ -503,7 +506,7 @@ LATE_LEVELS.push(late(31, [
 //  Main: doorways that trade their colours as they are approached. Secondary:
 //  the movement behind one being long enough that the wrong choice is felt for
 //  a while. Hard at: committing late. Built around movement 11, a swap whose
-//  section is forty rows of the colour that was on the other side.
+//  section is fifty-three rows of the colour that was on the other side.
 LATE_LEVELS.push(late(32, [
     movement(44, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
     movement(48, chain(1, 2, 3), { splitAfterLane: 1, gate: [ 1, 2 ], gateSwap: true }),
@@ -605,7 +608,7 @@ LATE_LEVELS.push(late(35, [
 //
 //  Main: a clean lane against a rich one, side by side, for a whole movement.
 //  Secondary: the rich lane narrowing as it goes. Hard at: deciding early and
-//  living with it. Built around movement 4, forty-four rows where the outside
+//  living with it. Built around movement 4, fifty-eight rows where the outside
 //  lane is paved with orbs and walled in, and the inside lane is empty and free.
 LATE_LEVELS.push(late(36, [
     movement(46, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
@@ -677,7 +680,7 @@ LATE_LEVELS.push(late(38, [
 //  Main: a single lane held over a stretch that charges for every pixel of it.
 //  Secondary: the lane moving while the toll runs. Hard at: precision with a
 //  clock on it - every mistake costs twice, once for the wall and once for the
-//  time spent getting back. Built around movement 10, forty-six rows of a
+//  time spent getting back. Built around movement 10, sixty-two rows of a
 //  walking single lane with the drain on the whole way.
 LATE_LEVELS.push(late(39, [
     movement(48, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
@@ -781,8 +784,11 @@ LATE_LEVELS.push(late(42, [
 //
 //  Main: sliders and rotors in the same movement. Secondary: the two moving on
 //  different clocks, so their pattern never quite repeats. Hard at: reading two
-//  rhythms at once. Built around movement 12, where a sliding pinch runs
-//  straight into a turning one and the gap between them is four rows.
+//  rhythms at once. Built around movements 11 and 12 - a movement of turning
+//  bars running straight into one of sliding walls. Written first as a sliding
+//  pinch into a turning one, which is two things the game forbids: neither a
+//  slider nor a rotor may be one of a pair, because a pair on one row leaves
+//  nothing between them.
 LATE_LEVELS.push(late(43, [
     movement(51, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
     movement(59, posts(1, 2, 2, 2), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'slider' }),
@@ -804,8 +810,10 @@ LATE_LEVELS.push(late(43, [
 //
 //  Main: jumps on a beat that does not let up. Secondary: the beat changing
 //  period twice without warning. Hard at: holding a rhythm through a change of
-//  rhythm. Built around movement 11, where the bars arrive every fourth row
-//  instead of every sixth and nothing on the road says so beforehand.
+//  rhythm. Built around movement 11, which is nothing but vaults - bars two at
+//  a time, to be taken in one arc, with road behind each pair - laid twice
+//  over, so the pairs come twice as often as anywhere else in the level and
+//  nothing on the road says so beforehand.
 LATE_LEVELS.push(late(44, [
     movement(51, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
     movement(60, hurdles(1, 2, 2, 3), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
@@ -828,8 +836,8 @@ LATE_LEVELS.push(late(44, [
 //  Main: colour decisions taken inside an obstacle movement rather than on open
 //  road. Secondary: the two colours never being in the same lane twice running.
 //  Hard at: reading a colour while reading a road. Built around movement 12,
-//  where both colours sit in the outside lanes of a sliding pinch, so the
-//  colour choice and the lane choice are the same input.
+//  where both colours sit in the outside lanes and sliding walls cross between
+//  them, so the colour choice and the lane choice are the same input.
 LATE_LEVELS.push(late(45, [
     movement(51, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
     movement(60, drum(1, 2, 3, 4), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
@@ -884,9 +892,11 @@ LATE_LEVELS.push(late(46, [
 //
 //  Main: a floor that leaves while it is moving. Secondary: solid holes in the
 //  same level, so the two have to be told apart at speed. Hard at: a hazard
-//  with two independent states. Built around movement 12, where blinking holes
-//  slide across the road and the row that is safe now is the row that was a
-//  hole two rows ago.
+//  with two independent states. Built around movement 12, where a row of holes
+//  blinks in and out beside walls that do not, so the row that is safe now is
+//  the row that was a hole a moment ago. The holes that move are earlier in the
+//  level: one that moves has to be a single hole, since a row of three that
+//  slid would close the lane between them.
 LATE_LEVELS.push(late(47, [
     movement(53, opening(0, 1), { splitAfterLane: 0, gate: [ 0, 1 ] }),
     movement(61, holes(1, 2, 0), { splitAfterLane: 1, gate: [ 1, 2 ], obstacles: 'static' }),
