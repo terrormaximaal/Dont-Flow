@@ -20,11 +20,11 @@ import {
     LEAD_DECAY,
     LEAD_HOLD,
     LEAD_MAX_RING,
-    PIANO_ATTACK,
-    PIANO_DECAY,
-    PIANO_FM_FALL,
-    PIANO_FM_INDEX,
-    PIANO_FM_RATIO,
+    KALIMBA_ATTACK,
+    KALIMBA_DECAY,
+    KALIMBA_FM_FALL,
+    KALIMBA_FM_INDEX,
+    KALIMBA_FM_RATIO,
     SNARE_DECAY,
     TICK_ATTACK,
     TICK_DECAY,
@@ -56,10 +56,11 @@ import { kick, rattle } from './kit';
  * struck key out of a browser is to have one bend the other. 'tick' is the one
  * sound the player's own playing makes, and the drums live in `systems/kit`.
  *
- * 'piano' is that same electric piano with room to ring, for the phrase that
- * ends a level - where there is one of it rather than eight to a bar.
+ * 'kalimba' is the same two oscillators again at a ratio that puts the partials
+ * two octaves up: a struck wooden bar, and the whole of the phrase that ends a
+ * level.
  */
-export type Timbre = 'bass' | 'lead' | 'chord' | 'piano' | 'pluck' | 'tick' | 'kick' | 'snare' | 'hat';
+export type Timbre = 'bass' | 'lead' | 'chord' | 'kalimba' | 'pluck' | 'tick' | 'kick' | 'snare' | 'hat';
 
 /**
  * How long a sound of this kind lasts, in seconds.
@@ -74,7 +75,7 @@ export function decayOf (_semitones: number, timbre: Timbre = 'tick', held = 0):
         case 'bass': return BASS_ATTACK + BASS_HOLD + BASS_DECAY;
         case 'lead': return LEAD_ATTACK + LEAD_HOLD + ringing(held) + LEAD_DECAY;
         case 'chord': return CHORD_ATTACK + CHORD_HOLD + CHORD_DECAY;
-        case 'piano': return PIANO_ATTACK + PIANO_DECAY;
+        case 'kalimba': return KALIMBA_ATTACK + KALIMBA_DECAY;
         case 'pluck': return PLUCK_ATTACK + PLUCK_DECAY;
         case 'kick': return KICK_DECAY;
         case 'snare': return SNARE_DECAY;
@@ -130,10 +131,10 @@ export function strike (
 
     if (timbre === 'chord') { struck(ctx, destination, frequency, at, gain * 0.5, CHORD_FM_RATIO, CHORD_FM_INDEX, CHORD_FM_FALL, CHORD_ATTACK, CHORD_HOLD, CHORD_DECAY); return; }
 
-    //  The same voice as the backing's electric piano, given room to ring. Eight
-    //  to a bar it has to be let go in an eighth of a second; once, in a space
-    //  with nothing else in it, a struck string is what it is meant to be.
-    if (timbre === 'piano') { struck(ctx, destination, frequency, at, gain * 0.5, PIANO_FM_RATIO, PIANO_FM_INDEX, PIANO_FM_FALL, PIANO_ATTACK, 0, PIANO_DECAY); return; }
+    //  A struck wooden bar: the same two oscillators at a ratio that puts what
+    //  little brightness there is two octaves up, and takes it away again in a
+    //  twentieth of a second.
+    if (timbre === 'kalimba') { struck(ctx, destination, frequency, at, gain * 0.45, KALIMBA_FM_RATIO, KALIMBA_FM_INDEX, KALIMBA_FM_FALL, KALIMBA_ATTACK, 0, KALIMBA_DECAY); return; }
 
     //  A struck bell, plucked: the same two oscillators at a ratio that belongs
     //  to no scale, and a tail long enough to ring after the hand has gone.

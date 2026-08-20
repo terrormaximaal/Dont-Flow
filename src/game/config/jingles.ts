@@ -119,7 +119,7 @@ function band (
             semitones: semitones + JINGLE_LIFT,
             at,
             gain: grown * loudest,
-            timbre: 'pluck',
+            timbre: 'kalimba',
             hall: true,
             held: rings
         });
@@ -130,7 +130,7 @@ function band (
             semitones: harmony[i] + JINGLE_LIFT,
             at,
             gain: grown * loudest * JINGLE_HARMONY,
-            timbre: 'pluck' as Timbre,
+            timbre: 'kalimba' as Timbre,
             hall: true,
             held: rings
         });
@@ -151,7 +151,7 @@ function band (
             semitones,
             at,
             gain: grown * loudest * JINGLE_UNDER,
-            timbre: 'piano' as Timbre,
+            timbre: 'kalimba' as Timbre,
             hall: true,
             held: rings
         });
@@ -173,7 +173,7 @@ function band (
                 semitones: semitones + (JINGLE_LIFT * 2),
                 at,
                 gain: grown * loudest * JINGLE_OVER * into,
-                timbre: 'pluck' as Timbre,
+                timbre: 'kalimba' as Timbre,
                 hall: true,
                 held: rings
             });

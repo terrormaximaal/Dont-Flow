@@ -444,7 +444,7 @@ describe('the two jingles', () => {
     /** Everything in a jingle that carries a pitch, whichever voice plays it. */
     //  The instruments that carry a pitch. Written out rather than inferred, so
     //  adding a voice to the phrase has to be a deliberate edit here too.
-    const PITCHED = new Set([ 'lead', 'pluck', 'piano' ]);
+    const PITCHED = new Set([ 'lead', 'pluck', 'kalimba' ]);
 
     const sung = (cue: 'finish' | 'fail' | 'rainbow') =>
         voiceFor(cue).filter((note) => PITCHED.has(note.timbre ?? ''));
@@ -513,19 +513,20 @@ describe('the two jingles', () => {
 
     });
 
-    //  Bells over a piano, and nothing else. A wind held the body of this until
-    //  it was described as sombre, and the holding is what did it: a note that
-    //  stays, under notes that are struck, reads as weight.
-    it('is carried by struck instruments, with nothing held under them', () => {
+    //  One struck wooden bar, on every line. Chosen from ten worked up side by
+    //  side, and the driest of them.
+    //
+    //  A wind held the body of this once and it was described as sombre - the
+    //  holding is what did it: a note that stays, under notes that are struck,
+    //  reads as weight. Nothing here stays.
+    it('is played on struck wood, with nothing held under it', () => {
 
         for (const cue of [ 'finish', 'fail' ] as const)
         {
-            const tune = melody(cue);
             const kinds = new Set(sung(cue).map((note) => note.timbre));
 
-            expect(tune.every((note) => note.timbre === 'pluck'), `${cue} melody`).toBe(true);
             expect(kinds.has('lead'), `${cue} has a held voice in it`).toBe(false);
-            expect(kinds.has('piano'), `${cue} has a piano under it`).toBe(true);
+            expect([ ...kinds ], `${cue} is played on one instrument`).toEqual([ 'kalimba' ]);
         }
 
     });

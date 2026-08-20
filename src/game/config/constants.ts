@@ -2098,28 +2098,31 @@ export const PLUCK_FM_INDEX = 2.4;
 export const PLUCK_FM_FALL = 0.26;
 
 /**
- * The piano in the phrase that ends a level.
+ * The kalimba: the one instrument the phrase that ends a level is played on.
  *
- * The same two oscillators as the backing's electric piano and the same ratio -
- * a whole number, so every partial lands on a harmonic and the note that comes
- * out is the note that went in. The bell beside it says why that matters: tuned
- * once to 2.76, the ratio a real bell has, its partials fell between the
- * harmonics and the phrase measured out of tune against its own chords.
+ * A ratio of five puts the sidebands on the fourth and sixth harmonics - two
+ * octaves up and a fifth above that - which is the signature of a struck bar
+ * rather than a string or a bell. A whole number, as everything that plays a
+ * tune here has to be: the bell this replaces was tuned once to 2.76, the ratio
+ * a real bell has, and measured out of tune against its own chords because its
+ * partials fell between the harmonics.
  *
- * What is different is the length. The backing's piano is let go in an eighth of
- * a second because eight of them sound to a bar and anything with a tail turns
- * the lot to mud. Here there is one, four times, in a room with nothing else in
- * it - so it is allowed to ring like a struck string, which is the only thing
- * that makes a piano read as a piano rather than as a click.
+ * What makes it wood rather than metal is everything after the strike. The index
+ * is low, so there is not much up there to begin with, and it collapses in a
+ * twentieth of a second - the note is a plain tone almost immediately, and gone
+ * inside four tenths. It is chosen from ten worked up side by side, and it was
+ * the driest of them.
  *
- * A shade brighter at the strike than the backing is, and slower to lose it. The
- * collapse is the hammer, and a hammer heard once wants to be heard.
+ * One voice for all four lines of the phrase, where each had its own in the
+ * version that was picked. The recipes differed by a tenth of an index and a
+ * tenth of a second of decay, and every line already differs in how loud it is -
+ * so four near-identical instruments would have been four names for one.
  */
-export const PIANO_FM_RATIO = 2;
-export const PIANO_FM_INDEX = 3.1;
-export const PIANO_FM_FALL = 0.16;
-export const PIANO_ATTACK = 0.003;
-export const PIANO_DECAY = 1.1;
+export const KALIMBA_FM_RATIO = 5;
+export const KALIMBA_FM_INDEX = 1.5;
+export const KALIMBA_FM_FALL = 0.05;
+export const KALIMBA_ATTACK = 0.002;
+export const KALIMBA_DECAY = 0.36;
 
 export const CHORD_FM_RATIO = 2;
 export const CHORD_FM_INDEX = 2.6;
@@ -2216,22 +2219,25 @@ export const ECHO_DAMP = 3000;
  * the road has stopped and the music has been taken away, with nothing left
  * for it to blur. A big space is most of what makes an ending sound like one.
  */
-export const HALL_SECONDS = 3.1;
+export const HALL_SECONDS = 2.4;
 
 /** Slower to empty than the cabinet, which is what "large" means to an ear. */
-export const HALL_DECAY = 1.9;
+export const HALL_DECAY = 2.2;
 
 /**
  * How much of the ending goes into it, and how much stays in front.
  *
- * Pulled back from having more room than phrase in it. That balance was set when
- * the ending had a kick and a bass note holding its bottom down; with those gone
- * there is less to anchor the tail against, and the same wash reads as too much
- * of it. Measured on the phrase, the tail runs 2.4 seconds past the loudest note
- * now instead of 3.1.
+ * Pulled back twice. First when the kick and the bass came out of the ending -
+ * that balance was set while they were holding its bottom down, and without them
+ * there is less to anchor a tail against. Then again with the kalimba, which is
+ * the driest instrument the phrase has had: a note that is gone in a third of a
+ * second leaves the room audible on its own, where a bell used to cover it.
+ *
+ * Measured on the phrase, the tail runs 1.6 seconds past the loudest note. It
+ * was 3.1 two changes ago.
  */
-export const HALL_WET = 0.62;
-export const HALL_DRY = 0.82;
+export const HALL_WET = 0.56;
+export const HALL_DRY = 0.86;
 
 /**
  * The silence between the phrase and the space answering it, in seconds.
