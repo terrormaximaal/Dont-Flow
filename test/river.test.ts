@@ -18,8 +18,17 @@ import { buildLevel } from '../src/game/config/level';
 //  The river winding is a picture and only a picture. These are the guards that
 //  keep it one.
 
-/** Every level's river, sampled the length of that level. */
-function everyRiver (step = 613): Array<{ level: number; travelled: number; phases: number[] }> {
+//  Sampled rather than walked. Every guard below is a property that holds at
+//  every point by construction, so what these are for is catching a change that
+//  breaks it *somewhere* - and the steps are chosen to be coprime with the
+//  river's own wavelengths so the samples do not land on the same phase of it
+//  over and over.
+//
+//  The steps were a third of this when there were twenty levels. At fifty, and
+//  longer ones, the same walk took nineteen seconds of a twenty second suite,
+//  which is a guard nobody will want to keep.
+/** Every level's river, sampled along the length of that level. */
+function everyRiver (step = 2003): Array<{ level: number; travelled: number; phases: number[] }> {
 
     const out = [];
 
@@ -38,7 +47,7 @@ function everyRiver (step = 613): Array<{ level: number; travelled: number; phas
 }
 
 /** Down the screen from the horizon to well past the drop, as the road is drawn. */
-function everyDepth (step = 7): number[] {
+function everyDepth (step = 19): number[] {
 
     const out = [];
 
@@ -92,7 +101,7 @@ describe('the river winding', () => {
         let worstNear = 0;
         let worstFar = 0;
 
-        for (const { travelled, phases } of everyRiver(997))
+        for (const { travelled, phases } of everyRiver(3001))
         {
             const river = riverAt(travelled, phases);
 
@@ -132,11 +141,11 @@ describe('the river winding', () => {
 
         let worst = 0;
 
-        for (const { level, travelled, phases } of everyRiver(1013))
+        for (const { level, travelled, phases } of everyRiver(3527))
         {
             lookAlong(travelled, phases);
 
-            for (const y of everyDepth(11))
+            for (const y of everyDepth(23))
             {
                 const scale = depthScale(y);
 
@@ -178,7 +187,7 @@ describe('the river winding', () => {
     //  NaN there, which would have taken the whole road with it.
     it('gives a real number at the horizon, where every span starts', () => {
 
-        for (const { travelled, phases } of everyRiver(1471))
+        for (const { travelled, phases } of everyRiver(4507))
         {
             lookAlong(travelled, phases);
 
