@@ -612,6 +612,30 @@ export const GATE_BARS = 5;
 export const GATE_BAR_THICKNESS = 5;
 export const GATE_BAR_ALPHA = 0.85;
 
+/**
+ * How deep a doorway is, in screen pixels at the drop's own line.
+ *
+ * The gate was one flat frame - two uprights and an arch, all at a single depth
+ * - which is a hoop, not a doorway. A second frame at the far face, found by
+ * asking the projection for the same lane a little further off, makes the two
+ * read as the near and far mouths of something you fly through.
+ */
+export const GATE_JAMB = 34;
+
+/**
+ * The shadow a barrier throws on the road, and how far the light pushes it.
+ *
+ * A barrier already had a footprint, but drawn in its own colour - so against a
+ * road tinted the same way it did not read as contact, it read as a slightly
+ * paler part of the barrier. A dark mark, thrown to the side the one lamp in
+ * this game puts it, is what says the thing is standing on something.
+ */
+export const OBSTACLE_SHADOW_ALPHA = 0.26;
+export const OBSTACLE_SHADOW_LENGTH = 0.30;
+
+/** How much of itself the far mouth keeps, being further away and inside. */
+export const GATE_JAMB_ALPHA = 0.42;
+
 export const GATE_SWAP_FRAME_INSET = 7;
 export const PORTAL_REACT_GAIN = 0.7;
 
@@ -848,6 +872,34 @@ export const VIGNETTE_DEPTH = 30;
 // ---------------------------------------------------------------------------
 
 /** Bob and spin, both measured against distance travelled. */
+/**
+ * How far above the road an orb hangs, in track pixels at the drop's own line.
+ *
+ * The orb used to sit in the road's own plane, which is why it read as printed
+ * on it rather than hanging over it - and why a shadow was no use: it would have
+ * been directly behind the thing casting it.
+ */
+export const ORB_LIFT = 26;
+
+/**
+ * How an orb is lit: a shaded side away from the lamp and a glint towards it.
+ *
+ * The offsets are fractions of the orb's own radius, so the same numbers work at
+ * every depth. The whole game is lit from one direction - `ui/lighting` holds
+ * it, and the comment there names the drop's rim, the road's sheen and a gate's
+ * highlight as the things that should obey it. Until now only the drop did.
+ */
+export const ORB_SHADE_OFFSET = 0.42;
+export const ORB_SHADE_ALPHA = 0.30;
+export const ORB_GLINT_OFFSET = 0.40;
+export const ORB_GLINT_RADIUS = 0.30;
+export const ORB_GLINT_ALPHA = 0.55;
+
+/** How wide the shadow is against the orb, and how flat. */
+export const ORB_SHADOW_WIDTH = 1.7;
+export const ORB_SHADOW_SQUASH = 0.34;
+export const ORB_SHADOW_ALPHA = 0.30;
+
 export const ORB_FLOAT = 5;
 export const ORB_FLOAT_PERIOD = 300;
 export const ORB_SPIN_PER_PIXEL = 0.0022;

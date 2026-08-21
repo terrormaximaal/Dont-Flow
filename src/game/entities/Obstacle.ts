@@ -21,7 +21,10 @@ import {
     OBSTACLE_FILL_ALPHA,
     OBSTACLE_HATCH_ALPHA,
     OBSTACLE_HATCH_COUNT,
+    LIGHT_X,
     OBSTACLE_FOOT_ALPHA,
+    OBSTACLE_SHADOW_ALPHA,
+    OBSTACLE_SHADOW_LENGTH,
     OBSTACLE_STAND_HEIGHT
 } from '../config/constants';
 import { ObstacleKind, ObstacleProfile, ObstacleSpec } from '../config/level';
@@ -124,6 +127,14 @@ export class Obstacle
 
             return y;
         }
+
+        //  The shadow it throws, before its own footprint goes over it. Pushed
+        //  to the side the game's one lamp puts it, the same way a tree beside
+        //  the road throws one - which until now was the only thing that did.
+        const thrown = -LIGHT_X * half * OBSTACLE_SHADOW_LENGTH;
+
+        gfx.fillStyle(0x000000, OBSTACLE_SHADOW_ALPHA);
+        fillProjectedQuad(gfx, left + thrown, right + thrown, y - (OBSTACLE_DEPTH / 2), y + (OBSTACLE_DEPTH / 2));
 
         //  Its footprint on the road, which is what grounds it.
         gfx.fillStyle(value, OBSTACLE_FOOT_ALPHA);

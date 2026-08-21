@@ -4,6 +4,8 @@ import {
     ColorId,
     DEPTH_GATES,
     GATE_SWAP_FLASH_ALPHA,
+    GATE_JAMB,
+    GATE_JAMB_ALPHA,
     GATE_SWAP_FRAME_INSET,
     PORTAL_ARCH_RISE,
     PORTAL_ARCH_STEPS,
@@ -303,8 +305,36 @@ export class GatePair
 
         this.energy(gfx, baseLeft, baseRight, y, height, value, travelled, life);
 
-        //  The frame itself: two uprights and the arch over them.
+        //  The far mouth of the doorway, before the near one goes over it.
+        //
+        //  Found by asking the projection for the same two lane edges a little
+        //  further down the road, so it narrows and lifts by exactly as much as
+        //  anything else at that depth would - including the sideways lean of
+        //  the river. One frame on its own is a hoop; two, a short way apart,
+        //  is something with an inside.
         const thickness = Math.max(1.5, PORTAL_FRAME_THICKNESS * scale);
+        const jambY = y - (GATE_JAMB * scale);
+
+        if (jambY > top)
+        {
+            const jambScale = depthScale(jambY);
+            const farLeft = projectX(left, jambY);
+            const farRight = projectX(right, jambY);
+            const farTop = jambY - (PORTAL_HEIGHT * jambScale);
+            const farRise = PORTAL_HEIGHT * jambScale * PORTAL_ARCH_RISE;
+
+            gfx.lineStyle(Math.max(1, thickness * 0.85), value, GATE_JAMB_ALPHA * life);
+            gfx.lineBetween(farLeft, jambY, farLeft, farTop);
+            gfx.lineBetween(farRight, jambY, farRight, farTop);
+
+            this.strokeArch(gfx, farLeft, farRight, farTop, farRise);
+
+            //  And the two mouths joined along the top, which is the only edge
+            //  of the tube's inside that is ever facing the player.
+            gfx.lineStyle(Math.max(1, thickness * 0.6), value, GATE_JAMB_ALPHA * 0.8 * life);
+            gfx.lineBetween(baseLeft, top - rise, farLeft, farTop - farRise);
+            gfx.lineBetween(baseRight, top - rise, farRight, farTop - farRise);
+        }
 
         gfx.lineStyle(thickness, value, 1);
         gfx.lineBetween(baseLeft, y, baseLeft, top);

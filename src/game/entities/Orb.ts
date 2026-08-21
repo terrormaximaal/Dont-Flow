@@ -7,10 +7,21 @@ import {
     COLOR_VALUES,
     ColorId,
     DEPTH_ORBS,
+    LIGHT_X,
+    LIGHT_Y,
     ORB_CORE_ALPHA,
     ORB_FLOAT,
     ORB_FLOAT_PERIOD,
     ORB_GLOW_ALPHA,
+    ORB_GLINT_ALPHA,
+    ORB_GLINT_OFFSET,
+    ORB_GLINT_RADIUS,
+    ORB_LIFT,
+    ORB_SHADE_ALPHA,
+    ORB_SHADE_OFFSET,
+    ORB_SHADOW_ALPHA,
+    ORB_SHADOW_SQUASH,
+    ORB_SHADOW_WIDTH,
     ORB_GLOW_LAYERS,
     ORB_GLOW_SPREAD,
     ORB_MAGNET_DISTANCE,
@@ -83,6 +94,9 @@ export class Orb
     private readonly glyph: Glyph;
     private readonly gfx: Phaser.GameObjects.Graphics;
 
+    /** The shadow, kept apart because the orb itself is lifted, scaled and spun. */
+    private readonly shadowGfx: Phaser.GameObjects.Graphics;
+
     //  How far out this orb is leaning towards the drop, and how swollen it is,
     //  both eased rather than switched. Kept here because easing needs to know
     //  where it got to last time.
@@ -103,6 +117,11 @@ export class Orb
 
         this.gfx = scene.add.graphics();
         this.gfx.setDepth(DEPTH_ORBS);
+
+        //  Below the orb and below the road's markings, so it reads as a mark on
+        //  the surface rather than as a disc floating just under the orb.
+        this.shadowGfx = scene.add.graphics();
+        this.shadowGfx.setDepth(DEPTH_ORBS - 1);
     }
 
     /**
@@ -154,7 +173,10 @@ export class Orb
         //  distance travelled, so they move with the world and hold when paused.
         const bob = Math.sin((travelled / ORB_FLOAT_PERIOD) * TAU + this.phase) * ORB_FLOAT;
 
-        this.gfx.setPosition(projected.x, y + (bob * projected.scale));
+        //  The shadow first, on the road, before the orb is lifted off it.
+        this.shade(projected.x, y, projected.scale, drawStrength(this.distance, travelled) * fadedPast(past));
+
+        this.gfx.setPosition(projected.x, y - ((ORB_LIFT - bob) * projected.scale));
         this.gfx.setScale(projected.scale * (1 + (near * ORB_REACT_SWELL)));
         this.gfx.setRotation(travelled * ORB_SPIN_PER_PIXEL + this.phase);
         this.gfx.setAlpha(drawStrength(this.distance, travelled) * fadedPast(past));
@@ -175,6 +197,13 @@ export class Orb
 
         this.gfx.fillStyle(this.value, 1);
         fillOutline(this.gfx, blobOutline(ORB_RADIUS, travelled * BLOB_RIPPLE_PER_PIXEL, this.phase));
+
+        //  Shaped into a ball before the mark goes on, never after. The mark is
+        //  what a player who cannot tell the colours apart is reading, and a
+        //  shadow laid over it is the one thing this game has promised not to
+        //  do - the first attempt at this drew the shading last and dimmed every
+        //  glyph on screen.
+        this.lit(travelled * ORB_SPIN_PER_PIXEL + this.phase);
 
         //  A lighter core keeps the orb readable against the dark track - and
         //  carries the colour's mark, so the core is doing two jobs rather than
@@ -197,6 +226,64 @@ export class Orb
         return y;
     }
 
+    /**
+     * The shading that turns a disc into a ball.
+     *
+     * A dark side away from the lamp and a glint towards it, both offset from
+     * the centre. The whole game is lit from one direction and until now only
+     * the drop obeyed it, which is most of why everything else read as printed
+     * on the road rather than standing on it.
+     *
+     * Turned back by the orb's own spin. The graphics this is drawn into is
+     * rotating, and a highlight that turns with the object is not a highlight -
+     * it is a painted spot. The light does not care which way a thing is facing.
+     */
+    private lit (spin: number): void
+    {
+        const cos = Math.cos(-spin);
+        const sin = Math.sin(-spin);
+        const put = (nx: number, ny: number, by: number) => ({
+            x: ((nx * cos) - (ny * sin)) * ORB_RADIUS * by,
+            y: ((nx * sin) + (ny * cos)) * ORB_RADIUS * by
+        });
+
+        const dark = put(-LIGHT_X, -LIGHT_Y, ORB_SHADE_OFFSET);
+
+        this.gfx.fillStyle(0x000000, ORB_SHADE_ALPHA);
+        this.gfx.fillCircle(dark.x, dark.y, ORB_RADIUS * 0.82);
+
+        const glint = put(LIGHT_X, LIGHT_Y, ORB_GLINT_OFFSET);
+
+        this.gfx.fillStyle(0xffffff, ORB_GLINT_ALPHA);
+        this.gfx.fillCircle(glint.x, glint.y, ORB_RADIUS * ORB_GLINT_RADIUS);
+    }
+
+    /**
+     * The mark the orb leaves on the road under it.
+     *
+     * Its own object, and it has to be: the orb's own graphics is lifted off the
+     * road, scaled and turned, and a shadow drawn inside it would rise, swell
+     * and spin with it. The drop's shadow is kept apart for the same reason.
+     *
+     * This is the thing that says how high something is. Perspective alone puts
+     * an object at a distance; only the shadow puts it *above* a place.
+     */
+    private shade (x: number, y: number, scale: number, strength: number): void
+    {
+        const gfx = this.shadowGfx;
+
+        gfx.clear();
+
+        if (strength <= 0 || scale <= 0.02) { return; }
+
+        const width = ORB_RADIUS * ORB_SHADOW_WIDTH * scale;
+
+        gfx.setPosition(x, y);
+        gfx.setAlpha(strength);
+        gfx.fillStyle(0x000000, ORB_SHADOW_ALPHA);
+        gfx.fillEllipse(0, 0, width * 2, width * 2 * ORB_SHADOW_SQUASH);
+    }
+
     /** A few motes circling the orb, counter to its own turn so both read. */
     private motes (travelled: number, near: number): void
     {
@@ -215,5 +302,6 @@ export class Orb
     destroy (): void
     {
         this.gfx.destroy();
+        this.shadowGfx.destroy();
     }
 }
