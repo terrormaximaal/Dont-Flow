@@ -83,6 +83,35 @@
   body.qcopen .dock{transform:translateY(101%);transition:transform .26s ease}
   #qcpanel h3{margin:8px 2px 6px;font-size:11.5px;font-weight:600;color:var(--dim);display:flex;justify-content:space-between;align-items:center}
   #qcpanel h3 button{appearance:none;background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:5px;font:inherit;font-size:12px;padding:5px 10px}
+  /* Pointing needs the car big, so this sheet stays low and lets its own list
+     scroll instead of growing over the canvas. */
+  #pinpanel{position:fixed;left:12px;right:12px;bottom:12px;z-index:9;background:var(--panel);border:1px solid var(--line);
+    border-radius:16px;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);max-height:44vh;overflow:hidden;
+    display:flex;flex-direction:column;
+    transform:translateY(calc(101% + 18px));transition:transform .26s ease;
+    padding:8px 12px calc(12px + env(safe-area-inset-bottom))}
+  #pinlist{overflow-y:auto;max-height:22vh;flex:0 1 auto}
+  body.pinopen #pinpanel{transform:translateY(0)}
+  body.pinopen .dock{transform:translateY(101%);transition:transform .26s ease}
+  #pinpanel h3{margin:8px 2px 6px;font-size:11.5px;font-weight:600;color:var(--dim);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  #pinpanel h3 button{appearance:none;background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:5px;font:inherit;font-size:12px;padding:5px 10px}
+  .pinrow{display:flex;gap:9px;align-items:flex-start;padding:7px 2px;border-bottom:1px solid var(--line);font-size:12px}
+  .pinno{flex:0 0 21px;height:21px;border-radius:50%;background:var(--amber);color:#1a1206;font-weight:700;
+    font-size:11.5px;display:flex;align-items:center;justify-content:center}
+  .pinrow .w{flex:1;min-width:0}
+  .pinrow b{display:block;font-weight:600;color:var(--txt)}
+  .pinrow span{color:var(--dim);font-size:11.5px}
+  .pinrow .x{appearance:none;background:transparent;border:0;color:var(--dim);font:inherit;font-size:15px;padding:0 4px}
+  #pinnote{width:100%;box-sizing:border-box;margin:9px 0 0;padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+    background:rgba(0,0,0,.22);color:var(--txt);font:inherit;font-size:12.5px}
+  #pinout{width:100%;box-sizing:border-box;margin:8px 0 0;height:74px;padding:9px 10px;border:1px solid var(--line);
+    border-radius:9px;background:rgba(0,0,0,.28);color:var(--dim);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px;line-height:1.45;resize:none;white-space:pre}
+  #pinbar{display:flex;gap:7px;margin:9px 0 2px}
+  #pinbar button{flex:1;appearance:none;border:1px solid var(--line);border-radius:9px;background:transparent;
+    color:var(--txt);font:inherit;font-size:12.5px;padding:10px 8px}
+  #pinbar #pincopy{background:var(--amber);border-color:var(--amber);color:#1a1206;font-weight:650}
+  #pinhint{margin:6px 2px 0;font-size:11px;color:var(--dim)}
   .qch{margin:10px 2px 4px;font-size:11px;font-weight:600;color:var(--dim)}
   .qc{display:flex;align-items:center;gap:9px;padding:7px 2px;border-bottom:1px solid var(--line);font-size:12px}
   .qc i{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:0 0 auto}
@@ -174,7 +203,7 @@
 <div class="gpu-notice" id="gpuNotice" role="alert"><b>3D-versnelling is niet beschikbaar</b><span>Open GT Studio in een browser met WebGL ingeschakeld om het voertuig te bekijken.</span></div>
 
 <div class="hud">
-  <div class="t"><b id="vtype">Meridian GT</b><span id="vseed">Master 01</span></div>
+  <div class="t"><b id="vtype">Aurelia S</b><span id="vseed">Master 01</span></div>
   <div class="d" id="vpaint">-</div>
   <div class="d" id="vdims">-</div>
   <div class="g"><span>schade <em id="vdmg">0%</em></span><span id="vqc" class="qcpill">QC</span></div>
@@ -186,12 +215,7 @@
     <button class="c" id="clayBtn">Klei</button>
     <button class="c" id="zebraBtn">Reflectietest</button>
     <button class="c" id="xrayBtn">Structuur</button>
-    <button class="c" id="lowpolyBtn">Low poly</button>
     <button class="c" id="qcBtn">Kwaliteitscheck</button>
-  </div>
-  <div class="strip" aria-label="Model">
-    <button class="c sel" data-car="gt_coupe">Meridian GT</button>
-    <button class="c" data-car="super_gt">Aurelia S</button>
   </div>
   <div class="strip" aria-label="Camera-aanzichten">
     <button class="c sel" id="viewHero">Hero 3/4</button>
@@ -222,6 +246,7 @@
     <button class="c warn" id="wreck">Sloop</button>
     <button class="c warn" id="flat">Band lek</button>
     <button class="c sel" id="dent">Tik = deuk</button>
+    <button class="c" id="pinBtn">Aanwijzen</button>
     <button class="c" id="repair">Repareer</button>
     <button class="c" id="panelToggle">Onderdelen</button>
   </div>
@@ -230,6 +255,18 @@
     <label class="sl">kracht<input id="force" type="range" min="15" max="100" value="55"></label>
   </div>
   <div class="hint">Sleep = draaien · knijp/scroll = zoomen · vaste aanzichten zijn geschikt als 3D-referentie · tik op de auto = deuk</div>
+</div>
+
+<div id="pinpanel">
+  <h3><span>Aanwijzingen</span><button id="pinClose">Sluit</button></h3>
+  <div id="pinlist"></div>
+  <input id="pinnote" type="text" placeholder="Je vraag of opmerking (optioneel)">
+  <textarea id="pinout" readonly spellcheck="false"></textarea>
+  <div id="pinbar">
+    <button id="pincopy">Kopieer</button>
+    <button id="pinclear">Wis alles</button>
+  </div>
+  <p id="pinhint">Tik op de auto om een punt te zetten. Plak de gekopieerde tekst in het gesprek.</p>
 </div>
 
 <div id="qcpanel">
@@ -303,10 +340,10 @@ window.addEventListener('error', function (e) {
 <script id="core">
 
 /* =========================================================================
-   GT STUDIO - two procedural front-engined GTs, each rebuilt 1:1 from its own
-   measured reference. Switch between them with the model buttons.
+   GT STUDIO - a procedural front-engined super-GT, rebuilt 1:1 from a
+   measured reference.
 
-   CAR 2, "Aurelia S": traced from a supplied orthographic sheet (side, front,
+   "Aurelia S": traced from a supplied orthographic sheet (side, front,
    rear and top views) of a modern super-GT. The views were thresholded and
    measured in pixels, then normalised per view - longitudinal against the
    car's own length, vertical against its own height, lateral against its own
@@ -318,36 +355,28 @@ window.addEventListener('error', function (e) {
    0.450..0.611 H, tail bar |z| 0.443..0.875 at y 0.597..0.662 H, side gill at
    0.283..0.368 of the length.
 
-   CAR 1, "Meridian GT" - a front-engined GT coupe, rebuilt 1:1 from a
-   measured reference.
-
    Where the shape comes from
    --------------------------
-   The body is not styled by hand and it is not a set of guessed ratios. A
-   two-door sports car reference mesh (29,526 vertices) was measured by
-   casting rays through it, and the curves that came out are embedded below
-   as REF_SIL (side silhouette), REF_PLAN (plan half width), REF_SECTION
-   (cross section from sill to beltline), REF_BELT, REF_CABIN, REF_DLO and
-   the lamp / grille / recess apertures. Everything the generator draws is
-   derived from those tables, so the car is the reference, at 1:1.
+   The body is not styled by hand and it is not a set of guessed ratios. It
+   was traced from an orthographic styling sheet of a modern super-GT: the
+   views were measured in pixels and normalised per view, because a styling
+   sheet's views are not drawn to one scale. The curves that came out are
+   embedded below as REF2_SIL (side silhouette), REF2_PLAN (plan half
+   width), REF2_BELT, REF2_CABIN, REF2_DLO and the lamp / grille / recess
+   apertures, alongside REF_SECTION - the sill-to-beltline cross section,
+   which was measured by ray-casting through a reference mesh and is the one
+   curve the sheet could not give. Everything the generator draws is derived
+   from those tables.
 
    What that car is
    ----------------
-   4757 x 1800 x 1233 mm on a 2680 mm wheelbase, front engine, rear drive,
-   fastback roof, cowl at 28.3% of the length, roof peak at 52%. That is the
-   class of a Jaguar XK8/XKR (4760-4775 x 1800-1829 x 1283 mm, wheelbase
-   2588 mm, track 1504/1498 mm, 245/45 ZR18 front and 255/45 ZR18 rear); the
-   wheel and tyre sizes here are taken from those published figures.
-
-   How close it is
-   ---------------
-   Rendered from the same five cameras as the reference, the silhouettes
-   overlap 0.90 (side), 0.87 (top), 0.86 (rear), 0.85 (3/4) and 0.85
-   (front) by intersection-over-union, and the overall bounding box matches
-   to within 0.3% in side view.
+   4780-4820 x 1990 x 1330 mm on a 2840 mm wheelbase, front engine, rear
+   drive, fastback roof, cowl at 38.5% of the length, roof peak at 60.6%.
+   The shape is the sheet's; the three absolute dimensions come from the
+   class it depicts, around an Aston Martin DB12 / Vanquish.
 
    The rest of the program - panels, hinges, damage, the exploded view, the
-   quality gate - is unchanged in purpose: it just now wraps this body.
+   quality gate - wraps this body.
    ========================================================================= */
 
 
@@ -399,10 +428,8 @@ const smootherstep = (t) => { t = clamp(t, 0, 1); return t * t * t * (t * (t * 6
    built from fewer and bigger facets. */
 function lpq(n) {
   if (typeof window === 'undefined') return n;
-  // Low poly is the deliberate style switch. VG_QUALITY is the quiet one: a
-  // phone builds the same car from fewer samples, which is most of the wait
+  // A phone builds the same car from fewer samples, which is most of the wait
   // before the first frame.
-  if (window.VG_LOWPOLY) return Math.max(2, Math.round(n * 0.30));
   const q = window.VG_QUALITY;
   if (!q || q >= 1) return n;
   // keep the count even, so a surface that is symmetric about u = 0.5 still has
@@ -667,45 +694,17 @@ function addWear(geo) {
 
    MASTER REFERENCE
    ----------------
-   Every number below was measured off the supplied two-door sports car
-   reference mesh (29.5k vertices) by casting rays through it: the side
-   silhouette on the centreline, the plan half width per station, the cross
-   section from sill to beltline, the daylight opening, the wheel arches and
-   the lamp apertures. One reference unit = 1 cm, which puts the car at
-   4757 x 1800 x 1233 mm on a 2680 mm wheelbase - a front-engined GT coupe of
-   exactly the class of a Jaguar XK8/XKR (4760-4775 x 1800-1829 x 1283 mm,
-   wheelbase 2588 mm, track 1504/1498 mm, 245/45 ZR18 front and 255/45 ZR18
-   rear), which is what the wheel and tyre sizes here are taken from.
+   Every REF2_ number below was measured off the supplied styling sheet, in
+   pixels, normalised per view. REF_SECTION is the one exception: a cross
+   section cannot be read off orthographic views, so it was measured by
+   ray-casting through a two-door sports car reference mesh (29.5k vertices,
+   one unit = 1 cm) and is used here as the section shape from sill to
+   beltline.
    ========================================================================= */
 
-/* Side silhouette: top of the body on the centreline, as a fraction of overall
-   height, sampled at 49 evenly spaced stations from the nose (0) to the tail
-   (1). This is the traced profile of the reference, not a styling guess. */
-const REF_SIL = [
-  0.4192, 0.4778, 0.5422, 0.5805, 0.6116, 0.6368, 0.6573, 0.6742,
-  0.6887, 0.7008, 0.7114, 0.7204, 0.7276, 0.7244, 0.7526, 0.7808,
-  0.8089, 0.8371, 0.8652, 0.8934, 0.9215, 0.9497, 0.9779, 0.9882,
-  0.9994, 0.9997, 0.9987, 0.9967, 0.9937, 0.9897, 0.9847, 0.9783,
-  0.9705, 0.9607, 0.9478, 0.9213, 0.9002, 0.8747, 0.8460, 0.8148,
-  0.7823, 0.7567, 0.7567, 0.7481, 0.7374, 0.7256, 0.7111, 0.6913,
-  0.4142,
-];
-/* Plan view: widest half width per station, as a fraction of the body's own
-   half width. The fender and haunch flares are inside this curve - it is a
-   measurement, so nothing has to be added on top of it. */
-const REF_PLAN = [
-  0.1775, 0.5351, 0.6889, 0.7836, 0.8467, 0.8925, 0.8977, 0.9040,
-  0.9166, 0.9312, 0.9525, 0.9692, 0.9865, 0.9949, 0.9978, 0.9985,
-  0.9996, 0.9974, 0.9946, 0.9921, 0.9897, 0.9873, 0.9851, 0.9844,
-  0.9836, 0.9815, 0.9775, 0.9727, 0.9693, 0.9679, 0.9677, 0.9673,
-  0.9667, 0.9664, 0.9563, 0.9544, 0.9501, 0.9468, 0.9293, 0.9181,
-  0.9015, 0.8821, 0.8622, 0.8366, 0.8009, 0.7461, 0.6486, 0.4661,
-  0.0885,
-];
-/* Cross section, measured on the reference between the sill and the beltline:
-   half width as a fraction of the widest point of that section. The flank
-   crowns at 57% of its height and tucks at both ends - a slab-sided section
-   is the single fastest way to make a body look wrong. */
+/* Cross section from sill to beltline: half width as a fraction of the widest
+   half width at that station, from the sill (0) to the beltline (1). Traced
+   through the reference mesh, not a styling guess. */
 const REF_SECTION = [
   [0.000, 0.862], [0.071, 0.903], [0.143, 0.934], [0.214, 0.952], [0.286, 0.966],
   [0.357, 0.977], [0.429, 0.986], [0.500, 0.995], [0.571, 1.000], [0.643, 0.999],
@@ -715,59 +714,6 @@ const REF_SECTION = [
    of the cowl it is the top of the front wing, through the doors it is the
    base of the side glass (measured 0.674 H), behind the cabin it climbs into
    the fastback shoulder. */
-const REF_BELT = [
-  [0.000, 0.420], [0.040, 0.517], [0.080, 0.589], [0.125, 0.634], [0.167, 0.665],
-  [0.210, 0.687], [0.250, 0.698], [0.283, 0.706], [0.340, 0.690], [0.400, 0.680],
-  [0.460, 0.674], [0.550, 0.675], [0.630, 0.681], [0.700, 0.690], [0.745, 0.706],
-  [0.790, 0.755], [0.830, 0.744], [0.875, 0.736], [0.920, 0.721], [0.958, 0.700],
-  [0.980, 0.647], [1.000, 0.414],
-];
-/* Greenhouse: half width of the cabin at the beltline, as a fraction of the
-   body's half width, and how it tapers to the roof (measured tumblehome). */
-const REF_CABIN = [
-  [0.283, 0.700], [0.340, 0.836], [0.420, 0.872], [0.500, 0.867], [0.580, 0.855],
-  [0.667, 0.837], [0.750, 0.776], [0.820, 0.620], [0.860, 0.500],
-];
-const REF_TUMBLE = 0.425;          // cabin half width lost between belt and roof
-/* ...and how it is lost. Measured on the reference: the greenhouse tucks in
-   almost linearly for the first two thirds and then falls away as the roof
-   turns over, so one straight taper is wrong at both ends. Fraction of the
-   cabin's half width at the beltline, against height from belt to roof. */
-const REF_CABPROF = [
-  [0.00, 1.000], [0.10, 0.957], [0.20, 0.917], [0.30, 0.877], [0.40, 0.835],
-  [0.50, 0.794], [0.60, 0.752], [0.70, 0.711], [0.80, 0.660], [0.90, 0.575],
-  [1.00, 0.394],
-];
-/* How wide the section still is where it meets the beltline, as a fraction of
-   that station's widest point. REF_SECTION's own top value (0.891) only holds
-   through the doors: over the front wing the reference tucks to 0.78 and over
-   the tail to 0.74, so holding one number the length of the car put the bonnet
-   and boot-lid shut lines up to 21 cm per side too far outboard. */
-const REF_SECTOP = [
-  [0.00, 0.820], [0.06, 0.785], [0.12, 0.836], [0.18, 0.866], [0.24, 0.848],
-  [0.30, 0.861], [0.36, 0.893], [0.42, 0.907], [0.50, 0.908], [0.58, 0.910],
-  [0.66, 0.891], [0.72, 0.883], [0.78, 0.790], [0.84, 0.745], [0.90, 0.790],
-  [0.96, 0.755], [1.00, 0.755],
-];
-/* Daylight opening: top edge of the side glass, as a fraction of the height
-   between beltline and roofline at that station. */
-const REF_DLO = [
-  [0.300, 0.30], [0.350, 0.88], [0.400, 0.72], [0.460, 0.76], [0.520, 0.77],
-  [0.580, 0.79], [0.640, 0.77], [0.700, 0.68], [0.750, 0.60], [0.800, 0.34],
-];
-
-/* -------------------------------------------------------------------------
-   SECOND REFERENCE: the modern super-GT from the supplied orthographic sheet.
-   Traced the same way, but from images rather than a mesh: the side, top,
-   front and rear views were thresholded and measured in pixels, then
-   normalised - longitudinal against the car's own length, vertical against
-   its own height, lateral against its own widest point. The sheet's views are
-   drawn at inconsistent scales (it is a styling sheet, not an engineering
-   drawing), so the SHAPE below is the sheet's and the three absolute
-   dimensions are the class it depicts: 4800 x 1980 x 1325 mm on a 2824 mm
-   wheelbase, which is between a DB12 (4725 x 1976 x 1279, wb 2805) and a
-   Vanquish (4850 x 2044 x 1290, wb 2885). Wheels are 21 inch.
-   ------------------------------------------------------------------------- */
 const REF2_SIL = [
   0.4385, 0.4973, 0.5401, 0.5722, 0.6043, 0.6257, 0.6471, 0.6631,
   0.6791, 0.6845, 0.6952, 0.7005, 0.7059, 0.7112, 0.7166, 0.7219,
@@ -809,9 +755,6 @@ const REF2_DLO = [
 /* Both cars, addressed by archetype. Everything the generator draws for a car
    comes out of its entry here. */
 const REFERENCES = {
-  gt_coupe: { SIL: REF_SIL, PLAN: REF_PLAN, SECTION: REF_SECTION, BELT: REF_BELT,
-              CABIN: REF_CABIN, TUMBLE: REF_TUMBLE, DLO: REF_DLO, SECTOP: REF_SECTOP,
-              CABPROF: REF_CABPROF },
   super_gt: { SIL: REF2_SIL, PLAN: REF2_PLAN, SECTION: REF_SECTION, BELT: REF2_BELT,
               CABIN: REF2_CABIN, TUMBLE: REF2_TUMBLE, DLO: REF2_DLO },
 };
@@ -832,67 +775,6 @@ const PAINTS = [
 ];
 
 const ARCHETYPES = {
-  gt_coupe: {
-    label: 'Meridian GT', doors: 2, layout: 'voorin gemonteerde V8 · achterwielaandrijving',
-    // Primary dimensions: only the length is free. Everything else is the
-    // measured reference ratio with a narrow seeded tolerance.
-    L: [4.740, 4.775],
-    hRatio: [0.2585, 0.2600], wRatio: [0.3775, 0.3795],
-    wbRatio: [0.5620, 0.5650], frontOhShare: [0.435, 0.443], trackRatio: [0.820, 0.840],
-    diaRatio: [0.1396, 0.1404], tireW: [0.243, 0.250], rearTireExtra: [0.008, 0.014], aspect: [0.44, 0.46],
-    clearance: [0.140, 0.150],
-    // silhouette stations, as fractions of length from the nose
-    sCowl: [0.265, 0.270], sRoofF: [0.460, 0.470], sRoofPeak: [0.516, 0.525],
-    sRoofR: [0.712, 0.720], sDeck: [0.840, 0.850],
-    // silhouette heights, as fractions of overall height
-    hNose: [0.415, 0.424], hCowl: [0.724, 0.732], hRoof: [0.997, 1.000],
-    hDeck: [0.755, 0.765], hBelt: [0.702, 0.710], hBeltDoor: [0.670, 0.678],
-    hBeltQuarter: [0.694, 0.702],
-    // wheel arch: a circle concentric with the hub, radius = tyre + 35 mm at
-    // the crown. The reference's own opening is not concentric - its gap grows
-    // to about 59 mm at +/-200 mm - so this circle is an approximation.
-    archGap: [0.033, 0.037],
-    profileJitter: [-0.002, 0.002],
-    // section
-    shoulderDrop: [0.030, 0.044], haunch: [0.0, 0.0], frontFlare: [0.0, 0.0],
-    tumble: [0.100, 0.115], rockerH: [0.085, 0.100], rockerTuck: [0.002, 0.008], beltTuck: [0.004, 0.010],
-    hoodDome: [0.016, 0.021], hoodRise: [0.010, 0.018], hoodCrease: [0.006, 0.011], ducktail: [0.004, 0.009],
-    noseDepth: [0.60, 0.66], tailDepth: [0.30, 0.35], frontRakeBack: [0.16, 0.20], tailRakeIn: [0.05, 0.075],
-    doorLen: [1.16, 1.24],
-    wheelStyles: ['five'],
-    mirror: 'stalk', sideVent: 1.0, wingChance: 0.0, faceFrac: 0.9743, tailFloor: 0.240,
-    dloRear: 0.795, mirrorF: 0.402,
-    // measured on the centreline: rearmost at 0.39 H, tucking 3 cm by 0.44 H
-    // and 9 cm through 0.53-0.61 H
-    tailTuck: [[0.10, 0.220], [0.16, 0.165], [0.20, 0.130], [0.243, 0.094], [0.29, 0.027],
-               [0.34, 0.005], [0.39, 0.000], [0.44, 0.033], [0.49, 0.045], [0.53, 0.070],
-               [0.58, 0.086], [0.61, 0.088], [0.65, 0.055], [0.68, 0.074], [0.71, 0.130],
-               [0.75, 0.190]],
-    // Openings, in the reference's own terms: |z| as a fraction of the body's
-    // half width, y as a fraction of overall height above the ground.
-    apertures: {
-      face: 'oval',
-      lamp: { z: [0.330, 0.741], gap: 0.013, h: [0.012, 0.105] },
-      mouth: { z: 0.600, y: [0.198, 0.363], flat: 0.0, bars: 0.034, blade: false, ribs: [0.117, 0.187] },
-      fog: { z: [0.681, 0.804], y: [0.245, 0.335] },
-      frontSplit: 0.414,
-      tail: 'recess',
-      recess: { span: 0.428, y: [0.517, 0.620], gap: 0.030, depth: [0.150, 0.120] },
-      tailLamp: { span: [0.497, 0.745], y: [0.499, 0.647], gap: 0.055, h: 0.095 },
-      rearSplit: 0.455,
-      exh: { z: [], y: [0.142, 0.205] },   // the reference has no outlets in the valance
-      gill: { f: [0.240, 0.271], v: [0.40, 0.60], blades: 3 },
-      hoodVent: { u: [0.30, 0.56], bands: [[0.255, 0.335], [0.665, 0.745]], blades: 3 },
-    },
-    // The gate's ranges are this car's own measurements plus the tolerance the
-    // seeded variation is allowed to use - they are not shared between cars.
-    gate: {
-      wb: [0.560, 0.567], gap: [2.7, 3.2], arch: [0.025, 0.055], ride: [0.130, 0.160],
-      dlo: [0.300, 0.350], ohf: [0.185, 0.200], ohr: [0.238, 0.252], track: [0.81, 0.86],
-      cabin: [0.410, 0.460], hood: [0.263, 0.272], deck: [0.33, 0.50], rr: [18, 30],
-      ws: [16, 25], d2a: [0.124, 0.146], hw: [0.66, 0.71],
-    },
-  },
   super_gt: {
     label: 'Aurelia S', doors: 2, layout: 'voorin gemonteerde V12 · achterwielaandrijving',
     L: [4.780, 4.820],
@@ -943,7 +825,7 @@ const ARCHETYPES = {
 };
 
 function generateDNA(opts = {}) {
-  const type = ARCHETYPES[opts.type] ? opts.type : 'gt_coupe';
+  const type = ARCHETYPES[opts.type] ? opts.type : 'super_gt';
   const A = ARCHETYPES[type];
   const seed = (opts.seed === undefined ? (Math.random() * 1e9) | 0 : opts.seed) >>> 0;
   const r = new RNG(seed);
@@ -3270,20 +3152,6 @@ function buildVehicle(opts = {}) {
     v.layers[p.layer - 1].parts.push(p.id);
   });
 
-  if (typeof window !== 'undefined' && window.VG_LOWPOLY) {
-    const seen = new Set();
-    v.root.traverse((o) => {
-      if (!o.isMesh || !o.material) return;
-      for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
-        if (seen.has(m.uuid)) continue;
-        seen.add(m.uuid);
-        m.flatShading = true;
-        if (m.clearcoat !== undefined) m.clearcoat = 0;
-        m.needsUpdate = true;
-      }
-    });
-  }
-
   symmetriseVehicle(v);
 
   /* ---- caches for demo + gate ------------------------------------------ */
@@ -3881,8 +3749,10 @@ Vehicle.prototype.validateGeometry = function () {
   function covered() {
     const h = Math.max(1, window.innerHeight);
     let top = 0, bot = 0;
-    const d = document.querySelector('.dock');
-    if (d) { const r = d.getBoundingClientRect(); if (r.height) bot = clamp((h - r.top) / h, 0, 0.5); }
+    const d = document.body.classList.contains('pinopen') ? document.getElementById('pinpanel')
+            : document.body.classList.contains('qcopen') ? document.getElementById('qcpanel')
+            : document.querySelector('.dock');
+    if (d) { const r = d.getBoundingClientRect(); if (r.height) bot = clamp((h - r.top) / h, 0, 0.62); }
     const u = document.querySelector('.hud');
     if (u) { const r = u.getBoundingClientRect(); if (r.height) top = clamp(r.bottom / h, 0, 0.4); }
     return [top, bot];
@@ -3970,7 +3840,7 @@ Vehicle.prototype.validateGeometry = function () {
   window.addEventListener('resize', resize);
 
   /* ---- vehicle --------------------------------------------------------- */
-  let car = null, type = 'gt_coupe', seed = 12345, explode = 0, explodeTarget = 0;
+  let car = null, type = 'super_gt', seed = 12345, explode = 0, explodeTarget = 0;
   let dentMode = true, spinning = false, tyreCursor = 0, clay = false, stage = 8, zebra = false, xray = false;
 
   function buildExplodeGuides(v) {
@@ -4009,6 +3879,8 @@ Vehicle.prototype.validateGeometry = function () {
     buildExplodeGuides(car);
     car.qc = qualityGate(car);
     scene.add(car.root);
+    car.root.add(pinRoot);
+    clearPins();
     applyStage();
     frameCar(1.74, 0.46);
     sun.target.position.set(0, 0.6, 0);
@@ -4111,8 +3983,9 @@ Vehicle.prototype.validateGeometry = function () {
     pointers.delete(e.pointerId);
     pinch0 = 0;
     idleSince = performance.now();
-    if (wasSingle && dragged < 9 && performance.now() - downAt < 500 && dentMode) {
-      strike(e.clientX, e.clientY);
+    if (wasSingle && dragged < 9 && performance.now() - downAt < 500) {
+      if (pickMode) placePin(e.clientX, e.clientY);
+      else if (dentMode) strike(e.clientX, e.clientY);
     }
   });
   canvas.addEventListener('pointercancel', (e) => pointers.delete(e.pointerId));
@@ -4144,6 +4017,150 @@ Vehicle.prototype.validateGeometry = function () {
   scene.add(marker);
   let flashT = 0;
   function flash(p) { marker.position.copy(p); flashT = 1; }
+
+  /* ---- pointer ----------------------------------------------------------
+     Tapping in this mode names a spot on the car in the same terms the
+     generator is written in - the station fraction from nose to tail, height
+     over overall height, lateral over half width - so a remark about it can be
+     traced straight back to the curve that produced it. The pins hang off the
+     car's own root, so they stay put through a bounce or an exploded view. */
+  let pickMode = false;
+  const pins = [];
+  const pinRoot = new THREE.Group();
+
+  function pinBadge(n) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    g.fillStyle = '#d9a64a';
+    g.beginPath(); g.arc(32, 32, 29, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#1a1206';
+    g.font = 'bold 34px system-ui,-apple-system,sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(String(n), 32, 35);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
+    sp.scale.setScalar(0.16);
+    sp.renderOrder = 40;
+    return sp;
+  }
+
+  function partAt(obj) {
+    const own = new Map(), byId = new Map();
+    car.each((p) => {
+      byId.set(p.id, p);
+      (p.meshes || []).forEach((m) => own.set(m, p));
+    });
+    if (own.has(obj)) return own.get(obj);
+    for (let o = obj; o; o = o.parent) if (o.name && byId.has(o.name)) return byId.get(o.name);
+    return null;
+  }
+
+  function placePin(cx, cy) {
+    if (!car) return;
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((cx - r.left) / r.width) * 2 - 1, -(((cy - r.top) / r.height) * 2 - 1));
+    ray.setFromCamera(ndc, camera);
+    // The pins hang off the car, so they would shadow the surface under them;
+    // the panel-gap lines carry no face and no part, so they are no use as a
+    // target either. Only real surface triangles count.
+    pinRoot.visible = false;
+    const hits = ray.intersectObject(car.root, true)
+      .filter((h) => h.object.visible && h.object.isMesh && h.face && h.object !== marker);
+    pinRoot.visible = true;
+    if (!hits.length) return;
+    const h = hits[0];
+    const part = partAt(h.object);
+    const local = car.root.worldToLocal(h.point.clone());
+    // The car spins, so a world-space normal would mean nothing an hour later.
+    // Take it back into the car's own frame, and turn it to face the camera:
+    // the shells are two-sided, so the raw winding is not a reliable outside.
+    const inv = new THREE.Matrix4().copy(car.root.matrixWorld).invert();
+    const nrm = h.face.normal.clone().transformDirection(h.object.matrixWorld);
+    if (nrm.dot(ray.ray.direction) > 0) nrm.negate();
+    nrm.transformDirection(inv);
+
+    const n = pins.length + 1;
+    const g = new THREE.Group();
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.028, 12, 10),
+      new THREE.MeshBasicMaterial({ color: 0xd9a64a, depthTest: false }));
+    dot.renderOrder = 39;
+    const badge = pinBadge(n);
+    badge.position.y = 0.12;
+    g.add(dot, badge);
+    g.position.copy(local);
+    pinRoot.add(g);
+
+    pins.push({ n: n, node: g, local: local, nrm: nrm, id: part ? part.id : '?',
+                label: part ? part.label : 'onbekend' });
+    renderPins();
+  }
+
+  function pinText() {
+    if (!car) return '';
+    const L = car.spec.L, W = car.spec.W, H = car.spec.H;
+    const deg = (rad) => Math.round(rad * 180 / Math.PI);
+    const out = ['GT-STUDIO AANWIJZING',
+      'auto: ' + car.spec.typeLabel + ' · seed ' + seed + ' · ' + car.spec.paint.name,
+      'maten: ' + L.toFixed(3) + ' x ' + W.toFixed(3) + ' x ' + H.toFixed(3) + ' m',
+      'camera: az ' + deg(cam.az) + '° · el ' + deg(cam.el) + '° · afstand ' + cam.dist.toFixed(2) + ' m',
+      ''];
+    pins.forEach((p) => {
+      const f = clamp((L / 2 - p.local.x) / L, 0, 1);      // 0 = nose, 1 = tail
+      const hf = p.local.y / H;
+      const zf = Math.abs(p.local.z) / (W / 2);
+      out.push(p.n + '. ' + p.id + ' — ' + p.label);
+      out.push('   station ' + f.toFixed(3) + ' (0 = neus, 1 = staart) · x ' + p.local.x.toFixed(3) + ' m');
+      out.push('   hoogte ' + hf.toFixed(3) + ' H (' + p.local.y.toFixed(3) + ' m)');
+      out.push('   zijwaarts ' + zf.toFixed(3) + ' van halve breedte · ' +
+        (p.local.z >= 0 ? 'links' : 'rechts') + ' (' + Math.abs(p.local.z).toFixed(3) + ' m)');
+      out.push('   normaal ' + p.nrm.x.toFixed(2) + ' / ' + p.nrm.y.toFixed(2) + ' / ' + p.nrm.z.toFixed(2));
+    });
+    const note = ($('pinnote').value || '').trim();
+    if (note) out.push('', 'opmerking: ' + note);
+    return out.join('\n');
+  }
+
+  function renderPins() {
+    const box = $('pinlist');
+    box.innerHTML = '';
+    if (!pins.length) {
+      box.innerHTML = '<p style="margin:6px 2px;font-size:12px;color:var(--dim)">' +
+        'Nog niets aangewezen. Tik op de auto.</p>';
+    }
+    const L = car ? car.spec.L : 1, H = car ? car.spec.H : 1, W = car ? car.spec.W : 1;
+    pins.forEach((p, i) => {
+      const f = clamp((L / 2 - p.local.x) / L, 0, 1);
+      const row = document.createElement('div');
+      row.className = 'pinrow';
+      row.innerHTML = '<span class="pinno">' + p.n + '</span><span class="w"><b></b><span></span></span>' +
+        '<button class="x" aria-label="Verwijder">×</button>';
+      row.querySelector('b').textContent = p.label;
+      row.querySelector('.w span').textContent = 'station ' + f.toFixed(2) + ' · hoogte ' +
+        (p.local.y / H).toFixed(2) + ' H · ' + (p.local.z >= 0 ? 'links' : 'rechts') + ' ' +
+        (Math.abs(p.local.z) / (W / 2)).toFixed(2);
+      row.querySelector('.x').addEventListener('click', () => {
+        pinRoot.remove(p.node);
+        pins.splice(i, 1);
+        pins.forEach((q, k) => {                       // renumber, badges included
+          q.n = k + 1;
+          const old = q.node.children[1];
+          q.node.remove(old);
+          const nb = pinBadge(q.n); nb.position.y = 0.12;
+          q.node.add(nb);
+        });
+        renderPins();
+      });
+      box.appendChild(row);
+    });
+    $('pinout').value = pinText();
+  }
+
+  function clearPins() {
+    pins.length = 0;
+    while (pinRoot.children.length) pinRoot.remove(pinRoot.children[0]);
+    renderPins();
+  }
 
   /* ---- UI -------------------------------------------------------------- */
   const $ = (id) => document.getElementById(id);
@@ -4287,11 +4304,6 @@ Vehicle.prototype.validateGeometry = function () {
   chip('clayBtn', () => { clay = !clay; if (!clay && stage < 8) stage = 8; applyStage(); });
   chip('zebraBtn', () => { zebra = !zebra; applyStage(); });
   chip('xrayBtn', () => { xray = !xray; applyStage(); });
-  chip('lowpolyBtn', () => {
-    window.VG_LOWPOLY = !window.VG_LOWPOLY;
-    $('lowpolyBtn').classList.toggle('sel', !!window.VG_LOWPOLY);
-    spawnDeferred(type, seed, 'Wordt opnieuw opgebouwd…');
-  });
   chip('qcBtn', () => {
     const box = $('qclist');
     box.innerHTML = '';
@@ -4364,6 +4376,45 @@ Vehicle.prototype.validateGeometry = function () {
     car.wheelSpin = spinning ? 9 : 0;
     $('spin').classList.toggle('sel', spinning);
   });
+  // the sheet slides for a quarter second; re-frame once it has settled
+  const reframe = () => setTimeout(() => { if (car && camFit) frameCar(camFit[0], camFit[1]); }, 280);
+  chip('pinBtn', () => {
+    pickMode = !pickMode;
+    $('pinBtn').classList.toggle('sel', pickMode);
+    document.body.classList.toggle('pinopen', pickMode);
+    document.body.classList.remove('qcopen', 'open');
+    if (pickMode) renderPins();
+    reframe();
+  });
+  chip('pinClose', () => {
+    pickMode = false;
+    $('pinBtn').classList.remove('sel');
+    document.body.classList.remove('pinopen');
+    reframe();
+  });
+  chip('pinclear', clearPins);
+  $('pinnote').addEventListener('input', () => { $('pinout').value = pinText(); });
+  chip('pincopy', () => {
+    const box = $('pinout'), txt = box.value;
+    const done = (ok) => {
+      const b = $('pincopy');
+      b.textContent = ok ? 'Gekopieerd' : 'Selecteer en kopieer zelf';
+      setTimeout(() => { b.textContent = 'Kopieer'; }, 1800);
+    };
+    // navigator.clipboard needs a secure context, which a file:// page is not,
+    // so the old selection route has to stay as the fallback that actually works
+    box.readOnly = false;
+    box.focus();
+    box.setSelectionRange(0, txt.length);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    box.readOnly = true;
+    if (ok) { done(true); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(() => done(true), () => done(false));
+    } else done(false);
+  });
+
   chip('dent', () => {
     dentMode = !dentMode;
     $('dent').classList.toggle('sel', dentMode);
@@ -4443,11 +4494,12 @@ Vehicle.prototype.validateGeometry = function () {
   try {
     resize();
     requestAnimationFrame(frame);
-    spawnDeferred('gt_coupe', seed);
+    spawnDeferred('super_gt', seed);
     // hooks used by the render and profiling harnesses
     window.__vgCar = () => car;
     window.__vgRespawn = () => spawnDeferred(type, seed);
     window.__vgRenderer = renderer;
+    window.__vgCamera = () => camera;
     window.__vgBuildOnly = (i) => buildVehicle({ type, seed: (seed + i) >>> 0 });
   } catch (err) {
     window.__vgFail('Opbouwen van het voertuig mislukte', String(err && err.stack || err));

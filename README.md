@@ -414,38 +414,42 @@ skip it, or delete `log.js` and drop the call from the `scripts` section of
 ## `sportscar-studio.html`
 
 A standalone side project that ships in this repo but has nothing to do with the
-game: open the file in a browser and it builds a GT coupé procedurally in
+game: open the file in a browser and it builds a super-GT procedurally in
 three.js, panel by panel, with hinges, dentable panels, an exploded view and a
-quality gate that checks its own proportions.
+quality gate that checks its own proportions. It needs JavaScript, so it has to
+be opened in a real browser — a file-preview pane renders the markup but runs no
+scripts, and the page now says so rather than sitting on a spinner.
 
-The body is not styled by hand. A two-door sports car reference mesh was
-measured by ray-casting through it, and the resulting curves — side silhouette,
-plan half width, cross section, beltline, greenhouse, daylight opening and the
-lamp and grille apertures — are embedded in the file as tables. Everything the
-generator draws comes from those numbers, which puts the car at 4757 × 1800 ×
-1233 mm on a 2680 mm wheelbase: the class of a Jaguar XK8/XKR, whose published
-wheel and tyre sizes it uses. Rendered from the same cameras as the reference
-and compared above the ground line, the silhouettes overlap 0.93–0.97
-(intersection over union). That figure is worth reading with care: it is
-measured on a threshold mask, so it moves with the paint and shadow settings
-of the render rather than with the shape alone, and it is quoted here for the
-matte material path.
+The body is not styled by hand. The car — the "Aurelia S" — was traced from an
+orthographic styling sheet of a modern super-GT: the views were thresholded and
+measured in pixels, then normalised per view, because a styling sheet's views
+are not drawn to one scale. The resulting curves — side silhouette, plan half
+width, beltline, greenhouse, daylight opening and the lamp and grille apertures
+— are embedded in the file as tables, alongside the one curve the sheet could
+not give: the sill-to-beltline cross section, ray-cast through a reference mesh.
+Everything the generator draws comes from those numbers. The shape is the
+sheet's; the three absolute dimensions are the class it depicts, around a
+DB12/Vanquish: 4.78–4.82 × 1.99 × 1.33 m on a 2.84 m wheelbase.
 
-A second car sits alongside it, traced the same way but from an orthographic
-styling sheet instead of a mesh: a modern super-GT of roughly DB12/Vanquish
-size. Its views were measured in pixels and normalised per view, because a
-styling sheet's views are not drawn to one scale — so the shape is the sheet's
-and the three absolute dimensions come from the class it depicts. The model
-buttons in the dock switch between the two, and each car carries its own
-quality-gate ranges, since a check centred on one car's proportions says
-nothing about the other's.
+An earlier car, traced the same way but from a reference mesh, has been removed
+now that development continues on this one; its cross-section table is what
+remains of it.
+
+**Pointing at something.** The dock's *Aanwijzen* button turns taps into
+numbered pins instead of dents. Each pin names the part it landed on and gives
+its position the way the generator is written — station from nose to tail,
+height over overall height, lateral over half width — plus the surface normal in
+the car's own frame and the current camera. The panel builds that into a block
+of text with a copy button, so a remark about one spot can be quoted exactly.
+Copying falls back to a text selection, because `navigator.clipboard` needs a
+secure context and a `file://` page is not one.
 
 On a touch device the studio takes a lighter path: the surfaces are built from
 about 62% of the samples (which costs under 0.3% of the silhouette), the shadow
 map gives way to a painted contact shadow, and the camera re-frames itself for a
 portrait screen so the car sits in the strip the panels leave free. The boot card
-names the stage it is in, because most of the wait on a phone is the three.js
-download rather than the build. `?q=1` forces full sampling anywhere, `?q=0.5` a
-faster build.
+names the stage it is in, because a good part of the wait on a phone is the
+three.js download rather than the build. `?q=1` forces full sampling anywhere,
+`?q=0.5` a faster build.
 
 It needs nothing from `npm`; three.js comes from a CDN.
