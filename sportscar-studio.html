@@ -1300,10 +1300,24 @@ function makeBody(d) {
   B.frameBar = (sd, thick, xDrawFrom) => {
     const xF = d.xCowl, xR = d.xDloRear;
     const N = 240;
-    const path = (t) => {
-      const x = lerp(xF, xR, t);
+    const dlo = (x) => {
       const q = B.cabin(x, clamp(B.dloTop(x), 0.05, 0.99), 1);
       return new THREE.Vector3(q[0], q[1], q[2]);
+    };
+    // Ahead of the mirror the daylight opening turns back inboard - 0.715 m out
+    // at the mirror, 0.658 by the cowl - so following it there swung the bar
+    // into the screen. Over that stretch the path runs straight on instead,
+    // along its own tangent at the mirror, which carries it down onto the
+    // bonnet shut. Same point and same tangent at the join, so no kink.
+    const xM = (xDrawFrom === undefined ? xF : xDrawFrom);
+    const pM = dlo(xM);
+    const tM = dlo(xM - 0.02).sub(dlo(xM + 0.02)).normalize();   // pointing forward
+    const path = (t) => {
+      const x = lerp(xF, xR, t);
+      if (x > xM && Math.abs(tM.x) > 1e-6) {
+        return pM.clone().addScaledVector(tM, (x - xM) / tM.x);
+      }
+      return dlo(x);
     };
     const pts = new Array(N + 1), dirs = new Array(N + 1);
     const tan = new THREE.Vector3(), nrm = new THREE.Vector3(), acr = new THREE.Vector3();
@@ -1340,7 +1354,7 @@ function makeBody(d) {
     // forward ends by angling into the screen. It is drawn from the mirror back;
     // the path still runs to the cowl, so the screen has an edge to follow over
     // the stretch where there is no bar.
-    const tDraw = clamp((xF - (xDrawFrom === undefined ? xF : xDrawFrom)) / (xF - xR), 0, 1);
+    const tDraw = 0;
     return {
       surface: (u, w) => {
         const c = sample(lerp(tDraw, 1, clamp(u, 0, 1))), t2 = thick * w;
