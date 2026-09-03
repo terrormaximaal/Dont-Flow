@@ -657,11 +657,22 @@ const REF_CABIN = [
   [0.667, 0.837], [0.750, 0.776], [0.820, 0.620], [0.860, 0.500],
 ];
 const REF_TUMBLE = 0.425;          // cabin half width lost between belt and roof
+/* How wide the section still is where it meets the beltline, as a fraction of
+   that station's widest point. REF_SECTION's own top value (0.891) only holds
+   through the doors: over the front wing the reference tucks to 0.78 and over
+   the tail to 0.74, so holding one number the length of the car put the bonnet
+   and boot-lid shut lines up to 21 cm per side too far outboard. */
+const REF_SECTOP = [
+  [0.00, 0.820], [0.06, 0.785], [0.12, 0.836], [0.18, 0.866], [0.24, 0.848],
+  [0.30, 0.861], [0.36, 0.893], [0.42, 0.907], [0.50, 0.908], [0.58, 0.910],
+  [0.66, 0.891], [0.72, 0.883], [0.78, 0.790], [0.84, 0.745], [0.90, 0.790],
+  [0.96, 0.755], [1.00, 0.755],
+];
 /* Daylight opening: top edge of the side glass, as a fraction of the height
    between beltline and roofline at that station. */
 const REF_DLO = [
-  [0.300, 0.32], [0.350, 0.62], [0.400, 0.86], [0.465, 0.97], [0.520, 0.96],
-  [0.600, 0.95], [0.660, 0.92], [0.700, 0.86], [0.750, 0.72],
+  [0.300, 0.30], [0.350, 0.88], [0.400, 0.72], [0.460, 0.76], [0.520, 0.77],
+  [0.580, 0.79], [0.640, 0.77], [0.700, 0.68], [0.750, 0.60], [0.800, 0.34],
 ];
 
 /* -------------------------------------------------------------------------
@@ -718,7 +729,7 @@ const REF2_DLO = [
    comes out of its entry here. */
 const REFERENCES = {
   gt_coupe: { SIL: REF_SIL, PLAN: REF_PLAN, SECTION: REF_SECTION, BELT: REF_BELT,
-              CABIN: REF_CABIN, TUMBLE: REF_TUMBLE, DLO: REF_DLO },
+              CABIN: REF_CABIN, TUMBLE: REF_TUMBLE, DLO: REF_DLO, SECTOP: REF_SECTOP },
   super_gt: { SIL: REF2_SIL, PLAN: REF2_PLAN, SECTION: REF_SECTION, BELT: REF2_BELT,
               CABIN: REF2_CABIN, TUMBLE: REF2_TUMBLE, DLO: REF2_DLO },
 };
@@ -768,6 +779,7 @@ const ARCHETYPES = {
     doorLen: [1.16, 1.24],
     wheelStyles: ['five'],
     mirror: 'stalk', sideVent: 1.0, wingChance: 0.0, faceFrac: 0.9743, tailFloor: 0.240,
+    dloRear: 0.795, mirrorF: 0.402,
     // Openings, in the reference's own terms: |z| as a fraction of the body's
     // half width, y as a fraction of overall height above the ground.
     apertures: {
@@ -816,6 +828,7 @@ const ARCHETYPES = {
     doorLen: [1.10, 1.18],
     wheelStyles: ['split'],
     mirror: 'stalk', sideVent: 1.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.980,
+    dloRear: 0.760, mirrorF: 0.392,
     apertures: {
       face: 'shield',
       // measured on the sheet's front view
@@ -921,11 +934,14 @@ function generateDNA(opts = {}) {
   d.dloProfile = REFS.DLO.map(([f, h]) => [S(f), h]);
   d.refSection = REFS.SECTION;
   d.refTumble = REFS.TUMBLE;
+  d.secTopProfile = REFS.SECTOP ? REFS.SECTOP.map(([f, h]) => [S(f), h]) : null;
   d.ap = A.apertures;
   d.gate = A.gate;
   d.faceEdge = A.faceEdge || 'station';
   d.faceFrac = A.faceFrac;
   d.tailFloor = A.tailFloor || 0;
+  d.xDloRear = d.xNose - (A.dloRear || 0.78) * d.L;
+  d.xMirror = d.xNose - (A.mirrorF || 0.40) * d.L;
 
   // --- panel stations ------------------------------------------------------
   d.xDoorF = d.xCowl - 0.015;
@@ -1040,7 +1056,11 @@ function makeBody(d) {
 
   /* ---- key lines along the car ----------------------------------------- */
   B.rockerTop = d.clearance + d.rockerH;
-  const SKIN = 0.014;
+  // The traced silhouette is the body's outer surface - it was measured by
+  // casting rays onto it - so nothing may be subtracted from it. Panels are
+  // given their thickness inwards, and taking a skin off here as well put the
+  // whole roof, bonnet and boot lid 14 mm below the reference.
+  const SKIN = 0;
   const sil = curve1D(d.topProfile);      // measured centreline, nose to tail
   const beltRaw = curve1D(d.beltProfile); // measured top edge of the flank
   B.belt = (x) => beltRaw(xc(x));
@@ -1092,6 +1112,9 @@ function makeBody(d) {
   // Half width as a fraction of the widest point of the section, from the sill
   // up to the beltline. Measured on the reference, used as-is.
   const ENV = curve1D(d.refSection);
+  const ENV_TOP = ENV(1);                       // the shared shape's own top value
+  const SECTOP = d.secTopProfile ? curve1D(d.secTopProfile) : null;
+  const T_CROWN = 0.571;                        // where the measured section is widest
   const cache = new Map();
   const stationOf = (x) => {
     const key = Math.round(x * 500);
@@ -1103,6 +1126,7 @@ function makeBody(d) {
         yS, yB, span, hw: B.hw(x),
         tSh: clamp((B.shoulderY(x) - yS) / span, 0, 1),
         crease: B.shoulderDropAt(x) * 0.13,
+        top: SECTOP ? SECTOP(x) : ENV_TOP,
       };
       cache.set(key, s);
     }
@@ -1111,7 +1135,15 @@ function makeBody(d) {
   B.zAt = (x, y) => {
     const s = stationOf(x);
     const t = clamp((y - s.yS) / s.span, 0, 1);
-    let z = s.hw * ENV(t);
+    // Below the crown the section is the measured envelope; above it the
+    // envelope's shape is re-scaled so the flank arrives at this station's own
+    // measured width at the beltline.
+    let z;
+    if (t <= T_CROWN || Math.abs(s.top - ENV_TOP) < 1e-4) z = s.hw * ENV(t);
+    else {
+      const shape = clamp((ENV(t) - ENV_TOP) / (1 - ENV_TOP), 0, 1);
+      z = s.hw * (s.top + (1 - s.top) * shape);
+    }
     // the character line: a shallow crease, not a step
     z -= s.crease * Math.exp(-Math.pow((t - s.tSh) / 0.11, 2));
     // the sill tucks under below the rocker top
@@ -1331,8 +1363,12 @@ function makeBody(d) {
     const e = 0.004;                                  // edge tangent in the x-z plane
     const tx = edge.x(z + e) - edge.x(z - e), tz = 2 * e;
     const l = Math.hypot(tx, tz) || 1;
-    let nx = tz / l, nz = -tx / l;                    // normal, forced to point outboard
-    if (nx * sign < 0) { nx = -nx; nz = -nz; }
+    let nx = tz / l, nz = -tx / l;
+    // The normal is taken forwards along the car and the offset is then applied
+    // in the panel's own direction. Matching the normal's sign to the panel's
+    // instead cancelled the sign at the tail, which put the boot lid 15 mm
+    // INSIDE the rear bumper where the bonnet sat 10 mm clear of the nose.
+    if (nx < 0) { nx = -nx; nz = -nz; }
     return [x - nx * gap * sign, edge.y(z), z - nz * gap * sign];
   };
 
@@ -2329,7 +2365,7 @@ function buildVehicle(opts = {}) {
   for (const k in SIDE) {
     const sd = SIDE[k], cRef = [midX(d.xCowl, d.xDeck), d.beltY, 0];
     shell(roof, inset(B.cabinRect(d.xCowl, d.xDeck, 0.90, 1.0, sd), 0.995), 18, 2, M.paint, cRef, 0.016);
-    shell(roof, B.cabinRect(d.xDoorR - 0.01, d.xDeck, 0, 0.92, sd), 6, 6, M.paint, cRef, 0.026);   // sail / C-pillar
+    shell(roof, B.cabinRect(d.xDloRear, d.xDeck, 0, 0.92, sd), 6, 6, M.paint, cRef, 0.026);   // sail / C-pillar
   }
   v.addPart(roof);
 
@@ -2722,9 +2758,19 @@ function buildVehicle(opts = {}) {
       const topV = clamp(B.dloTop(xg), 0.12, 0.99);
       return B.cabin(xg, lerp(0.05, topV, w), sd);
     }, dr, 12, 5);
+    // The reference glazes on past the door cut to 0.80 of the length; without
+    // this pane the whole quarter light was drawn as paint.
+    const qtrPart = v.get('quarter.' + k);
+    if (d.xDloRear < xGlassRear - 0.05) {
+      glassPart('glass.quarter.' + k, 'Zijruit achter ' + k.toUpperCase(), (u, w) => {
+        const xg = lerp(xGlassRear + G, d.xDloRear, u);
+        const topV = clamp(B.dloTop(xg), 0.10, 0.99);
+        return B.cabin(xg, lerp(0.05, topV, w), sd);
+      }, qtrPart, 8, 5);
+    }
     // mirror: a teardrop pod on a thin stalk
     const mi = mk('mirror.' + k, 'Spiegel ' + k.toUpperCase(), { detachable: true, stiffness: 0.45, stage: 7 });
-    const mx = x0 - 0.05, my = B.belt(mx) + 0.015, mz = sd * (B.zAt(mx, B.belt(mx) - 0.02) - 0.004);
+    const mx = clamp(d.xMirror, x1 + 0.10, x0 - 0.02), my = B.belt(mx) + 0.015, mz = sd * (B.zAt(mx, B.belt(mx) - 0.02) - 0.004);
     mi.add(new THREE.Mesh(strut(new THREE.Vector3(mx, my, mz), new THREE.Vector3(mx - 0.035, my + 0.030, mz + sd * 0.060), 0.046, 0.026), M.trim), false);
     const cx = mx - 0.060, cy = my + 0.046, cz = mz + sd * 0.115;
     const pod = (u, w) => {
