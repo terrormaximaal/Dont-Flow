@@ -952,6 +952,7 @@ function generateDNA(opts = {}) {
   d.wheelStyle = d.design.wheelStyle;
   d.creaseStyle = 'soft';
   d.splitterDepth = 0;                 // no front splitter on this car
+  d.pillarThick = 0.150;               // A-pillar section, constant along its length
   d.sideVent = true;
   d.ducktailBoost = isS ? 0.55 : 0.10;
   d.exhaust = isS ? 'quad' : 'twin_oval';
@@ -1257,43 +1258,106 @@ function makeBody(d) {
   };
   // The body panel that fills the gap between a screen's edge and the side of
   // the car: roof rail at the top, pillar lower down.
-  // `foot` widens and drops the OUTER edge over the first stretch of u, so the
-  // pillar splays out onto the shoulder where it meets the body instead of
-  // dying to nothing at the screen's base. The inner edge is untouched: it has
-  // to stay welded to the glass.
-  // `foot` is a point the OUTER edge reaches at u = 0, in all three axes, so
-  // the pillar can carry on past the screen's own base and land where it is
-  // wanted on the wing. The inner edge is untouched: it stays welded to the
-  // glass, which still starts at the cowl.
-  B.screenSurround = (xb, xt, taper, capTop, capBot, sd, foot) => {
+  // The panel that fills the gap between a screen's edge and the side of the
+  // car: roof rail at the top, pillar lower down. Used as-is for the rear
+  // screen; the A-pillar is built by B.pillarBand below instead.
+  B.screenSurround = (xb, xt, taper, capTop, capBot, sd) => {
     const wf = B.screenWidth(xb, xt, taper, capTop, capBot);
     return (u, w) => {
       const x = lerp(xb, xt, u);
       const y = B.roofLine(x);
       const inner = wf(u);
-      let ox = x, oy = y, oz = B.cabinHW(x, y);
-      if (foot && foot.dlo) {
-        // Ride the top edge of the side glass instead of the roof rail. On the
-        // rail the band came out 22-29 mm wide over almost its whole length, so
-        // the foot below had to produce the entire pillar on its own and did it
-        // as a fan; on the daylight opening it is 107-173 mm all the way up, and
-        // the foot only has the last stretch out to the wing to cover.
-        const dp = B.cabin(x, clamp(B.dloTop(x), 0.05, 0.99), 1);
-        oy = dp[1];
-        oz = Math.max(oz, dp[2]);
-      }
-      if (foot) {
-        // The three axes travel over different lengths on purpose. Moving them
-        // together cuts the corner and reads as a crease; letting the sideways
-        // travel run furthest up the pillar - and the forward reach settle
-        // first - bows the path out into one wide sweep instead.
-        const ease = (span) => 1 - smootherstep(clamp(u / Math.max(1e-4, span), 0, 1));
-        ox = lerp(x, foot.x, ease(foot.span * 0.50));
-        oy = lerp(y, foot.y, ease(foot.span * 0.80));
-        oz = lerp(oz, Math.max(oz, foot.z), ease(foot.span));
-      }
-      const ew = smootherstep(w);
-      return [lerp(x, ox, ew), lerp(y - 0.004, oy, ew), sd * lerp(inner - 0.004, oz, ew)];
+      const outer = B.cabinHW(x, y);
+      return [x, y - 0.004 * w, sd * lerp(inner - 0.004, outer, smootherstep(w))];
+    };
+  };
+
+  /* ---- A-pillar --------------------------------------------------------
+     Built as one band of constant thickness offset from the windscreen's own
+     edge, rather than as a gap filled between two unrelated curves.
+
+     On a real car the pillar frames the screen: it dies into the cowl at its
+     base - the windscreen's own footing, where the bonnet shuts against it -
+     and into the header rail across the top, and its section is kept as slim
+     and as even as it can be, because structure wants section and vision wants
+     none. Filling to the roof rail instead gave a band that was 22 mm wide in
+     the middle and 200 mm at the top, which is why it needed patching at the
+     bottom and creased when it got it.
+
+     So: walk the screen edge, and at every station step a fixed distance across
+     the surface. The across direction is the in-surface vector towards the
+     daylight opening with its along-the-edge component removed, so the offset
+     is always square to the edge and the thickness is constant by construction.
+     Nothing is special-cased, so there is nothing left to crease. */
+  B.pillarBand = (xb, xt, taper, capTop, capBot, sd, thick) => {
+    const wf = B.screenWidth(xb, xt, taper, capTop, capBot);
+    // Worked out on the +z side, where wf and cabinHW are both side
+    // independent, and mirrored at the end: that keeps the sign of the surface
+    // normal out of it.
+    const on = (v) => {
+      const x = lerp(xb, xt, v);
+      return new THREE.Vector3(x, B.roofLine(x), wf(v));
+    };
+    // Offsetting across the surface also carries the base rearward, so the edge
+    // is continued forward along its own tangent for that stretch and the foot
+    // still reaches the cowl. Straight extrapolation, so no kink at the join.
+    const t0 = on(0), t1 = on(1 / 400);
+    const fwd = t0.clone().sub(t1).multiplyScalar(400);
+    const edge = (v) => (v >= 0 ? on(Math.min(v, 1)) : t0.clone().addScaledVector(fwd, -v));
+
+    // The frame is transported along the curve instead of being recomputed from
+    // a cross product at each station: a cross product flips sign wherever it
+    // passes through zero, which put a 158-degree kink in the band. Carrying the
+    // previous direction forward and only re-squaring it cannot flip.
+    const N = 200, V0 = -0.16;
+    const pts = new Array(N + 1), dirs = new Array(N + 1);
+    const tan = new THREE.Vector3(), nrm = new THREE.Vector3(), acr = new THREE.Vector3();
+    // Seeded at the ROOF end and carried down. Up there the direction is not in
+    // doubt - the screen edge and the roof rail are 200 mm apart, so the vector
+    // between them says which way across is - whereas at the cowl the surface
+    // is nearly vertical and a guess there sent the band straight down the
+    // cowl face instead of out over the shoulder.
+    for (let i = N; i >= 0; i--) {
+      const v = lerp(V0, 1, i / N);
+      const p = edge(v);
+      tan.copy(edge(Math.min(1, v + 1 / 400))).sub(edge(v - 1 / 400));
+      if (tan.lengthSq() < 1e-12) tan.set(-1, 0, 0);
+      tan.normalize();
+      const h = 0.004, x = p.x, y = p.y;
+      const fx = (B.cabinHW(x + h, y) - B.cabinHW(x - h, y)) / (2 * h);
+      const fy = (B.cabinHW(x, y + h) - B.cabinHW(x, y - h)) / (2 * h);
+      // Over this stretch the body turns over: high up the pillar it is the
+      // greenhouse flank, whose normal points outboard, and at the cowl it is
+      // the bonnet top, whose normal points up. Offsetting in the flank all the
+      // way down sent the band straight down the cowl face. The normal is
+      // carried between the two on the cabin's own height, the same measure the
+      // tumblehome uses.
+      const kc = smootherstep(clamp((B.railY(x) - B.belt(x)) / 0.25, 0, 1));
+      nrm.set(-fx * kc, lerp(1, -fy, kc), kc).normalize();
+      if (i === N) acr.set(0, p.y - B.roofLine(x), B.cabinHW(x, p.y) - p.z);
+      acr.addScaledVector(nrm, -acr.dot(nrm));            // into the surface
+      acr.addScaledVector(tan, -acr.dot(tan));            // square to the edge
+      if (acr.lengthSq() < 1e-9) acr.set(0, -0.3, 1);
+      acr.normalize();
+      if (acr.z < 0) acr.negate();                        // outboard at the seed
+      pts[i] = p.clone();
+      dirs[i] = acr.clone();
+    }
+    // start where the outer corner first sits at or ahead of the cowl
+    let i0 = 0;
+    for (let i = 0; i <= N; i++) {
+      if (pts[i].x + dirs[i].x * thick <= xb) { i0 = i; break; }
+    }
+    return (u, w) => {
+      const f = i0 + clamp(u, 0, 1) * (N - i0);
+      const i = Math.min(N - 1, Math.floor(f)), t = f - i;
+      const p = pts[i], q = pts[i + 1], a = dirs[i], b2 = dirs[i + 1];
+      const px = lerp(p.x, q.x, t), py = lerp(p.y, q.y, t), pz = lerp(p.z, q.z, t);
+      let ax = lerp(a.x, b2.x, t), ay = lerp(a.y, b2.y, t), az = lerp(a.z, b2.z, t);
+      const len = Math.hypot(ax, ay, az) || 1;
+      ax /= len; ay /= len; az /= len;
+      const d2 = thick * w;
+      return [px + ax * d2, py + ay * d2, sd * (pz + az * d2)];
     };
   };
 
@@ -2878,11 +2942,7 @@ function buildVehicle(opts = {}) {
   for (const k2 in SIDE) {
     const sd2 = SIDE[k2];
     const rf = [midX(d.xCowl, d.xDeck), d.roofY - 0.5, 0];
-    // Pinned on the car: the pillar carries on past the screen's base and
-    // lands on the front wing at station 0.375, 0.719 H and 0.850 of the half
-    // width - ahead of the cowl shut line, not on it.
-    const foot = { x: d.L * 0.125, y: 0.719 * d.H, z: 0.850 * (d.W / 2), span: 0.30, dlo: true };
-    shell(roof, B.screenSurround(WS[0], WS[1], WS[2], WS[3], WS[4], sd2, foot), 16, 6, M.paint, rf, 0.020);
+    shell(roof, B.pillarBand(WS[0], WS[1], WS[2], WS[3], WS[4], sd2, d.pillarThick), 26, 4, M.paint, rf, 0.020);
     shell(roof, B.screenSurround(RS[0], RS[1], RS[2], RS[3], RS[4], sd2), 14, 5, M.paint, rf, 0.020);
   }
 
