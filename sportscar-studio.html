@@ -1253,20 +1253,25 @@ function makeBody(d) {
   // pillar splays out onto the shoulder where it meets the body instead of
   // dying to nothing at the screen's base. The inner edge is untouched: it has
   // to stay welded to the glass.
+  // `foot` is a point the OUTER edge reaches at u = 0, in all three axes, so
+  // the pillar can carry on past the screen's own base and land where it is
+  // wanted on the wing. The inner edge is untouched: it stays welded to the
+  // glass, which still starts at the cowl.
   B.screenSurround = (xb, xt, taper, capTop, capBot, sd, foot) => {
     const wf = B.screenWidth(xb, xt, taper, capTop, capBot);
     return (u, w) => {
       const x = lerp(xb, xt, u);
       const y = B.roofLine(x);
       const inner = wf(u);
-      let outer = B.cabinHW(x, y), drop = 0;
+      let ox = x, oy = y, oz = B.cabinHW(x, y);
       if (foot) {
         const t = 1 - smootherstep(clamp(u / foot.span, 0, 1));   // 1 at the foot
-        outer = lerp(outer, Math.max(outer, foot.z), t);
-        drop = foot.drop * t;
+        ox = lerp(x, foot.x, t);
+        oy = lerp(y, foot.y, t);
+        oz = lerp(oz, Math.max(oz, foot.z), t);
       }
       const ew = smootherstep(w);
-      return [x, y - 0.004 * w - drop * ew, sd * lerp(inner - 0.004, outer, ew)];
+      return [lerp(x, ox, ew), lerp(y - 0.004, oy, ew), sd * lerp(inner - 0.004, oz, ew)];
     };
   };
 
@@ -2851,11 +2856,10 @@ function buildVehicle(opts = {}) {
   for (const k2 in SIDE) {
     const sd2 = SIDE[k2];
     const rf = [midX(d.xCowl, d.xDeck), d.roofY - 0.5, 0];
-    // measured off the car: the pillar foot lands on the cowl shoulder at 0.769
-    // of the half width and 0.734 H, which is 366 mm outboard and 48 mm below
-    // where the cabin curve alone would have left it
-    const foot = { z: 0.769 * (d.W / 2), drop: 0.734 * d.H, span: 0.22 };
-    foot.drop = Math.max(0, B.roofLine(WS[0]) - foot.drop);
+    // Pinned on the car: the pillar carries on past the screen's base and
+    // lands on the front wing at station 0.375, 0.719 H and 0.850 of the half
+    // width - ahead of the cowl shut line, not on it.
+    const foot = { x: d.L * 0.125, y: 0.719 * d.H, z: 0.850 * (d.W / 2), span: 0.20 };
     shell(roof, B.screenSurround(WS[0], WS[1], WS[2], WS[3], WS[4], sd2, foot), 16, 6, M.paint, rf, 0.020);
     shell(roof, B.screenSurround(RS[0], RS[1], RS[2], RS[3], RS[4], sd2), 14, 5, M.paint, rf, 0.020);
   }
