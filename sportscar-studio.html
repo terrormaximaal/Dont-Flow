@@ -4234,6 +4234,39 @@ Vehicle.prototype.validateGeometry = function () {
     return sp;
   }
 
+  /* Outline of a pinned part. Its edges are drawn over everything, so a part
+     that is half behind a panel still reads as one shape - which is the point,
+     since what is being named is the part, not the patch of it you can see.
+     One outline per part rather than per pin, so two pins on the same panel do
+     not stack two sets of lines on top of each other. */
+  let outlines = [];
+  function clearOutlines() {
+    for (const o of outlines) {
+      for (const n of o.nodes) { if (n.parent) n.parent.remove(n); n.geometry.dispose(); }
+      o.mat.dispose();
+    }
+    outlines = [];
+  }
+  function refreshOutlines() {
+    clearOutlines();
+    const seen = new Set();
+    for (const p of pins) {
+      if (!p.part || seen.has(p.part.id)) continue;
+      seen.add(p.part.id);
+      const mat = new THREE.LineBasicMaterial({ color: 0xd9a64a, depthTest: false,
+        transparent: true, opacity: 0.92 });
+      const nodes = [];
+      for (const m of p.part.meshes) {
+        if (!m.geometry || !m.geometry.attributes || !m.geometry.attributes.position) continue;
+        const ls = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 32), mat);
+        ls.renderOrder = 45;
+        m.add(ls);                      // rides the mesh, so it follows a hinge
+        nodes.push(ls);
+      }
+      outlines.push({ nodes: nodes, mat: mat });
+    }
+  }
+
   function partAt(obj) {
     const own = new Map(), byId = new Map();
     car.each((p) => {
@@ -4280,7 +4313,7 @@ Vehicle.prototype.validateGeometry = function () {
     g.position.copy(local);
     pinRoot.add(g);
 
-    pins.push({ n: n, node: g, local: local, nrm: nrm, id: part ? part.id : '?',
+    pins.push({ n: n, node: g, local: local, nrm: nrm, part: part, id: part ? part.id : '?',
                 label: part ? part.label : 'onbekend' });
     renderPins();
   }
@@ -4345,11 +4378,13 @@ Vehicle.prototype.validateGeometry = function () {
       box.appendChild(row);
     });
     $('pinout').value = pinText();
+    refreshOutlines();
   }
 
   function clearPins() {
     pins.length = 0;
     while (pinRoot.children.length) pinRoot.remove(pinRoot.children[0]);
+    clearOutlines();
     renderPins();
   }
 
