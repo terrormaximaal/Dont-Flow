@@ -3094,7 +3094,7 @@ function buildVehicle(opts = {}) {
          it, so the two cuts read as one line instead of crossing. */
       const LIP = 0.022;
       lampHoles[1] = { u0: h.u0, u1: h.u1, v1: h.v1,
-        v0: (uu) => softMax(h.v0(uu), splitF(uu) + FGAP + LIP, 0.03) };
+        v0: (uu) => softMax(h.v0(uu), splitF(uu) + fGap(uu) + LIP, 0.03) };
     }
     if (!lampHoles[-1]) lampHoles[-1] = mirrorHole(lampHoles[1]);
     return lampHoles[sd];
@@ -3122,7 +3122,7 @@ function buildVehicle(opts = {}) {
     return {
       u0: Math.min(l.u0, r.u0), u1: Math.max(l.u1, r.u1),
       v0: (uu) => (uu < 0.5 ? l.v0(uu) : r.v0(uu)),
-      v1: (uu) => softMin(rawV1(uu), splitF(uu) - FGAP - LIP, 0.03),
+      v1: (uu) => softMin(rawV1(uu), splitF(uu) - fGap(uu) - LIP, 0.03),
     };
   })();
   /* ---- corner openings: round fog lamps, or the shield car's air curtains */
@@ -3136,13 +3136,26 @@ function buildVehicle(opts = {}) {
   };
 
   const splitF = levelLine(B.frontFascia, AP.frontSplit);   // horizontal bumper cut
-  const FGAP = 0.010;
+  /* The bumper shut is a distance, not a parameter step. It used to be a flat
+     0.010 of v on each side, and v is not uniform over a fascia, so the same
+     number came out as a 16.3 to 19.0 mm opening across the back of the car and
+     4.4 to 14.3 mm across the front - against the 10 mm every other shut on the
+     car is held to. It is now solved per station: measure how many metres a step
+     in v is worth there, and take the step that is worth half a gap. */
+  const shutV = (surf, split) => (uu) => {
+    const st = clamp(split(uu), 0, 1), e = 0.004;
+    const a = surf(uu, st);
+    const b2 = surf(uu, st + e <= 1 ? st + e : st - e);
+    const per = Math.hypot(b2[0] - a[0], b2[1] - a[1], b2[2] - a[2]) / e;
+    return per > 1e-6 ? Math.min(0.06, G / per) : G;
+  };
+  const fGap = shutV(B.frontFascia, splitF);
   // Both front panels are built on one side of the centreline and mirrored, so
   // the two halves are identical by construction rather than by the solver
   // landing on the same answer twice.
   const halfBand = (r) => (r.u1 <= 0.5 ? null : (r.u0 < 0.5 ? { u0: 0.5, u1: r.u1, v0: r.v0, v1: r.v1 } : r));
   const nose = mk('nose', 'Voorpaneel', { stiffness: 1.2, stage: 1 });
-  for (const raw of bandsAround([lampHole(-1), lampHole(1)], (uu) => splitF(uu) + FGAP, 1)) {
+  for (const raw of bandsAround([lampHole(-1), lampHole(1)], (uu) => splitF(uu) + fGap(uu), 1)) {
     const r = halfBand(raw);
     if (r) shell(nose, surfRegion(B.frontFascia, r, 0, fRef), holeUs(Math.max(14, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5))), 3, M.paint, fRef, 0.028);
   }
@@ -3150,7 +3163,7 @@ function buildVehicle(opts = {}) {
   v.addPart(nose);
 
   const bf = mk('bumper.front', 'Voorbumper', { detachable: true, stiffness: 0.85, stage: 1 });
-  for (const raw of bandsAround([mouthHole, cornerHole(-1), cornerHole(1)], 0, (uu) => splitF(uu) - FGAP)) {
+  for (const raw of bandsAround([mouthHole, cornerHole(-1), cornerHole(1)], 0, (uu) => splitF(uu) - fGap(uu))) {
     const r = halfBand(raw);
     if (r) shell(bf, surfRegion(B.frontFascia, r, 0, fRef), holeUs(Math.max(24, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5))), 4, M.paint, fRef, 0.03);
   }
@@ -3200,11 +3213,12 @@ function buildVehicle(opts = {}) {
     return tailHoles[sd];
   };
   const splitR = levelLine(B.rearFascia, AP.rearSplit);
+  const rGap = shutV(B.rearFascia, splitR);
   const tailBand = mk('tail', 'Achterpaneel', { stiffness: 1.3, stage: 1 });
   const upperHoles = AP.tail === 'band'
     ? [tailLampHole(-1), tailLampHole(1)]
     : [recessHole, tailLampHole(-1), tailLampHole(1)];
-  for (const r of bandsAround(upperHoles, (uu) => splitR(uu) + FGAP, 1)) {
+  for (const r of bandsAround(upperHoles, (uu) => splitR(uu) + rGap(uu), 1)) {
     shell(tailBand, surfRegion(B.rearFascia, r, 0, rRef), holeUs(bandCount(r)), 3, M.paint, rRef, 0.028);
   }
   v.addPart(tailBand);
@@ -3221,7 +3235,7 @@ function buildVehicle(opts = {}) {
     };
   })() : null;
   const br = mk('bumper.rear', 'Achterbumper', { detachable: true, stiffness: 0.85, stage: 1 });
-  for (const r of bandsAround(lowerOpening ? [lowerOpening] : exhAll, 0, (uu) => splitR(uu) - FGAP)) {
+  for (const r of bandsAround(lowerOpening ? [lowerOpening] : exhAll, 0, (uu) => splitR(uu) - rGap(uu))) {
     if (r.u1 <= 0.5) continue;                       // built by mirroring instead
     const half = r.u0 < 0.5 ? { u0: 0.5, u1: r.u1, v0: r.v0, v1: r.v1 } : r;
     shell(br, surfRegion(B.rearFascia, half, 0.010, rRef), Math.max(8, Math.round(bandCount(half) * (half.u1 - half.u0) / 0.5)), 4, M.paint, rRef, 0.03);
