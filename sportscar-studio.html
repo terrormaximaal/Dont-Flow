@@ -2404,14 +2404,92 @@ function symmetriseVehicle(v) {
     return true;
   };
   let pairs = 0, meshes = 0, skipped = 0;
+  /* The side token is not always the last one: the wheels are wheel.fl and
+     wheel.fl.brake, so a rule that only looked at a trailing '.l' walked past
+     all four of them and left the rims mirroring each other to within 8 mm
+     instead of exactly. */
+  const MATE = { l: 'r', fl: 'fr', rl: 'rr' };
+  const mateOf = (id) => id.replace(/\.(fl|rl|l)(?=\.|$)/, (s2, tok) => '.' + MATE[tok]);
   for (const [id, left] of v.parts) {
-    if (!/\.l$/.test(id)) continue;
-    const right = v.parts.get(id.replace(/\.l$/, '.r'));
+    const rid = mateOf(id);
+    if (rid === id) continue;
+    const right = v.parts.get(rid);
     if (!right || left.meshes.length !== right.meshes.length) { skipped++; continue; }
     pairs++;
     for (let i = 0; i < left.meshes.length; i++) if (mirrorMesh(left.meshes[i], right.meshes[i])) meshes++;
   }
-  v.symmetry = { pairs, meshes, skipped };
+  /* Parts that straddle the centreline - the roof, the bumpers - carry their
+     own left and right meshes, so the pass above never reaches them: it pairs
+     whole parts by a .l / .r name. Inside such a part a mesh and its mirror can
+     drift, and the rear screen surrounds had done exactly that: 6.4 mm apart in
+     height at mirrored x and z, because the shell lays its thickness along a
+     normal whose orientation flips with the patch.
+
+     Only drift is removed. A pair is snapped just when it is ALREADY close to a
+     mirror, which is what keeps this from flattening things that are meant to
+     differ - the wipers sit in mirrored boxes but run parallel, 152 mm from
+     being mirrors of each other, and are left alone. */
+  const SNAP = 0.030;
+  let drift = 0;
+  const dv = new THREE.Vector3(), dw = new THREE.Vector3();
+  /* The gap is measured between the two point SETS, not index by index. A
+     region traced from one end of an aperture and its mirror traced from the
+     other carry their vertices in opposite order, so an index-wise test called
+     the diffuser's outer bands 389 mm apart when the shapes themselves sit
+     2.2 mm from being mirrors. Cells are SNAP wide, so a 3x3x3 look-up covers
+     every neighbour that could be within SNAP and anything further out simply
+     finds nothing. */
+  const mirrorGap = (A, B2) => {
+    const pa = A.geometry.attributes.position, pb = B2.geometry.attributes.position;
+    if (!pa || !pb || pa.count !== pb.count) return Infinity;
+    A.updateWorldMatrix(true, false); B2.updateWorldMatrix(true, false);
+    const n = pb.count, P = new Float64Array(n * 3), grid = new Map();
+    const key = (a, b3, c) => a + ',' + b3 + ',' + c;
+    for (let i = 0; i < n; i++) {
+      dw.fromBufferAttribute(pb, i).applyMatrix4(B2.matrixWorld);
+      P[3 * i] = dw.x; P[3 * i + 1] = dw.y; P[3 * i + 2] = dw.z;
+      const k = key(Math.floor(dw.x / SNAP), Math.floor(dw.y / SNAP), Math.floor(dw.z / SNAP));
+      let L = grid.get(k); if (!L) grid.set(k, L = []); L.push(i);
+    }
+    let worst = 0;
+    for (let i = 0; i < pa.count; i++) {
+      dv.fromBufferAttribute(pa, i).applyMatrix4(A.matrixWorld);
+      const x = dv.x, y = dv.y, z = -dv.z;
+      const cx = Math.floor(x / SNAP), cy = Math.floor(y / SNAP), cz = Math.floor(z / SNAP);
+      let best = Infinity;
+      for (let a = -1; a <= 1; a++) for (let b3 = -1; b3 <= 1; b3++) for (let c = -1; c <= 1; c++) {
+        const L = grid.get(key(cx + a, cy + b3, cz + c)); if (!L) continue;
+        for (const j of L) {
+          const dd = Math.hypot(P[3 * j] - x, P[3 * j + 1] - y, P[3 * j + 2] - z);
+          if (dd < best) best = dd;
+        }
+      }
+      if (best > worst) worst = best;
+      if (worst > SNAP) return worst;
+    }
+    return worst;
+  };
+  for (const [id, part] of v.parts) {
+    if (/\.(l|r)$/.test(id)) continue;
+    const info = part.meshes.map((m) => {
+      m.updateWorldMatrix(true, false);
+      return { m, bb: new THREE.Box3().setFromObject(m) };
+    });
+    const used = new Set();
+    for (let i = 0; i < info.length; i++) {
+      if (used.has(i) || info[i].bb.min.z < -0.02) continue;      // work from the +z side
+      for (let j = 0; j < info.length; j++) {
+        if (j === i || used.has(j)) continue;
+        const A = info[i].bb, C = info[j].bb;
+        if (Math.abs(A.min.x - C.min.x) > 0.003 || Math.abs(A.max.x - C.max.x) > 0.003) continue;
+        if (Math.abs(A.min.z + C.max.z) > 0.003 || Math.abs(A.max.z + C.min.z) > 0.003) continue;
+        if (mirrorGap(info[i].m, info[j].m) > SNAP) continue;      // not a near-mirror: leave it
+        if (mirrorMesh(info[i].m, info[j].m)) { used.add(i); used.add(j); drift++; }
+        break;
+      }
+    }
+  }
+  v.symmetry = { pairs, meshes, skipped, drift };
   return v;
 }
 
@@ -3665,11 +3743,18 @@ Vehicle.prototype.validateGeometry = function () {
 
   // Symmetry, measured over every vertex of every part.
   const LHD_ASYMMETRIC = /^(interior|steering)$/;
+  /* The side token is not always last - a wheel is wheel.fl, a caliper is
+     wheel.fl.brake - so a trailing '.l' test walked past all four corners and
+     left them out of the vertex comparison entirely. */
+  const SIDE_MATE = { l: 'r', fl: 'fr', rl: 'rr' };
+  const RIGHT_ID = /\.(fr|rr|r)(?=\.|$)/;
+  const mateId = (id) => id.replace(/\.(fl|rl|l)(?=\.|$)/, (s2, tok) => '.' + SIDE_MATE[tok]);
   let sym = 0, checked = 0, worstImb = 0, worstPart = '-';
   const wv = new THREE.Vector3();
   for (const [id, part] of v.parts) {
-    if (/\.r$/.test(id)) continue;
-    const mate = /\.l$/.test(id) ? v.parts.get(id.replace(/\.l$/, '.r')) : null;
+    if (RIGHT_ID.test(id)) continue;
+    const rid = mateId(id);
+    const mate = rid !== id ? v.parts.get(rid) : null;
     if (mate) {
       if (part.meshes.length !== mate.meshes.length) { worstImb = 1; worstPart = id; continue; }
       for (let mi = 0; mi < part.meshes.length; mi++) {
