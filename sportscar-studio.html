@@ -2611,7 +2611,49 @@ function symmetriseVehicle(v) {
       }
     }
   }
-  v.symmetry = { pairs, meshes, skipped, drift };
+  /* The centre seam. Both bumpers are built on one side and mirrored, and the
+     two halves met at z = 0.18 to 0.51 mm rather than at 0 - a crack under half
+     a millimetre wide, but a real one: a ray fired straight at the rear
+     centreline went through the bumper and out the front of the car. Snapping
+     the last millimetre to exactly zero makes the two halves share the plane,
+     which closes it for every panel that is mirrored this way at once. */
+  const WELD = 0.001;
+  let welded = 0;
+  for (const [id, part] of v.parts) {
+    if (!/^(hood|trunk|roof|nose|tail|fender\.|quarter\.|door\.|rocker\.|bumper\.|grille|diffuser)/.test(id)) continue;
+    for (const m of part.meshes) {
+      const pos = m.geometry.attributes.position; if (!pos) continue;
+      m.updateWorldMatrix(true, false);
+      const inv = new THREE.Matrix4().copy(m.matrixWorld).invert();
+      let hit = false;
+      for (let i = 0; i < pos.count; i++) {
+        dv.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+        if (dv.z !== 0 && Math.abs(dv.z) < WELD) { dv.z = 0; dv.applyMatrix4(inv); pos.setXYZ(i, dv.x, dv.y, dv.z); hit = true; }
+      }
+      if (!hit) continue;
+      pos.needsUpdate = true;
+      /* A shell's seam cap is a sliver that lies wholly inside that millimetre,
+         so welding it flattens it to nothing. Those triangles are dropped
+         rather than left behind with no area - they were only ever the wall of
+         the crack this closes. */
+      const ixw = m.geometry.index;
+      if (ixw) {
+        const arr = ixw.array, keep = [];
+        const w1 = new THREE.Vector3(), w2 = new THREE.Vector3(), w3 = new THREE.Vector3();
+        for (let t = 0; t < arr.length; t += 3) {
+          w1.fromBufferAttribute(pos, arr[t]);
+          w2.fromBufferAttribute(pos, arr[t + 1]).sub(w1);
+          w3.fromBufferAttribute(pos, arr[t + 2]).sub(w1);
+          // 1e-14 on |cross|^2 is 0.05 mm^2: below any real triangle here (the
+          // smallest measures 2.85 mm^2) and above every seam sliver
+          if (w2.cross(w3).lengthSq() > 1e-14) keep.push(arr[t], arr[t + 1], arr[t + 2]);
+        }
+        if (keep.length !== arr.length) m.geometry.setIndex(new THREE.BufferAttribute(Uint32Array.from(keep), 1));
+      }
+      m.geometry.computeBoundingBox(); m.geometry.computeBoundingSphere(); welded++;
+    }
+  }
+  v.symmetry = { pairs, meshes, skipped, drift, welded };
   return v;
 }
 
@@ -2682,6 +2724,15 @@ function skinCeiling(v) {
 
 function enforceSkinDominance(v) {
   const ceil = skinCeiling(v), B = v.B;
+  /* Clamping a corner to the panel above it is not enough on its own: a
+     structural member's triangles are long, and where the deck lid curves down
+     towards the tail a straight triangle between two legal corners still
+     crosses it - which is how body.structure came to stand 1 to 57 mm above the
+     deck over |z| 0.42 to 0.60. Each corner therefore reads the lowest panel
+     within a step of itself, not just the panel directly overhead. The step is
+     taken in x and in |z|, so a point and its mirror read exactly the same set
+     and the two halves stay identical - a per-triangle version of this did not,
+     and threw the centreline balance check to 2.84%. */
   const wv = new THREE.Vector3(), inv = new THREE.Matrix4();
   let moved = 0, worst = 0, where = '-';
   for (const [id, p] of v.parts) {
