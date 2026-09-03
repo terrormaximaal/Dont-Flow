@@ -804,7 +804,11 @@ const ARCHETYPES = {
       // measured on the sheet's front view
       lamp: { z: [0.589, 0.903], gap: 0.012, h: [0.150, 0.120] },
       mouth: { z: 0.690, y: [0.175, 0.422], flat: 0.55, bars: 0.026, blade: false },
-      corner: { z: [0.720, 0.950], y: [0.105, 0.300] },
+      // The traced span ran to 0.950 of the half width, but over these heights
+      // the bumper itself only reaches 0.828..0.926, so the slot ran off the
+      // edge of the panel and its outboard end came back notched. Same width,
+      // moved inboard until it ends inside the panel at every height.
+      corner: { z: [0.570, 0.800], y: [0.115, 0.290] },
       frontSplit: 0.437,
       tail: 'band',
       recess: { span: 0.94, y: [0.517, 0.620], gap: 0.028, depth: [0.075, 0.062] },
@@ -2604,7 +2608,7 @@ function buildVehicle(opts = {}) {
   const cornerHoles = {};
   const cornerHole = (sd) => {
     if (!cornerHoles[1]) cornerHoles[1] = measuredHole(solveFront, 1, cornerSpec.z[0], cornerSpec.z[1],
-      cornerSpec.y[0], cornerSpec.y[1], AP.fog ? ellipse : pillShape(0.30));
+      cornerSpec.y[0], cornerSpec.y[1], AP.fog ? ellipse : pillShape(0.62));
     if (!cornerHoles[-1]) cornerHoles[-1] = mirrorHole(cornerHoles[1]);
     return cornerHoles[sd];
   };
@@ -2626,7 +2630,7 @@ function buildVehicle(opts = {}) {
   const bf = mk('bumper.front', 'Voorbumper', { detachable: true, stiffness: 0.85, stage: 1 });
   for (const raw of bandsAround([mouthHole, cornerHole(-1), cornerHole(1)], 0, (uu) => splitF(uu) - FGAP)) {
     const r = halfBand(raw);
-    if (r) shell(bf, surfRegion(B.frontFascia, r, 0, fRef), Math.max(8, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5)), 4, M.paint, fRef, 0.03);
+    if (r) shell(bf, surfRegion(B.frontFascia, r, 0, fRef), Math.max(16, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5)), 4, M.paint, fRef, 0.03);
   }
   mirrorHalfInto(bf, 0);
   v.addPart(bf);
@@ -2921,12 +2925,11 @@ function buildVehicle(opts = {}) {
       v1: (uu) => lerp(hole.v0(uu), hole.v1(uu), b1),
     }, off, fRef);
     if (!isFog) {
-      // an air curtain: a deep dark duct with two vanes, no lens
-      patch(p, reg(0, 1, 0, 1, -0.055), 12, 4, M.interiorDark, fRef);
-      for (const t of [0.36, 0.64]) {
-        shell(p, reg(0.05, 0.95, t - 0.05, t + 0.05, -0.030), 10, 1, M.matte, fRef, 0.010, false);
-      }
-      shell(p, reg(0, 1, 0.90, 1.0, -0.014), 12, 1, M.darkChrome, fRef, 0.010, false);
+      // An air curtain, kept deliberately plain: one duct and one blade across
+      // it. Two vanes and a chrome lip read as clutter at this size, and
+      // neither followed the opening's own edges.
+      patch(p, reg(0, 1, 0, 1, -0.042), 20, 4, M.interiorDark, fRef);
+      shell(p, reg(0.04, 0.96, 0.46, 0.54, -0.020), 20, 1, M.matte, fRef, 0.010, false);
       v.addPart(p, bf);
       return p;
     }
@@ -4568,6 +4571,7 @@ Vehicle.prototype.validateGeometry = function () {
     window.__vgRenderer = renderer;
     window.__vgCamera = () => camera;
     window.__setCam = (az, el, sc) => { cam.az = az; cam.el = el; frameCar(sc, 0.46); autoSpin = false; };
+    window.__aim = (az, el, dist, tx, ty, tz) => { cam.az = az; cam.el = el; cam.dist = dist; cam.target.set(tx, ty, tz); autoSpin = false; camFit = null; };
     window.__vgBuildOnly = (i) => buildVehicle({ type, seed: (seed + i) >>> 0 });
   } catch (err) {
     window.__vgFail('Opbouwen van het voertuig mislukte', String(err && err.stack || err));
