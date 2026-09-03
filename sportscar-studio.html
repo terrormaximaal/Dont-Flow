@@ -811,7 +811,11 @@ const ARCHETYPES = {
       tailLamp: { span: [0.443, 0.875], y: [0.597, 0.662], gap: 0.012, h: 0.058 },
       rearSplit: 0.500,
       exh: { z: [[0.360, 0.520], [0.560, 0.720]], y: [0.300, 0.375] },
-      diffuser: { z: 0.800, y: [0.050, 0.290], strakes: 6 },
+      // depth: how far the dish steps back from the bumper skin. pill: two
+      // rounded slots low in that dish, in its own 0..1 space, with the pipes
+      // set into them.
+      diffuser: { z: 0.800, y: [0.050, 0.290], strakes: 6, depth: 0.030,
+                  pill: { off: 0.255, halfA: 0.125, b: [0.06, 0.52] } },
       gill: { f: [0.283, 0.368], v: [0.20, 0.46], blades: 2 },
       hoodVent: { u: [0.34, 0.70], bands: [[0.225, 0.350], [0.650, 0.775]], blades: 4 },
     },
@@ -3044,30 +3048,68 @@ function buildVehicle(opts = {}) {
   // in, with strakes standing on its floor and the four pipes set into it.
   if (AP.diffuser && lowerOpening) {
     const df = mk('diffuser', 'Diffuser', { detachable: true, stiffness: 0.9, stage: 5 });
+    // A shallow dish that keeps following the bumper's own surface, rather than
+    // a deep box hung behind it: the step fades to nothing at the aperture rim,
+    // so the two run into each other instead of meeting at an edge.
+    const DEPTH = AP.diffuser.depth === undefined ? 0.030 : AP.diffuser.depth;
     const base = (a, b) => {
       const edge = Math.min(a, 1 - a, b, 1 - b);
-      return surfRegion(B.rearFascia, lowerOpening, -0.085 * smootherstep(clamp(edge / 0.16, 0, 1)), rRef)(a, b);
+      return surfRegion(B.rearFascia, lowerOpening, -DEPTH * smootherstep(clamp(edge / 0.22, 0, 1)), rRef)(a, b);
     };
-    shell(df, base, 36, 6, M.interiorDark, rRef, 0.014);
-    for (let i = 1; i < AP.diffuser.strakes; i++) {
-      const a = i / AP.diffuser.strakes;
+    // Two rounded slots low in the dish, carrying the pipes. They are cut in
+    // the dish's own (a, b) space, so they follow it however it is shaped.
+    const PL = AP.diffuser.pill;
+    const abPill = (ac) => {
+      const a0 = ac - PL.halfA, a1 = ac + PL.halfA, shape = pillShape(0.45);
+      const at = (uu) => shape(clamp((uu - a0) / (a1 - a0), 0, 1));
+      return { u0: a0, u1: a1,
+               v0: (uu) => lerp(PL.b[0], PL.b[1], at(uu).lo),
+               v1: (uu) => lerp(PL.b[0], PL.b[1], at(uu).hi) };
+    };
+    const pills = [abPill(0.5 - PL.off), abPill(0.5 + PL.off)];
+    const abRegion = (r) => (s2, t) => {
+      const a = lerp(r.u0, r.u1, s2);
+      const v0 = typeof r.v0 === 'function' ? r.v0(a) : r.v0;
+      const v1 = typeof r.v1 === 'function' ? r.v1(a) : r.v1;
+      return base(a, clamp(lerp(v0, v1, t), 0, 1));
+    };
+    for (const r of bandsAround(pills, 0, 1)) {
+      shell(df, abRegion(r), Math.max(6, Math.round(36 * (r.u1 - r.u0))), 5, M.interiorDark, rRef, 0.014);
+    }
+    // Spaced across the whole dish and then dropped where a slot is in the way,
+    // so the outer corners and the middle each keep a few rather than the slots
+    // swallowing almost all of them.
+    const nStrake = Math.max(6, AP.diffuser.strakes * 2);
+    for (let i = 1; i < nStrake; i++) {
+      const a = i / nStrake;
+      if (pills.some((q) => a > q.u0 - 0.014 && a < q.u1 + 0.014)) continue;
       shell(df, (s2, t) => base(lerp(a - 0.005, a + 0.005, s2), lerp(0.05, 0.92, t)), 1, 5, M.matte, rRef, 0.026, false);
     }
-    // pipes: two per side, set into the top of the diffuser floor
-    for (const span of AP.exh.z) {
-      for (const sd of [1, -1]) {
-        const zc = sd * (span[0] + span[1]) / 2, yc = (AP.exh.y[0] + AP.exh.y[1]) / 2;
-        const q = solveRear(Math.abs(zc), yc, sd);
-        const p0 = B.rearFascia(q.u, q.v);
-        const rad = (span[1] - span[0]) * (d.W / 2) * 0.42;
-        const tube = (r2, len, dx, mat) => {
+    // Each slot gets a short tunnel so it does not read as a hole into nothing,
+    // and two pipes seated inside it rather than standing proud of the bumper.
+    for (const q of pills) {
+      const ac = (q.u0 + q.u1) / 2, bc = (PL.b[0] + PL.b[1]) / 2;
+      const rim = base(ac, bc);
+      const halfH = (PL.b[1] - PL.b[0]) / 2;
+      const hi = base(ac, bc + halfH * 0.98), lo2 = base(ac, bc - halfH * 0.98);
+      const rad = Math.min(0.5 * Math.abs(hi[1] - lo2[1]), 0.5 * Math.abs(base(q.u1, bc)[2] - base(q.u0, bc)[2]) / 2) * 0.92;
+      // +x is towards the nose, so everything here moves INTO the car: a back
+      // wall well inside, and pipes whose mouths sit below the dish surface
+      // instead of standing out past the bumper.
+      shell(df, (s2, t) => {
+        const p1 = abRegion(q)(s2, t);
+        return [p1[0] + 0.10, p1[1], p1[2]];
+      }, 14, 3, M.interiorDark, rRef, 0.010, false);
+      for (const side of [-1, 1]) {
+        const zc = rim[2] + side * rad * 1.02;
+        const tube = (r2, len, inset, mat) => {
           const t = new THREE.Mesh(new THREE.CylinderGeometry(r2, r2, len, 18).rotateZ(Math.PI / 2), mat);
-          t.position.set(p0[0] + dx, p0[1], p0[2]);
+          t.position.set(rim[0] + inset + len / 2, rim[1], zc);
           df.add(t, false);
         };
-        tube(rad, 0.16, -0.075, M.matte);
-        tube(rad * 0.92, 0.10, -0.018, M.darkChrome);
-        tube(rad * 0.70, 0.11, -0.014, M.interiorDark);
+        tube(rad * 0.95, 0.16, 0.012, M.matte);         // barrel, mouth 12 mm in
+        tube(rad * 0.88, 0.10, 0.020, M.darkChrome);    // polished lip
+        tube(rad * 0.66, 0.12, 0.032, M.interiorDark);  // dark bore
       }
     }
     v.addPart(df, br);
