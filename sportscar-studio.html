@@ -1272,11 +1272,25 @@ function makeBody(d) {
       const y = B.roofLine(x);
       const inner = wf(u);
       let ox = x, oy = y, oz = B.cabinHW(x, y);
+      if (foot && foot.dlo) {
+        // Ride the top edge of the side glass instead of the roof rail. On the
+        // rail the band came out 22-29 mm wide over almost its whole length, so
+        // the foot below had to produce the entire pillar on its own and did it
+        // as a fan; on the daylight opening it is 107-173 mm all the way up, and
+        // the foot only has the last stretch out to the wing to cover.
+        const dp = B.cabin(x, clamp(B.dloTop(x), 0.05, 0.99), 1);
+        oy = dp[1];
+        oz = Math.max(oz, dp[2]);
+      }
       if (foot) {
-        const t = 1 - smootherstep(clamp(u / foot.span, 0, 1));   // 1 at the foot
-        ox = lerp(x, foot.x, t);
-        oy = lerp(y, foot.y, t);
-        oz = lerp(oz, Math.max(oz, foot.z), t);
+        // The three axes travel over different lengths on purpose. Moving them
+        // together cuts the corner and reads as a crease; letting the sideways
+        // travel run furthest up the pillar - and the forward reach settle
+        // first - bows the path out into one wide sweep instead.
+        const ease = (span) => 1 - smootherstep(clamp(u / Math.max(1e-4, span), 0, 1));
+        ox = lerp(x, foot.x, ease(foot.span * 0.50));
+        oy = lerp(y, foot.y, ease(foot.span * 0.80));
+        oz = lerp(oz, Math.max(oz, foot.z), ease(foot.span));
       }
       const ew = smootherstep(w);
       return [lerp(x, ox, ew), lerp(y - 0.004, oy, ew), sd * lerp(inner - 0.004, oz, ew)];
@@ -2867,7 +2881,7 @@ function buildVehicle(opts = {}) {
     // Pinned on the car: the pillar carries on past the screen's base and
     // lands on the front wing at station 0.375, 0.719 H and 0.850 of the half
     // width - ahead of the cowl shut line, not on it.
-    const foot = { x: d.L * 0.125, y: 0.719 * d.H, z: 0.850 * (d.W / 2), span: 0.20 };
+    const foot = { x: d.L * 0.125, y: 0.719 * d.H, z: 0.850 * (d.W / 2), span: 0.30, dlo: true };
     shell(roof, B.screenSurround(WS[0], WS[1], WS[2], WS[3], WS[4], sd2, foot), 16, 6, M.paint, rf, 0.020);
     shell(roof, B.screenSurround(RS[0], RS[1], RS[2], RS[3], RS[4], sd2), 14, 5, M.paint, rf, 0.020);
   }
