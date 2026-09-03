@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '3 sep 2026 \u00b7 lagere grille, holle uitlaten, dwarsbalk weg';
+const VG_BUILD = '3 sep 2026 \u00b7 flens 24 mm onder klep en kap';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -2904,9 +2904,12 @@ function buildVehicle(opts = {}) {
      rode up to 51 mm over the lid. Same counts as the panel means the same
      nodes, and both go through the same quality scaling, so it still holds on a
      phone. */
+  /* 24 mm, not 16: at the tail edge the lid's own shell thins towards the shut
+     line, so a 16 mm drop still left one sight line in 30 000 that caught the
+     flange over the crown of the deck. */
   for (const rect of [[0, 0.06, 0, 1], [0.94, 1, 0, 1], [0, 1, 0, 0.05], [0, 1, 0.95, 1]]) {
-    patch(tub, flange(hoodFn, 20, 20, rect[0], rect[1], rect[2], rect[3], 0.016), 20, 20, M.matte, [0, 0.3, 0]).castShadow = false;
-    patch(tub, flange(deckFn, 16, 18, rect[0], rect[1], rect[2], rect[3], 0.016), 16, 18, M.matte, [0, 0.3, 0]).castShadow = false;
+    patch(tub, flange(hoodFn, 20, 20, rect[0], rect[1], rect[2], rect[3], 0.024), 20, 20, M.matte, [0, 0.3, 0]).castShadow = false;
+    patch(tub, flange(deckFn, 16, 18, rect[0], rect[1], rect[2], rect[3], 0.024), 16, 18, M.matte, [0, 0.3, 0]).castShadow = false;
   }
   // cowl panel between hood and windscreen
   patch(tub, (u, w) => { const x = lerp(d.xCowl + 0.005, d.xCowl - 0.09, w); const zt = u * 2 - 1;
