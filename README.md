@@ -444,8 +444,10 @@ On a touch device the studio takes a lighter path: the surfaces are built from
 about 62% of the samples (which costs under 0.3% of the silhouette), the shadow
 map gives way to a painted contact shadow, and the camera re-frames itself for a
 portrait screen so the car sits in the strip the panels leave free. The boot card
-names the stage it is in, because most of the wait on a phone is the three.js
-download rather than the build. `?q=1` forces full sampling anywhere, `?q=0.5` a
+names the stage it is in. `?q=1` forces full sampling anywhere, `?q=0.5` a
 faster build.
 
-It needs nothing from `npm`; three.js comes from a CDN.
+three.js r128 is embedded in the file verbatim, so the studio needs no network
+at all: it runs from a phone's downloads folder, on a plane, and in an in-app
+browser that blocks CDNs. That is what makes the file ~800 KB rather than
+~210 KB. It needs nothing from `npm`.
