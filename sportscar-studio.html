@@ -129,12 +129,31 @@
 <body>
 <canvas id="view"></canvas>
 
+<!-- The card's static text is deliberately the no-JavaScript case, and the
+     spinner starts hidden. A file-preview pane that renders HTML but runs no
+     scripts - the Files app, an attachment preview, an in-app viewer - would
+     otherwise sit on a spinning "wordt geladen" for ever, which reads as a hang
+     when in fact nothing is running at all. The first script below rewrites
+     this the moment any code executes, so what you see is what is true. -->
 <div id="vgBoot"><div class="in">
-  <div class="sp" id="vgBootSpin"></div>
-  <b id="vgBootTitle">3D-bibliotheek wordt geladen</b>
-  <p id="vgBootMsg">Dit deel komt van een CDN, dus het hangt aan je verbinding.</p>
+  <div class="sp" id="vgBootSpin" style="display:none"></div>
+  <b id="vgBootTitle">Deze weergave voert geen JavaScript uit</b>
+  <p id="vgBootMsg">GT Studio bouwt de auto met JavaScript, dus hier kan hij niet
+    starten. Bewaar het bestand en open het met een echte browser: tik op
+    “Openen met” of “Deel” en kies Chrome of Safari, niet de voorbeeldweergave.</p>
   <code id="vgBootErr" style="display:none"></code>
 </div></div>
+<script>
+/* Proof of life: this is the first script in the document, so if anything runs
+   at all the card stops claiming otherwise. */
+(function () {
+  var sp = document.getElementById('vgBootSpin');
+  if (sp) sp.style.display = '';
+  document.getElementById('vgBootTitle').textContent = '3D-bibliotheek wordt geladen';
+  document.getElementById('vgBootMsg').textContent =
+    'Dit deel komt van een CDN, dus hoe snel dat gaat hangt af van je verbinding.';
+})();
+</script>
 <script>
 /* The three.js <script> below blocks the parser, so nothing after it runs until
    the download finishes. This timer is started before it: on a slow link it
