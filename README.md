@@ -410,3 +410,21 @@ which includes a `log.js` that makes a single anonymous call to `gryzor.co` on
 No personal data is sent. Use `npm run dev-nolog` / `npm run build-nolog` to
 skip it, or delete `log.js` and drop the call from the `scripts` section of
 `package.json`.
+
+## `sportscar-studio.html`
+
+A standalone side project that ships in this repo but has nothing to do with the
+game: open the file in a browser and it builds a GT coupé procedurally in
+three.js, panel by panel, with hinges, dentable panels, an exploded view and a
+quality gate that checks its own proportions.
+
+The body is not styled by hand. A two-door sports car reference mesh was
+measured by ray-casting through it, and the resulting curves — side silhouette,
+plan half width, cross section, beltline, greenhouse, daylight opening and the
+lamp and grille apertures — are embedded in the file as tables. Everything the
+generator draws comes from those numbers, which puts the car at 4757 × 1800 ×
+1233 mm on a 2680 mm wheelbase: the class of a Jaguar XK8/XKR, whose published
+wheel and tyre sizes it uses. Rendered from the same cameras as the reference,
+the silhouettes overlap 0.85–0.90 (intersection over union).
+
+It needs nothing from `npm`; three.js comes from a CDN.
