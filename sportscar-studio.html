@@ -608,7 +608,9 @@ function surfRegion(fn, r, off, ref) {
     const l = Math.hypot(nx, ny, nz) || 1;
     nx /= l; ny /= l; nz /= l;
     if (ref && ((p[0] - ref[0]) * nx + (p[1] - ref[1]) * ny + (p[2] - ref[2]) * nz) < 0) { nx = -nx; ny = -ny; nz = -nz; }
-    return [p[0] + nx * off, p[1] + ny * off, p[2] + nz * off];
+    // the depth may vary across the region: a cavity that shallows out to its rim
+    const o = typeof off === 'function' ? off(a, b) : off;
+    return [p[0] + nx * o, p[1] + ny * o, p[2] + nz * o];
   };
 }
 // A disc/annulus mapped into surface parameter space: used for round lamps.
@@ -1751,6 +1753,11 @@ function makeMaterials(s) {
      was doing the work, so that is the term to cut; at 0.08 the vanes read 153
      against a 114 recess, which is graphite standing just proud of its own
      shadow. */
+  /* The diffuser dish, near black. Its albedo was already this dark and it
+     still came back at 96 of 255, because under this studio the environment
+     term does the work; cutting that to 0.30 puts it at 59, which reads black
+     without going flat, and leaves the graphite strakes 70 clear of it. */
+  M.dish = std({ color: 0x0e0f11, metalness: 0.05, roughness: 0.95, envMapIntensity: 0.30, side: THREE.DoubleSide });
   M.vane = std({ color: 0x2e3238, metalness: 0.0, roughness: 1.0, envMapIntensity: 0.08, side: THREE.DoubleSide });
   /* The diffuser strakes are the same graphite, mixed against a darker
      backdrop: the dish behind them reads 96 of 255 where the grille's cavity
@@ -3420,8 +3427,19 @@ function buildVehicle(opts = {}) {
       v0: (uu) => lerp(hole.v0(uu), hole.v1(uu), b0),
       v1: (uu) => lerp(hole.v0(uu), hole.v1(uu), b1),
     }, off, fRef);
-    // the mouth is a real cavity: the backing sits 55 mm behind the face
-    patch(grille, inner(0, 1, 0.02, 0.98, -0.090), 34, 5, M.interiorDark, fRef);
+    /* The mouth is a real cavity, but at a constant 90 mm the offset surface
+       peeled away from the strongly curved corners of the opening and left
+       them unbacked: through the vanes you looked straight at the crash
+       structure there, light grey, and lit from one side only - which is what
+       made it read as a patch that was there on one side and not the other.
+       The depth now eases to 12 mm at the rim, so the backing stays inside the
+       opening the whole way round while the cavity is still 90 mm deep where
+       you actually look into it. */
+    const backDepth = (a, b2) => {
+      const e = Math.min(a, 1 - a, b2, 1 - b2);
+      return -lerp(0.012, 0.090, smootherstep(clamp(e / 0.12, 0, 1)));
+    };
+    patch(grille, inner(0, 1, 0.02, 0.98, backDepth), 40, 8, M.interiorDark, fRef);
     if (AP.mouth.ribs) {
       // The GT's mouth is a plain dished floor carrying exactly two vertical
       // ribs, one either side of the centre - measured off the mesh's crease
@@ -3505,7 +3523,7 @@ function buildVehicle(opts = {}) {
       return base(a, clamp(lerp(v0, v1, t), 0, 1));
     };
     for (const r of bandsAround(pills, 0, 1)) {
-      shell(df, abRegion(r), Math.max(6, Math.round(36 * (r.u1 - r.u0))), 5, M.interiorDark, rRef, 0.014);
+      shell(df, abRegion(r), Math.max(6, Math.round(36 * (r.u1 - r.u0))), 5, M.dish, rRef, 0.014);
     }
     // Spaced across the whole dish and then dropped where a slot is in the way,
     // so the outer corners and the middle each keep a few rather than the slots
@@ -3530,7 +3548,7 @@ function buildVehicle(opts = {}) {
       shell(df, (s2, t) => {
         const p1 = abRegion(q)(s2, t);
         return [p1[0] + 0.10, p1[1], p1[2]];
-      }, 14, 3, M.interiorDark, rRef, 0.010, false);
+      }, 14, 3, M.dish, rRef, 0.010, false);
       for (const side of [-1, 1]) {
         const zc = rim[2] + side * rad * 1.02;
         const tube = (r2, len, inset, mat) => {
