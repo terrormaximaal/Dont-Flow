@@ -2731,6 +2731,27 @@ function buildVehicle(opts = {}) {
 
     const qtr = mk('quarter.' + k, 'Achterscherm ' + k.toUpperCase(), { stiffness: 1.4, stage: 1 });
     shell(qtr, B.sideRectV((vv) => B.doorRearX(vv) - G, xQ, 0, 1, sd), B.flankUs(d.xDoorR - G, xQ, 11), B.flankVs(0, 1, 8), M.paint, flankRef(d.xDoorR, xQ));
+    /* The shoulder. Behind the B-pillar the greenhouse narrows fast - by the
+       deck the foot of the sail panel sits 347 mm inboard of the top of the
+       flank - and nothing spanned that, so a ray dropped anywhere in a strip
+       150 to 320 mm wide between x -0.90 and -1.70 hit no panel at all: from
+       above you looked straight past the sail onto the roll cage. The quarter
+       now carries that shoulder itself, from the top of its own flank across
+       to the foot of the sail, crowned by a tenth of its width so it rolls
+       over rather than reading as a flat shelf. The inner edge is held at
+       least 6 mm clear of the outer one, so where the two already meet - along
+       the doors, where the gap is 7 mm - the panel is a seam and not a
+       collapsed column of triangles. Behind the deck the trunk lid takes over. */
+    const xShF = B.doorRearX(1);
+    const shoulder = (u, w) => {
+      const x = lerp(xShF, d.xDeck, u);
+      const o = B.side(x, 1, sd), inb = B.cabin(x, 0, sd);
+      const zo = o[2];
+      const zi = sd > 0 ? Math.min(inb[2], zo - 0.006) : Math.max(inb[2], zo + 0.006);
+      return [x, lerp(o[1], inb[1], w) + 0.10 * Math.abs(zo - zi) * Math.sin(Math.PI * w),
+              lerp(zo, zi, w)];
+    };
+    shell(qtr, shoulder, 16, 5, M.paint, [midX(xShF, d.xDeck), B.belt(d.xDeck) - 0.5, 0]);
     v.addPart(qtr);
   }
 
