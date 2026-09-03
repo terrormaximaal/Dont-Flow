@@ -82,6 +82,7 @@
   body.qcopen #qcpanel{transform:translateY(0)}
   body.qcopen .dock{transform:translateY(101%);transition:transform .26s ease}
   #qcpanel h3{margin:8px 2px 6px;font-size:11.5px;font-weight:600;color:var(--dim);display:flex;justify-content:space-between;align-items:center}
+  #qcbuild{padding:2px 14px 8px;color:var(--dim);font-size:11px;letter-spacing:.02em}
   #qcpanel h3 button{appearance:none;background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:5px;font:inherit;font-size:12px;padding:5px 10px}
   /* Pointing needs the car big, so this sheet stays low and lets its own list
      scroll instead of growing over the canvas. */
@@ -173,6 +174,12 @@
   <code id="vgBootErr" style="display:none"></code>
 </div></div>
 <script>
+// Which build am I looking at? An artifact keeps one URL for its whole life,
+// so a browser that has seen it once will go on showing yesterday's copy, and
+// nothing on the page said otherwise. Bumped in the same commit as the change
+// it names - a date and a name rather than a commit hash, because the hash of
+// the commit that carries the stamp is not known until after it is written.
+const VG_BUILD = '3 sep 2026 \u00b7 bumpernaad 10 mm + versiestempel';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -271,6 +278,7 @@
 
 <div id="qcpanel">
   <h3><span>Kwaliteitspoort</span><button id="qcClose">Sluit</button></h3>
+  <div id="qcbuild"></div>
   <div id="qclist"></div>
 </div>
 
@@ -4993,6 +5001,11 @@ Vehicle.prototype.validateGeometry = function () {
   chip('zebraBtn', () => { zebra = !zebra; applyStage(); });
   chip('xrayBtn', () => { xray = !xray; applyStage(); });
   chip('qcBtn', () => {
+    /* Which build am I looking at? The artifact keeps one URL for its whole
+       life, so a browser that has seen it once will happily show you yesterday's
+       copy, and there was no way to tell from the page. This stamp is bumped in
+       the same commit as the change it names. */
+    $('qcbuild').textContent = 'Versie ' + VG_BUILD;
     const box = $('qclist');
     box.innerHTML = '';
     const head = (t) => { const h = document.createElement('div'); h.className = 'qch'; h.textContent = t; box.appendChild(h); };
