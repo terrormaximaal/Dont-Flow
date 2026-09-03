@@ -1780,10 +1780,17 @@ function makeMaterials(s) {
   });
   M.lampHousing = std({ color: 0x0c0d10, metalness: 0.4, roughness: 0.22, side: THREE.DoubleSide });
   M.reflector = std({ color: 0x7d838a, metalness: 1.0, roughness: 0.30, side: THREE.DoubleSide });
-  M.led = std({ color: 0xffffff, emissive: 0xfff6e0, emissiveIntensity: 2.2, roughness: 0.4 });
-  M.ledRed = std({ color: 0x5a0a0a, emissive: 0xff1c10, emissiveIntensity: 1.9, roughness: 0.4 });
-  M.lens = phys({ color: 0xc9d6e2, metalness: 0.0, roughness: 0.06, transparent: true, opacity: 0.50, side: THREE.DoubleSide, depthWrite: false, clearcoat: 1 });
-  M.lensRed = phys({ color: 0xb01018, metalness: 0.0, roughness: 0.08, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false, clearcoat: 1 });
+  // double sided: as single surfaces the bars have no back, and which way
+  // round a region comes out depends on the patch, not on the light
+  M.led = std({ color: 0xffffff, emissive: 0xfff6e0, emissiveIntensity: 2.2, roughness: 0.4, side: THREE.DoubleSide });
+  M.ledRed = std({ color: 0x5a0a0a, emissive: 0xff1c10, emissiveIntensity: 1.9, roughness: 0.4, side: THREE.DoubleSide });
+  /* A lens is a closed shell, so double-sided it puts four transparent skins
+     over the light behind it, and with depthWrite off they blend in whatever
+     order the renderer happens to pick - which is where the speckled, half-lit
+     patchwork inside both lamps came from. Front faces only leaves one layer of
+     glass over the lamp, which is what a lens is. */
+  M.lens = phys({ color: 0xc9d6e2, metalness: 0.0, roughness: 0.06, transparent: true, opacity: 0.50, side: THREE.FrontSide, depthWrite: false, clearcoat: 1 });
+  M.lensRed = phys({ color: 0xb01018, metalness: 0.0, roughness: 0.08, transparent: true, opacity: 0.55, side: THREE.FrontSide, depthWrite: false, clearcoat: 1 });
   M.interior = std({ color: s.interiorColor, metalness: 0.02, roughness: 0.9, side: THREE.DoubleSide });
   M.interiorDark = std({ color: 0x0e0f11, metalness: 0.05, roughness: 0.95, side: THREE.DoubleSide });
   M.accent = std({ color: s.accent, metalness: 0.2, roughness: 0.6, side: THREE.DoubleSide });
@@ -2295,9 +2302,17 @@ function buildStructure(v, tub) {
     fr.add(new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.13, 0.05, 14), M.frame), false)
       .position.set(d.xAxleF - 0.02, A.yStrutTop, s * (zR + 0.19));
   }
+  /* The beam follows the nose's own plan curve, set back 55% of the nose
+     depth - which carried its centre to x 2.202, 24 mm PROUD of the rear edge
+     of the bumper skin around the mouth at 2.178, so it stood inside the
+     grille opening and you saw it through the vanes. Its forward extent is now
+     capped at the station the rails already end on, which flattens the middle
+     of the beam - the way a real bumper beam is - and leaves the sides, where
+     it meets those rails, exactly where they were. */
   fr.add(new THREE.Mesh(buildShell(14, 1, (u, w) => {
     const zt = (u * 2 - 1) * 0.82;
-    const x = B.noseEdge.x(zt * B.hw(A.xCrashBeamF)) - (d.xNose - A.xCrashBeamF) * 0.55;
+    const x = Math.min(A.xCrashBeamF,
+      B.noseEdge.x(zt * B.hw(A.xCrashBeamF)) - (d.xNose - A.xCrashBeamF) * 0.55);
     const yb = Math.min(A.yBeamF, underHood(x, 0.10));
     return [x, yb + (w - 0.5) * 0.13, zt * B.hw(A.xCrashBeamF) * 0.96];
   }, 0.09, [0, 0, 0]), M.frame), false);
@@ -2389,6 +2404,20 @@ const SIDE = { l: 1, r: -1 };   // +z is the car's left-hand side
 // Split a v-window of the (u,v) square into bands around holes. A hole's v
 // bounds may be functions of u, so an opening can have a designed outline
 // (oval mouth, round lamp, swept headlight) instead of being a rectangle.
+/* Columns bunched at both ends of a band. An opening closes over the last few
+   percent of its width, so on a uniform grid the two ends of every cut came out
+   as long flats with a step between them however smooth the rim underneath was.
+   Cosine spacing puts the columns where the edge is actually turning. */
+// A min()/max() with the corner taken off, for two curves that change places.
+function softMin(a, b, k) {
+  return 0.5 * (a + b - Math.sqrt((a - b) * (a - b) + k * k));
+}
+function softMax(a, b, k) { return -softMin(-a, -b, k); }
+function holeUs(n) {
+  const out = [];
+  for (let i = 0; i <= n; i++) out.push(0.5 - 0.5 * Math.cos(Math.PI * i / n));
+  return out;
+}
 function bandsAround(holes, vLo, vHi) {
   vLo = vLo === undefined ? 0 : vLo;
   vHi = vHi === undefined ? 1 : vHi;
@@ -2882,7 +2911,7 @@ function buildVehicle(opts = {}) {
        recess     |z| 0.020..0.780, y 0.495..0.665 H
        tail lamp  |z| 0.508..0.746, y 0.512..0.637 H
      --------------------------------------------------------------------- */
-  const bandCount = (r) => (r.u1 - r.u0 > 0.28 ? 30 : 16);
+  const bandCount = (r) => (r.u1 - r.u0 > 0.28 ? 44 : 26);
   const uvSolver = (surf) => {
     const NU = 64, NV = 32, grid = [];
     for (let i = 0; i <= NU; i++) {
@@ -2932,12 +2961,28 @@ function buildVehicle(opts = {}) {
     }
     return (u) => { const t = clamp(u, 0, 1) * N; const i = Math.min(N - 1, Math.floor(t)); return lerp(tbl[i], tbl[i + 1], t - i); };
   };
+  /* Every opening in this car - the mouth, the corner intakes, the lamps, the
+     diffuser, the exhausts - is measured at a set of stations and then read
+     back as a rim. It used to be read back as a POLYLINE through those
+     stations, and at the two ends of an opening, where it closes fastest, the
+     straight segments showed as flats and steps in the cut edge. A monotone
+     cubic through the same stations has no corners in it and cannot bulge past
+     the points it was measured from, so every cut in the car comes out clean
+     for the price of one curve. */
+  const smoothRim = (pts) => {
+    const uniq = [];
+    for (const q of pts) if (!uniq.length || q.u - uniq[uniq.length - 1].u > 1e-6) uniq.push(q);
+    const us = uniq.map((q) => q.u);
+    return { u0: us[0], u1: us[us.length - 1],
+             v0: curve1D(uniq.map((q) => [q.u, q.v0])),
+             v1: curve1D(uniq.map((q) => [q.u, q.v1])) };
+  };
   const mirrorHole = (h) => ({
     u0: 1 - h.u1, u1: 1 - h.u0,
     v0: (uu) => h.v0(1 - uu), v1: (uu) => h.v1(1 - uu),
   });
   const measuredHole = (solve, sd, zA, zB, yLo, yHi, shape) => {
-    const N = 16, pts = [];
+    const N = 24, pts = [];
     for (let i = 0; i <= N; i++) {
       const t = i / N;
       const z = lerp(zA, zB, t);
@@ -2949,16 +2994,7 @@ function buildVehicle(opts = {}) {
       });
     }
     pts.sort((p, q) => p.u - q.u);
-    const us = pts.map((p) => p.u);
-    const pick = (key) => (uu) => {
-      if (uu <= us[0]) return pts[0][key];
-      if (uu >= us[us.length - 1]) return pts[pts.length - 1][key];
-      let i = 0;
-      while (i < us.length - 2 && uu > us[i + 1]) i++;
-      const t = (uu - us[i]) / Math.max(1e-6, us[i + 1] - us[i]);
-      return lerp(pts[i][key], pts[i + 1][key], t);
-    };
-    return { u0: us[0], u1: us[us.length - 1], v0: pick('v0'), v1: pick('v1') };
+    return smoothRim(pts);
   };
   const ellipse = (t) => {
     const h = Math.sqrt(Math.max(0, 1 - Math.pow(t * 2 - 1, 2)));
@@ -2975,7 +3011,7 @@ function buildVehicle(opts = {}) {
   // that, and defining it this way makes it impossible to place the lamp off
   // the surface however the body moves.
   const hugHole = (solve, edge, sd, zA, zB, topGap, hFn) => {
-    const N = 16, pts = [];
+    const N = 24, pts = [];
     for (let i = 0; i <= N; i++) {
       const t = i / N, zf = lerp(zA, zB, t);
       const yTop = edge.y(zf * (d.W / 2)) / d.H - topGap;
@@ -2987,16 +3023,7 @@ function buildVehicle(opts = {}) {
       });
     }
     pts.sort((p, q) => p.u - q.u);
-    const us = pts.map((p) => p.u);
-    const pick = (key) => (uu) => {
-      if (uu <= us[0]) return pts[0][key];
-      if (uu >= us[us.length - 1]) return pts[pts.length - 1][key];
-      let i = 0;
-      while (i < us.length - 2 && uu > us[i + 1]) i++;
-      const t = (uu - us[i]) / Math.max(1e-6, us[i + 1] - us[i]);
-      return lerp(pts[i][key], pts[i + 1][key], t);
-    };
-    return { u0: us[0], u1: us[us.length - 1], v0: pick('v0'), v1: pick('v1') };
+    return smoothRim(pts);
   };
 
   /* ---- headlamps: tucked under the bonnet shut line, climbing with it --- */
@@ -3004,7 +3031,20 @@ function buildVehicle(opts = {}) {
   const lampHeight = (t) => lerp(AP.lamp.h[0], AP.lamp.h[1], smootherstep(clamp(t * 1.08, 0, 1)));
   const lampHoles = {};
   const lampHole = (sd) => {
-    if (!lampHoles[1]) lampHoles[1] = hugHole(solveFront, B.noseEdge, 1, AP.lamp.z[0], AP.lamp.z[1], AP.lamp.gap, lampHeight);
+    if (!lampHoles[1]) {
+      const h = hugHole(solveFront, B.noseEdge, 1, AP.lamp.z[0], AP.lamp.z[1], AP.lamp.gap, lampHeight);
+      /* The lamp is measured down from the wing crest, and over its inboard
+         half that carried its lower edge BELOW the bumper's parting line - by
+         as much as 0.19 of v, the lamp foot at y 0.479 against a shut at 0.575.
+         The strip of nose panel between the two then had its edges the wrong
+         way round, and that inverted band is what folded down over the outboard
+         end of the mouth and put the notch in the corner of the grille. The
+         lamp now keeps the same lip above the shut that the mouth keeps below
+         it, so the two cuts read as one line instead of crossing. */
+      const LIP = 0.022;
+      lampHoles[1] = { u0: h.u0, u1: h.u1, v1: h.v1,
+        v0: (uu) => softMax(h.v0(uu), splitF(uu) + FGAP + LIP, 0.03) };
+    }
     if (!lampHoles[-1]) lampHoles[-1] = mirrorHole(lampHoles[1]);
     return lampHoles[sd];
   };
@@ -3017,10 +3057,21 @@ function buildVehicle(opts = {}) {
       : (t) => pillShape(AP.mouth.flat)(0.5 + t * 0.5);
     const r = measuredHole(solveFront, 1, 0.02, MZ, MY[0], MY[1], shape);
     const l = mirrorHole(r);
+    const rawV1 = (uu) => (uu < 0.5 ? l.v1(uu) : r.v1(uu));
+    /* The mouth's top is specified at the bumper's parting line, and over the
+       middle two thirds of the opening it came out 3 to 10 mm ABOVE it: no lip
+       of bumper was left there at all, so the top of the cut was the nose
+       panel's own wrap inboard and a strip of bumper outboard, with a hard step
+       between the two - the notch in the corner of the grille. It is now held a
+       constant lip below the parting line, and softly, so the lip runs the
+       whole way across and there is no corner at the station where the two
+       curves change places. splitF is built further down; this is only ever
+       called while the panels are being cut, by which time it exists. */
+    const LIP = 0.022;
     return {
       u0: Math.min(l.u0, r.u0), u1: Math.max(l.u1, r.u1),
       v0: (uu) => (uu < 0.5 ? l.v0(uu) : r.v0(uu)),
-      v1: (uu) => (uu < 0.5 ? l.v1(uu) : r.v1(uu)),
+      v1: (uu) => softMin(rawV1(uu), splitF(uu) - FGAP - LIP, 0.03),
     };
   })();
   /* ---- corner openings: round fog lamps, or the shield car's air curtains */
@@ -3042,7 +3093,7 @@ function buildVehicle(opts = {}) {
   const nose = mk('nose', 'Voorpaneel', { stiffness: 1.2, stage: 1 });
   for (const raw of bandsAround([lampHole(-1), lampHole(1)], (uu) => splitF(uu) + FGAP, 1)) {
     const r = halfBand(raw);
-    if (r) shell(nose, surfRegion(B.frontFascia, r, 0, fRef), Math.max(8, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5)), 3, M.paint, fRef, 0.028);
+    if (r) shell(nose, surfRegion(B.frontFascia, r, 0, fRef), holeUs(Math.max(14, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5))), 3, M.paint, fRef, 0.028);
   }
   mirrorHalfInto(nose, 0);
   v.addPart(nose);
@@ -3050,7 +3101,7 @@ function buildVehicle(opts = {}) {
   const bf = mk('bumper.front', 'Voorbumper', { detachable: true, stiffness: 0.85, stage: 1 });
   for (const raw of bandsAround([mouthHole, cornerHole(-1), cornerHole(1)], 0, (uu) => splitF(uu) - FGAP)) {
     const r = halfBand(raw);
-    if (r) shell(bf, surfRegion(B.frontFascia, r, 0, fRef), Math.max(16, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5)), 4, M.paint, fRef, 0.03);
+    if (r) shell(bf, surfRegion(B.frontFascia, r, 0, fRef), holeUs(Math.max(24, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5))), 4, M.paint, fRef, 0.03);
   }
   mirrorHalfInto(bf, 0);
   v.addPart(bf);
@@ -3103,7 +3154,7 @@ function buildVehicle(opts = {}) {
     ? [tailLampHole(-1), tailLampHole(1)]
     : [recessHole, tailLampHole(-1), tailLampHole(1)];
   for (const r of bandsAround(upperHoles, (uu) => splitR(uu) + FGAP, 1)) {
-    shell(tailBand, surfRegion(B.rearFascia, r, 0, rRef), bandCount(r), 3, M.paint, rRef, 0.028);
+    shell(tailBand, surfRegion(B.rearFascia, r, 0, rRef), holeUs(bandCount(r)), 3, M.paint, rRef, 0.028);
   }
   v.addPart(tailBand);
 
@@ -3310,25 +3361,39 @@ function buildVehicle(opts = {}) {
     const brk = new THREE.Mesh(buildShell(6, 1, reg(0.15, 0.85, 0.40, 0.60, -0.10), 0.02, fRef), M.stamped);
     brk.userData.stage = 4;
     p.add(brk, false);
-    patch(p, reg(0, 1, 0, 1, -0.048), 16, 4, M.lampHousing, fRef);
-    patch(p, reg(0.03, 0.97, 0.08, 0.92, -0.034), 16, 4, M.reflector, fRef);
+    /* The layers are spaced so no two of them meet: the brow used to sit
+       1 mm off the reflector and the tail blade 2 mm off the inside of its
+       lens, and at that separation the depth buffer cannot tell them apart -
+       which is where the speckled, half-lit look inside both lamps came
+       from. Lens, light, reflector, housing now step back 12 mm at a time. */
+    patch(p, reg(0, 1, 0, 1, -0.058), 16, 4, M.lampHousing, fRef);
+    patch(p, reg(0.03, 0.97, 0.08, 0.92, -0.044), 16, 4, M.reflector, fRef);
     const ledMat = M.led.clone();
     const bars = [];
-    // two projectors in the wide outboard half, as on the reference
-    for (const c of [0.46, 0.70]) {
-      const q = reg(0, 1, 0, 1, -0.026)(sd > 0 ? c : 1 - c, 0.50);
-      const pr = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.050, 0.05, 14).rotateZ(Math.PI / 2), M.reflector);
-      pr.position.set(q[0], q[1], q[2]);
-      p.add(pr, false);
-      const lp = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 8), M.lens.clone());
-      lp.position.set(q[0] + 0.010, q[1], q[2]);
-      p.add(lp, false);
+    /* Two projectors, equal and seated in the reflector. The old pair put a
+       100 mm ring and a 76 mm ball behind the lens at different depths, which
+       through the glass read as clutter rather than as two lamps. */
+    for (const c of [0.44, 0.68]) {
+      const q = reg(0, 1, 0, 1, -0.034)(sd > 0 ? c : 1 - c, 0.52);
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.024, 0.026, 20).rotateZ(Math.PI / 2), M.reflector);
+      bowl.position.set(q[0], q[1], q[2]);
+      p.add(bowl, false);
+      const eye = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.005, 20).rotateZ(Math.PI / 2), M.lens.clone());
+      eye.position.set(q[0] + 0.016, q[1], q[2]);
+      p.add(eye, false);
     }
-    // brow: a slim bar along the top of the lens
-    bars.push(new THREE.Mesh(buildShell(20, 1, reg(0.05, 0.95, 0.72, 0.88, -0.022), 0.010, fRef), ledMat));
-    for (const b of bars) p.add(b, false);
-    const amber = new THREE.MeshStandardMaterial({ color: 0x3a2205, emissive: 0xff8c12, emissiveIntensity: 0.9, roughness: 0.5 });
-    p.add(new THREE.Mesh(buildShell(12, 1, reg(sd > 0 ? 0.58 : 0.04, sd > 0 ? 0.96 : 0.42, 0.14, 0.30, -0.022), 0.010, fRef), amber), false);
+    /* One brow and one indicator, the same width and the same depth, run over
+       the same span of the lens - two parallel lines instead of two bars of
+       different lengths starting and stopping in different places. */
+    /* The light bars are single surfaces, not shells. On a band this narrow a
+       shell's inner skin crosses its own outer skin - the offset direction is
+       differenced within the band's own parameterisation, and over 12% of the
+       lamp's height that difference is mostly noise - which is what striped
+       both lamps into alternating lit and dark blocks. A bar behind a lens has
+       no back to see anyway. */
+    bars.push(patch(p, reg(0.06, 0.94, 0.74, 0.86, -0.026), 24, 2, ledMat, fRef));
+    const amber = new THREE.MeshStandardMaterial({ color: 0x3a2205, emissive: 0xff8c12, emissiveIntensity: 0.9, roughness: 0.5, side: THREE.DoubleSide });
+    patch(p, reg(0.06, 0.94, 0.15, 0.27, -0.026), 24, 2, amber, fRef);
     const lens = new THREE.Mesh(buildShell(20, 4, reg(0, 1, 0, 1, 0.003), 0.012, fRef), M.lens.clone());
     lens.castShadow = false;
     p.add(lens, false);
@@ -3393,14 +3458,12 @@ function buildVehicle(opts = {}) {
       v1: (uu) => lerp(h.v0(uu), h.v1(uu), b1),
     }, off, rRef);
     const ledMat = M.ledRed.clone();
-    patch(p, reg(0, 1, 0, 1, -0.052), 18, 4, M.lampHousing, rRef);
-    patch(p, reg(0.03, 0.97, 0.08, 0.92, -0.040), 16, 3, M.reflector, rRef);
-    const blades = [];
-    for (const span of [[0.05, 0.47], [0.53, 0.95]]) {
-      const blade = new THREE.Mesh(buildShell(12, 2, reg(span[0], span[1], 0.30, 0.72, -0.026), 0.010, rRef), ledMat);
-      blades.push(blade);
-      p.add(blade, false);
-    }
+    patch(p, reg(0, 1, 0, 1, -0.064), 18, 4, M.lampHousing, rRef);
+    patch(p, reg(0.03, 0.97, 0.08, 0.92, -0.052), 16, 3, M.reflector, rRef);
+    /* One blade the width of the lamp, not two with a gap in the middle: the
+       pair, seen through the lens with the reflector behind them, read as a row
+       of staggered bars rather than as one light. */
+    const blades = [patch(p, reg(0.06, 0.94, 0.36, 0.66, -0.036), 28, 3, ledMat, rRef)];
     const lens = new THREE.Mesh(buildShell(20, 4, reg(0, 1, 0, 1, -0.012), 0.012, rRef), M.lensRed.clone());
     lens.castShadow = false;
     p.add(lens, false);
@@ -3427,19 +3490,18 @@ function buildVehicle(opts = {}) {
       v0: (uu) => lerp(hole.v0(uu), hole.v1(uu), b0),
       v1: (uu) => lerp(hole.v0(uu), hole.v1(uu), b1),
     }, off, fRef);
-    /* The mouth is a real cavity, but at a constant 90 mm the offset surface
-       peeled away from the strongly curved corners of the opening and left
-       them unbacked: through the vanes you looked straight at the crash
-       structure there, light grey, and lit from one side only - which is what
-       made it read as a patch that was there on one side and not the other.
-       The depth now eases to 12 mm at the rim, so the backing stays inside the
-       opening the whole way round while the cavity is still 90 mm deep where
-       you actually look into it. */
-    const backDepth = (a, b2) => {
-      const e = Math.min(a, 1 - a, b2, 1 - b2);
-      return -lerp(0.012, 0.090, smootherstep(clamp(e / 0.12, 0, 1)));
-    };
-    patch(grille, inner(0, 1, 0.02, 0.98, backDepth), 40, 8, M.interiorDark, fRef);
+    /* The cavity floor is the mouth's own surface carried STRAIGHT back, not
+       pushed along its normal. At the outboard ends of the opening the fascia
+       has wrapped around the corner of the car, so its normal points sideways;
+       a 90 mm offset there walked the backing inwards instead of backwards and
+       left both corners open, and through them you saw the crash structure -
+       light grey, and lit from one side only, which is what made it read as a
+       patch on one side and not the other. Translated back in x the footprint
+       is the opening itself, so it covers the whole aperture with no lip
+       inside it, and a few percent of overlap keeps it covered off-axis too. */
+    const rimWide = inner(-0.03, 1.03, -0.06, 1.06, 0);
+    patch(grille, (a, b2) => { const q = rimWide(a, b2); return [q[0] - 0.090, q[1], q[2]]; },
+          40, 8, M.interiorDark, fRef);
     if (AP.mouth.ribs) {
       // The GT's mouth is a plain dished floor carrying exactly two vertical
       // ribs, one either side of the centre - measured off the mesh's crease
