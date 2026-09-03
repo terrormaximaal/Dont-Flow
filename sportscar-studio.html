@@ -1297,7 +1297,7 @@ function makeBody(d) {
      The frame is transported along the path and only re-squared at each step: a
      cross product with the surface normal flips sign wherever it passes through
      zero, which put a 158-degree kink in an earlier attempt at this. */
-  B.frameBar = (sd, thick) => {
+  B.frameBar = (sd, thick, xDrawFrom) => {
     const xF = d.xCowl, xR = d.xDloRear;
     const N = 240;
     const path = (t) => {
@@ -1335,9 +1335,15 @@ function makeBody(d) {
                ax: ax / len, ay: ay / len, az: az / len };
     };
     const PROUD = 0.006;                           // stands off the skin, like trim
+    // Ahead of the mirror the daylight opening turns back inboard - 0.715 of a
+    // metre out at the mirror, 0.658 by the cowl - so a bar carried all the way
+    // forward ends by angling into the screen. It is drawn from the mirror back;
+    // the path still runs to the cowl, so the screen has an edge to follow over
+    // the stretch where there is no bar.
+    const tDraw = clamp((xF - (xDrawFrom === undefined ? xF : xDrawFrom)) / (xF - xR), 0, 1);
     return {
       surface: (u, w) => {
-        const c = sample(u), t2 = thick * w;
+        const c = sample(lerp(tDraw, 1, clamp(u, 0, 1))), t2 = thick * w;
         return [c.x + c.ax * t2, c.y + c.ay * t2, sd * (c.z + c.az * t2 + PROUD)];
       },
       innerAtX: (x) => {
@@ -2583,7 +2589,6 @@ function buildVehicle(opts = {}) {
   shell(roof, B.roofSurface, 12, 8, M.paint, [midX(d.xRoofF, d.xRoofR), d.roofY - 0.5, 0]);
   for (const k in SIDE) {
     const sd = SIDE[k], cRef = [midX(d.xCowl, d.xDeck), d.beltY, 0];
-    shell(roof, inset(B.cabinRect(d.xCowl, d.xDeck, 0.90, 1.0, sd), 0.995), 18, 2, M.paint, cRef, 0.016);
     shell(roof, B.cabinRect(d.xDloRear, d.xDeck, 0, 0.92, sd), 6, 6, M.paint, cRef, 0.026);   // sail / C-pillar
   }
   v.addPart(roof);
@@ -2926,7 +2931,9 @@ function buildVehicle(opts = {}) {
   // The bar is the master here: the screen's own side edge is the bar's inner
   // edge, so the two shut against each other by construction instead of leaving
   // whatever gap the two curves happened to produce.
-  const BAR = { 1: B.frameBar(1, d.pillarThick), '-1': B.frameBar(-1, d.pillarThick) };
+  const xBarFront = d.xNose - 0.417 * d.L;        // the mirror, where the opening is widest
+  const BAR = { 1: B.frameBar(1, d.pillarThick, xBarFront),
+                '-1': B.frameBar(-1, d.pillarThick, xBarFront) };
   const screenToBar = (u, v) => {
     const x = lerp(WS[0], WS[1], v);
     const inn = BAR[1].innerAtX(x);
