@@ -1237,6 +1237,25 @@ function makeBody(d) {
     return [x, y, side * B.cabinHW(x, y)];
   };
   B.cabinRect = (x0, x1, v0, v1, side) => (u, v) => B.cabin(lerp(x0, x1, u), lerp(v0, v1, v), side);
+  /* The belt closure. The flank stops at the belt and the greenhouse starts at
+     the foot of the glass, and nothing joined the two: an open slot ran the
+     whole length of the cabin, 28 mm wide along the doors and 171 mm at the
+     scuttle, and from three quarters above you looked straight down it onto
+     the seats and the roll cage. Each flank panel now closes its own stretch,
+     from the top of its own flank across to wherever the greenhouse starts -
+     the foot of the glass inside the daylight opening, the foot of the sail
+     panel behind it. It is crowned by a tenth of its width so it rolls over
+     instead of reading as a flat shelf, and the inner edge is held at least
+     6 mm clear of the outer one, so a stretch where the two already meet is a
+     seam and not a collapsed column of triangles. */
+  B.beltClose = (side, xa, xb, vIn) => (u, w) => {
+    const x = lerp(xa, xb, u);
+    const o = B.side(x, 1, side), g = B.cabin(x, vIn(x), side);
+    const zo = o[2];
+    const zi = side > 0 ? Math.min(g[2], zo - 0.006) : Math.max(g[2], zo + 0.006);
+    return [x, lerp(o[1], g[1], w) + 0.10 * Math.abs(zo - zi) * Math.sin(Math.PI * w),
+            lerp(zo, zi, w)];
+  };
   B.dloTop = curve1D(d.dloProfile);       // top edge of the side glass, 0..1 of the cabin
   /* The edge every part of the greenhouse shuts against. Where the frame bar
      runs it IS the bar's inner edge, so the roof and both screens meet the
@@ -2742,16 +2761,12 @@ function buildVehicle(opts = {}) {
        least 6 mm clear of the outer one, so where the two already meet - along
        the doors, where the gap is 7 mm - the panel is a seam and not a
        collapsed column of triangles. Behind the deck the trunk lid takes over. */
-    const xShF = B.doorRearX(1);
-    const shoulder = (u, w) => {
-      const x = lerp(xShF, d.xDeck, u);
-      const o = B.side(x, 1, sd), inb = B.cabin(x, 0, sd);
-      const zo = o[2];
-      const zi = sd > 0 ? Math.min(inb[2], zo - 0.006) : Math.max(inb[2], zo + 0.006);
-      return [x, lerp(o[1], inb[1], w) + 0.10 * Math.abs(zo - zi) * Math.sin(Math.PI * w),
-              lerp(zo, zi, w)];
-    };
-    shell(qtr, shoulder, 16, 5, M.paint, [midX(xShF, d.xDeck), B.belt(d.xDeck) - 0.5, 0]);
+    const xShF = B.doorRearX(1) - G;
+    // ahead of the back of the daylight opening it closes onto the foot of the
+    // quarter light; behind it, onto the foot of the sail panel itself
+    const vQtr = (x) => 0.05 * smootherstep(clamp((x - d.xDloRear) / 0.06, 0, 1));
+    shell(qtr, B.beltClose(sd, xShF, d.xDeck, vQtr), 16, 5, M.paint,
+          [midX(xShF, d.xDeck), B.belt(d.xDeck) - 0.5, 0]);
     v.addPart(qtr);
   }
 
@@ -3131,6 +3146,7 @@ function buildVehicle(opts = {}) {
     const dr = mk('door.' + k, 'Portier ' + k.toUpperCase(), { detachable: true, stiffness: 1.1, stage: 1 });
     shell(dr, B.sideRectV(x0, (vv) => B.doorRearX(vv) + G, 0, 1, sd), 14, B.flankVs(0, 1, 8), M.paint, flankRef(x0, x1));
     const dRef = flankRef(x0, x1);
+    shell(dr, B.beltClose(sd, x0, B.doorRearX(1) + G, () => 0.05), 16, 4, M.paint, dRef);
     patch(dr, inset(B.sideRect(x0 + 0.012, x1 - 0.012, 0.02, 0.99, sd), 0.90), 10, 4, M.stamped, dRef).userData.stage = 4;
     for (const rect of [[0.04, 0.14, 0.05, 0.95], [0.86, 0.96, 0.05, 0.95], [0.05, 0.95, 0.05, 0.14]]) {
       const m = new THREE.Mesh(buildShell(rect[1] - rect[0] > 0.3 ? 10 : 3, 2,
