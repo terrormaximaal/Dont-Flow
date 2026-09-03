@@ -1363,6 +1363,27 @@ function makeBody(d) {
       pts[i] = p.clone();
       dirs[i] = acr.clone();
     }
+    /* Over the roof the bar hangs FROM the roofline instead of standing on the
+       daylight opening. There are only 18-28 mm between the DLO and the roof
+       back there, so a 100 mm bar grown upward off the DLO put its top edge
+       47-52 mm above the roof centreline - and since the roof panel shuts
+       against that top edge, the roof read as a valley from the front. Sliding
+       the bar down its own cross-direction until its top lands on the roofline
+       leaves the panel flat across and the rail's outer face flush with it,
+       without touching the bar's thickness. Only ahead of the roof, where the
+       roofline is really the screen header, is the shift eased back to zero. */
+    const offs = new Array(N + 1);
+    for (let i = 0; i <= N; i++) {
+      const p = pts[i], a = dirs[i];
+      let o = 0;
+      // fully applied by the time the roof panel starts, at xRoofF + 0.03
+      const xRamp = d.xRoofF + 0.15;
+      if (p.x <= xRamp && Math.abs(a.y) > 0.2) {
+        const want = (B.roofYAt(p.x) - p.y) / a.y - thick;
+        o = Math.min(0, want) * smootherstep(clamp((xRamp - p.x) / 0.11, 0, 1));
+      }
+      offs[i] = o;
+    }
     const sample = (t) => {
       const f = clamp(t, 0, 1) * N;
       const i = Math.min(N - 1, Math.floor(f)), k = f - i;
@@ -1370,7 +1391,7 @@ function makeBody(d) {
       let ax = lerp(a.x, b2.x, k), ay = lerp(a.y, b2.y, k), az = lerp(a.z, b2.z, k);
       const len = Math.hypot(ax, ay, az) || 1;
       return { x: lerp(p.x, q.x, k), y: lerp(p.y, q.y, k), z: lerp(p.z, q.z, k),
-               ax: ax / len, ay: ay / len, az: az / len };
+               ax: ax / len, ay: ay / len, az: az / len, o: lerp(offs[i], offs[i + 1], k) };
     };
     const PROUD = 0.006;                           // stands off the skin, like trim
     // Ahead of the mirror the daylight opening turns back inboard - 0.715 of a
@@ -1381,13 +1402,13 @@ function makeBody(d) {
     const tDraw = 0;
     return {
       surface: (u, w) => {
-        const c = sample(lerp(tDraw, 1, clamp(u, 0, 1))), t2 = thick * w;
+        const c = sample(lerp(tDraw, 1, clamp(u, 0, 1))), t2 = c.o + thick * w;
         return [c.x + c.ax * t2, c.y + c.ay * t2, sd * (c.z + c.az * t2 + PROUD)];
       },
       innerAtX: (x) => {
         const t = clamp((xF - x) / (xF - xR), 0, 1);
-        const c = sample(t);
-        return [c.x + c.ax * thick, c.y + c.ay * thick, c.z + c.az * thick];
+        const c = sample(t), t2 = c.o + thick;
+        return [c.x + c.ax * t2, c.y + c.ay * t2, c.z + c.az * t2];
       },
     };
   };
@@ -1672,7 +1693,14 @@ function makeMaterials(s) {
   // Grille elements. Bright metal catches the sky and comes out lighter than
   // the cavity behind it, which reads as a pale panel rather than a grille;
   // these are dark grey with just enough sheen to pick up an edge.
-  M.grilleBar = std({ color: 0x2f343a, metalness: 0.30, roughness: 0.58, side: THREE.DoubleSide });
+  /* Graphite, and it has to be mixed against the studio rather than picked on
+     a colour chart: with the sun at 2.25 plus the hemisphere and the fill, an
+     albedo this dark still came back at 193 of 255 - silver, not graphite - and
+     darkening it further barely moved (171 at half the albedo). The environment
+     was doing the work, so that is the term to cut; at 0.08 the vanes read 153
+     against a 114 recess, which is graphite standing just proud of its own
+     shadow. */
+  M.grilleBar = std({ color: 0x2e3238, metalness: 0.0, roughness: 1.0, envMapIntensity: 0.08, side: THREE.DoubleSide });
   M.grilleFrame = std({ color: 0x24272b, metalness: 0.40, roughness: 0.45, side: THREE.DoubleSide });
   M.tire = std({ color: 0x131416, metalness: 0.0, roughness: 0.93, bumpMap: treadTexture(), bumpScale: 0.004, side: THREE.DoubleSide });
   M.rim = std({ color: s.rimColor, metalness: 0.9, roughness: 0.24, side: THREE.DoubleSide });
