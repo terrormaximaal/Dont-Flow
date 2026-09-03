@@ -657,6 +657,15 @@ const REF_CABIN = [
   [0.667, 0.837], [0.750, 0.776], [0.820, 0.620], [0.860, 0.500],
 ];
 const REF_TUMBLE = 0.425;          // cabin half width lost between belt and roof
+/* ...and how it is lost. Measured on the reference: the greenhouse tucks in
+   almost linearly for the first two thirds and then falls away as the roof
+   turns over, so one straight taper is wrong at both ends. Fraction of the
+   cabin's half width at the beltline, against height from belt to roof. */
+const REF_CABPROF = [
+  [0.00, 1.000], [0.10, 0.957], [0.20, 0.917], [0.30, 0.877], [0.40, 0.835],
+  [0.50, 0.794], [0.60, 0.752], [0.70, 0.711], [0.80, 0.660], [0.90, 0.575],
+  [1.00, 0.394],
+];
 /* How wide the section still is where it meets the beltline, as a fraction of
    that station's widest point. REF_SECTION's own top value (0.891) only holds
    through the doors: over the front wing the reference tucks to 0.78 and over
@@ -729,7 +738,8 @@ const REF2_DLO = [
    comes out of its entry here. */
 const REFERENCES = {
   gt_coupe: { SIL: REF_SIL, PLAN: REF_PLAN, SECTION: REF_SECTION, BELT: REF_BELT,
-              CABIN: REF_CABIN, TUMBLE: REF_TUMBLE, DLO: REF_DLO, SECTOP: REF_SECTOP },
+              CABIN: REF_CABIN, TUMBLE: REF_TUMBLE, DLO: REF_DLO, SECTOP: REF_SECTOP,
+              CABPROF: REF_CABPROF },
   super_gt: { SIL: REF2_SIL, PLAN: REF2_PLAN, SECTION: REF_SECTION, BELT: REF2_BELT,
               CABIN: REF2_CABIN, TUMBLE: REF2_TUMBLE, DLO: REF2_DLO },
 };
@@ -774,12 +784,18 @@ const ARCHETYPES = {
     // section
     shoulderDrop: [0.030, 0.044], haunch: [0.0, 0.0], frontFlare: [0.0, 0.0],
     tumble: [0.100, 0.115], rockerH: [0.085, 0.100], rockerTuck: [0.002, 0.008], beltTuck: [0.004, 0.010],
-    hoodDome: [0.004, 0.008], hoodRise: [0.010, 0.018], hoodCrease: [0.006, 0.011], ducktail: [0.004, 0.009],
+    hoodDome: [0.016, 0.021], hoodRise: [0.010, 0.018], hoodCrease: [0.006, 0.011], ducktail: [0.004, 0.009],
     noseDepth: [0.60, 0.66], tailDepth: [0.30, 0.35], frontRakeBack: [0.16, 0.20], tailRakeIn: [0.05, 0.075],
     doorLen: [1.16, 1.24],
     wheelStyles: ['five'],
     mirror: 'stalk', sideVent: 1.0, wingChance: 0.0, faceFrac: 0.9743, tailFloor: 0.240,
     dloRear: 0.795, mirrorF: 0.402,
+    // measured on the centreline: rearmost at 0.39 H, tucking 3 cm by 0.44 H
+    // and 9 cm through 0.53-0.61 H
+    tailTuck: [[0.10, 0.220], [0.16, 0.165], [0.20, 0.130], [0.243, 0.094], [0.29, 0.027],
+               [0.34, 0.005], [0.39, 0.000], [0.44, 0.033], [0.49, 0.045], [0.53, 0.070],
+               [0.58, 0.086], [0.61, 0.088], [0.65, 0.055], [0.68, 0.074], [0.71, 0.130],
+               [0.75, 0.190]],
     // Openings, in the reference's own terms: |z| as a fraction of the body's
     // half width, y as a fraction of overall height above the ground.
     apertures: {
@@ -935,6 +951,7 @@ function generateDNA(opts = {}) {
   d.refSection = REFS.SECTION;
   d.refTumble = REFS.TUMBLE;
   d.secTopProfile = REFS.SECTOP ? REFS.SECTOP.map(([f, h]) => [S(f), h]) : null;
+  d.cabProfile = REFS.CABPROF || null;
   d.ap = A.apertures;
   d.gate = A.gate;
   d.faceEdge = A.faceEdge || 'station';
@@ -942,6 +959,7 @@ function generateDNA(opts = {}) {
   d.tailFloor = A.tailFloor || 0;
   d.xDloRear = d.xNose - (A.dloRear || 0.78) * d.L;
   d.xMirror = d.xNose - (A.mirrorF || 0.40) * d.L;
+  d.tailTuck = A.tailTuck || null;
 
   // --- panel stations ------------------------------------------------------
   d.xDoorF = d.xCowl - 0.015;
@@ -1123,7 +1141,7 @@ function makeBody(d) {
       const yB = B.belt(x), yS = d.clearance;
       const span = Math.max(0.05, yB - yS);
       s = {
-        yS, yB, span, hw: B.hw(x),
+        yS, yB, span,
         tSh: clamp((B.shoulderY(x) - yS) / span, 0, 1),
         crease: B.shoulderDropAt(x) * 0.13,
         top: SECTOP ? SECTOP(x) : ENV_TOP,
@@ -1134,15 +1152,19 @@ function makeBody(d) {
   };
   B.zAt = (x, y) => {
     const s = stationOf(x);
+    // The station cache is 2 mm coarse, which is fine for the beltline and the
+    // crease but not for the plan curve: at the tips it moves fast enough that
+    // rounding pinched the nose and the tail by 6 mm. Read it exactly.
+    const hw = B.hw(x);
     const t = clamp((y - s.yS) / s.span, 0, 1);
     // Below the crown the section is the measured envelope; above it the
     // envelope's shape is re-scaled so the flank arrives at this station's own
     // measured width at the beltline.
     let z;
-    if (t <= T_CROWN || Math.abs(s.top - ENV_TOP) < 1e-4) z = s.hw * ENV(t);
+    if (t <= T_CROWN || Math.abs(s.top - ENV_TOP) < 1e-4) z = hw * ENV(t);
     else {
       const shape = clamp((ENV(t) - ENV_TOP) / (1 - ENV_TOP), 0, 1);
-      z = s.hw * (s.top + (1 - s.top) * shape);
+      z = hw * (s.top + (1 - s.top) * shape);
     }
     // the character line: a shallow crease, not a step
     z -= s.crease * Math.exp(-Math.pow((t - s.tSh) / 0.11, 2));
@@ -1204,11 +1226,13 @@ function makeBody(d) {
   B.roofYAt = (x) => B.roofLine(x);
   B.railY = (x) => B.roofLine(x);
   const cabinBase = curve1D(d.cabinProfile);
+  const CABPROF = d.cabProfile ? curve1D(d.cabProfile) : null;
   B.cabinTaper = (x) => cabinBase(xc(x)) / Math.max(0.05, B.hw(x));
   B.cabinHW = (x, y) => {
     const yb = B.belt(x), yr = B.railY(x);
     const f = clamp((y - yb) / Math.max(0.05, yr - yb), 0, 1);
-    return cabinBase(xc(x)) * (1 - d.refTumble * f) + 0.012 * Math.sin(Math.PI * f);
+    const taper = CABPROF ? CABPROF(f) : (1 - d.refTumble * f);
+    return cabinBase(xc(x)) * taper + 0.012 * Math.sin(Math.PI * f);
   };
   B.cabin = (x, v, side) => {
     const y = lerp(B.belt(x), B.railY(x), v);
@@ -1262,9 +1286,13 @@ function makeBody(d) {
   const NOSE_TUCK = curve1D([[0.10, 0.135], [0.16, 0.095], [0.20, 0.090], [0.23, 0.105],
     [0.26, 0.070], [0.30, 0.060], [0.34, 0.040], [0.38, 0.010], [0.42, 0.000],
     [0.46, 0.020], [0.52, 0.055]]);
-  const TAIL_TUCK = curve1D([[0.10, 0.220], [0.16, 0.190], [0.20, 0.150], [0.24, 0.090],
-    [0.28, 0.045], [0.32, 0.012], [0.37, 0.000], [0.45, 0.004], [0.53, 0.009],
-    [0.61, 0.012], [0.66, 0.050], [0.74, 0.105]]);
+  // Measured on the reference's centreline: the tail's rearmost point is at
+  // 0.39 H and the face tucks away above and below it - 3 cm by 0.44 H and 9 cm
+  // through 0.53-0.61 H. Reading nearly zero there left the rebuilt tail a
+  // vertical wall.
+  const TAIL_TUCK = curve1D(d.tailTuck || [[0.10, 0.220], [0.16, 0.190], [0.20, 0.150],
+    [0.24, 0.090], [0.28, 0.045], [0.32, 0.012], [0.37, 0.000], [0.45, 0.004],
+    [0.53, 0.009], [0.61, 0.012], [0.66, 0.050], [0.74, 0.105]]);
   // The measured plan curve stops one sample short of closing (the reference's
   // own tip is a 10 cm radius), so the last stretch is closed on an ellipse.
   const closeTip = (xEnd, r, sign) => (x) => {
@@ -1399,10 +1427,16 @@ function makeBody(d) {
   // already the traced profile, so the dome only carries that step.
   B.dome = (x, zt) => {
     const t = clamp((d.xHoodF - x) / Math.max(0.05, d.xHoodF - d.xCowl), 0, 1);
-    const along = 4 * t * (1 - t);
+    // The step runs the length of the panel on the reference - it is a pressed
+    // centre section, not a bulge - so it holds over the middle instead of
+    // being faded out at both ends.
+    const along = smootherstep(t / 0.22) * smootherstep((1 - t) / 0.22);
     const outer = smootherstep((Math.abs(zt) - 0.44) / 0.16);
+    // ...and it closes again before the shut line, or the panel would meet the
+    // wing 2 cm low instead of flush with it
+    const shut = 1 - smootherstep((Math.abs(zt) - 0.70) / 0.30);
     const bead = d.hoodCrease * 0.5 * Math.exp(-Math.pow((Math.abs(zt) - 0.44) / 0.10, 2));
-    return along * (bead - d.hoodDome * outer);
+    return along * (bead - d.hoodDome * outer * shut);
   };
   return B;
 }
