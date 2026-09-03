@@ -1411,11 +1411,29 @@ function makeBody(d) {
     // the value at the roof's front edge, carried forward and faded
     let iF = 0;
     for (let i = 0; i <= N; i++) if (Math.abs(pts[i].x - d.xRoofF) < Math.abs(pts[iF].x - d.xRoofF)) iF = i;
+    /* And the same trick again at the other end. The bar's last stretch runs
+       straight on from the mirror, roughly parallel to the bonnet, so its end
+       face finished as a squared blade hanging 19 to 68 mm over the bonnet's
+       rear corner with a slot under it - invisible while the scuttle behind it
+       was an open hole, obvious once the belt closure put a panel there. Over
+       that stretch the bar now dives instead, onto the belt line rather than
+       the roofline, so the foot is swallowed by the bonnet shut the way a
+       pillar base should be. */
     const offs = new Array(N + 1);
     for (let i = 0; i <= N; i++) {
-      const x = pts[i].x;
-      offs[i] = x <= d.xRoofF ? raw[i]
+      const x = pts[i].x, a = dirs[i];
+      let o = x <= d.xRoofF ? raw[i]
         : raw[iF] * (1 - smootherstep(clamp((x - d.xRoofF) / FADE, 0, 1)));
+      // started 0.10 m behind the mirror rather than at it: swept over the
+      // straight stretch alone the turn-in was a 28 degree corner right where
+      // the bar leaves the body, and 0.10 is the length that reads smoothest -
+      // 11 degrees, against 15 at 0.06 and 12 at 0.16
+      const xD = xM - 0.10;
+      if (x > xD && xF > xD && Math.abs(a.y) > 0.2) {
+        const dive = softMin0((B.belt(x) - pts[i].y) / a.y - thick);
+        o = lerp(o, dive, smootherstep(clamp((x - xD) / (xF - xD), 0, 1)));
+      }
+      offs[i] = o;
     }
     const sample = (t) => {
       const f = clamp(t, 0, 1) * N;
@@ -1733,7 +1751,14 @@ function makeMaterials(s) {
      was doing the work, so that is the term to cut; at 0.08 the vanes read 153
      against a 114 recess, which is graphite standing just proud of its own
      shadow. */
-  M.grilleBar = std({ color: 0x2e3238, metalness: 0.0, roughness: 1.0, envMapIntensity: 0.08, side: THREE.DoubleSide });
+  M.vane = std({ color: 0x2e3238, metalness: 0.0, roughness: 1.0, envMapIntensity: 0.08, side: THREE.DoubleSide });
+  /* The diffuser strakes are the same graphite, mixed against a darker
+     backdrop: the dish behind them reads 96 of 255 where the grille's cavity
+     reads 114, so the same recipe left them 17 apart and they disappeared into
+     it. Opened up to 132 they sit 36 clear of the dish - the same separation
+     the vanes have from their own recess - and still read as grey rather than
+     the near-white 144 they were. */
+  M.strake = std({ color: 0x33383e, metalness: 0.0, roughness: 1.0, envMapIntensity: 0.20, side: THREE.DoubleSide });
   M.grilleFrame = std({ color: 0x24272b, metalness: 0.40, roughness: 0.45, side: THREE.DoubleSide });
   M.tire = std({ color: 0x131416, metalness: 0.0, roughness: 0.93, bumpMap: treadTexture(), bumpScale: 0.004, side: THREE.DoubleSide });
   M.rim = std({ color: s.rimColor, metalness: 0.9, roughness: 0.24, side: THREE.DoubleSide });
@@ -3413,7 +3438,7 @@ function buildVehicle(opts = {}) {
       const n = Math.max(8, Math.round((hole.u1 - hole.u0) / AP.mouth.bars));
       for (let i = 1; i < n; i++) {
         const s = i / n;
-        shell(grille, inner(s - 0.0035, s + 0.0035, 0.05, 0.95, -0.044), 1, 4, M.grilleBar, fRef, 0.011, false);
+        shell(grille, inner(s - 0.0035, s + 0.0035, 0.05, 0.95, -0.044), 1, 4, M.vane, fRef, 0.011, false);
       }
       // a dark surround, top and bottom, so the vanes sit in a frame rather
       // than running straight into the paint
@@ -3489,7 +3514,7 @@ function buildVehicle(opts = {}) {
     for (let i = 1; i < nStrake; i++) {
       const a = i / nStrake;
       if (pills.some((q) => a > q.u0 - 0.014 && a < q.u1 + 0.014)) continue;
-      shell(df, (s2, t) => base(lerp(a - 0.005, a + 0.005, s2), lerp(0.05, 0.92, t)), 1, 5, M.matte, rRef, 0.026, false);
+      shell(df, (s2, t) => base(lerp(a - 0.005, a + 0.005, s2), lerp(0.05, 0.92, t)), 1, 5, M.strake, rRef, 0.026, false);
     }
     // Each slot gets a short tunnel so it does not read as a hole into nothing,
     // and two pipes seated inside it rather than standing proud of the bumper.
