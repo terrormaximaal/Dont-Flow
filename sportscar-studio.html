@@ -1241,14 +1241,24 @@ function makeBody(d) {
   };
   // The body panel that fills the gap between a screen's edge and the side of
   // the car: roof rail at the top, pillar lower down.
-  B.screenSurround = (xb, xt, taper, capTop, capBot, sd) => {
+  // `foot` widens and drops the OUTER edge over the first stretch of u, so the
+  // pillar splays out onto the shoulder where it meets the body instead of
+  // dying to nothing at the screen's base. The inner edge is untouched: it has
+  // to stay welded to the glass.
+  B.screenSurround = (xb, xt, taper, capTop, capBot, sd, foot) => {
     const wf = B.screenWidth(xb, xt, taper, capTop, capBot);
     return (u, w) => {
       const x = lerp(xb, xt, u);
       const y = B.roofLine(x);
       const inner = wf(u);
-      const outer = B.cabinHW(x, y);
-      return [x, y - 0.004 * w, sd * lerp(inner - 0.004, outer, smootherstep(w))];
+      let outer = B.cabinHW(x, y), drop = 0;
+      if (foot) {
+        const t = 1 - smootherstep(clamp(u / foot.span, 0, 1));   // 1 at the foot
+        outer = lerp(outer, Math.max(outer, foot.z), t);
+        drop = foot.drop * t;
+      }
+      const ew = smootherstep(w);
+      return [x, y - 0.004 * w - drop * ew, sd * lerp(inner - 0.004, outer, ew)];
     };
   };
 
@@ -2358,6 +2368,14 @@ function buildVehicle(opts = {}) {
     const sd = SIDE[k];
     const rk = mk('rocker.' + k, 'Dorpel ' + k.toUpperCase(), { stiffness: 1.6, stage: 1 });
     shell(rk, B.rocker(d.xRockerR, d.xRockerF, sd), 12, 3, M.paint, flankRef(d.xRockerR, d.xRockerF), 0.03);
+    // Behind the rear arch the sill picks up again and runs into the rear
+    // bumper, so the underside reads as one line from the front wheel to the
+    // diffuser instead of stopping dead at the rear wheel.
+    const xSillB = d.xCornerR + 2 * G;                       // meets the bumper cover
+    const xSillA = d.xAxleR - d.archDx - d.archR - 0.02;     // clears the rear arch
+    if (xSillA - xSillB > 0.06) {
+      shell(rk, B.rocker(xSillB, xSillA, sd), 8, 3, M.paint, flankRef(xSillB, xSillA), 0.03);
+    }
     v.addPart(rk);
 
     const fen = mk('fender.' + k, 'Voorscherm ' + k.toUpperCase(), { detachable: true, stiffness: 1.0, stage: 1 });
@@ -2719,7 +2737,12 @@ function buildVehicle(opts = {}) {
   for (const k2 in SIDE) {
     const sd2 = SIDE[k2];
     const rf = [midX(d.xCowl, d.xDeck), d.roofY - 0.5, 0];
-    shell(roof, B.screenSurround(WS[0], WS[1], WS[2], WS[3], WS[4], sd2), 14, 5, M.paint, rf, 0.020);
+    // measured off the car: the pillar foot lands on the cowl shoulder at 0.769
+    // of the half width and 0.734 H, which is 366 mm outboard and 48 mm below
+    // where the cabin curve alone would have left it
+    const foot = { z: 0.769 * (d.W / 2), drop: 0.734 * d.H, span: 0.22 };
+    foot.drop = Math.max(0, B.roofLine(WS[0]) - foot.drop);
+    shell(roof, B.screenSurround(WS[0], WS[1], WS[2], WS[3], WS[4], sd2, foot), 16, 6, M.paint, rf, 0.020);
     shell(roof, B.screenSurround(RS[0], RS[1], RS[2], RS[3], RS[4], sd2), 14, 5, M.paint, rf, 0.020);
   }
 
@@ -4099,11 +4122,13 @@ Vehicle.prototype.validateGeometry = function () {
   function pinText() {
     if (!car) return '';
     const L = car.spec.L, W = car.spec.W, H = car.spec.H;
+    // the orbit angle accumulates while dragging, so bring it back into one turn
     const deg = (rad) => Math.round(rad * 180 / Math.PI);
+    const az = ((deg(cam.az) % 360) + 360) % 360;
     const out = ['GT-STUDIO AANWIJZING',
       'auto: ' + car.spec.typeLabel + ' · seed ' + seed + ' · ' + car.spec.paint.name,
       'maten: ' + L.toFixed(3) + ' x ' + W.toFixed(3) + ' x ' + H.toFixed(3) + ' m',
-      'camera: az ' + deg(cam.az) + '° · el ' + deg(cam.el) + '° · afstand ' + cam.dist.toFixed(2) + ' m',
+      'camera: az ' + az + '° · el ' + deg(cam.el) + '° · afstand ' + cam.dist.toFixed(2) + ' m',
       ''];
     pins.forEach((p) => {
       const f = clamp((L / 2 - p.local.x) / L, 0, 1);      // 0 = nose, 1 = tail
@@ -4500,6 +4525,7 @@ Vehicle.prototype.validateGeometry = function () {
     window.__vgRespawn = () => spawnDeferred(type, seed);
     window.__vgRenderer = renderer;
     window.__vgCamera = () => camera;
+    window.__setCam = (az, el, sc) => { cam.az = az; cam.el = el; frameCar(sc, 0.46); autoSpin = false; };
     window.__vgBuildOnly = (i) => buildVehicle({ type, seed: (seed + i) >>> 0 });
   } catch (err) {
     window.__vgFail('Opbouwen van het voertuig mislukte', String(err && err.stack || err));
