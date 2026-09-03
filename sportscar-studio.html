@@ -136,6 +136,10 @@
     <button class="c" id="lowpolyBtn">Low poly</button>
     <button class="c" id="qcBtn">Kwaliteitscheck</button>
   </div>
+  <div class="strip" aria-label="Model">
+    <button class="c sel" data-car="gt_coupe">Meridian GT</button>
+    <button class="c" data-car="super_gt">Aurelia S</button>
+  </div>
   <div class="strip" aria-label="Camera-aanzichten">
     <button class="c sel" id="viewHero">Hero 3/4</button>
     <button class="c" id="viewFront">Voor</button>
@@ -236,7 +240,22 @@ window.addEventListener('error', function (e) {
 <script id="core">
 
 /* =========================================================================
-   GT STUDIO - a procedural front-engined GT coupe, rebuilt 1:1 from a
+   GT STUDIO - two procedural front-engined GTs, each rebuilt 1:1 from its own
+   measured reference. Switch between them with the model buttons.
+
+   CAR 2, "Aurelia S": traced from a supplied orthographic sheet (side, front,
+   rear and top views) of a modern super-GT. The views were thresholded and
+   measured in pixels, then normalised per view - longitudinal against the
+   car's own length, vertical against its own height, lateral against its own
+   widest point - because a styling sheet's views are not drawn to one scale.
+   The shape is the sheet's; the three absolute dimensions are the class it
+   depicts (4800 x 1980 x 1325 mm, wheelbase 2824 mm, 21-inch wheels), between
+   a DB12 and a Vanquish. Its measured openings: shield grille |z| <= 0.69 of
+   the half width and y 0.175..0.422 H, headlamps |z| 0.589..0.903 at y
+   0.450..0.611 H, tail bar |z| 0.443..0.875 at y 0.597..0.662 H, side gill at
+   0.283..0.368 of the length.
+
+   CAR 1, "Meridian GT" - a front-engined GT coupe, rebuilt 1:1 from a
    measured reference.
 
    Where the shape comes from
@@ -645,6 +664,65 @@ const REF_DLO = [
   [0.600, 0.95], [0.660, 0.92], [0.700, 0.86], [0.750, 0.72],
 ];
 
+/* -------------------------------------------------------------------------
+   SECOND REFERENCE: the modern super-GT from the supplied orthographic sheet.
+   Traced the same way, but from images rather than a mesh: the side, top,
+   front and rear views were thresholded and measured in pixels, then
+   normalised - longitudinal against the car's own length, vertical against
+   its own height, lateral against its own widest point. The sheet's views are
+   drawn at inconsistent scales (it is a styling sheet, not an engineering
+   drawing), so the SHAPE below is the sheet's and the three absolute
+   dimensions are the class it depicts: 4800 x 1980 x 1325 mm on a 2824 mm
+   wheelbase, which is between a DB12 (4725 x 1976 x 1279, wb 2805) and a
+   Vanquish (4850 x 2044 x 1290, wb 2885). Wheels are 21 inch.
+   ------------------------------------------------------------------------- */
+const REF2_SIL = [
+  0.4385, 0.4973, 0.5401, 0.5722, 0.6043, 0.6257, 0.6471, 0.6631,
+  0.6791, 0.6845, 0.6952, 0.7005, 0.7059, 0.7112, 0.7166, 0.7219,
+  0.7219, 0.7273, 0.7433, 0.7861, 0.8182, 0.8556, 0.8930, 0.9198,
+  0.9519, 0.9733, 0.9893, 0.9947, 1.0000, 1.0000, 1.0000, 0.9947,
+  0.9893, 0.9840, 0.9733, 0.9626, 0.9519, 0.9358, 0.9198, 0.8984,
+  0.8824, 0.8610, 0.8449, 0.8182, 0.7968, 0.7807, 0.7594, 0.7754,
+  0.7540,
+];
+const REF2_PLAN = [
+  0.1345, 0.5316, 0.7245, 0.8055, 0.8784, 0.9287, 0.9595, 0.9757,
+  0.9838, 0.9838, 0.9838, 0.9757, 0.9676, 0.9595, 0.9530, 0.9514,
+  0.9449, 0.9449, 0.9449, 0.9449, 0.9449, 0.9449, 0.9408, 0.9408,
+  0.9368, 0.9368, 0.9368, 0.9368, 0.9352, 0.9352, 0.9287, 0.9368,
+  0.9433, 0.9514, 0.9595, 0.9757, 0.9919, 0.9935, 1.0000, 0.9935,
+  0.9919, 0.9838, 0.9676, 0.9368, 0.8947, 0.8298, 0.7488, 0.6434,
+  0.1653,
+];
+/* Beltline read off the side view: high and level through the doors (0.727 H,
+   a deliberately shallow daylight opening), lifting into the rear haunch. */
+const REF2_BELT = [
+  [0.000, 0.438], [0.040, 0.535], [0.085, 0.606], [0.130, 0.650], [0.180, 0.678],
+  [0.240, 0.700], [0.300, 0.716], [0.360, 0.731], [0.420, 0.729], [0.500, 0.727],
+  [0.580, 0.729], [0.650, 0.737], [0.700, 0.748], [0.760, 0.775], [0.820, 0.782],
+  [0.870, 0.776], [0.920, 0.762], [0.958, 0.740], [0.980, 0.700], [1.000, 0.452],
+];
+/* Greenhouse: this car's cabin is narrower relative to its body than the GT's,
+   which is what gives it the shoulders. */
+const REF2_CABIN = [
+  [0.385, 0.660], [0.440, 0.790], [0.520, 0.828], [0.600, 0.824], [0.660, 0.812],
+  [0.720, 0.780], [0.800, 0.660], [0.860, 0.520],
+];
+const REF2_TUMBLE = 0.400;
+const REF2_DLO = [
+  [0.400, 0.14], [0.450, 0.52], [0.500, 0.80], [0.560, 0.93], [0.620, 0.95],
+  [0.680, 0.90], [0.730, 0.78], [0.790, 0.52],
+];
+
+/* Both cars, addressed by archetype. Everything the generator draws for a car
+   comes out of its entry here. */
+const REFERENCES = {
+  gt_coupe: { SIL: REF_SIL, PLAN: REF_PLAN, SECTION: REF_SECTION, BELT: REF_BELT,
+              CABIN: REF_CABIN, TUMBLE: REF_TUMBLE, DLO: REF_DLO },
+  super_gt: { SIL: REF2_SIL, PLAN: REF2_PLAN, SECTION: REF_SECTION, BELT: REF2_BELT,
+              CABIN: REF2_CABIN, TUMBLE: REF2_TUMBLE, DLO: REF2_DLO },
+};
+
 const PAINTS = [
   { name: 'Nardo grey', hex: 0x8c9096, metal: 0.15, rough: 0.42, flake: 0.0 },
   { name: 'Ceramic white', hex: 0xe4e6e6, metal: 0.25, rough: 0.30, flake: 0.2 },
@@ -689,6 +767,76 @@ const ARCHETYPES = {
     doorLen: [1.16, 1.24],
     wheelStyles: ['five'],
     mirror: 'stalk', sideVent: 1.0, wingChance: 0.0,
+    // Openings, in the reference's own terms: |z| as a fraction of the body's
+    // half width, y as a fraction of overall height above the ground.
+    apertures: {
+      face: 'oval',
+      lamp: { z: [0.400, 0.745], gap: 0.013, h: [0.030, 0.105] },
+      mouth: { z: 0.620, y: [0.165, 0.325], flat: 0.30, bars: 0.034, blade: true },
+      fog: { z: [0.681, 0.804], y: [0.245, 0.335] },
+      frontSplit: 0.395,
+      tail: 'recess',
+      recess: { span: 0.92, gap: 0.030, depth: [0.150, 0.120] },
+      tailLamp: { span: [0.65, 0.96], gap: 0.055, h: 0.095 },
+      rearSplit: 0.455,
+      exh: { z: [[0.280, 0.520]], y: [0.142, 0.205] },
+      gill: { f: [0.240, 0.271], v: [0.40, 0.60], blades: 3 },
+      hoodVent: { u: [0.30, 0.56], bands: [[0.255, 0.335], [0.665, 0.745]], blades: 3 },
+    },
+    // The gate's ranges are this car's own measurements plus the tolerance the
+    // seeded variation is allowed to use - they are not shared between cars.
+    gate: {
+      wb: [0.560, 0.567], gap: [2.7, 3.2], arch: [0.025, 0.055], ride: [0.130, 0.160],
+      dlo: [0.300, 0.350], ohf: [0.185, 0.200], ohr: [0.238, 0.252], track: [0.78, 0.85],
+      cabin: [0.410, 0.460], hood: [0.270, 0.300], deck: [0.33, 0.50], rr: [18, 30],
+      ws: [16, 25], d2a: [0.140, 0.190], hw: [0.66, 0.71],
+    },
+  },
+  super_gt: {
+    label: 'Aurelia S', doors: 2, layout: 'voorin gemonteerde V12 · achterwielaandrijving',
+    L: [4.780, 4.820],
+    hRatio: [0.2750, 0.2770], wRatio: [0.4110, 0.4140],
+    wbRatio: [0.5870, 0.5900], frontOhShare: [0.464, 0.472], trackRatio: [0.830, 0.860],
+    diaRatio: [0.1500, 0.1530], tireW: [0.272, 0.280], rearTireExtra: [0.044, 0.052], aspect: [0.34, 0.36],
+    clearance: [0.108, 0.120],
+    // silhouette stations, as fractions of length from the nose
+    sCowl: [0.381, 0.390], sRoofF: [0.575, 0.585], sRoofPeak: [0.600, 0.612],
+    sRoofR: [0.695, 0.706], sDeck: [0.865, 0.876],
+    // silhouette heights, as fractions of overall height
+    hNose: [0.434, 0.443], hCowl: [0.739, 0.748], hRoof: [0.997, 1.000],
+    hDeck: [0.841, 0.850], hBelt: [0.735, 0.745], hBeltDoor: [0.723, 0.731],
+    hBeltQuarter: [0.744, 0.752],
+    archGap: [0.030, 0.038],
+    profileJitter: [-0.002, 0.002],
+    shoulderDrop: [0.036, 0.050], haunch: [0.0, 0.0], frontFlare: [0.0, 0.0],
+    tumble: [0.100, 0.115], rockerH: [0.075, 0.090], rockerTuck: [0.002, 0.008], beltTuck: [0.006, 0.012],
+    hoodDome: [0.006, 0.011], hoodRise: [0.010, 0.018], hoodCrease: [0.008, 0.014], ducktail: [0.014, 0.021],
+    noseDepth: [0.62, 0.68], tailDepth: [0.30, 0.36], frontRakeBack: [0.15, 0.19], tailRakeIn: [0.05, 0.075],
+    doorLen: [1.10, 1.18],
+    wheelStyles: ['split'],
+    mirror: 'stalk', sideVent: 1.0, wingChance: 0.0, faceEdge: 'corner',
+    apertures: {
+      face: 'shield',
+      // measured on the sheet's front view
+      lamp: { z: [0.589, 0.903], gap: 0.012, h: [0.150, 0.120] },
+      mouth: { z: 0.690, y: [0.175, 0.422], flat: 0.55, bars: 0.026, blade: false },
+      corner: { z: [0.720, 0.950], y: [0.105, 0.300] },
+      frontSplit: 0.437,
+      tail: 'band',
+      recess: { span: 0.94, gap: 0.028, depth: [0.075, 0.062] },
+      tailLamp: { span: [0.443, 0.875], y: [0.597, 0.662], gap: 0.012, h: 0.058 },
+      rearSplit: 0.500,
+      exh: { z: [[0.360, 0.520], [0.560, 0.720]], y: [0.300, 0.375] },
+      diffuser: { z: 0.800, y: [0.050, 0.290], strakes: 6 },
+      gill: { f: [0.283, 0.368], v: [0.20, 0.46], blades: 2 },
+      hoodVent: { u: [0.34, 0.70], bands: [[0.225, 0.350], [0.650, 0.775]], blades: 4 },
+    },
+    gate: {
+      wb: [0.585, 0.592], gap: [2.72, 3.08], arch: [0.022, 0.045], ride: [0.104, 0.126],
+      dlo: [0.255, 0.292], ohf: [0.186, 0.199], ohr: [0.213, 0.227], track: [0.80, 0.88],
+      cabin: [0.295, 0.335], hood: [0.372, 0.398], deck: [0.20, 0.38], rr: [9, 19],
+      ws: [16, 26], d2a: [0.300, 0.362], hw: [0.650, 0.690],
+    },
   },
 };
 
@@ -759,16 +907,22 @@ function generateDNA(opts = {}) {
   d.roofFlat = d.xRoofF - d.xRoofR;
 
   // --- measured silhouette and plan, scaled to this car -------------------
+  const REFS = REFERENCES[type];
   const jit = R(A.profileJitter);
-  d.topProfile = REF_SIL.map((h, i) => {
-    const f = i / (REF_SIL.length - 1);
+  d.topProfile = REFS.SIL.map((h, i) => {
+    const f = i / (REFS.SIL.length - 1);
     const w = Math.sin(Math.PI * clamp((f - 0.04) / 0.94, 0, 1));   // no jitter at the ends
     return [S(f), d.H * (h + jit * w * (i % 2 ? 1 : -1) * 0.5)];
   });
-  d.planProfile = REF_PLAN.map((h, i) => [S(i / (REF_PLAN.length - 1)), (d.W / 2) * h]);
-  d.beltProfile = REF_BELT.map(([f, h]) => [S(f), d.H * h]);
-  d.cabinProfile = REF_CABIN.map(([f, h]) => [S(f), (d.W / 2) * h]);
-  d.dloProfile = REF_DLO.map(([f, h]) => [S(f), h]);
+  d.planProfile = REFS.PLAN.map((h, i) => [S(i / (REFS.PLAN.length - 1)), (d.W / 2) * h]);
+  d.beltProfile = REFS.BELT.map(([f, h]) => [S(f), d.H * h]);
+  d.cabinProfile = REFS.CABIN.map(([f, h]) => [S(f), (d.W / 2) * h]);
+  d.dloProfile = REFS.DLO.map(([f, h]) => [S(f), h]);
+  d.refSection = REFS.SECTION;
+  d.refTumble = REFS.TUMBLE;
+  d.ap = A.apertures;
+  d.gate = A.gate;
+  d.faceEdge = A.faceEdge || 'station';
 
   // --- panel stations ------------------------------------------------------
   d.xDoorF = d.xCowl - 0.015;
@@ -777,30 +931,38 @@ function generateDNA(opts = {}) {
   d.xRockerR = d.xAxleR - d.archDx + d.archR + 0.02;
 
   // --- design language ----------------------------------------------------
-  // The reference is the master design: an oval mouth with a single blade,
-  // slim swept lamps riding high on the wings, round lamps in the bumper
-  // corners, twin louvres in the bonnet and one recessed oval at the rear.
+  // Each reference is its own master design. The GT: an oval mouth with a
+  // single blade, slim swept lamps riding high on the wings, round fog lamps
+  // in the bumper corners, twin louvres in the bonnet, one recessed oval at
+  // the rear. The S: a full-height shield grille, gun-slit lamps set wide,
+  // air curtains in the corners, a tall side gill, a slim full-width lamp bar
+  // and a strake diffuser.
+  const isS = type === 'super_gt';
   d.design = {
-    bodyCharacter: 'gt', creaseStyle: 'soft', headlightStyle: 'swept', drlStyle: 'brow',
-    taillightStyle: 'oval_recess', grilleStyle: 'signature_oval', bumperStyle: 'clean',
-    intakeStyle: 'round_fog', wheelStyle: 'five', mirrorStyle: 'stalk',
+    bodyCharacter: isS ? 'super_gt' : 'gt', creaseStyle: 'soft',
+    headlightStyle: isS ? 'slit' : 'swept', drlStyle: 'brow',
+    taillightStyle: isS ? 'lightbar' : 'oval_recess',
+    grilleStyle: isS ? 'shield' : 'signature_oval', bumperStyle: 'clean',
+    intakeStyle: isS ? 'air_curtain' : 'round_fog',
+    wheelStyle: r.pick(A.wheelStyles), mirrorStyle: 'stalk',
   };
-  d.theme = 'gt';
-  d.lampStyle = 'swept'; d.tailStyle = 'oval_recess'; d.grilleStyle = 'signature_oval';
-  d.bumperStyle = 'clean'; d.intakeStyle = 'round_fog'; d.drlStyle = 'brow';
-  d.wheelStyle = 'five';
+  d.theme = d.design.bodyCharacter;
+  d.lampStyle = d.design.headlightStyle; d.tailStyle = d.design.taillightStyle;
+  d.grilleStyle = d.design.grilleStyle; d.bumperStyle = 'clean';
+  d.intakeStyle = d.design.intakeStyle; d.drlStyle = 'brow';
+  d.wheelStyle = d.design.wheelStyle;
   d.creaseStyle = 'soft';
-  d.splitterDepth = 0.018;
+  d.splitterDepth = isS ? 0.030 : 0.018;
   d.sideVent = true;
-  d.ducktailBoost = 0.10;
-  d.exhaust = 'twin_oval';
+  d.ducktailBoost = isS ? 0.55 : 0.10;
+  d.exhaust = isS ? 'quad' : 'twin_oval';
   d.paint = PAINTS.find((p) => p.name === 'Liquid silver');
   d.spokes = { five: 5, split: 5, multi: 10, turbine: 12 }[d.wheelStyle];
-  d.rimColor = 0x8d9298;
-  d.caliperColor = 0x9b1c16;
-  d.interiorColor = 0x2a1d18;
-  d.accent = 0x8a6a44;
-  d.glassTint = 0.30;
+  d.rimColor = isS ? 0x3a3d42 : 0x8d9298;
+  d.caliperColor = isS ? 0xb0201a : 0x9b1c16;
+  d.interiorColor = isS ? 0x1a1c20 : 0x2a1d18;
+  d.accent = isS ? 0x6f7479 : 0x8a6a44;
+  d.glassTint = isS ? 0.38 : 0.30;
 
   // --- architecture: structural stations, all derived from the DNA --------
   d.arch = {
@@ -926,7 +1088,7 @@ function makeBody(d) {
   /* ---- cross section: the measured envelope ----------------------------- */
   // Half width as a fraction of the widest point of the section, from the sill
   // up to the beltline. Measured on the reference, used as-is.
-  const ENV = curve1D(REF_SECTION);
+  const ENV = curve1D(d.refSection);
   const cache = new Map();
   const stationOf = (x) => {
     const key = Math.round(x * 500);
@@ -1011,7 +1173,7 @@ function makeBody(d) {
   B.cabinHW = (x, y) => {
     const yb = B.belt(x), yr = B.railY(x);
     const f = clamp((y - yb) / Math.max(0.05, yr - yb), 0, 1);
-    return cabinBase(xc(x)) * (1 - REF_TUMBLE * f) + 0.012 * Math.sin(Math.PI * f);
+    return cabinBase(xc(x)) * (1 - d.refTumble * f) + 0.012 * Math.sin(Math.PI * f);
   };
   B.cabin = (x, v, side) => {
     const y = lerp(B.belt(x), B.railY(x), v);
@@ -1108,10 +1270,24 @@ function makeBody(d) {
   };
   const fSweep = faceSweep(1, d.xCornerF, d.xNose, noseClose, NOSE_TUCK);
   const rSweep = faceSweep(-1, d.xCornerR, d.xTail, tailClose, TAIL_TUCK);
+  // How high the bumper cover reaches. 'station' lets the shut line follow the
+  // beltline of whatever station the plan outline is at, which suits a nose
+  // that tapers early; 'corner' carries it up to the wing top instead, which
+  // is what a clamshell bonnet does and what puts this car's lamps on the wing
+  // rather than under it.
+  const beltCornerF = B.belt(d.xCornerF);
   B.frontFascia = (u, v) => {
     const s = fSweep(u, v);
     const yBot = B.coverBottom(s.x0);
-    const yTop = lerp(d.noseTopY + 0.010, B.belt(s.x0) - 0.010, smootherstep(s.w));
+    let yTop = lerp(d.noseTopY + 0.010,
+      (d.faceEdge === 'corner' ? beltCornerF : B.belt(s.x0)) - 0.010, smootherstep(s.w));
+    if (d.faceEdge === 'corner') {
+      // the cover's top edge IS the bonnet's leading edge, so it can never be
+      // carried above the bonnet's own surface at that station
+      const zt = clamp(s.w, 0, 1);
+      const rise = smootherstep((1 - zt) / 0.30);
+      yTop = Math.min(yTop, lerp(B.closureSideLine(s.x0), B.hoodY(s.x0), rise) - 0.004);
+    }
     const y = lerp(yBot, yTop, v);
     const q = fSweep(u, v, y / d.H);
     const lip = B.archLip(s.x0, y, yBot) * s.w;
@@ -2164,12 +2340,14 @@ function buildVehicle(opts = {}) {
 
   // Twin louvred heat extractors in the bonnet, exactly symmetrical.
   const hoodVents = mk('hood.vents', 'Motorkapventilatie', { kind: 'trim', detachable: true, stiffness: 0.8, stage: 7 });
-  for (const sideBand of [[0.255, 0.335], [0.665, 0.745]]) {
-    const vent = subSurface(hoodFn, 0.30, 0.56, sideBand[0], sideBand[1], 0.004);
+  const HV = d.ap.hoodVent;
+  for (const sideBand of HV.bands) {
+    const vent = subSurface(hoodFn, HV.u[0], HV.u[1], sideBand[0], sideBand[1], 0.004);
     shell(hoodVents, vent, 10, 2, M.matte, hoodRef, 0.010, false);
-    for (let i = 0; i < 3; i++) {
-      const t = 0.34 + i * 0.075;
-      const blade = subSurface(hoodFn, t, t + 0.045, sideBand[0] + 0.010, sideBand[1] - 0.010, 0.010);
+    const span = (HV.u[1] - HV.u[0]) / (HV.blades + 0.6);
+    for (let i = 0; i < HV.blades; i++) {
+      const t = HV.u[0] + 0.04 + i * span;
+      const blade = subSurface(hoodFn, t, t + span * 0.62, sideBand[0] + 0.010, sideBand[1] - 0.010, 0.010);
       shell(hoodVents, blade, 4, 1, M.darkChrome, hoodRef, 0.007, false);
     }
   }
@@ -2321,21 +2499,19 @@ function buildVehicle(opts = {}) {
     return { u0: us[0], u1: us[us.length - 1], v0: pick('v0'), v1: pick('v1') };
   };
 
-  /* ---- headlamps: slim swept almonds riding on the wing ----------------- */
-  // Measured: |z| 0.345..0.732 of the half width, y 0.435..0.552 H, tucked
-  // under the bonnet shut line and climbing with it toward the wing.
-  const LZ = [0.400, 0.745];
-  const lampHeight = (t) => lerp(0.030, 0.105, smootherstep(clamp(t * 1.08, 0, 1)));
+  /* ---- headlamps: tucked under the bonnet shut line, climbing with it --- */
+  const AP = d.ap;
+  const lampHeight = (t) => lerp(AP.lamp.h[0], AP.lamp.h[1], smootherstep(clamp(t * 1.08, 0, 1)));
   const lampHoles = {};
   const lampHole = (sd) => {
-    if (!lampHoles[1]) lampHoles[1] = hugHole(solveFront, B.noseEdge, 1, LZ[0], LZ[1], 0.013, lampHeight);
+    if (!lampHoles[1]) lampHoles[1] = hugHole(solveFront, B.noseEdge, 1, AP.lamp.z[0], AP.lamp.z[1], AP.lamp.gap, lampHeight);
     if (!lampHoles[-1]) lampHoles[-1] = mirrorHole(lampHoles[1]);
     return lampHoles[sd];
   };
-  /* ---- the oval mouth --------------------------------------------------- */
-  const MZ = 0.620, MY = [0.165, 0.325];
+  /* ---- the mouth: an oval on one car, a full-height shield on the other -- */
+  const MZ = AP.mouth.z, MY = AP.mouth.y;
   const mouthHole = (() => {
-    const r = measuredHole(solveFront, 1, 0.02, MZ, MY[0], MY[1], (t) => pillShape(0.30)(0.5 + t * 0.5));
+    const r = measuredHole(solveFront, 1, 0.02, MZ, MY[0], MY[1], (t) => pillShape(AP.mouth.flat)(0.5 + t * 0.5));
     const l = mirrorHole(r);
     return {
       u0: Math.min(l.u0, r.u0), u1: Math.max(l.u1, r.u1),
@@ -2343,27 +2519,36 @@ function buildVehicle(opts = {}) {
       v1: (uu) => (uu < 0.5 ? l.v1(uu) : r.v1(uu)),
     };
   })();
-  /* ---- round fog lamps in the bumper corners ---------------------------- */
-  const FZ = [0.681, 0.804], FY = [0.245, 0.335];
-  const fogHoles = {};
-  const fogHole = (sd) => {
-    if (!fogHoles[1]) fogHoles[1] = measuredHole(solveFront, 1, FZ[0], FZ[1], FY[0], FY[1], ellipse);
-    if (!fogHoles[-1]) fogHoles[-1] = mirrorHole(fogHoles[1]);
-    return fogHoles[sd];
+  /* ---- corner openings: round fog lamps, or the shield car's air curtains */
+  const cornerSpec = AP.fog || AP.corner;
+  const cornerHoles = {};
+  const cornerHole = (sd) => {
+    if (!cornerHoles[1]) cornerHoles[1] = measuredHole(solveFront, 1, cornerSpec.z[0], cornerSpec.z[1],
+      cornerSpec.y[0], cornerSpec.y[1], AP.fog ? ellipse : pillShape(0.30));
+    if (!cornerHoles[-1]) cornerHoles[-1] = mirrorHole(cornerHoles[1]);
+    return cornerHoles[sd];
   };
 
-  const splitF = levelLine(B.frontFascia, 0.395);      // horizontal bumper cut
+  const splitF = levelLine(B.frontFascia, AP.frontSplit);   // horizontal bumper cut
   const FGAP = 0.010;
+  // Both front panels are built on one side of the centreline and mirrored, so
+  // the two halves are identical by construction rather than by the solver
+  // landing on the same answer twice.
+  const halfBand = (r) => (r.u1 <= 0.5 ? null : (r.u0 < 0.5 ? { u0: 0.5, u1: r.u1, v0: r.v0, v1: r.v1 } : r));
   const nose = mk('nose', 'Voorpaneel', { stiffness: 1.2, stage: 1 });
-  for (const r of bandsAround([lampHole(-1), lampHole(1)], (uu) => splitF(uu) + FGAP, 1)) {
-    shell(nose, surfRegion(B.frontFascia, r, 0, fRef), bandCount(r), 3, M.paint, fRef, 0.028);
+  for (const raw of bandsAround([lampHole(-1), lampHole(1)], (uu) => splitF(uu) + FGAP, 1)) {
+    const r = halfBand(raw);
+    if (r) shell(nose, surfRegion(B.frontFascia, r, 0, fRef), Math.max(8, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5)), 3, M.paint, fRef, 0.028);
   }
+  mirrorHalfInto(nose, 0);
   v.addPart(nose);
 
   const bf = mk('bumper.front', 'Voorbumper', { detachable: true, stiffness: 0.85, stage: 1 });
-  for (const r of bandsAround([mouthHole, fogHole(-1), fogHole(1)], 0, (uu) => splitF(uu) - FGAP)) {
-    shell(bf, surfRegion(B.frontFascia, r, 0, fRef), bandCount(r), 4, M.paint, fRef, 0.03);
+  for (const raw of bandsAround([mouthHole, cornerHole(-1), cornerHole(1)], 0, (uu) => splitF(uu) - FGAP)) {
+    const r = halfBand(raw);
+    if (r) shell(bf, surfRegion(B.frontFascia, r, 0, fRef), Math.max(8, Math.round(bandCount(r) * (r.u1 - r.u0) / 0.5)), 4, M.paint, fRef, 0.03);
   }
+  mirrorHalfInto(bf, 0);
   v.addPart(bf);
 
   /* ---- rear: one recessed oval carrying the lamps ----------------------- */
@@ -2371,10 +2556,10 @@ function buildVehicle(opts = {}) {
   // openings are expressed against that reach, so the recess and the lamps
   // can never run off the end of the panel.
   const zMaxR = B.rearFascia(1, 1)[2] / (d.W / 2);
-  const RZ = 0.92 * zMaxR;
-  const recessDepth = (t) => lerp(0.150, 0.120, smootherstep(clamp((t - 0.55) / 0.45, 0, 1)));
+  const RZ = AP.recess.span * zMaxR;
+  const recessDepth = (t) => lerp(AP.recess.depth[0], AP.recess.depth[1], smootherstep(clamp((t - 0.55) / 0.45, 0, 1)));
   const recessHole = (() => {
-    const r = hugHole(solveRear, B.tailEdge, 1, 0.02, RZ, 0.030, recessDepth);
+    const r = hugHole(solveRear, B.tailEdge, 1, 0.02, RZ, AP.recess.gap, recessDepth);
     const l = mirrorHole(r);
     return {
       u0: Math.min(l.u0, r.u0), u1: Math.max(l.u1, r.u1),
@@ -2382,29 +2567,53 @@ function buildVehicle(opts = {}) {
       v1: (uu) => (uu < 0.5 ? l.v1(uu) : r.v1(uu)),
     };
   })();
-  const EZ = [0.280, 0.520], EY = [0.142, 0.205];
+  const EY = AP.exh.y;
   const exhHoles = {};
-  const exhHole = (sd) => {
-    if (!exhHoles[1]) exhHoles[1] = measuredHole(solveRear, 1, EZ[0], EZ[1], EY[0], EY[1], pillShape(0.35));
-    if (!exhHoles[-1]) exhHoles[-1] = mirrorHole(exhHoles[1]);
-    return exhHoles[sd];
+  const exhHole = (sd, k) => {
+    const key = sd + ':' + k;
+    if (!exhHoles['1:' + k]) {
+      const z = AP.exh.z[k];
+      exhHoles['1:' + k] = measuredHole(solveRear, 1, z[0], z[1], EY[0], EY[1], pillShape(0.35));
+    }
+    if (!exhHoles['-1:' + k]) exhHoles['-1:' + k] = mirrorHole(exhHoles['1:' + k]);
+    return exhHoles[key];
   };
-  const TLZ = [0.65 * RZ, 0.96 * RZ];
+  const exhAll = [];
+  for (let k = 0; k < AP.exh.z.length; k++) { exhAll.push(exhHole(-1, k)); exhAll.push(exhHole(1, k)); }
+  const TLZ = [AP.tailLamp.span[0] * (AP.tail === 'band' ? 1 : RZ), AP.tailLamp.span[1] * (AP.tail === 'band' ? 1 : RZ)];
   const tailHoles = {};
   const tailLampHole = (sd) => {
-    if (!tailHoles[1]) tailHoles[1] = hugHole(solveRear, B.tailEdge, 1, TLZ[0], TLZ[1], 0.055, () => 0.095);
+    if (!tailHoles[1]) {
+      tailHoles[1] = AP.tail === 'band'
+        // a level bar: the reference's lamp runs straight across, it does not
+        // follow the dip of the tail's own top edge
+        ? measuredHole(solveRear, 1, TLZ[0], TLZ[1], AP.tailLamp.y[0], AP.tailLamp.y[1], pillShape(0.55))
+        : hugHole(solveRear, B.tailEdge, 1, TLZ[0], TLZ[1], AP.recess.gap + AP.tailLamp.gap, () => AP.tailLamp.h);
+    }
     if (!tailHoles[-1]) tailHoles[-1] = mirrorHole(tailHoles[1]);
     return tailHoles[sd];
   };
-  const splitR = levelLine(B.rearFascia, 0.455);
+  const splitR = levelLine(B.rearFascia, AP.rearSplit);
   const tailBand = mk('tail', 'Achterpaneel', { stiffness: 1.3, stage: 1 });
-  for (const r of bandsAround([recessHole], (uu) => splitR(uu) + FGAP, 1)) {
+  const upperHoles = AP.tail === 'band' ? [tailLampHole(-1), tailLampHole(1)] : [recessHole];
+  for (const r of bandsAround(upperHoles, (uu) => splitR(uu) + FGAP, 1)) {
     shell(tailBand, surfRegion(B.rearFascia, r, 0, rRef), bandCount(r), 3, M.paint, rRef, 0.028);
   }
   v.addPart(tailBand);
 
+  // The S has one wide opening low in the bumper; the diffuser fills it and
+  // carries the pipes. The GT instead has the pipes cut straight through.
+  const lowerOpening = AP.diffuser ? (() => {
+    const r = measuredHole(solveRear, 1, 0.02, AP.diffuser.z, AP.diffuser.y[0], AP.diffuser.y[1], (t) => pillShape(0.45)(0.5 + t * 0.5));
+    const l = mirrorHole(r);
+    return {
+      u0: Math.min(l.u0, r.u0), u1: Math.max(l.u1, r.u1),
+      v0: (uu) => (uu < 0.5 ? l.v0(uu) : r.v0(uu)),
+      v1: (uu) => (uu < 0.5 ? l.v1(uu) : r.v1(uu)),
+    };
+  })() : null;
   const br = mk('bumper.rear', 'Achterbumper', { detachable: true, stiffness: 0.85, stage: 1 });
-  for (const r of bandsAround([exhHole(-1), exhHole(1)], 0, (uu) => splitR(uu) - FGAP)) {
+  for (const r of bandsAround(lowerOpening ? [lowerOpening] : exhAll, 0, (uu) => splitR(uu) - FGAP)) {
     if (r.u1 <= 0.5) continue;                       // built by mirroring instead
     const half = r.u0 < 0.5 ? { u0: 0.5, u1: r.u1, v0: r.v0, v1: r.v1 } : r;
     shell(br, surfRegion(B.rearFascia, half, 0.010, rRef), Math.max(8, Math.round(bandCount(half) * (half.u1 - half.u0) / 0.5)), 4, M.paint, rRef, 0.03);
@@ -2602,15 +2811,28 @@ function buildVehicle(opts = {}) {
     v.addPart(p, nose);
     return p;
   };
-  // Round fog lamp in the bumper corner.
-  const fogUnit = (k, sd) => {
-    const p = mk('foglamp.' + k, 'Mistlamp ' + k.toUpperCase(), { kind: 'light', detachable: true, stiffness: 0.5, stage: 5 });
-    const hole = fogHole(sd);
+  // The bumper corner: a round fog lamp on the GT, an air curtain on the S.
+  const cornerUnit = (k, sd) => {
+    const isFog = !!AP.fog;
+    const p = mk((isFog ? 'foglamp.' : 'intake.') + k,
+      (isFog ? 'Mistlamp ' : 'Hoekinlaat ') + k.toUpperCase(),
+      { kind: isFog ? 'light' : 'trim', detachable: true, stiffness: 0.5, stage: 5 });
+    const hole = cornerHole(sd);
     const reg = (a0, a1, b0, b1, off) => surfRegion(B.frontFascia, {
       u0: lerp(hole.u0, hole.u1, a0), u1: lerp(hole.u0, hole.u1, a1),
       v0: (uu) => lerp(hole.v0(uu), hole.v1(uu), b0),
       v1: (uu) => lerp(hole.v0(uu), hole.v1(uu), b1),
     }, off, fRef);
+    if (!isFog) {
+      // an air curtain: a deep dark duct with two vanes, no lens
+      patch(p, reg(0, 1, 0, 1, -0.055), 12, 4, M.interiorDark, fRef);
+      for (const t of [0.36, 0.64]) {
+        shell(p, reg(0.05, 0.95, t - 0.05, t + 0.05, -0.030), 10, 1, M.matte, fRef, 0.010, false);
+      }
+      shell(p, reg(0, 1, 0.90, 1.0, -0.014), 12, 1, M.darkChrome, fRef, 0.010, false);
+      v.addPart(p, bf);
+      return p;
+    }
     patch(p, reg(0, 1, 0, 1, -0.040), 14, 3, M.lampHousing, fRef);
     const ledMat = M.led.clone();
     const bowl = new THREE.Mesh(buildShell(14, 3, reg(0.10, 0.90, 0.10, 0.90, -0.026), 0.010, fRef), M.reflector);
@@ -2662,7 +2884,7 @@ function buildVehicle(opts = {}) {
     v.addPart(p, tailBand);
     return p;
   };
-  for (const k in SIDE) { headlightUnit(k, SIDE[k]); fogUnit(k, SIDE[k]); taillightUnit(k, SIDE[k]); }
+  for (const k in SIDE) { headlightUnit(k, SIDE[k]); cornerUnit(k, SIDE[k]); taillightUnit(k, SIDE[k]); }
 
   /* ---- grille inside the mouth, and the recessed tail panel ------------- */
   const grille = mk('grille', 'Grille', { detachable: true, stiffness: 0.8, stage: 5 });
@@ -2675,20 +2897,24 @@ function buildVehicle(opts = {}) {
     }, off, fRef);
     // the mouth is a real cavity: the backing sits 55 mm behind the face
     patch(grille, inner(0, 1, 0.02, 0.98, -0.055), 34, 5, M.matte, fRef);
-    // egg-crate mesh
-    for (let i = 0; i < 3; i++) {
-      const t = 0.20 + i * 0.28;
-      shell(grille, inner(0.01, 0.99, t, t + 0.085, -0.036), 34, 1, M.darkChrome, fRef, 0.010, false);
+    if (AP.mouth.blade) {
+      // the GT's mouth: three horizontal bands and one body-coloured blade
+      for (let i = 0; i < 3; i++) {
+        const t = 0.20 + i * 0.28;
+        shell(grille, inner(0.01, 0.99, t, t + 0.085, -0.036), 34, 1, M.darkChrome, fRef, 0.010, false);
+      }
     }
-    const n = Math.max(8, Math.round((hole.u1 - hole.u0) / 0.034));
+    const n = Math.max(8, Math.round((hole.u1 - hole.u0) / AP.mouth.bars));
     for (let i = 1; i < n; i++) {
       const s = i / n;
-      shell(grille, inner(s - 0.0035, s + 0.0035, 0.06, 0.94, -0.044), 1, 4, M.matte, fRef, 0.008, false);
+      shell(grille, inner(s - 0.0035, s + 0.0035, 0.05, 0.95, -0.044),
+        1, 4, AP.mouth.blade ? M.matte : M.darkChrome, fRef, AP.mouth.blade ? 0.008 : 0.011, false);
     }
-    // the single body-coloured blade across the mouth, the reference's own
-    shell(grille, inner(0.0, 1.0, 0.44, 0.56, -0.016), 34, 1, M.paint, fRef, 0.016, false);
+    if (AP.mouth.blade) shell(grille, inner(0.0, 1.0, 0.44, 0.56, -0.016), 34, 1, M.paint, fRef, 0.016, false);
+    else shell(grille, inner(0.0, 1.0, 0.955, 1.0, -0.020), 34, 1, M.darkChrome, fRef, 0.014, false);
     v.addPart(grille, bf);
   }
+  if (AP.tail !== 'band') {
   const tailPanel = mk('tail.recess', 'Achterpaneel-inzet', { detachable: true, stiffness: 1.0, stage: 5 });
   {
     const hole = recessHole;
@@ -2701,20 +2927,56 @@ function buildVehicle(opts = {}) {
     shell(tailPanel, (s, t) => base(lerp(0.40, 0.60, s), lerp(0.20, 0.80, t)), 8, 4, M.plate, rRef, 0.010, false);
     v.addPart(tailPanel, tailBand);
   }
+  }
   // twin oval tailpipes in the lower valance
-  const exh = mk('exhaust', 'Uitlaat', { detachable: true, stiffness: 0.9, stage: 7 });
-  {
-    const hole = exhHole(1);
-    const base = (a, b) => {
-      const edge = Math.min(a, 1 - a, b, 1 - b);
-      return surfRegion(B.rearFascia, hole, -0.05 * smootherstep(clamp(edge / 0.22, 0, 1)), rRef)(a, b);
-    };
-    shell(exh, base, 16, 4, M.interiorDark, rRef, 0.012);
-    shell(exh, (s, t) => base(lerp(0.06, 0.94, s), lerp(0.10, 0.90, t)), 14, 3, M.darkChrome, rRef, 0.014, false);
-    shell(exh, (s, t) => base(lerp(0.14, 0.86, s), lerp(0.22, 0.78, t)), 12, 3, M.interiorDark, rRef, 0.010, false);
+  const exh = AP.diffuser ? null : mk('exhaust', 'Uitlaat', { detachable: true, stiffness: 0.9, stage: 7 });
+  if (exh) {
+    for (let k = 0; k < AP.exh.z.length; k++) {
+      const hole = exhHole(1, k);
+      const base = (a, b) => {
+        const edge = Math.min(a, 1 - a, b, 1 - b);
+        return surfRegion(B.rearFascia, hole, -0.05 * smootherstep(clamp(edge / 0.22, 0, 1)), rRef)(a, b);
+      };
+      shell(exh, base, 16, 4, M.interiorDark, rRef, 0.012);
+      shell(exh, (s, t) => base(lerp(0.06, 0.94, s), lerp(0.10, 0.90, t)), 14, 3, M.darkChrome, rRef, 0.014, false);
+      shell(exh, (s, t) => base(lerp(0.14, 0.86, s), lerp(0.22, 0.78, t)), 12, 3, M.interiorDark, rRef, 0.010, false);
+    }
     mirrorHalfInto(exh, 0);
     v.addPart(exh, br);
   }
+  // The S carries a full-width diffuser: a real opening in the bumper, dished
+  // in, with strakes standing on its floor and the four pipes set into it.
+  if (AP.diffuser && lowerOpening) {
+    const df = mk('diffuser', 'Diffuser', { detachable: true, stiffness: 0.9, stage: 5 });
+    const base = (a, b) => {
+      const edge = Math.min(a, 1 - a, b, 1 - b);
+      return surfRegion(B.rearFascia, lowerOpening, -0.085 * smootherstep(clamp(edge / 0.16, 0, 1)), rRef)(a, b);
+    };
+    shell(df, base, 36, 6, M.interiorDark, rRef, 0.014);
+    for (let i = 1; i < AP.diffuser.strakes; i++) {
+      const a = i / AP.diffuser.strakes;
+      shell(df, (s2, t) => base(lerp(a - 0.005, a + 0.005, s2), lerp(0.05, 0.92, t)), 1, 5, M.matte, rRef, 0.026, false);
+    }
+    // pipes: two per side, set into the top of the diffuser floor
+    for (const span of AP.exh.z) {
+      for (const sd of [1, -1]) {
+        const zc = sd * (span[0] + span[1]) / 2, yc = (AP.exh.y[0] + AP.exh.y[1]) / 2;
+        const q = solveRear(Math.abs(zc), yc, sd);
+        const p0 = B.rearFascia(q.u, q.v);
+        const rad = (span[1] - span[0]) * (d.W / 2) * 0.42;
+        const tube = (r2, len, dx, mat) => {
+          const t = new THREE.Mesh(new THREE.CylinderGeometry(r2, r2, len, 18).rotateZ(Math.PI / 2), mat);
+          t.position.set(p0[0] + dx, p0[1], p0[2]);
+          df.add(t, false);
+        };
+        tube(rad, 0.16, -0.075, M.matte);
+        tube(rad * 0.92, 0.10, -0.018, M.darkChrome);
+        tube(rad * 0.70, 0.11, -0.014, M.interiorDark);
+      }
+    }
+    v.addPart(df, br);
+  }
+
   if (d.splitterDepth > 0.012) {
     const sp = mk('splitter', 'Voorspoiler', { detachable: true, stiffness: 0.6, stage: 5 });
     shell(sp, (u, w) => {
@@ -2779,12 +3041,14 @@ function buildVehicle(opts = {}) {
     det.add(new THREE.Mesh(wp, M.matte), false);
   }
   // A small louvred gill behind the front wheel, as on the reference.
-  if (d.sideVent) for (const k in SIDE) {
-    const sd = SIDE[k], vx0 = d.xDoorF + 0.055, vx1 = d.xDoorF + 0.205;
-    det.add(new THREE.Mesh(buildShell(6, 3, inset(B.sideRect(vx0, vx1, 0.40, 0.60, sd), 0.994), 0.014, flankRef(vx0, vx1)), M.matte), false);
-    for (let i = 0; i < 3; i++) {
-      const vv = 0.425 + i * 0.062;
-      det.add(new THREE.Mesh(buildShell(5, 1, inset(B.sideRect(vx0 + 0.012, vx1 - 0.012, vv, vv + 0.020, sd), 1.010), 0.008, flankRef(vx0, vx1)), M.brushed), false);
+  if (d.sideVent && AP.gill) for (const k in SIDE) {
+    const sd = SIDE[k];
+    const vx0 = d.xNose - AP.gill.f[1] * d.L, vx1 = d.xNose - AP.gill.f[0] * d.L;
+    const g0 = AP.gill.v[0], g1 = AP.gill.v[1];
+    det.add(new THREE.Mesh(buildShell(7, 3, inset(B.sideRect(vx0, vx1, g0, g1, sd), 0.994), 0.014, flankRef(vx0, vx1)), M.matte), false);
+    for (let i = 0; i < AP.gill.blades; i++) {
+      const vv = lerp(g0, g1, (i + 0.7) / (AP.gill.blades + 1));
+      det.add(new THREE.Mesh(buildShell(6, 1, inset(B.sideRect(vx0 + 0.012, vx1 - 0.012, vv, vv + (g1 - g0) * 0.16, sd), 1.010), 0.008, flankRef(vx0, vx1)), M.brushed), false);
     }
   }
   // The master concept is deliberately unbranded and plate-free so its
@@ -2803,7 +3067,7 @@ function buildVehicle(opts = {}) {
     [5, 'Interieur', /^(interior|steering)$/],
     [6, 'Aandrijving', /^engine$/],
     [7, 'Chassis', /^(struct\.|body\.structure)/],
-    [8, 'Aerodynamica', /^(splitter|exhaust|grille|tail\.recess|hood\.vents)/],
+    [8, 'Aerodynamica', /^(splitter|exhaust|grille|diffuser|intake\.|tail\.recess|hood\.vents)/],
   ];
   const LAYER_R = { 1: 1.00, 2: 1.45, 3: 1.30, 4: 1.15, 5: 0.55, 6: 0.35, 7: 0.15, 8: 1.60 };
   v.layers = LAYERS.map(([n, name]) => ({ n, name, parts: [] }));
@@ -2860,6 +3124,8 @@ function buildVehicle(opts = {}) {
     else if (id === 'bumper.rear') o.set(-1.62, 0.02, 0);
     else if (/^headlight\./.test(id)) o.set(1.48, 0.46, side * 0.52);
     else if (/^foglamp\./.test(id)) o.set(1.72, -0.18, side * 0.62);
+    else if (/^intake\./.test(id)) o.set(1.78, -0.26, side * 0.70);
+    else if (id === 'diffuser') o.set(-1.96, -0.42, 0);
     else if (/^taillight\./.test(id)) o.set(-1.42, 0.48, side * 0.50);
     else if (id === 'grille') o.set(2.12, 0.03, 0);
     else if (id === 'splitter') o.set(2.08, -0.48, 0);
@@ -2947,34 +3213,37 @@ function qualityGate(v) {
   const pct = (x) => (x * 100).toFixed(1) + '%';
   const mm = (x) => Math.round(x * 1000) + ' mm';
 
+  const G = d.gate;
+  const rng = (r, u) => (u === '%' ? (r[0] * 100).toFixed(1) + '–' + (r[1] * 100).toFixed(1) + '%'
+    : u === 'mm' ? Math.round(r[0] * 1000) + '–' + Math.round(r[1] * 1000) + ' mm'
+    : r[0] + '–' + r[1] + (u || ''));
   const wbL = d.wheelbase / d.L;
-  chk('wb', 'Wielbasis 56,0–56,7% van lengte (referentie 56,3%)', inR(wbL, 0.560, 0.567), pct(wbL));
+  chk('wb', 'Wielbasis ' + rng(G.wb, '%') + ' van lengte', inR(wbL, G.wb[0], G.wb[1]), pct(wbL));
   const gap = (d.wheelbase - 2 * d.wheelR) / (2 * d.wheelR);
-  chk('gap', 'Ruimte tussen de wielen 2,7–3,2 wieldiameters', inR(gap, 2.7, 3.2), gap.toFixed(2));
-  chk('arch', 'Wiel in wielkast, speling 25–55 mm (gemeten 38 mm)', inR(d.archClear, 0.025, 0.055), mm(d.archClear));
-  chk('ride', 'Bodemvrijheid 130–160 mm (gemeten 145 mm)', inR(d.clearance, 0.13, 0.16), mm(d.clearance));
+  chk('gap', 'Ruimte tussen de wielen ' + rng(G.gap) + ' wieldiameters', inR(gap, G.gap[0], G.gap[1]), gap.toFixed(2));
+  chk('arch', 'Wiel in wielkast, speling ' + rng(G.arch, 'mm'), inR(d.archClear, G.arch[0], G.arch[1]), mm(d.archClear));
+  chk('ride', 'Bodemvrijheid ' + rng(G.ride, 'mm'), inR(d.clearance, G.ride[0], G.ride[1]), mm(d.clearance));
   const dlo = (d.roofY - d.beltDoorY) / d.H;
-  chk('dlo', 'Glaspartij 30–35% van hoogte (gemeten 32,6%)', inR(dlo, 0.30, 0.35), pct(dlo));
-  chk('ohf', 'Vooroverhang 18,5–20% van lengte (gemeten 19,2%)', inR(d.frontOh / d.L, 0.185, 0.200), pct(d.frontOh / d.L));
-  chk('ohr', 'Achteroverhang 23,8–25,2% van lengte (gemeten 24,5%)', inR(d.rearOh / d.L, 0.238, 0.252), pct(d.rearOh / d.L));
-  // Derived, not chosen: the tyre face is set flush with the arch, which on
-  // this body lands at ~80% of the width (the reference's own stance; a real
-  // XKR is 1504/1498 mm on an 1830 mm body, i.e. 82%).
-  chk('track', 'Spoorbreedte 78–85% van breedte (afgeleid uit de wielkast)', inR(d.track / d.W, 0.78, 0.85), pct(d.track / d.W));
+  chk('dlo', 'Glaspartij ' + rng(G.dlo, '%') + ' van hoogte', inR(dlo, G.dlo[0], G.dlo[1]), pct(dlo));
+  chk('ohf', 'Vooroverhang ' + rng(G.ohf, '%') + ' van lengte', inR(d.frontOh / d.L, G.ohf[0], G.ohf[1]), pct(d.frontOh / d.L));
+  chk('ohr', 'Achteroverhang ' + rng(G.ohr, '%') + ' van lengte', inR(d.rearOh / d.L, G.ohr[0], G.ohr[1]), pct(d.rearOh / d.L));
+  // Derived, not chosen: the tyre face is set flush with the arch.
+  chk('track', 'Spoorbreedte ' + rng(G.track, '%') + ' van breedte (afgeleid uit de wielkast)',
+    inR(d.track / d.W, G.track[0], G.track[1]), pct(d.track / d.W));
   const cab = (d.xCowl - d.xRoofR) / d.L;
-  chk('cabin', 'Cabine (voorruitvoet tot dakeinde) 41–46% van lengte', inR(cab, 0.41, 0.46), pct(cab));
+  chk('cabin', 'Cabine (voorruitvoet tot dakeinde) ' + rng(G.cabin, '%') + ' van lengte', inR(cab, G.cabin[0], G.cabin[1]), pct(cab));
   const hood = (d.xNose - d.xCowl) / d.L;
-  chk('hood', 'Motorkap 27–30% van lengte (gemeten 28,3%)', inR(hood, 0.27, 0.30), pct(hood));
-  chk('deck', 'Kofferdek 0,33–0,50 m (fastback)', inR(d.deckLen, 0.33, 0.50), mm(d.deckLen));
+  chk('hood', 'Motorkap ' + rng(G.hood, '%') + ' van lengte', inR(hood, G.hood[0], G.hood[1]), pct(hood));
+  chk('deck', 'Kofferdek ' + rng(G.deck, 'mm'), inR(d.deckLen, G.deck[0], G.deck[1]), mm(d.deckLen));
   const rr = d.rearRake * 180 / Math.PI;
-  chk('rr', 'Achterruithoek 18–30° (vloeiende fastback)', inR(rr, 18, 30), rr.toFixed(1) + '°');
+  chk('rr', 'Achterruithoek ' + rng(G.rr, '°'), inR(rr, G.rr[0], G.rr[1]), rr.toFixed(1) + '°');
   const ws = d.wsRake * 180 / Math.PI;
-  chk('ws', 'Voorruithoek 16–25° (gemeten ±20°)', inR(ws, 16, 25), ws.toFixed(1) + '°');
+  chk('ws', 'Voorruithoek ' + rng(G.ws, '°'), inR(ws, G.ws[0], G.ws[1]), ws.toFixed(1) + '°');
   const d2a = d.dashToAxle / d.wheelbase;
-  chk('d2a', 'Dash-to-axle 14–19% van wielbasis', inR(d2a, 0.14, 0.19), pct(d2a));
+  chk('d2a', 'Dash-to-axle ' + rng(G.d2a, '%') + ' van wielbasis', inR(d2a, G.d2a[0], G.d2a[1]), pct(d2a));
   chk('belt', 'Paneel boven de wielkast minimaal 80 mm', d.beltY - d.archTop >= 0.08, mm(d.beltY - d.archTop));
   chk('sil', 'Silhouet: neus < cowl < dak, dek < dak', d.noseTopY < d.cowlY && d.cowlY < d.roofY && d.deckY < d.roofY);
-  chk('hw', 'Hoogte/breedte 0,66–0,71 (lage, brede GT)', inR(d.H / d.W, 0.66, 0.71), (d.H / d.W).toFixed(2));
+  chk('hw', 'Hoogte/breedte ' + rng(G.hw), inR(d.H / d.W, G.hw[0], G.hw[1]), (d.H / d.W).toFixed(3));
 
   // geometry checks on the built model
   const P = (id) => v.get(id);
@@ -3633,6 +3902,7 @@ Vehicle.prototype.validateGeometry = function () {
       for (const m of p.meshes) if (m.userData.stage) m.visible = m.userData.stage <= stage && m.visible !== false;
     });
     document.querySelectorAll('[data-stage]').forEach((b) => b.classList.toggle('sel', +b.dataset.stage === stage));
+    document.querySelectorAll('[data-car]').forEach((b) => b.classList.toggle('sel', b.dataset.car === type));
     $('clayBtn').classList.toggle('sel', useClay);
     $('xrayBtn').classList.toggle('sel', xray);
     for (const id of ['hood', 'trunk', 'door.l', 'door.r', 'fender.l', 'fender.r', 'quarter.l', 'quarter.r', 'roof', 'bumper.front', 'bumper.rear', 'nose', 'tail', 'rocker.l', 'rocker.r']) {
@@ -3653,6 +3923,9 @@ Vehicle.prototype.validateGeometry = function () {
   }
   document.querySelectorAll('[data-stage]').forEach((b) => {
     b.addEventListener('click', () => { stage = +b.dataset.stage; applyStage(); });
+  });
+  document.querySelectorAll('[data-car]').forEach((b) => {
+    b.addEventListener('click', () => { if (b.dataset.car !== type) spawn(b.dataset.car, seed); });
   });
   chip('clayBtn', () => { clay = !clay; if (!clay && stage < 8) stage = 8; applyStage(); });
   chip('zebraBtn', () => { zebra = !zebra; applyStage(); });

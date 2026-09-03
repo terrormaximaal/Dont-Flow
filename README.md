@@ -427,4 +427,13 @@ generator draws comes from those numbers, which puts the car at 4757 × 1800 ×
 wheel and tyre sizes it uses. Rendered from the same cameras as the reference,
 the silhouettes overlap 0.85–0.90 (intersection over union).
 
+A second car sits alongside it, traced the same way but from an orthographic
+styling sheet instead of a mesh: a modern super-GT of roughly DB12/Vanquish
+size. Its views were measured in pixels and normalised per view, because a
+styling sheet's views are not drawn to one scale — so the shape is the sheet's
+and the three absolute dimensions come from the class it depicts. The model
+buttons in the dock switch between the two, and each car carries its own
+quality-gate ranges, since a check centred on one car's proportions says
+nothing about the other's.
+
 It needs nothing from `npm`; three.js comes from a CDN.
