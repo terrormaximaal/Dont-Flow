@@ -1211,10 +1211,18 @@ function makeBody(d) {
   const cabinBase = curve1D(d.cabinProfile);
   const CABPROF = d.cabProfile ? curve1D(d.cabProfile) : null;
   B.cabinTaper = (x) => cabinBase(xc(x)) / Math.max(0.05, B.hw(x));
+  // Tumblehome is width lost as the glass leans in over the height of the
+  // cabin. Where there is barely any cabin - at the cowl the rail sits 42 mm
+  // over the beltline - there is no height to lean over, so applying the full
+  // amount there pinched the greenhouse base to 0.44 of the half width when the
+  // traced table says 0.66. It now ramps in with the cabin's own height, which
+  // leaves the measured middle of the greenhouse exactly as it was.
+  const TUMBLE_H = 0.25;                 // cabin height at which it is fully in
   B.cabinHW = (x, y) => {
     const yb = B.belt(x), yr = B.railY(x);
     const f = clamp((y - yb) / Math.max(0.05, yr - yb), 0, 1);
-    const taper = CABPROF ? CABPROF(f) : (1 - d.refTumble * f);
+    const k = smootherstep(clamp((yr - yb) / TUMBLE_H, 0, 1));
+    const taper = CABPROF ? lerp(1, CABPROF(f), k) : (1 - d.refTumble * f * k);
     return cabinBase(xc(x)) * taper + 0.012 * Math.sin(Math.PI * f);
   };
   B.cabin = (x, v, side) => {
