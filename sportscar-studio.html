@@ -951,7 +951,7 @@ function generateDNA(opts = {}) {
   d.intakeStyle = d.design.intakeStyle; d.drlStyle = 'brow';
   d.wheelStyle = d.design.wheelStyle;
   d.creaseStyle = 'soft';
-  d.splitterDepth = isS ? 0.030 : 0.018;
+  d.splitterDepth = 0;                 // no front splitter on this car
   d.sideVent = true;
   d.ducktailBoost = isS ? 0.55 : 0.10;
   d.exhaust = isS ? 'quad' : 'twin_oval';
@@ -2288,6 +2288,112 @@ function symmetriseVehicle(v) {
   return v;
 }
 
+/* =========================================================================
+   Outer panels own the space.
+
+   The skin is the car; everything behind it is packaging. A rule beats a
+   patch here: rather than tuning each inner piece until it happens to clear
+   the panel in front of it, the outer panels are sampled into a coarse
+   (x, |z|) height field and any inner vertex that breaks it is pulled back
+   under. That covers the deck, the roof, the bonnet and the flanks with the
+   same pass, so a member cannot show through a panel anywhere - including in
+   regions nobody thought to check.
+
+   Only the ceiling and the flank are enforced: an inner part may sit as low
+   as it likes, and the grid is read with a one-cell margin so a panel seam
+   does not clamp structure that was never in the way.
+   ========================================================================= */
+const SKIN_OUTER = /^(hood|trunk|roof|nose|tail|fender\.|quarter\.|door\.|rocker\.|bumper\.|cowl)/;
+const SKIN_INNER = /^(body\.structure|interior|seats|dash)/;
+const SKIN_CELL = 0.045;                      // 45 mm grid
+const SKIN_GAP = 0.012;                       // keep this far under the panel
+
+function skinCeiling(v) {
+  const g = new Map();
+  const p1 = new THREE.Vector3(), p2 = new THREE.Vector3(), p3 = new THREE.Vector3();
+  const e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), nrm = new THREE.Vector3();
+  const stamp = (q) => {
+    const k = Math.round(q.x / SKIN_CELL) + '|' + Math.round(Math.abs(q.z) / SKIN_CELL);
+    const cur = g.get(k);
+    if (cur === undefined || q.y > cur) g.set(k, q.y);
+  };
+  for (const [id, p] of v.parts) {
+    if (!SKIN_OUTER.test(id)) continue;
+    for (const m of p.meshes) {
+      const a = m.geometry.attributes.position, ix = m.geometry.index;
+      if (!a || !ix) continue;
+      m.updateWorldMatrix(true, false);
+      for (let i = 0; i < ix.count; i += 3) {
+        p1.fromBufferAttribute(a, ix.getX(i)).applyMatrix4(m.matrixWorld);
+        p2.fromBufferAttribute(a, ix.getX(i + 1)).applyMatrix4(m.matrixWorld);
+        p3.fromBufferAttribute(a, ix.getX(i + 2)).applyMatrix4(m.matrixWorld);
+        // Only triangles that face upwards form a ceiling. A flank panel is
+        // vertical and reaches higher than the deck lid beside it, so counting
+        // it would have hidden exactly the case this rule is here to catch.
+        e1.subVectors(p2, p1); e2.subVectors(p3, p1);
+        nrm.crossVectors(e1, e2);
+        const len = nrm.length();
+        if (len < 1e-9 || Math.abs(nrm.y) / len < 0.35) continue;
+        stamp(p1); stamp(p2); stamp(p3);
+      }
+    }
+  }
+  // the highest panel within one cell in each direction, so the reading errs
+  // towards leaving structure alone rather than crushing it at a seam
+  return (x, z) => {
+    const cx = Math.round(x / SKIN_CELL), cz = Math.round(Math.abs(z) / SKIN_CELL);
+    let best = -Infinity;
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        const y = g.get((cx + i) + '|' + (cz + j));
+        if (y !== undefined && y > best) best = y;
+      }
+    }
+    return best;
+  };
+}
+
+function enforceSkinDominance(v) {
+  const ceil = skinCeiling(v), B = v.B;
+  const wv = new THREE.Vector3(), inv = new THREE.Matrix4();
+  let moved = 0, worst = 0, where = '-';
+  for (const [id, p] of v.parts) {
+    if (p.kind !== 'structure' && !SKIN_INNER.test(id)) continue;
+    for (const m of p.meshes) {
+      const a = m.geometry.attributes.position;
+      if (!a) continue;
+      m.updateWorldMatrix(true, false);
+      inv.copy(m.matrixWorld).invert();
+      let touched = false;
+      for (let i = 0; i < a.count; i++) {
+        wv.fromBufferAttribute(a, i).applyMatrix4(m.matrixWorld);
+        let y = wv.y, z = wv.z;
+        const lid = ceil(wv.x, wv.z);
+        if (lid > -Infinity && y > lid - SKIN_GAP) y = lid - SKIN_GAP;
+        const side = B.hw(wv.x) - SKIN_GAP;
+        if (Math.abs(z) > side) z = Math.sign(z) * side;
+        if (y !== wv.y || z !== wv.z) {
+          const d0 = Math.max(wv.y - y, Math.abs(wv.z) - Math.abs(z));
+          if (d0 > worst) { worst = d0; where = id; }
+          wv.set(wv.x, y, z).applyMatrix4(inv);
+          a.setXYZ(i, wv.x, wv.y, wv.z);
+          touched = true; moved++;
+        }
+      }
+      if (touched) {
+        a.needsUpdate = true;
+        m.geometry.computeVertexNormals();
+        m.geometry.computeBoundingBox();
+        m.geometry.computeBoundingSphere();
+        if (m.userData.orig) m.userData.orig = Float32Array.from(a.array);
+        if (m.userData.onrm) m.userData.onrm = Float32Array.from(m.geometry.attributes.normal.array);
+      }
+    }
+  }
+  v.skinFix = { moved, worst, where };
+  return v.skinFix;
+}
+
 function buildVehicle(opts = {}) {
   const d = generateDNA(opts);
   const v = new Vehicle(d);
@@ -3220,6 +3326,7 @@ function buildVehicle(opts = {}) {
     v.layers[p.layer - 1].parts.push(p.id);
   });
 
+  enforceSkinDominance(v);
   symmetriseVehicle(v);
 
   /* ---- caches for demo + gate ------------------------------------------ */
@@ -3570,9 +3677,10 @@ Vehicle.prototype.validateGeometry = function () {
     hf.mn >= 0.005 && hf.mx <= 0.018 && hf.mx - hf.mn <= 0.006);
 
   // The skeleton takes its dimensions from the body, so check it still fits.
+  const ceil = skinCeiling(v);
   let poke = 0, pokeWhere = '-';
   for (const [id, p] of v.parts) {
-    if (p.kind !== 'structure') continue;
+    if (p.kind !== 'structure' && !SKIN_INNER.test(id)) continue;
     for (const m of p.meshes) {
       const a = m.geometry.attributes.position;
       if (!a) continue;
@@ -3580,13 +3688,14 @@ Vehicle.prototype.validateGeometry = function () {
       for (let i = 0; i < a.count; i++) {
         wv.fromBufferAttribute(a, i).applyMatrix4(m.matrixWorld);
         const x = wv.x;
-        if (x > d.xCowl) {
-          const zEdge = B.zAt(x, B.closureSideLine(x));
-          const zt = clamp(wv.z / Math.max(0.05, zEdge), -1, 1);
-          const rise = smootherstep((1 - Math.abs(zt)) / 0.30);
-          const surf = lerp(B.closureSideLine(x), B.hoodY(x), rise) + B.dome(x, zt);
-          const over = wv.y - (surf - 0.02);
-          if (over > poke) { poke = over; pokeWhere = id + ' (kap)'; }
+        // Measured against the same ceiling the build rule enforces, so the
+        // check covers the whole car. The old test only looked under the
+        // bonnet, which is why a member standing proud of the boot lid could
+        // sit there unreported.
+        const lid = ceil(x, wv.z);
+        if (lid > -Infinity) {
+          const over = wv.y - (lid - 0.002);
+          if (over > poke) { poke = over; pokeWhere = id + ' (onder paneel)'; }
         }
         const side = Math.abs(wv.z) - (B.hw(x) - 0.01);
         if (side > poke) { poke = side; pokeWhere = id + ' (flank)'; }
