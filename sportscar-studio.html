@@ -1232,11 +1232,29 @@ function makeBody(d) {
   };
   B.cabinRect = (x0, x1, v0, v1, side) => (u, v) => B.cabin(lerp(x0, x1, u), lerp(v0, v1, v), side);
   B.dloTop = curve1D(d.dloProfile);       // top edge of the side glass, 0..1 of the cabin
+  /* The edge every part of the greenhouse shuts against. Where the frame bar
+     runs it IS the bar's inner edge, so the roof and both screens meet the
+     pillar at one height instead of each ending on its own curve - they were
+     31 to 105 mm apart before this. Behind the bar it eases back to the cabin's
+     own top line over a short stretch, so there is no step where the bar ends.
+     Resolved lazily: the bar is built further down this function. */
+  let barEdge = null;
+  B.greenhouseEdge = (x) => {
+    if (!barEdge) barEdge = B.frameBar(1, d.pillarThick, d.xNose - 0.417 * d.L);
+    const yr = B.roofYAt(x);
+    const own = [x, yr - 0.038, B.cabinHW(x, yr)];
+    const inn = barEdge.innerAtX(x);
+    // the bar stops at the back of the daylight opening
+    const k = 1 - smootherstep(clamp((d.xDloRear - x) / (0.055 * d.L), 0, 1));
+    return [x, lerp(own[1], inn[1], k), lerp(own[2], inn[2], k)];
+  };
   B.roofSurface = (u, v) => {
     const x = lerp(d.xRoofF + 0.03, d.xRoofR - 0.03, u);
     const zt = v * 2 - 1;
     const yr = B.roofYAt(x);
-    return [x, yr - 0.038 * Math.pow(zt * zt, 1.2), zt * B.cabinHW(x, yr)];
+    const e = B.greenhouseEdge(x);
+    const k = Math.pow(zt * zt, 1.2);
+    return [x, lerp(yr, e[1], k), zt * e[2]];
   };
   // Screens sit ON the roofline, so glass and roof are one continuous surface.
   B.screenWidth = (xb, xt, taper, capTop, capBot) => (v) => {
@@ -2948,17 +2966,15 @@ function buildVehicle(opts = {}) {
   const xBarFront = d.xNose - 0.417 * d.L;        // the mirror, where the opening is widest
   const BAR = { 1: B.frameBar(1, d.pillarThick, xBarFront),
                 '-1': B.frameBar(-1, d.pillarThick, xBarFront) };
-  const screenToBar = (u, v) => {
-    const x = lerp(WS[0], WS[1], v);
-    const inn = BAR[1].innerAtX(x);
+  const screenOn = (xb, xt, bulge) => (u, v) => {
+    const x = lerp(xb, xt, v);
+    const e = B.greenhouseEdge(x);
     const zt = u * 2 - 1;
-    const yCrown = B.roofLine(x);
-    const y = lerp(yCrown, inn[1], Math.pow(Math.abs(zt), 1.7));
-    return [x + 0.030 * (1 - zt * zt) * smootherstep(v / 0.45), y, zt * inn[2]];
+    const y = lerp(B.roofLine(x), e[1], Math.pow(Math.abs(zt), 1.7));
+    return [x + bulge * (1 - zt * zt) * smootherstep(v / 0.45), y, zt * e[2]];
   };
-  glassPart('glass.windshield', 'Voorruit', screenToBar, null, 14, 10);
-  glassPart('glass.rear', 'Achterruit',
-    B.screen(RS[0], RS[1], -0.035, RS[2], RS[3], RS[4]), null, 12, 8);
+  glassPart('glass.windshield', 'Voorruit', screenOn(WS[0], WS[1], 0.030), null, 14, 10);
+  glassPart('glass.rear', 'Achterruit', screenOn(RS[0], RS[1], -0.035), null, 14, 10);
   for (const k2 in SIDE) {
     const sd2 = SIDE[k2];
     const rf = [midX(d.xCowl, d.xDeck), d.roofY - 0.5, 0];
