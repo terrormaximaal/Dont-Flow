@@ -952,6 +952,7 @@ function generateDNA(opts = {}) {
   d.wheelStyle = d.design.wheelStyle;
   d.creaseStyle = 'soft';
   d.splitterDepth = 0;                 // no front splitter on this car
+  d.pillarThick = 0.100;               // window frame bar: one section throughout
   d.sideVent = true;
   d.ducktailBoost = isS ? 0.55 : 0.10;
   d.exhaust = isS ? 'quad' : 'twin_oval';
@@ -1280,6 +1281,70 @@ function makeBody(d) {
       }
       const ew = smootherstep(w);
       return [lerp(x, ox, ew), lerp(y - 0.004, oy, ew), sd * lerp(inner - 0.004, oz, ew)];
+    };
+  };
+
+  /* ---- window frame bar ------------------------------------------------
+     One bar of constant section running along the top of the daylight opening,
+     from the cowl back past the door. The A-pillar is the front stretch of it.
+
+     Built this way round because the other way round does not work: while the
+     pillar was whatever space happened to be left between the windscreen and
+     the side glass, that space measured 66, 168, 189, 112, 65, 223 and 217 mm
+     at successive stations - a leftover, not a bar. Here the bar is the master
+     and the screen is cut to it.
+
+     The frame is transported along the path and only re-squared at each step: a
+     cross product with the surface normal flips sign wherever it passes through
+     zero, which put a 158-degree kink in an earlier attempt at this. */
+  B.frameBar = (sd, thick) => {
+    const xF = d.xCowl, xR = d.xDloRear;
+    const N = 240;
+    const path = (t) => {
+      const x = lerp(xF, xR, t);
+      const q = B.cabin(x, clamp(B.dloTop(x), 0.05, 0.99), 1);
+      return new THREE.Vector3(q[0], q[1], q[2]);
+    };
+    const pts = new Array(N + 1), dirs = new Array(N + 1);
+    const tan = new THREE.Vector3(), nrm = new THREE.Vector3(), acr = new THREE.Vector3();
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, p = path(t);
+      tan.copy(path(Math.min(1, t + 1 / (2 * N)))).sub(path(Math.max(0, t - 1 / (2 * N))));
+      if (tan.lengthSq() < 1e-12) tan.set(-1, 0, 0);
+      tan.normalize();
+      const h = 0.004, x = p.x, y = p.y;
+      const fx = (B.cabinHW(x + h, y) - B.cabinHW(x - h, y)) / (2 * h);
+      const fy = (B.cabinHW(x, y + h) - B.cabinHW(x, y - h)) / (2 * h);
+      nrm.set(-fx, -fy, 1).normalize();
+      if (i === 0) acr.set(0, 1, 0);               // start: up towards the roof
+      acr.addScaledVector(nrm, -acr.dot(nrm));     // stay in the body surface
+      acr.addScaledVector(tan, -acr.dot(tan));     // square to the path
+      if (acr.lengthSq() < 1e-9) acr.set(0, 1, 0);
+      acr.normalize();
+      if (acr.y < 0) acr.negate();                 // upward, never down
+      pts[i] = p.clone();
+      dirs[i] = acr.clone();
+    }
+    const sample = (t) => {
+      const f = clamp(t, 0, 1) * N;
+      const i = Math.min(N - 1, Math.floor(f)), k = f - i;
+      const p = pts[i], q = pts[i + 1], a = dirs[i], b2 = dirs[i + 1];
+      let ax = lerp(a.x, b2.x, k), ay = lerp(a.y, b2.y, k), az = lerp(a.z, b2.z, k);
+      const len = Math.hypot(ax, ay, az) || 1;
+      return { x: lerp(p.x, q.x, k), y: lerp(p.y, q.y, k), z: lerp(p.z, q.z, k),
+               ax: ax / len, ay: ay / len, az: az / len };
+    };
+    const PROUD = 0.006;                           // stands off the skin, like trim
+    return {
+      surface: (u, w) => {
+        const c = sample(u), t2 = thick * w;
+        return [c.x + c.ax * t2, c.y + c.ay * t2, sd * (c.z + c.az * t2 + PROUD)];
+      },
+      innerAtX: (x) => {
+        const t = clamp((xF - x) / (xF - xR), 0, 1);
+        const c = sample(t);
+        return [c.x + c.ax * thick, c.y + c.ay * thick, c.z + c.az * thick];
+      },
     };
   };
 
@@ -2858,7 +2923,19 @@ function buildVehicle(opts = {}) {
   };
   const WS = [d.xCowl, d.xRoofF, 0, 0.13, 0];
   const RS = [d.xDeck, d.xRoofR - 0.03, 0.12, 0.15, 0.06];
-  glassPart('glass.windshield', 'Voorruit', B.screen(WS[0], WS[1], 0.030, WS[2], WS[3], WS[4]), null, 12, 8);
+  // The bar is the master here: the screen's own side edge is the bar's inner
+  // edge, so the two shut against each other by construction instead of leaving
+  // whatever gap the two curves happened to produce.
+  const BAR = { 1: B.frameBar(1, d.pillarThick), '-1': B.frameBar(-1, d.pillarThick) };
+  const screenToBar = (u, v) => {
+    const x = lerp(WS[0], WS[1], v);
+    const inn = BAR[1].innerAtX(x);
+    const zt = u * 2 - 1;
+    const yCrown = B.roofLine(x);
+    const y = lerp(yCrown, inn[1], Math.pow(Math.abs(zt), 1.7));
+    return [x + 0.030 * (1 - zt * zt) * smootherstep(v / 0.45), y, zt * inn[2]];
+  };
+  glassPart('glass.windshield', 'Voorruit', screenToBar, null, 14, 10);
   glassPart('glass.rear', 'Achterruit',
     B.screen(RS[0], RS[1], -0.035, RS[2], RS[3], RS[4]), null, 12, 8);
   for (const k2 in SIDE) {
@@ -2868,7 +2945,7 @@ function buildVehicle(opts = {}) {
     // lands on the front wing at station 0.375, 0.719 H and 0.850 of the half
     // width - ahead of the cowl shut line, not on it.
     const foot = { x: d.L * 0.125, y: 0.719 * d.H, z: 0.850 * (d.W / 2), span: 0.20 };
-    shell(roof, B.screenSurround(WS[0], WS[1], WS[2], WS[3], WS[4], sd2, foot), 16, 6, M.paint, rf, 0.020);
+    shell(roof, BAR[sd2].surface, 40, 3, M.paint, rf, 0.018);
     shell(roof, B.screenSurround(RS[0], RS[1], RS[2], RS[3], RS[4], sd2), 14, 5, M.paint, rf, 0.020);
   }
 
