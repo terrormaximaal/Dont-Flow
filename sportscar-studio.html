@@ -611,7 +611,7 @@ function addWear(geo) {
    (1). This is the traced profile of the reference, not a styling guess. */
 const REF_SIL = [
   0.4192, 0.4778, 0.5422, 0.5805, 0.6116, 0.6368, 0.6573, 0.6742,
-  0.6887, 0.7008, 0.7114, 0.7204, 0.7276, 0.7300, 0.7526, 0.7808,
+  0.6887, 0.7008, 0.7114, 0.7204, 0.7276, 0.7244, 0.7526, 0.7808,
   0.8089, 0.8371, 0.8652, 0.8934, 0.9215, 0.9497, 0.9779, 0.9882,
   0.9994, 0.9997, 0.9987, 0.9967, 0.9937, 0.9897, 0.9847, 0.9783,
   0.9705, 0.9607, 0.9478, 0.9213, 0.9002, 0.8747, 0.8460, 0.8148,
@@ -623,10 +623,10 @@ const REF_SIL = [
    measurement, so nothing has to be added on top of it. */
 const REF_PLAN = [
   0.1775, 0.5351, 0.6889, 0.7836, 0.8467, 0.8925, 0.8977, 0.9040,
-  0.9087, 0.9312, 0.9450, 0.9692, 0.9865, 0.9949, 0.9978, 0.9985,
+  0.9166, 0.9312, 0.9525, 0.9692, 0.9865, 0.9949, 0.9978, 0.9985,
   0.9996, 0.9974, 0.9946, 0.9921, 0.9897, 0.9873, 0.9851, 0.9844,
   0.9836, 0.9815, 0.9775, 0.9727, 0.9693, 0.9679, 0.9677, 0.9673,
-  0.9667, 0.9612, 0.9563, 0.9465, 0.9501, 0.9423, 0.9293, 0.9181,
+  0.9667, 0.9664, 0.9563, 0.9544, 0.9501, 0.9468, 0.9293, 0.9181,
   0.9015, 0.8821, 0.8622, 0.8366, 0.8009, 0.7461, 0.6486, 0.4661,
   0.0885,
 ];
@@ -637,7 +637,7 @@ const REF_PLAN = [
 const REF_SECTION = [
   [0.000, 0.862], [0.071, 0.903], [0.143, 0.934], [0.214, 0.952], [0.286, 0.966],
   [0.357, 0.977], [0.429, 0.986], [0.500, 0.995], [0.571, 1.000], [0.643, 0.999],
-  [0.714, 0.995], [0.786, 0.988], [0.857, 0.971], [0.929, 0.948], [1.000, 0.897],
+  [0.714, 0.992], [0.786, 0.984], [0.857, 0.967], [0.929, 0.942], [1.000, 0.891],
 ];
 /* Beltline: the top edge of the flank, as a fraction of overall height. Ahead
    of the cowl it is the top of the front wing, through the doors it is the
@@ -746,18 +746,19 @@ const ARCHETYPES = {
     L: [4.740, 4.775],
     hRatio: [0.2585, 0.2600], wRatio: [0.3775, 0.3795],
     wbRatio: [0.5620, 0.5650], frontOhShare: [0.435, 0.443], trackRatio: [0.820, 0.840],
-    diaRatio: [0.1400, 0.1430], tireW: [0.243, 0.250], rearTireExtra: [0.008, 0.014], aspect: [0.44, 0.46],
+    diaRatio: [0.1396, 0.1404], tireW: [0.243, 0.250], rearTireExtra: [0.008, 0.014], aspect: [0.44, 0.46],
     clearance: [0.140, 0.150],
     // silhouette stations, as fractions of length from the nose
-    sCowl: [0.280, 0.287], sRoofF: [0.460, 0.470], sRoofPeak: [0.516, 0.525],
+    sCowl: [0.265, 0.270], sRoofF: [0.460, 0.470], sRoofPeak: [0.516, 0.525],
     sRoofR: [0.712, 0.720], sDeck: [0.840, 0.850],
     // silhouette heights, as fractions of overall height
     hNose: [0.415, 0.424], hCowl: [0.724, 0.732], hRoof: [0.997, 1.000],
     hDeck: [0.755, 0.765], hBelt: [0.702, 0.710], hBeltDoor: [0.670, 0.678],
     hBeltQuarter: [0.694, 0.702],
-    // wheel arch traced off the reference: a circle concentric with the hub,
-    // radius = tyre + 38 mm, so the gap is even all the way round
-    archGap: [0.034, 0.042],
+    // wheel arch: a circle concentric with the hub, radius = tyre + 35 mm at
+    // the crown. The reference's own opening is not concentric - its gap grows
+    // to about 59 mm at +/-200 mm - so this circle is an approximation.
+    archGap: [0.033, 0.037],
     profileJitter: [-0.002, 0.002],
     // section
     shoulderDrop: [0.030, 0.044], haunch: [0.0, 0.0], frontFlare: [0.0, 0.0],
@@ -766,20 +767,20 @@ const ARCHETYPES = {
     noseDepth: [0.60, 0.66], tailDepth: [0.30, 0.35], frontRakeBack: [0.16, 0.20], tailRakeIn: [0.05, 0.075],
     doorLen: [1.16, 1.24],
     wheelStyles: ['five'],
-    mirror: 'stalk', sideVent: 1.0, wingChance: 0.0,
+    mirror: 'stalk', sideVent: 1.0, wingChance: 0.0, faceFrac: 0.9743, tailFloor: 0.240,
     // Openings, in the reference's own terms: |z| as a fraction of the body's
     // half width, y as a fraction of overall height above the ground.
     apertures: {
       face: 'oval',
-      lamp: { z: [0.400, 0.745], gap: 0.013, h: [0.030, 0.105] },
-      mouth: { z: 0.620, y: [0.165, 0.325], flat: 0.30, bars: 0.034, blade: true },
+      lamp: { z: [0.330, 0.741], gap: 0.013, h: [0.012, 0.105] },
+      mouth: { z: 0.600, y: [0.198, 0.363], flat: 0.0, bars: 0.034, blade: false, ribs: [0.117, 0.187] },
       fog: { z: [0.681, 0.804], y: [0.245, 0.335] },
-      frontSplit: 0.395,
+      frontSplit: 0.414,
       tail: 'recess',
-      recess: { span: 0.92, gap: 0.030, depth: [0.150, 0.120] },
-      tailLamp: { span: [0.65, 0.96], gap: 0.055, h: 0.095 },
+      recess: { span: 0.428, y: [0.517, 0.620], gap: 0.030, depth: [0.150, 0.120] },
+      tailLamp: { span: [0.497, 0.745], y: [0.499, 0.647], gap: 0.055, h: 0.095 },
       rearSplit: 0.455,
-      exh: { z: [[0.280, 0.520]], y: [0.142, 0.205] },
+      exh: { z: [], y: [0.142, 0.205] },   // the reference has no outlets in the valance
       gill: { f: [0.240, 0.271], v: [0.40, 0.60], blades: 3 },
       hoodVent: { u: [0.30, 0.56], bands: [[0.255, 0.335], [0.665, 0.745]], blades: 3 },
     },
@@ -787,9 +788,9 @@ const ARCHETYPES = {
     // seeded variation is allowed to use - they are not shared between cars.
     gate: {
       wb: [0.560, 0.567], gap: [2.7, 3.2], arch: [0.025, 0.055], ride: [0.130, 0.160],
-      dlo: [0.300, 0.350], ohf: [0.185, 0.200], ohr: [0.238, 0.252], track: [0.78, 0.85],
-      cabin: [0.410, 0.460], hood: [0.270, 0.300], deck: [0.33, 0.50], rr: [18, 30],
-      ws: [16, 25], d2a: [0.140, 0.190], hw: [0.66, 0.71],
+      dlo: [0.300, 0.350], ohf: [0.185, 0.200], ohr: [0.238, 0.252], track: [0.81, 0.86],
+      cabin: [0.410, 0.460], hood: [0.263, 0.272], deck: [0.33, 0.50], rr: [18, 30],
+      ws: [16, 25], d2a: [0.124, 0.146], hw: [0.66, 0.71],
     },
   },
   super_gt: {
@@ -814,7 +815,7 @@ const ARCHETYPES = {
     noseDepth: [0.62, 0.68], tailDepth: [0.30, 0.36], frontRakeBack: [0.15, 0.19], tailRakeIn: [0.05, 0.075],
     doorLen: [1.10, 1.18],
     wheelStyles: ['split'],
-    mirror: 'stalk', sideVent: 1.0, wingChance: 0.0, faceEdge: 'corner',
+    mirror: 'stalk', sideVent: 1.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.980,
     apertures: {
       face: 'shield',
       // measured on the sheet's front view
@@ -823,7 +824,7 @@ const ARCHETYPES = {
       corner: { z: [0.720, 0.950], y: [0.105, 0.300] },
       frontSplit: 0.437,
       tail: 'band',
-      recess: { span: 0.94, gap: 0.028, depth: [0.075, 0.062] },
+      recess: { span: 0.94, y: [0.517, 0.620], gap: 0.028, depth: [0.075, 0.062] },
       tailLamp: { span: [0.443, 0.875], y: [0.597, 0.662], gap: 0.012, h: 0.058 },
       rearSplit: 0.500,
       exh: { z: [[0.360, 0.520], [0.560, 0.720]], y: [0.300, 0.375] },
@@ -923,6 +924,8 @@ function generateDNA(opts = {}) {
   d.ap = A.apertures;
   d.gate = A.gate;
   d.faceEdge = A.faceEdge || 'station';
+  d.faceFrac = A.faceFrac;
+  d.tailFloor = A.tailFloor || 0;
 
   // --- panel stations ------------------------------------------------------
   d.xDoorF = d.xCowl - 0.015;
@@ -1295,7 +1298,9 @@ function makeBody(d) {
   };
   B.rearFascia = (u, v) => {
     const s = rSweep(u, v);
-    const yBot = B.coverBottom(s.x0);
+    // the reference's tail rolls under hard: its rearmost face stops at 300 mm,
+    // so the cover's floor is that line, not the underbody's
+    const yBot = Math.max(B.coverBottom(s.x0), (d.tailFloor || 0) * d.H);
     const yTop = lerp(B.tailTopY - 0.004, B.belt(s.x0) - 0.010, smootherstep(s.w));
     const y = lerp(yBot, yTop, v);
     const q = rSweep(u, v, y / d.H);
@@ -1571,9 +1576,13 @@ class Vehicle {
     this.dna = spec;
     this.showStructure = false;
     this.stageLimit = 8;
-    // stance is derived, not guessed: tyre face flush with the arch edge
-    spec.trackR = 2 * (this.B.zAt(spec.xAxleR, spec.archTop) + 0.002 - spec.tireWRear / 2);
-    spec.trackF = 2 * (this.B.zAt(spec.xAxleF, spec.archTop) + 0.002 - spec.tireW / 2);
+    // Stance is derived from the measurement, not from the fender: on the
+    // reference the tyre faces stand PROUD of the bodywork - 87.69 of a 90.00
+    // half width, i.e. +34 mm at the front axle and +20 mm at the rear - and it
+    // is those faces, not the wings, that set the front and rear view outline.
+    const FACE = (spec.faceFrac || 0.9743) * (spec.W / 2);
+    spec.trackR = 2 * (FACE - spec.tireWRear / 2);
+    spec.trackF = 2 * (FACE - spec.tireW / 2);
     spec.track = spec.trackR;
     this.mat = makeMaterials(spec);
     this.root = new THREE.Group();
@@ -2511,7 +2520,11 @@ function buildVehicle(opts = {}) {
   /* ---- the mouth: an oval on one car, a full-height shield on the other -- */
   const MZ = AP.mouth.z, MY = AP.mouth.y;
   const mouthHole = (() => {
-    const r = measuredHole(solveFront, 1, 0.02, MZ, MY[0], MY[1], (t) => pillShape(AP.mouth.flat)(0.5 + t * 0.5));
+    const shape = AP.face === 'oval'
+      // the reference's own outline: the two crease rims converge on a point
+      ? (t) => { const h = Math.pow(Math.max(0, 1 - t * t), 0.62); return { lo: 0.5 - 0.5 * h, hi: 0.5 + 0.5 * h }; }
+      : (t) => pillShape(AP.mouth.flat)(0.5 + t * 0.5);
+    const r = measuredHole(solveFront, 1, 0.02, MZ, MY[0], MY[1], shape);
     const l = mirrorHole(r);
     return {
       u0: Math.min(l.u0, r.u0), u1: Math.max(l.u1, r.u1),
@@ -2552,14 +2565,14 @@ function buildVehicle(opts = {}) {
   v.addPart(bf);
 
   /* ---- rear: one recessed oval carrying the lamps ----------------------- */
-  // How far the rear cover reaches sideways at its top edge. The measured
-  // openings are expressed against that reach, so the recess and the lamps
-  // can never run off the end of the panel.
-  const zMaxR = B.rearFascia(1, 1)[2] / (d.W / 2);
-  const RZ = AP.recess.span * zMaxR;
+  // The rear openings are given in the reference's own terms - |z| as a
+  // fraction of the body's half width - not as a fraction of how far the cover
+  // happens to reach, which is measured at its narrowest height and dragged
+  // everything 8-11% inboard.
+  const RZ = AP.recess.span;
   const recessDepth = (t) => lerp(AP.recess.depth[0], AP.recess.depth[1], smootherstep(clamp((t - 0.55) / 0.45, 0, 1)));
   const recessHole = (() => {
-    const r = hugHole(solveRear, B.tailEdge, 1, 0.02, RZ, AP.recess.gap, recessDepth);
+    const r = measuredHole(solveRear, 1, 0.02, RZ, AP.recess.y[0], AP.recess.y[1], (t) => pillShape(0.78)(0.5 + t * 0.5));
     const l = mirrorHole(r);
     return {
       u0: Math.min(l.u0, r.u0), u1: Math.max(l.u1, r.u1),
@@ -2580,7 +2593,7 @@ function buildVehicle(opts = {}) {
   };
   const exhAll = [];
   for (let k = 0; k < AP.exh.z.length; k++) { exhAll.push(exhHole(-1, k)); exhAll.push(exhHole(1, k)); }
-  const TLZ = [AP.tailLamp.span[0] * (AP.tail === 'band' ? 1 : RZ), AP.tailLamp.span[1] * (AP.tail === 'band' ? 1 : RZ)];
+  const TLZ = AP.tailLamp.span;
   const tailHoles = {};
   const tailLampHole = (sd) => {
     if (!tailHoles[1]) {
@@ -2588,14 +2601,16 @@ function buildVehicle(opts = {}) {
         // a level bar: the reference's lamp runs straight across, it does not
         // follow the dip of the tail's own top edge
         ? measuredHole(solveRear, 1, TLZ[0], TLZ[1], AP.tailLamp.y[0], AP.tailLamp.y[1], pillShape(0.55))
-        : hugHole(solveRear, B.tailEdge, 1, TLZ[0], TLZ[1], AP.recess.gap + AP.tailLamp.gap, () => AP.tailLamp.h);
+        : measuredHole(solveRear, 1, TLZ[0], TLZ[1], AP.tailLamp.y[0], AP.tailLamp.y[1], ellipse);
     }
     if (!tailHoles[-1]) tailHoles[-1] = mirrorHole(tailHoles[1]);
     return tailHoles[sd];
   };
   const splitR = levelLine(B.rearFascia, AP.rearSplit);
   const tailBand = mk('tail', 'Achterpaneel', { stiffness: 1.3, stage: 1 });
-  const upperHoles = AP.tail === 'band' ? [tailLampHole(-1), tailLampHole(1)] : [recessHole];
+  const upperHoles = AP.tail === 'band'
+    ? [tailLampHole(-1), tailLampHole(1)]
+    : [recessHole, tailLampHole(-1), tailLampHole(1)];
   for (const r of bandsAround(upperHoles, (uu) => splitR(uu) + FGAP, 1)) {
     shell(tailBand, surfRegion(B.rearFascia, r, 0, rRef), bandCount(r), 3, M.paint, rRef, 0.028);
   }
@@ -2897,21 +2912,26 @@ function buildVehicle(opts = {}) {
     }, off, fRef);
     // the mouth is a real cavity: the backing sits 55 mm behind the face
     patch(grille, inner(0, 1, 0.02, 0.98, -0.055), 34, 5, M.matte, fRef);
-    if (AP.mouth.blade) {
-      // the GT's mouth: three horizontal bands and one body-coloured blade
-      for (let i = 0; i < 3; i++) {
-        const t = 0.20 + i * 0.28;
-        shell(grille, inner(0.01, 0.99, t, t + 0.085, -0.036), 34, 1, M.darkChrome, fRef, 0.010, false);
+    if (AP.mouth.ribs) {
+      // The GT's mouth is a plain dished floor carrying exactly two vertical
+      // ribs, one either side of the centre - measured off the mesh's crease
+      // loops, which show no egg-crate and no second layer anywhere inside it.
+      const yMid = (MY[0] + MY[1]) / 2;
+      for (const sd of [-1, 1]) {
+        const a = solveFront(AP.mouth.ribs[0], yMid, sd).u, b = solveFront(AP.mouth.ribs[1], yMid, sd).u;
+        const s0 = clamp((Math.min(a, b) - hole.u0) / (hole.u1 - hole.u0), 0, 1);
+        const s1 = clamp((Math.max(a, b) - hole.u0) / (hole.u1 - hole.u0), 0, 1);
+        if (s1 - s0 > 0.004) shell(grille, inner(s0, s1, 0.16, 0.92, -0.030), 5, 5, M.matte, fRef, 0.010, false);
       }
+    } else {
+      // the shield: a full set of vertical vanes and a chrome upper lip
+      const n = Math.max(8, Math.round((hole.u1 - hole.u0) / AP.mouth.bars));
+      for (let i = 1; i < n; i++) {
+        const s = i / n;
+        shell(grille, inner(s - 0.0035, s + 0.0035, 0.05, 0.95, -0.044), 1, 4, M.darkChrome, fRef, 0.011, false);
+      }
+      shell(grille, inner(0.0, 1.0, 0.955, 1.0, -0.020), 34, 1, M.darkChrome, fRef, 0.014, false);
     }
-    const n = Math.max(8, Math.round((hole.u1 - hole.u0) / AP.mouth.bars));
-    for (let i = 1; i < n; i++) {
-      const s = i / n;
-      shell(grille, inner(s - 0.0035, s + 0.0035, 0.05, 0.95, -0.044),
-        1, 4, AP.mouth.blade ? M.matte : M.darkChrome, fRef, AP.mouth.blade ? 0.008 : 0.011, false);
-    }
-    if (AP.mouth.blade) shell(grille, inner(0.0, 1.0, 0.44, 0.56, -0.016), 34, 1, M.paint, fRef, 0.016, false);
-    else shell(grille, inner(0.0, 1.0, 0.955, 1.0, -0.020), 34, 1, M.darkChrome, fRef, 0.014, false);
     v.addPart(grille, bf);
   }
   if (AP.tail !== 'band') {
@@ -2923,13 +2943,11 @@ function buildVehicle(opts = {}) {
       return surfRegion(B.rearFascia, hole, -0.055 * smootherstep(clamp(edge / 0.16, 0, 1)), rRef)(a, b);
     };
     shell(tailPanel, base, 34, 6, M.matte, rRef, 0.014);
-    // the number plate recess sits in the middle of the panel
-    shell(tailPanel, (s, t) => base(lerp(0.40, 0.60, s), lerp(0.20, 0.80, t)), 8, 4, M.plate, rRef, 0.010, false);
     v.addPart(tailPanel, tailBand);
   }
   }
   // twin oval tailpipes in the lower valance
-  const exh = AP.diffuser ? null : mk('exhaust', 'Uitlaat', { detachable: true, stiffness: 0.9, stage: 7 });
+  const exh = (AP.diffuser || !AP.exh.z.length) ? null : mk('exhaust', 'Uitlaat', { detachable: true, stiffness: 0.9, stage: 7 });
   if (exh) {
     for (let k = 0; k < AP.exh.z.length; k++) {
       const hole = exhHole(1, k);
@@ -3506,7 +3524,9 @@ Vehicle.prototype.validateGeometry = function () {
     lateral = Math.max(lateral, outer - fenderZ);
   }
   it('Wielkastspeling radiaal', mm(radial), radial > 0.015);
-  it('Band t.o.v. schermrand (+ = steekt uit)', mm(lateral), lateral < 0.012 && lateral > -0.09);
+  // the reference stands its tyres proud of the fender, so this is a bound on
+  // how far, not a demand that they be flush
+  it('Band t.o.v. schermrand (+ = steekt uit)', mm(lateral), lateral < 0.060 && lateral > -0.09);
 
   // door clearance: glass above the belt, sampled per station
   let glassOk = true, worstGlass = 0;
