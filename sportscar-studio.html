@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>GT Studio — procedureel voertuigconcept</title>
+<!-- three.js is fetched from a CDN and the <script> for it sits at the end of
+     the document, so on a phone the parser reaches it only after ~200 KB of
+     markup. Preloading starts that download now, in parallel with the parse. -->
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
 <style>
   :root{
     --bg:#e8eaed; --panel:rgba(16,18,22,.91); --panel2:rgba(26,29,34,.88);
@@ -98,12 +103,24 @@
   #vgBoot .sp{width:22px;height:22px;margin:0 auto 12px;border:2px solid var(--line);
     border-top-color:var(--amber);border-radius:50%;animation:spin .9s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  /* A phone in landscape is only ~390 px tall, and the dock's height cap lives
+     in a width-based media query that does not apply there, so it would cover
+     the whole canvas. Cap it on height as well. */
+  @media (max-height:560px){
+    .dock{max-height:46vh;overflow-y:auto;-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--panel)}
+    /* the spec lines are the first thing to give way: the car needs the room */
+    .hud{max-width:52vw;padding:7px 9px;font-size:11px}
+    .hud .d{display:none}
+  }
   .gpu-notice b{display:block;font-size:16px;margin-bottom:5px}.gpu-notice span{color:var(--dim);font-size:12px}
   body.no-webgl .gpu-notice{display:block}
   @media (max-width:700px){
     .hud{top:calc(8px + env(safe-area-inset-top));left:8px;padding:9px 10px;border-radius:11px;max-width:84vw}
     .hud .t b{font-size:14px}.hud .d{font-size:10.5px}.hud .g{font-size:10.5px}
-    .dock{left:6px;right:6px;bottom:6px;border-radius:13px;max-height:42vh;overflow-y:auto}
+    .dock{left:6px;right:6px;bottom:6px;border-radius:13px;max-height:42vh;overflow-y:auto;
+      /* blurring the live canvas behind the dock costs a full-width readback
+         every frame, which a phone pays for in framerate */
+      -webkit-backdrop-filter:none;backdrop-filter:none;background:var(--panel)}
     button.c{padding:7px 9px;font-size:11.5px}
     .hint{display:none}
   }
@@ -114,10 +131,27 @@
 
 <div id="vgBoot"><div class="in">
   <div class="sp" id="vgBootSpin"></div>
-  <b id="vgBootTitle">De GT wordt opgebouwd</b>
-  <p id="vgBootMsg">Even geduld, de 3D-scene wordt geladen.</p>
+  <b id="vgBootTitle">3D-bibliotheek wordt geladen</b>
+  <p id="vgBootMsg">Dit deel komt van een CDN, dus het hangt aan je verbinding.</p>
   <code id="vgBootErr" style="display:none"></code>
 </div></div>
+<script>
+/* The three.js <script> below blocks the parser, so nothing after it runs until
+   the download finishes. This timer is started before it: on a slow link it
+   tells the user what is actually taking the time, instead of leaving a spinner
+   that reads as a freeze. */
+(function () {
+  var t0 = Date.now();
+  window.__vgLibWait = setInterval(function () {
+    if (typeof THREE !== 'undefined') { clearInterval(window.__vgLibWait); return; }
+    var s = Math.round((Date.now() - t0) / 1000);
+    if (s < 3) return;
+    var m = document.getElementById('vgBootMsg');
+    if (m) m.textContent = 'De 3D-bibliotheek komt van een CDN en is al ' + s +
+      ' seconden onderweg. Op een trage verbinding is dat normaal; hij wordt daarna gecachet.';
+  }, 500);
+})();
+</script>
 <div class="gpu-notice" id="gpuNotice" role="alert"><b>3D-versnelling is niet beschikbaar</b><span>Open GT Studio in een browser met WebGL ingeschakeld om het voertuig te bekijken.</span></div>
 
 <div class="hud">
@@ -219,6 +253,7 @@ window.addEventListener('error', function (e) {
   }
 });
 (function () {
+  if (window.__vgLibWait) clearInterval(window.__vgLibWait);
   if (typeof THREE === 'undefined') {
     window.__vgFail('Three.js kon niet geladen worden',
       'De 3D-bibliotheek komt van een CDN en die werd geblokkeerd. Open het bestand in een gewone browser.');
@@ -234,7 +269,16 @@ window.addEventListener('error', function (e) {
   }
   // Low-power path: lighter shaders, smaller buffers, cheaper shadows.
   var coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-  window.VG_LOW = coarse || Math.min(window.innerWidth, window.innerHeight) < 720;
+  // Touch input is the reliable phone signal. The size test is only a backstop
+  // for a coarse-pointer device that does not report one, so it has to be a
+  // phone-sized number: at 720 it also caught ordinary laptop windows, which
+  // then lost their shadows and full-rate sampling for no reason.
+  window.VG_LOW = coarse || Math.min(window.innerWidth, window.innerHeight) < 500;
+  // ?q=1 forces full sampling on a phone, ?q=0.5 forces a faster build on a
+  // desktop - useful for comparing, and for a device this guesses wrong about.
+  var qs = new URLSearchParams(window.location.search);
+  var q = parseFloat(qs.get('q'));
+  window.VG_QUALITY = (q > 0 && q <= 1) ? q : (window.VG_LOW ? 0.62 : 1);
 })();
 </script>
 <script id="core">
@@ -335,8 +379,17 @@ const smootherstep = (t) => { t = clamp(t, 0, 1); return t * t * t * (t * (t * 6
    hinges, seams, damage and structure are untouched - it is the same car, just
    built from fewer and bigger facets. */
 function lpq(n) {
-  if (!(typeof window !== 'undefined' && window.VG_LOWPOLY)) return n;
-  return Math.max(2, Math.round(n * 0.30));
+  if (typeof window === 'undefined') return n;
+  // Low poly is the deliberate style switch. VG_QUALITY is the quiet one: a
+  // phone builds the same car from fewer samples, which is most of the wait
+  // before the first frame.
+  if (window.VG_LOWPOLY) return Math.max(2, Math.round(n * 0.30));
+  const q = window.VG_QUALITY;
+  if (!q || q >= 1) return n;
+  // keep the count even, so a surface that is symmetric about u = 0.5 still has
+  // a sample exactly on its centreline and the two halves stay identical
+  const k = Math.max(2, Math.round(n * q));
+  return k % 2 ? k + 1 : k;
 }
 function linspace(n) { n = lpq(n); const a = []; for (let i = 0; i <= n; i++) a.push(i / n); return a; }
 function _geo(pos, nrm, idx) {
@@ -1035,6 +1088,11 @@ function generateDNA(opts = {}) {
    ========================================================================= */
 
 // Monotone cubic (PCHIP-style) through sorted [x, v] stations: no overshoot.
+// These curves are the hot path of the whole build - the silhouette and plan
+// tables run to 49 stations and every surface sample asks them for a value, so
+// the segment is found through a uniform bucket index rather than by scanning
+// from the front. The Hermite arithmetic below is untouched: same segment, same
+// formula, same numbers, just reached in constant time.
 function curve1D(stations) {
   const P = stations.slice().sort((a, b) => a[0] - b[0]);
   const n = P.length;
@@ -1050,15 +1108,31 @@ function curve1D(stations) {
       m[i] = (w1 + w2) / (w1 / sec[i - 1] + w2 / sec[i]);
     }
   }
+  // flat arrays: one memory hop per station instead of three
+  const X = new Float64Array(n), V = new Float64Array(n), M = new Float64Array(n);
+  for (let i = 0; i < n; i++) { X[i] = P[i][0]; V[i] = P[i][1]; M[i] = m[i]; }
+  const x0 = X[0], xN = X[n - 1], span = xN - x0;
+  // one bucket per quarter of the mean station spacing, so the residual walk
+  // below is at most a step or two even where the stations bunch up
+  const K = Math.max(16, Math.min(4096, (n - 1) * 4));
+  const inv = K / Math.max(1e-9, span);
+  const first = new Int32Array(K);
+  for (let k = 0, i = 0; k < K; k++) {
+    const xk = x0 + k / inv;
+    while (i < n - 2 && X[i + 1] <= xk) i++;
+    first[k] = i;
+  }
   return (x) => {
-    if (x <= P[0][0]) return P[0][1];
-    if (x >= P[n - 1][0]) return P[n - 1][1];
-    let i = 0;
-    while (i < n - 2 && x > P[i + 1][0]) i++;
-    const h = P[i + 1][0] - P[i][0], t = (x - P[i][0]) / h;
+    if (x <= x0) return V[0];
+    if (x >= xN) return V[n - 1];
+    let k = ((x - x0) * inv) | 0;
+    if (k < 0) k = 0; else if (k >= K) k = K - 1;
+    let i = first[k];
+    while (i < n - 2 && x > X[i + 1]) i++;
+    const h = X[i + 1] - X[i], t = (x - X[i]) / h;
     const t2 = t * t, t3 = t2 * t;
-    return (2 * t3 - 3 * t2 + 1) * P[i][1] + (t3 - 2 * t2 + t) * h * m[i] +
-      (-2 * t3 + 3 * t2) * P[i + 1][1] + (t3 - t2) * h * m[i + 1];
+    return (2 * t3 - 3 * t2 + 1) * V[i] + (t3 - 2 * t2 + t) * h * M[i] +
+      (-2 * t3 + 3 * t2) * V[i + 1] + (t3 - t2) * h * M[i + 1];
   };
 }
 
@@ -3641,9 +3715,12 @@ Vehicle.prototype.validateGeometry = function () {
     return;
   }
   window.__vgStarted = true;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, LOW ? 1.5 : 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = LOW ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, LOW ? 1 : 2));
+  // A real shadow map means every caster is drawn a second time and every
+  // material compiles a depth program as well. On a phone that is most of the
+  // wait before the first frame, so there it is a painted contact shadow.
+  renderer.shadowMap.enabled = !LOW;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   canvas.addEventListener('webglcontextlost', (e) => {
     e.preventDefault();
     window.__vgFail('Grafisch geheugen raakte op',
@@ -3711,8 +3788,8 @@ Vehicle.prototype.validateGeometry = function () {
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff7ea, 2.25);
   sun.position.set(4.6, 8.2, 5.4);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(LOW ? 1024 : 2048, LOW ? 1024 : 2048);
+  sun.castShadow = !LOW;
+  sun.shadow.mapSize.set(LOW ? 512 : 2048, LOW ? 512 : 2048);
   sun.shadow.camera.left = -5; sun.shadow.camera.right = 5;
   sun.shadow.camera.top = 5; sun.shadow.camera.bottom = -5;
   sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 26;
@@ -3722,6 +3799,25 @@ Vehicle.prototype.validateGeometry = function () {
   const fill = new THREE.DirectionalLight(0xa8c0d9, 0.62);
   fill.position.set(-5.5, 4.2, -4.5);
   scene.add(fill);
+
+  // The painted stand-in: one soft ellipse on the ground, sized to the car.
+  let contact = null;
+  if (LOW) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    const rg = g.createRadialGradient(64, 64, 4, 64, 64, 62);
+    rg.addColorStop(0, 'rgba(24,28,34,0.55)');
+    rg.addColorStop(0.55, 'rgba(24,28,34,0.30)');
+    rg.addColorStop(1, 'rgba(24,28,34,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, 128, 128);
+    contact = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+    contact.rotation.x = -Math.PI / 2;
+    contact.position.y = 0.012;
+    contact.renderOrder = -2;
+    scene.add(contact);
+  }
 
   /* ---- ground ---------------------------------------------------------- */
   (function ground() {
@@ -3749,6 +3845,92 @@ Vehicle.prototype.validateGeometry = function () {
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
   const cam = { az: -0.68, el: 0.20, dist: 8.15, target: new THREE.Vector3(0, 0.62, 0) };
   let autoSpin = false, idleSince = performance.now();
+  // A phone is portrait and the dock sits over the bottom of the canvas, so the
+  // distance that frames the car on a wide screen cuts it off at both ends.
+  // Horizontal field of view scales with the aspect ratio, so the distance has
+  // to scale the other way, and the camera aims below the car's middle to put
+  // it in the strip that is actually uncovered.
+  let camFit = null;          // [distance scale, target height] of the last framing
+  // Portrait, or short enough that the panels take a real bite out of the
+  // canvas - a phone either way up. A desktop window keeps the tuned framing
+  // the model was checked against.
+  function tightView(aspect) {
+    return aspect < 1.2 || window.innerHeight < 560;
+  }
+  // how much of the canvas height the dock covers at the bottom, and the HUD
+  // at the top, as fractions of the viewport
+  function covered() {
+    const h = Math.max(1, window.innerHeight);
+    let top = 0, bot = 0;
+    const d = document.querySelector('.dock');
+    if (d) { const r = d.getBoundingClientRect(); if (r.height) bot = clamp((h - r.top) / h, 0, 0.5); }
+    const u = document.querySelector('.hud');
+    if (u) { const r = u.getBoundingClientRect(); if (r.height) top = clamp(r.bottom / h, 0, 0.4); }
+    return [top, bot];
+  }
+  // Shift the aim so the car lands in the middle of the strip the panels leave
+  // free, rather than in the middle of the canvas. Aiming lower puts the car
+  // higher on screen, so the shift is the difference between the two margins.
+  // It has to run along the camera's own up axis, not world Y: looking straight
+  // down, moving the aim up or down the Y axis does not move the image at all.
+  function aimShift(out) {
+    out.set(0, 0, 0);
+    if (!tightView(camera.aspect || 1.6)) return out;
+    const [top, bot] = covered();
+    const visible = 2 * cam.dist * Math.tan(camera.fov * Math.PI / 360);
+    const d = (bot - top) * 0.5 * visible;
+    const se = Math.sin(cam.el), ce = Math.cos(cam.el);
+    return out.set(-Math.cos(cam.az) * se, ce, -Math.sin(cam.az) * se).multiplyScalar(-d);
+  }
+  const _shift = new THREE.Vector3();
+  // pinching or scrolling overrides the framed distance; remember it as a scale
+  // so a later rotate re-frames from where the user left off
+  function keepZoom() {
+    if (!car || !camFit) return;
+    const before = cam.dist;
+    frameCar(camFit[0], camFit[1]);            // what the current scale would give
+    camFit[0] *= before / Math.max(1e-6, cam.dist);
+    cam.dist = before;
+    // the aim offset depends on the distance, so redo it at the one in force
+    cam.target.set(0, car.spec.H * camFit[1], 0).add(aimShift(_shift));
+  }
+  // On a landscape screen the framing is the tuned one the whole model was
+  // checked against. On a portrait one a single distance cannot serve all five
+  // views - the side view is nearly twice as wide as the front - so there the
+  // distance is solved from the car's actual projected size at the angle being
+  // looked at, fitted into the strip the panels leave free.
+  function frameCar(scale, yFrac) {
+    camFit = [scale, yFrac];
+    const a = camera.aspect || 1.6;
+    if (!tightView(a)) {
+      cam.dist = car.spec.L * scale;
+      cam.target.set(0, car.spec.H * yFrac, 0);
+      return;
+    }
+    const L = car.spec.L, W = car.spec.W, H = car.spec.H;
+    const sa = Math.abs(Math.sin(cam.az)), ca = Math.abs(Math.cos(cam.az));
+    const se = Math.abs(Math.sin(cam.el)), ce = Math.abs(Math.cos(cam.el));
+    // The extents come from an ellipsoid rather than a box: a car's plan shape
+    // is much closer to an ellipse, and the box corners would have the 3/4 view
+    // framed as if the car were half a metre longer than it looks. For the
+    // straight-on views the two agree exactly.
+    const hyp = (a1, a2, a3) => 0.5 * Math.sqrt(a1 * a1 + a2 * a2 + a3 * a3);
+    // the camera's right vector is horizontal, so elevation does not widen it
+    const halfW = hyp(L * sa, W * ca, 0);
+    const halfH = hyp(L * ca * se, W * sa * se, H * ce);
+    // the near flank sits half a car-depth closer than the centre, so it
+    // projects larger; the fit has to be solved at that distance, not at the
+    // distance to the middle
+    const halfD = hyp(L * ca * ce, W * sa * ce, H * se);
+    const [top, bot] = covered();
+    const strip = Math.max(0.25, 1 - top - bot);
+    const tv = Math.tan(camera.fov * Math.PI / 360);
+    const fill = scale / 1.74;                 // keep the presets' relative framing
+    const need = Math.max(halfW / (tv * a * 0.88), halfH / (tv * strip * 0.86)) + halfD;
+    cam.dist = clamp(need * fill, 2.6, 26);
+    cam.target.set(0, H * yFrac, 0).add(aimShift(_shift));
+  }
+
   function placeCamera() {
     const ce = Math.cos(cam.el);
     camera.position.set(
@@ -3762,6 +3944,9 @@ Vehicle.prototype.validateGeometry = function () {
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    // rotating the phone changes the horizontal field of view, so the car has
+    // to be re-framed or it ends up cropped or tiny
+    if (car && camFit) frameCar(camFit[0], camFit[1]);
   }
   window.addEventListener('resize', resize);
 
@@ -3801,20 +3986,23 @@ Vehicle.prototype.validateGeometry = function () {
     }
     type = t; seed = sd >>> 0;
     car = buildVehicle({ type, seed });
+    car._val = null;
     buildExplodeGuides(car);
     car.qc = qualityGate(car);
     scene.add(car.root);
     applyStage();
-    const L = car.spec.L;
-    cam.dist = L * 1.74;
-    cam.target.y = car.spec.H * 0.46;
+    frameCar(1.74, 0.46);
     sun.target.position.set(0, 0.6, 0);
     if (LOW) {
+      // On a phone the shadow pass draws every caster a second time. Only the
+      // panels that actually shape the car's shadow keep casting.
+      const CASTS = /^(hood|trunk|roof|nose|tail|fender\.|quarter\.|door\.|rocker\.|bumper\.|wheel\.[a-z]+$|wheel\..*\.tire)/;
       car.each((p) => {
-        if (!/^(details|interior|steering|sensors|grille|exhaust|splitter|hood\.vents|.*\.brake)$/.test(p.id)) return;
+        if (CASTS.test(p.id)) return;
         for (const m of p.meshes) m.castShadow = false;
       });
     }
+    if (contact) contact.scale.set(car.spec.L * 1.12, car.spec.W * 1.35, 1);
     car.wheelSpin = spinning ? 9 : 0;
     car.steer = -(+document.getElementById('steer').value / 100) * 0.55;
     if (car.steeringWheel) car.steeringWheel.rotation.x = -car.steer * 4.36;
@@ -3823,6 +4011,49 @@ Vehicle.prototype.validateGeometry = function () {
     $('explodeBtn').classList.remove('sel');
     buildPartList();
     updateHUD();
+  }
+
+  // Building the car is one long synchronous stretch of work - about a third of
+  // a second on a desktop, several times that on a phone. Running it straight
+  // from the click leaves the browser no chance to paint, so the boot card sits
+  // there looking hung. This hands the browser two frames first, says what is
+  // happening, and only then builds.
+  let busy = false;
+  let valAfter = -1;          // frames to wait before validating the geometry
+  const T0 = performance.now();
+  // every timing below is milliseconds since navigation start, so the numbers
+  // line up with what the browser's own performance panel shows
+  window.__vgTiming = { appStart: Math.round(T0) };
+  function bootCard(show, msg, title) {
+    const b = document.getElementById('vgBoot');
+    if (!b) return;
+    if (msg) { const m = document.getElementById('vgBootMsg'); if (m) m.textContent = msg; }
+    const t = document.getElementById('vgBootTitle');
+    if (t) t.textContent = title || 'De auto wordt opgebouwd';
+    b.classList.toggle('hide', !show);
+  }
+  function spawnDeferred(t, sd, msg) {
+    busy = true;
+    window.__vgTiming.spawnCall = Math.round(performance.now());
+    bootCard(true, msg || 'Carrosserie, wielen, glas en interieur worden opgebouwd…');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const tb = performance.now();
+      window.__vgTiming.buildStart = Math.round(tb);
+      try {
+        spawn(t, sd);
+        window.__vgTiming.build = Math.round(performance.now() - tb);
+        window.__vgTiming.buildEnd = Math.round(performance.now());
+      } catch (err) {
+        window.__vgFail('Opbouwen van het voertuig mislukte', String(err && err.stack || err));
+        return;
+      }
+      busy = false;
+      // The geometry validation is heavy and nobody is waiting for it, so it
+      // runs a couple of frames after the car is on screen. It cannot go on
+      // requestIdleCallback: the render loop never lets the main thread go
+      // idle, so that callback would never be reached at all.
+      valAfter = 2;
+    }));
   }
 
   /* ---- interaction ----------------------------------------------------- */
@@ -3845,7 +4076,7 @@ Vehicle.prototype.validateGeometry = function () {
     dragged += Math.abs(dx) + Math.abs(dy);
     if (pointers.size === 2) {
       const d = pinchDist();
-      if (pinch0) cam.dist = clamp(cam.dist * (pinch0 / d), 2.6, 26);
+      if (pinch0) { cam.dist = clamp(cam.dist * (pinch0 / d), 2.6, 26); keepZoom(); }
       pinch0 = d;
     } else {
       cam.az -= dx * 0.0075;
@@ -3869,6 +4100,7 @@ Vehicle.prototype.validateGeometry = function () {
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     cam.dist = clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.09), 2.6, 26);
+    keepZoom();
     autoSpin = false; idleSince = performance.now();
   }, { passive: false });
 
@@ -3907,9 +4139,14 @@ Vehicle.prototype.validateGeometry = function () {
     $('vdims').textContent =
       s.L.toFixed(2) + ' x ' + s.W.toFixed(2) + ' x ' + s.H.toFixed(2) + ' m  ·  wielbasis ' + s.wheelbase.toFixed(2) +
       ' m  ·  ' + car.parts.size + ' onderdelen';
-    const val = car.validateGeometry();
-    $('vqc').textContent = 'QC ' + car.qc.pass + '/' + car.qc.total + (val.ok ? ' · geometrie ok' : ' · geometrie !');
-    $('vqc').classList.toggle('bad', car.qc.pass < car.qc.total || !val.ok);
+    // The geometry validation walks every vertex of every part, which is
+    // several hundred milliseconds on a phone. It is not needed to show the
+    // car, so it runs once the car is on screen and is cached until the car
+    // changes.
+    const val = car._val;
+    $('vqc').textContent = 'QC ' + car.qc.pass + '/' + car.qc.total +
+      (val ? (val.ok ? ' · geometrie ok' : ' · geometrie !') : ' · geometrie …');
+    $('vqc').classList.toggle('bad', car.qc.pass < car.qc.total || (val && !val.ok));
     let tot = 0, n = 0;
     car.each((p) => { tot += p.damage; n++; });
     $('vdmg').textContent = Math.round((tot / (n * 4)) * 100) + '%';
@@ -3961,8 +4198,7 @@ Vehicle.prototype.validateGeometry = function () {
     idleSince = performance.now();
     cam.az = az;
     cam.el = el;
-    cam.dist = car.spec.L * distanceScale;
-    cam.target.set(0, car.spec.H * (id === 'viewTop' ? 0.36 : 0.46), 0);
+    frameCar(distanceScale, id === 'viewTop' ? 0.36 : 0.46);
     CAMERA_VIEWS.forEach((x) => $(x).classList.toggle('sel', x === id));
   }
   chip('viewHero', () => setCameraView('viewHero', -0.68, 0.20, 1.74));
@@ -4025,7 +4261,9 @@ Vehicle.prototype.validateGeometry = function () {
     b.addEventListener('click', () => { stage = +b.dataset.stage; applyStage(); });
   });
   document.querySelectorAll('[data-car]').forEach((b) => {
-    b.addEventListener('click', () => { if (b.dataset.car !== type) spawn(b.dataset.car, seed); });
+    b.addEventListener('click', () => {
+      if (b.dataset.car !== type && !busy) spawnDeferred(b.dataset.car, seed, b.textContent + ' wordt opgebouwd…');
+    });
   });
   chip('clayBtn', () => { clay = !clay; if (!clay && stage < 8) stage = 8; applyStage(); });
   chip('zebraBtn', () => { zebra = !zebra; applyStage(); });
@@ -4033,8 +4271,7 @@ Vehicle.prototype.validateGeometry = function () {
   chip('lowpolyBtn', () => {
     window.VG_LOWPOLY = !window.VG_LOWPOLY;
     $('lowpolyBtn').classList.toggle('sel', !!window.VG_LOWPOLY);
-    spawn(type, seed);
-    refreshPartList();
+    spawnDeferred(type, seed, 'Wordt opnieuw opgebouwd…');
   });
   chip('qcBtn', () => {
     const box = $('qclist');
@@ -4048,7 +4285,7 @@ Vehicle.prototype.validateGeometry = function () {
       box.appendChild(row);
     }
     head('Geometrie-validatie');
-    for (const c of car.validateGeometry().items) {
+    for (const c of (car._val || (car._val = car.validateGeometry())).items) {
       const row = document.createElement('div');
       row.className = 'qc ' + (c.ok ? 'ok' : 'nok');
       row.innerHTML = '<i></i><span>' + c.label + '</span><b>' + c.value + '</b>';
@@ -4057,7 +4294,7 @@ Vehicle.prototype.validateGeometry = function () {
     document.body.classList.toggle('qcopen');
   });
 
-  chip('reseed', () => spawn(type, (Math.random() * 4294967295) >>> 0));
+  chip('reseed', () => spawnDeferred(type, (Math.random() * 4294967295) >>> 0, 'Nieuwe variant wordt opgebouwd…'));
   chip('doors', () => {
     const list = [...car.parts.values()].filter((p) => p.id.indexOf('door.') === 0);
     const open = !list[0].isOpen;
@@ -4095,8 +4332,7 @@ Vehicle.prototype.validateGeometry = function () {
     $('explodeBtn').classList.toggle('sel', explodeTarget > 0);
     autoSpin = false;
     idleSince = performance.now();
-    cam.dist = car.spec.L * (explodeTarget > 0 ? 2.48 : 1.74);
-    cam.target.y = car.spec.H * (explodeTarget > 0 ? 0.62 : 0.46);
+    frameCar(explodeTarget > 0 ? 2.48 : 1.74, explodeTarget > 0 ? 0.62 : 0.46);
     CAMERA_VIEWS.forEach((x) => $(x).classList.remove('sel'));
   });
   chip('repair', () => {
@@ -4164,16 +4400,21 @@ Vehicle.prototype.validateGeometry = function () {
     requestAnimationFrame(frame);
   };
 
-  let firstFrame = true;
   const drawFrame = frame;
   frame = function (now) {
     try {
       drawFrame(now);
-      if (firstFrame) {
-        firstFrame = false;
+      if (!busy) {
         const b = document.getElementById('vgBoot');
-        if (b) b.classList.add('hide');
+        if (b && !b.classList.contains('hide')) {
+          b.classList.add('hide');
+          if (!window.__vgTiming.firstFrame) window.__vgTiming.firstFrame = Math.round(performance.now());
+        }
         window.__vgReady = true;
+        if (valAfter >= 0 && valAfter-- === 0 && car && !car._val) {
+          car._val = car.validateGeometry();
+          updateHUD();
+        }
       }
     } catch (err) {
       window.__vgFail('Fout tijdens het tekenen', String(err && err.stack || err));
@@ -4182,10 +4423,13 @@ Vehicle.prototype.validateGeometry = function () {
 
   try {
     resize();
-    spawn('gt_coupe', seed);
-    refreshPartList();
     requestAnimationFrame(frame);
+    spawnDeferred('gt_coupe', seed);
+    // hooks used by the render and profiling harnesses
     window.__vgCar = () => car;
+    window.__vgRespawn = () => spawnDeferred(type, seed);
+    window.__vgRenderer = renderer;
+    window.__vgBuildOnly = (i) => buildVehicle({ type, seed: (seed + i) >>> 0 });
   } catch (err) {
     window.__vgFail('Opbouwen van het voertuig mislukte', String(err && err.stack || err));
   }

@@ -424,8 +424,12 @@ plan half width, cross section, beltline, greenhouse, daylight opening and the
 lamp and grille apertures — are embedded in the file as tables. Everything the
 generator draws comes from those numbers, which puts the car at 4757 × 1800 ×
 1233 mm on a 2680 mm wheelbase: the class of a Jaguar XK8/XKR, whose published
-wheel and tyre sizes it uses. Rendered from the same cameras as the reference,
-the silhouettes overlap 0.85–0.90 (intersection over union).
+wheel and tyre sizes it uses. Rendered from the same cameras as the reference
+and compared above the ground line, the silhouettes overlap 0.93–0.97
+(intersection over union). That figure is worth reading with care: it is
+measured on a threshold mask, so it moves with the paint and shadow settings
+of the render rather than with the shape alone, and it is quoted here for the
+matte material path.
 
 A second car sits alongside it, traced the same way but from an orthographic
 styling sheet instead of a mesh: a modern super-GT of roughly DB12/Vanquish
@@ -435,5 +439,13 @@ and the three absolute dimensions come from the class it depicts. The model
 buttons in the dock switch between the two, and each car carries its own
 quality-gate ranges, since a check centred on one car's proportions says
 nothing about the other's.
+
+On a touch device the studio takes a lighter path: the surfaces are built from
+about 62% of the samples (which costs under 0.3% of the silhouette), the shadow
+map gives way to a painted contact shadow, and the camera re-frames itself for a
+portrait screen so the car sits in the strip the panels leave free. The boot card
+names the stage it is in, because most of the wait on a phone is the three.js
+download rather than the build. `?q=1` forces full sampling anywhere, `?q=0.5` a
+faster build.
 
 It needs nothing from `npm`; three.js comes from a CDN.
