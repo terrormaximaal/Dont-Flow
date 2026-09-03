@@ -803,12 +803,18 @@ const ARCHETYPES = {
       face: 'shield',
       // measured on the sheet's front view
       lamp: { z: [0.589, 0.903], gap: 0.012, h: [0.150, 0.120] },
-      mouth: { z: 0.690, y: [0.175, 0.422], flat: 0.55, bars: 0.026, blade: false },
+      // The top runs to the bumper's own parting line at 0.437. Ending 19 mm
+      // short of it left a sliver of bumper along the whole top of the grille
+      // that pinched to nothing at both ends - that pinch was the notch there.
+      mouth: { z: 0.690, y: [0.175, 0.437], flat: 0.55, bars: 0.026, blade: false },
       // The traced span ran to 0.950 of the half width, but over these heights
       // the bumper itself only reaches 0.828..0.926, so the slot ran off the
       // edge of the panel and its outboard end came back notched. Same width,
       // moved inboard until it ends inside the panel at every height.
-      corner: { z: [0.570, 0.800], y: [0.115, 0.290] },
+      // Outboard of the mouth, which reaches 0.690. At 0.570 the two apertures
+      // overlapped by 153 mm in height and 120 mm across, and the bumper had to
+      // weave between them - that weave was the ragged edge round both.
+      corner: { z: [0.730, 0.808], y: [0.115, 0.290] },
       frontSplit: 0.437,
       tail: 'band',
       recess: { span: 0.94, y: [0.517, 0.620], gap: 0.028, depth: [0.075, 0.062] },
@@ -1663,6 +1669,11 @@ function makeMaterials(s) {
   M.chrome = std({ color: 0xd9dde1, metalness: 1.0, roughness: 0.14, side: THREE.DoubleSide });
   M.brushed = std({ color: 0x9da2a7, metalness: 0.95, roughness: 0.42, side: THREE.DoubleSide });
   M.darkChrome = std({ color: 0x2c3036, metalness: 0.95, roughness: 0.30, side: THREE.DoubleSide });
+  // Grille elements. Bright metal catches the sky and comes out lighter than
+  // the cavity behind it, which reads as a pale panel rather than a grille;
+  // these are dark grey with just enough sheen to pick up an edge.
+  M.grilleBar = std({ color: 0x2f343a, metalness: 0.30, roughness: 0.58, side: THREE.DoubleSide });
+  M.grilleFrame = std({ color: 0x24272b, metalness: 0.40, roughness: 0.45, side: THREE.DoubleSide });
   M.tire = std({ color: 0x131416, metalness: 0.0, roughness: 0.93, bumpMap: treadTexture(), bumpScale: 0.004, side: THREE.DoubleSide });
   M.rim = std({ color: s.rimColor, metalness: 0.9, roughness: 0.24, side: THREE.DoubleSide });
   M.brake = std({ color: 0x55595e, metalness: 0.85, roughness: 0.48, side: THREE.DoubleSide });
@@ -3228,7 +3239,7 @@ function buildVehicle(opts = {}) {
       v1: (uu) => lerp(hole.v0(uu), hole.v1(uu), b1),
     }, off, fRef);
     // the mouth is a real cavity: the backing sits 55 mm behind the face
-    patch(grille, inner(0, 1, 0.02, 0.98, -0.055), 34, 5, M.matte, fRef);
+    patch(grille, inner(0, 1, 0.02, 0.98, -0.090), 34, 5, M.interiorDark, fRef);
     if (AP.mouth.ribs) {
       // The GT's mouth is a plain dished floor carrying exactly two vertical
       // ribs, one either side of the centre - measured off the mesh's crease
@@ -3245,9 +3256,12 @@ function buildVehicle(opts = {}) {
       const n = Math.max(8, Math.round((hole.u1 - hole.u0) / AP.mouth.bars));
       for (let i = 1; i < n; i++) {
         const s = i / n;
-        shell(grille, inner(s - 0.0035, s + 0.0035, 0.05, 0.95, -0.044), 1, 4, M.darkChrome, fRef, 0.011, false);
+        shell(grille, inner(s - 0.0035, s + 0.0035, 0.05, 0.95, -0.044), 1, 4, M.grilleBar, fRef, 0.011, false);
       }
-      shell(grille, inner(0.0, 1.0, 0.955, 1.0, -0.020), 34, 1, M.darkChrome, fRef, 0.014, false);
+      // a dark surround, top and bottom, so the vanes sit in a frame rather
+      // than running straight into the paint
+      shell(grille, inner(0.0, 1.0, 0.955, 1.0, -0.020), 34, 1, M.grilleFrame, fRef, 0.014, false);
+      shell(grille, inner(0.0, 1.0, 0.0, 0.045, -0.020), 34, 1, M.grilleFrame, fRef, 0.014, false);
     }
     v.addPart(grille, bf);
   }
