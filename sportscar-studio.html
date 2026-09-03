@@ -1391,17 +1391,31 @@ function makeBody(d) {
        leaves the panel flat across and the rail's outer face flush with it,
        without touching the bar's thickness. Only ahead of the roof, where the
        roofline is really the screen header, is the shift eased back to zero. */
-    const offs = new Array(N + 1);
+    /* Behind the front of the roof the shift is exact, so the panel is dead
+       flat. Ahead of it there is no roof to sit on - the roofline there is the
+       centre of the windscreen, half a head above the pillar - so the shift is
+       simply carried forward from the value it has at the roof's front edge
+       and faded out over the whole screen. Fading it over a short stretch is
+       what put a 25 degree kink in the top of the pillar: 67 mm of drop inside
+       110 mm. Over 0.90 m the same drop bends the bar by about six degrees,
+       spread across its whole length instead of folded into one corner. The
+       min() is softened for the same reason - a hard corner at the station
+       where the bar crosses the roofline is a crease like any other. */
+    const FADE = 0.90, SOFT = 0.020;
+    const softMin0 = (w) => 0.5 * (w - Math.sqrt(w * w + SOFT * SOFT));
+    const raw = new Array(N + 1);
     for (let i = 0; i <= N; i++) {
       const p = pts[i], a = dirs[i];
-      let o = 0;
-      // fully applied by the time the roof panel starts, at xRoofF + 0.03
-      const xRamp = d.xRoofF + 0.15;
-      if (p.x <= xRamp && Math.abs(a.y) > 0.2) {
-        const want = (B.roofYAt(p.x) - p.y) / a.y - thick;
-        o = Math.min(0, want) * smootherstep(clamp((xRamp - p.x) / 0.11, 0, 1));
-      }
-      offs[i] = o;
+      raw[i] = Math.abs(a.y) > 0.2 ? softMin0((B.roofYAt(p.x) - p.y) / a.y - thick) : 0;
+    }
+    // the value at the roof's front edge, carried forward and faded
+    let iF = 0;
+    for (let i = 0; i <= N; i++) if (Math.abs(pts[i].x - d.xRoofF) < Math.abs(pts[iF].x - d.xRoofF)) iF = i;
+    const offs = new Array(N + 1);
+    for (let i = 0; i <= N; i++) {
+      const x = pts[i].x;
+      offs[i] = x <= d.xRoofF ? raw[i]
+        : raw[iF] * (1 - smootherstep(clamp((x - d.xRoofF) / FADE, 0, 1)));
     }
     const sample = (t) => {
       const f = clamp(t, 0, 1) * N;
