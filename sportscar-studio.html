@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '3 sep 2026 \u00b7 schaduw ook op de telefoon';
+const VG_BUILD = '3 sep 2026 \u00b7 lagere grille, holle uitlaten, dwarsbalk weg';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -813,10 +813,12 @@ const ARCHETYPES = {
       face: 'shield',
       // measured on the sheet's front view
       lamp: { z: [0.589, 0.903], gap: 0.012, h: [0.150, 0.120] },
-      // The top runs to the bumper's own parting line at 0.437. Ending 19 mm
-      // short of it left a sliver of bumper along the whole top of the grille
-      // that pinched to nothing at both ends - that pinch was the notch there.
-      mouth: { z: 0.690, y: [0.175, 0.437], flat: 0.55, bars: 0.026, blade: false },
+      // Moved down 0.035 of the height - 46 mm - as one piece, top and bottom
+      // together, so the shield keeps its proportion and sits lower in the
+      // face. The top no longer runs into the bumper's parting line at 0.437;
+      // it now holds a full band of bumper below that shut instead of the
+      // sliver that used to pinch to nothing at both ends.
+      mouth: { z: 0.690, y: [0.140, 0.402], flat: 0.55, bars: 0.026, blade: false },
       // The traced span ran to 0.950 of the half width, but over these heights
       // the bumper itself only reaches 0.828..0.926, so the slot ran off the
       // edge of the panel and its outboard end came back notched. Same width,
@@ -1801,6 +1803,12 @@ function makeMaterials(s) {
   M.lensRed = phys({ color: 0xb01018, metalness: 0.0, roughness: 0.08, transparent: true, opacity: 0.55, side: THREE.FrontSide, depthWrite: false, clearcoat: 1 });
   M.interior = std({ color: s.interiorColor, metalness: 0.02, roughness: 0.9, side: THREE.DoubleSide });
   M.interiorDark = std({ color: 0x0e0f11, metalness: 0.05, roughness: 0.95, side: THREE.DoubleSide });
+  /* The inside of a tailpipe. A near-black albedo is not enough on its own
+     under this studio - the grille cavity is this same 0e0f11 and comes back
+     at 114 of 255 - so the environment term is cut almost out. Measured value
+     in the comment beside the pipes. */
+  M.bore = std({ color: 0x050607, metalness: 0.10, roughness: 0.90, envMapIntensity: 0.02, side: THREE.DoubleSide });
+  M.boreEnd = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
   M.accent = std({ color: s.accent, metalness: 0.2, roughness: 0.6, side: THREE.DoubleSide });
   M.frame = std({ color: 0x2f333a, metalness: 0.85, roughness: 0.52, side: THREE.DoubleSide });
   M.stamped = std({ color: 0x585e66, metalness: 0.9, roughness: 0.60, side: THREE.DoubleSide });
@@ -2421,9 +2429,15 @@ function softMin(a, b, k) {
   return 0.5 * (a + b - Math.sqrt((a - b) * (a - b) + k * k));
 }
 function softMax(a, b, k) { return -softMin(-a, -b, k); }
+/* Cosine spacing puts the columns where the rim is turning, but on its own it
+   packs them too hard at the ends: on a narrow band the first two columns came
+   out closer than a float32 vertex can hold apart - 0.2 um on the nose beside
+   the lamp - and the triangle between them collapsed. A quarter of uniform
+   spacing mixed in more than doubles that first step and leaves the clustering
+   where it matters. */
 function holeUs(n) {
   const out = [];
-  for (let i = 0; i <= n; i++) out.push(0.5 - 0.5 * Math.cos(Math.PI * i / n));
+  for (let i = 0; i <= n; i++) out.push(lerp(0.5 - 0.5 * Math.cos(Math.PI * i / n), i / n, 0.25));
   return out;
 }
 function bandsAround(holes, vLo, vHi) {
@@ -2849,10 +2863,50 @@ function buildVehicle(opts = {}) {
       m.castShadow = false;
     }
   }
-  // engine-bay and boot flanges under the hood / deck edges
+  /* engine-bay and boot flanges under the hood / deck edges.
+
+     A flange sits DIRECTLY under the panel edge it stiffens, so it is dropped
+     in y at the same (u, v) rather than offset along the surface normal. Over
+     the flat middle of a panel the two are the same thing, but at the boot
+     lid's trailing edge the panel plunges towards the tail and the normal is
+     nearly horizontal there: a -16 mm offset slid the flange backwards down
+     the drop instead of under it, and the rear flange came out standing up to
+     57 mm proud of the deck over |z| 0.42..0.60 - the cross bar you could see
+     lying through the boot lid. The skin-dominance pass did not catch it
+     because its ceiling reads the highest panel within 45 mm in each
+     direction, and 45 mm forward on that drop is higher than the flange.
+
+     And it has to clear the panel AS DRAWN, not the smooth surface both are
+     sampled from. The boot lid is a 16-segment shell whose first segment spans
+     the whole plunge at the tail edge, so its triangles cut that corner and lie
+     well below the surface there; a flange that followed the surface finely
+     still came out on top of the lid. So the flange is built on the panel's own
+     quads - the same segment boundaries, flat between them - which also holds
+     on a phone, where the panel is sampled more coarsely still. */
+  const chordOf = (fn, nU, nV) => {
+    const nu = lpq(nU), nv = lpq(nV);
+    const snap = (t, n) => { const q2 = clamp(t, 0, 1) * n, i = Math.min(Math.floor(q2), n - 1); return [i / n, (i + 1) / n, q2 - i]; };
+    return (u, w) => {
+      const [ua, ub, fu] = snap(u, nu), [va, vb, fv] = snap(w, nv);
+      const p00 = fn(ua, va), p10 = fn(ub, va), p01 = fn(ua, vb), p11 = fn(ub, vb);
+      const out = [];
+      for (let k = 0; k < 3; k++) out.push(lerp(lerp(p00[k], p10[k], fu), lerp(p01[k], p11[k], fu), fv));
+      return out;
+    };
+  };
+  const flange = (fn, nU, nV, u0, u1, v0, v1, dy) => {
+    const c = chordOf(fn, nU, nV);
+    return (u, w) => { const q2 = c(lerp(u0, u1, u), lerp(v0, v1, w)); return [q2[0], q2[1] - dy, q2[2]]; };
+  };
+  /* Sampled on the panel's own grid, not on a coarser one of its own: at 2
+     bands across the full width the rear flange spanned the deck's shoulders
+     with one straight edge, and the deck falls away between them, so that edge
+     rode up to 51 mm over the lid. Same counts as the panel means the same
+     nodes, and both go through the same quality scaling, so it still holds on a
+     phone. */
   for (const rect of [[0, 0.06, 0, 1], [0.94, 1, 0, 1], [0, 1, 0, 0.05], [0, 1, 0.95, 1]]) {
-    patch(tub, subSurface(hoodFn, rect[0], rect[1], rect[2], rect[3], -0.016), 8, 2, M.matte, [0, 0.3, 0]).castShadow = false;
-    patch(tub, subSurface(deckFn, rect[0], rect[1], rect[2], rect[3], -0.016), 8, 2, M.matte, [0, 0.3, 0]).castShadow = false;
+    patch(tub, flange(hoodFn, 20, 20, rect[0], rect[1], rect[2], rect[3], 0.016), 20, 20, M.matte, [0, 0.3, 0]).castShadow = false;
+    patch(tub, flange(deckFn, 16, 18, rect[0], rect[1], rect[2], rect[3], 0.016), 16, 18, M.matte, [0, 0.3, 0]).castShadow = false;
   }
   // cowl panel between hood and windscreen
   patch(tub, (u, w) => { const x = lerp(d.xCowl + 0.005, d.xCowl - 0.09, w); const zt = u * 2 - 1;
@@ -3684,16 +3738,51 @@ function buildVehicle(opts = {}) {
         const p1 = abRegion(q)(s2, t);
         return [p1[0] + 0.10, p1[1], p1[2]];
       }, 14, 3, M.dish, rRef, 0.010, false);
+      /* An open pipe, not a disc. The three cylinders that used to sit here
+         were capped - CylinderGeometry closes both ends unless you ask it not
+         to - so the nearest cap faced straight out and each tailpipe read as a
+         flat grey coin. It is now built the way a real one is seen: a barrel
+         with no lid, a polished ring at the mouth, a bore running back into
+         the dark and a black disc closing it off well inside. +x is towards
+         the nose, so every offset below runs INTO the car. */
+      const rOut = rad * 0.95, rIn = rad * 0.74;
+      const MOUTH = 0.012, BACK = 0.100, END = 0.012;
+      /* Each pipe is seated on the dish AT ITS OWN z, not at the slot's centre.
+         The dish curves across the slot, so seating both from the middle left
+         the outboard one buried and the inboard one standing proud - one read
+         as a black hole and the other as a grey ring. Bisecting for the a that
+         puts the dish at this pipe's z gives the seat. */
+      const seatAt = (zq) => {
+        let lo = q.u0, hi = q.u1;
+        const dLo = base(lo, bc)[2] - zq;
+        for (let k = 0; k < 26; k++) {
+          const mid = (lo + hi) / 2;
+          if ((base(mid, bc)[2] - zq) * dLo > 0) lo = mid; else hi = mid;
+        }
+        return base((lo + hi) / 2, bc);
+      };
       for (const side of [-1, 1]) {
         const zc = rim[2] + side * rad * 1.02;
+        const seat = seatAt(zc);
         const tube = (r2, len, inset, mat) => {
-          const t = new THREE.Mesh(new THREE.CylinderGeometry(r2, r2, len, 18).rotateZ(Math.PI / 2), mat);
-          t.position.set(rim[0] + inset + len / 2, rim[1], zc);
+          const t = new THREE.Mesh(
+            new THREE.CylinderGeometry(r2, r2, len, 32, 1, true).rotateZ(Math.PI / 2), mat);
+          t.position.set(seat[0] + inset + len / 2, seat[1], zc);
           df.add(t, false);
         };
-        tube(rad * 0.95, 0.16, 0.012, M.matte);         // barrel, mouth 12 mm in
-        tube(rad * 0.88, 0.10, 0.020, M.darkChrome);    // polished lip
-        tube(rad * 0.66, 0.12, 0.032, M.interiorDark);  // dark bore
+        // Discs face the way you look into the pipe: -x, out of the tail.
+        const disc = (r0, r1, inset, mat) => {
+          const g = r0 > 0 ? new THREE.RingGeometry(r0, r1, 32) : new THREE.CircleGeometry(r1, 32);
+          const t = new THREE.Mesh(g.rotateY(-Math.PI / 2), mat);
+          t.position.set(seat[0] + inset, seat[1], zc);
+          df.add(t, false);
+        };
+        tube(rOut, 0.16, MOUTH, M.matte);                       // barrel, mouth 12 mm in
+        disc(rIn, rOut, MOUTH, M.darkChrome);                   // the polished rim you look at
+        tube(rIn, BACK - END - MOUTH, MOUTH, M.bore);           // the bore
+        // The black stops 12 mm short of the slot's own back wall at +0.100, so
+        // it is the end of the pipe and not a hole through the tunnel behind it.
+        disc(0, rIn, BACK - END, M.boreEnd);                    // the black hole
       }
     }
     v.addPart(df, br);
@@ -4535,9 +4624,14 @@ Vehicle.prototype.validateGeometry = function () {
     frameCar(1.74, 0.46);
     sun.target.position.set(0, 0.6, 0);
     if (LOW) {
-      // On a phone the shadow pass draws every caster a second time. Only the
-      // panels that actually shape the car's shadow keep casting.
-      const CASTS = /^(hood|trunk|roof|nose|tail|fender\.|quarter\.|door\.|rocker\.|bumper\.|wheel\.[a-z]+$|wheel\..*\.tire)/;
+      // On a phone the shadow pass draws every caster a second time - 246 of
+      // the 413 meshes here, a third of the triangles - so only the panels that
+      // shape the car's shadow cast into it. The diffuser, the grille and the
+      // splitter are on the list not for the shadow they throw on the ground
+      // but for the one they throw on themselves: they are the parts you look
+      // INTO, and without them the raised forms inside the diffuser came out as
+      // lit fragments in a recess that is otherwise in shadow.
+      const CASTS = /^(hood|trunk|roof|nose|tail|fender\.|quarter\.|door\.|rocker\.|bumper\.|diffuser|grille|splitter|wheel\.[a-z]+$|wheel\..*\.tire)/;
       car.each((p) => {
         if (CASTS.test(p.id)) return;
         for (const m of p.meshes) m.castShadow = false;
