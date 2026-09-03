@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '3 sep 2026 \u00b7 bumpernaad 10 mm + versiestempel';
+const VG_BUILD = '3 sep 2026 \u00b7 schaduw ook op de telefoon';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -4263,10 +4263,15 @@ Vehicle.prototype.validateGeometry = function () {
   window.__vgStarted = true;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, LOW ? 1 : 2));
   // A real shadow map means every caster is drawn a second time and every
-  // material compiles a depth program as well. On a phone that is most of the
-  // wait before the first frame, so there it is a painted contact shadow.
-  renderer.shadowMap.enabled = !LOW;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // material compiles a depth program as well. The phone used to skip it
+  // altogether, but the car is full of deep recesses - the diffuser, the wheel
+  // houses, the grille mouth - that are only dark because the body shades them.
+  // Without the map the sun reaches straight into them and a near-black
+  // diffuser came out light grey. So the phone keeps the shadow, cut down
+  // instead: a 512 map, a single tap, and only the panels that shape the
+  // silhouette casting into it.
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = LOW ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
   canvas.addEventListener('webglcontextlost', (e) => {
     e.preventDefault();
     window.__vgFail('Grafisch geheugen raakte op',
@@ -4334,7 +4339,7 @@ Vehicle.prototype.validateGeometry = function () {
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff7ea, 2.25);
   sun.position.set(4.6, 8.2, 5.4);
-  sun.castShadow = !LOW;
+  sun.castShadow = true;
   sun.shadow.mapSize.set(LOW ? 512 : 2048, LOW ? 512 : 2048);
   sun.shadow.camera.left = -5; sun.shadow.camera.right = 5;
   sun.shadow.camera.top = 5; sun.shadow.camera.bottom = -5;
@@ -4346,24 +4351,10 @@ Vehicle.prototype.validateGeometry = function () {
   fill.position.set(-5.5, 4.2, -4.5);
   scene.add(fill);
 
-  // The painted stand-in: one soft ellipse on the ground, sized to the car.
-  let contact = null;
-  if (LOW) {
-    const c = document.createElement('canvas');
-    c.width = c.height = 128;
-    const g = c.getContext('2d');
-    const rg = g.createRadialGradient(64, 64, 4, 64, 64, 62);
-    rg.addColorStop(0, 'rgba(24,28,34,0.55)');
-    rg.addColorStop(0.55, 'rgba(24,28,34,0.30)');
-    rg.addColorStop(1, 'rgba(24,28,34,0)');
-    g.fillStyle = rg; g.fillRect(0, 0, 128, 128);
-    contact = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
-      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
-    contact.rotation.x = -Math.PI / 2;
-    contact.position.y = 0.012;
-    contact.renderOrder = -2;
-    scene.add(contact);
-  }
+  // The phone once stood a painted ellipse in for the missing shadow. It now
+  // casts a real one, so the stand-in is gone; the name stays because the
+  // spawn path still sizes it when it exists.
+  const contact = null;
 
   /* ---- ground ---------------------------------------------------------- */
   (function ground() {
