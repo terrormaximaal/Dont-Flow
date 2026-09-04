@@ -7,8 +7,9 @@ own box, the exporter's normals as int8 (they carry the smoothing groups, so
 creases survive), indices as uint16. Bilateral parts are stored as their
 LEFT half only; the generator mirrors them. Body-frame parts are stored as
 fractions of the mesh's own length, height and half width, so a car of any
-size puts them where they belong; wheel-frame parts are stored in units of
-the wheel radius, centred on the hub.
+size puts them where they belong. The wheels are NOT packed: the generator
+builds its own wheels for every family (tyre, rim, disc, caliper, flat tyre),
+and the reference's wheel size is already in the family's DNA.
 
 The block goes between the MESHLIB markers in sportscar-studio.html, so it
 can be regenerated at any time:
@@ -56,15 +57,6 @@ HUB = ((tmin[0] + tmax[0]) / 2, (tmin[1] + tmax[1]) / 2, (tmin[2] + tmax[2]) / 2
 R = (tmax[1] - tmin[1]) / 2
 print('mesh L %.1f H %.1f HW %.1f  ground %.2f  wheel hub %s R %.2f' % (L, H, HW, ground, HUB, R))
 
-def wheel_group(prefix):
-    # the front-left one of a set of four
-    best = None
-    for g in by_group:
-        if not g.startswith(prefix): continue
-        mn, mx = bbox([g])
-        if mn[0] > XC and mn[2] > 0: best = g
-    return best
-
 PARTS = {
     # name: (frame, half, [(group, material), ...])
     'headlight': ('body', True,  [('headlights_glass', 'lens'), ('Light_chrome', 'chrome')]),
@@ -74,9 +66,6 @@ PARTS = {
     'grille':    ('body', False, [('grid', 'grille')]),
     'wiper':     ('body', False, [('screen_wiper', 'plastic')]),
     'diffuser':  ('body', False, [('diffuser', 'plastic')]),
-    'rim':       ('wheel', False, [(wheel_group('Disk'), 'rim')]),
-    'tire':      ('wheel', False, [(wheel_group('Tire'), 'tire')]),
-    'disc':      ('wheel', False, [(wheel_group('brake'), 'disc')]),
 }
 
 def b64(b): return base64.b64encode(b).decode('ascii')
@@ -114,8 +103,7 @@ for name, (frame, half, subs) in PARTS.items():
                 if k is None:
                     k = index[c] = len(pos)
                     x, y, z = V[c[0]]
-                    if frame == 'body': p = ((x - XC) / L, (y - ground) / H, z / HW)
-                    else: p = ((x - HUB[0]) / R, (y - HUB[1]) / R, (z - HUB[2]) / R)
+                    p = ((x - XC) / L, (y - ground) / H, z / HW)
                     pos.append(p)
                     nrm.append(VN[c[1]] if c[1] >= 0 else (0, 1, 0))
                 idx.append(k)

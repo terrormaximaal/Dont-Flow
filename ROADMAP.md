@@ -263,6 +263,14 @@ achterklep heeft in de mesh een kentekenuitsparing, maar de bovenkant van
 de klep en het dak delen nog één rand zonder rubber; de A-stijl is nu wel
 de echte. Variatie op de mesh (roosterdeformatie) is niet gedaan.
 
+Wielen: op aanwijzing van de opdrachtgever komen die van het eigen
+wielsysteem, ook op de mesh-stadsauto, zodat er één systeem is voor alle
+families (band, velg, schijf, klauw, lekke band, velgstijl per karakter).
+De maat klopt: de mesh meet band 20,4 cm breed, straal 28,9 cm, velg
+19,3 cm; de DNA van de familie geeft 20,0-21,0 cm, 0,159-0,163 L en een
+hoogte-breedteverhouding 0,42-0,46 (mesh: 0,47). De velg, band en schijf
+van de mesh zitten niet meer in MESH_LIB (bestand 130 kB kleiner).
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
