@@ -1,6 +1,6 @@
 # Procedural Vehicle Generator — analyse en roadmap
 
-Stand: 4 sep 2026. Stappen 1, 2, 4 t/m 8 zijn gedaan, 9 is een eerste versie; 3 is gemeten en afgewezen (zie tabel). Volgende: 9b (greenhouse-families), dan 10 en 11.
+Stand: 4 sep 2026. Stappen 1, 2, 4 t/m 8 zijn gedaan; 3 is gemeten en afgewezen. Koerswijziging in §3b: families worden vanaf de grond gemeten van een eigen referentie; de stadsauto is de eerste.
 Alle getallen hieronder zijn gemeten op `sportscar-studio.html`, seed 12345,
 `super_gt`, tenzij anders vermeld. Metingen draaien op een software-rasteriser
 (swiftshader); waar dat het resultaat beïnvloedt staat het erbij.
@@ -153,6 +153,43 @@ trim levels, aandrijflijnvarianten, procedurele wieldesigns, lichtsignaturen als
 eigen familie, modulaire interieurs. Die hebben pas waarde als 5 t/m 11 staan.
 
 ---
+
+## 3b. Koerswijziging (4 sep, op aanwijzing van de opdrachtgever)
+
+Sedan en SUV zijn geen afgeleiden van een sportcoupé en worden **vanaf de
+grond** vormgegeven, elk met een eigen referentie. Eerste familie op die
+manier: een **A-segment stadsauto**, gemeten van een aangeleverde mesh.
+
+### Referentiepijplijn per familie (nieuw)
+
+```
+mesh (.obj)  ->  parse2.py  (assen naar: x lengte, neus +x; y omhoog; z zijwaarts; grond op 0)
+             ->  clib.py    (ray-caster, zelfde als bij de GT-sectie)
+             ->  cmeas*.py  (SIL, PLAN, SECTION, BELT, CABIN, DLO, TUMBLE + assen, wielen,
+                             lampen, grille, deurgreep, spiegel, bodemvrijheid)
+             ->  REFERENCES.<familie> + ARCHETYPES.<familie>
+```
+
+Stadsauto, gemeten: 3,58 × 1,88 × 1,48 m, wielbasis 2,38 m (0,665 L),
+overhangen 0,18 / 0,16 L, cowl op 0,17 L (cab-forward, over het voorwiel),
+belt 0,62–0,70 H oplopend naar achteren, tumblehome 0,20, glaslijn tot
+0,985 H, koplampen 0,46–0,64 H, grille 0,28–0,42 H, vloer 0,157 H.
+
+Wat daarvoor generiek moest worden:
+- **two-box greenhouse** (`greenhouse: 'two-box'`): achterruit als steile
+  klep vanaf het dakeinde naar de bovenkant van de staartkap, geen dek;
+- **cab-forward**: het portier begint achter de wielkast als de cowl over
+  het wiel zit (`xDoorF = min(cowl, wielkast)`);
+- **motorruimte** schaalt naar de ruimte onder de kap (hoogte én lengte);
+  de crashbalk staat nooit dichter dan 0,30 m bij de neus.
+
+Stand stadsauto: QC 21/21, geometrie ok op drie zaden, GT 0 pixels verschil.
+Proporties, stance, belt en de tweebox-staart kloppen met de referentie.
+**Nog GT-vormtaal**, en dus het volgende werk: ronde koplampen (nu slit),
+horizontale grillelamellen (nu verticaal), B- en C-stijl met massa (nu de
+frameloze dunne bogen van de GT), aparte achterlichten (nu een lichtbalk).
+Dat zijn de vormtaalfamilies uit §4 - koplampsignaturen, grille-
+architecturen, stijlfamilies - en die komen vóór sedan en SUV opnieuw.
 
 ## 4. Nieuwe designregels die ik wil voorstellen
 

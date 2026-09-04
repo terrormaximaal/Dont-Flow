@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 drie families: GT, sedan, SUV';
+const VG_BUILD = '4 sep 2026 \u00b7 stadsauto, gemeten van een mesh';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -220,7 +220,7 @@ const VG_BUILD = '4 sep 2026 \u00b7 drie families: GT, sedan, SUV';
   <div class="strip">
     <button class="c" id="reseed">Nieuwe subtiele variant</button>
     <select class="c" id="family" title="Familie">
-      <option value="super_gt">Familie: super GT</option><option value="sedan">sedan</option><option value="suv">SUV</option>
+      <option value="super_gt">Familie: super GT</option><option value="city">stadsauto</option><option value="sedan">sedan</option><option value="suv">SUV</option>
     </select>
     <select class="c" id="character" title="Karakter">
       <option value="neutraal">Karakter: neutraal</option><option value="sportief">sportief</option>
@@ -905,11 +905,67 @@ function resolveReferences(type, A, useGrammar, d) {
            CABIN: cabinGrammar(g), TUMBLE: A.tumbleRef === undefined ? REF2_TUMBLE : A.tumbleRef, DLO: dloGrammar(g) };
 }
 
+/* =========================================================================
+   Reference 2: an A-segment city car, measured off a supplied mesh
+   -------------------------------------------------------------------------
+   Not a styling sheet this time but a 51 000-vertex model, read the same way
+   the GT's cross section was: ray-cast station by station. 358 units long,
+   taken as centimetres: 3.58 x 1.88 x 1.48 m on a 2.38 m wheelbase - short
+   overhangs (0.18 and 0.16 of the length), a cab-forward cowl at 0.17 of the
+   length, a belt at 0.62-0.70 H rising to the rear, a big glasshouse with a
+   0.20 tumblehome, a two-box tail that drops from the roof to the tailgate
+   over the last tenth. Ratios come straight from the mesh: H/L 0.414,
+   W/L 0.524, wheel diameter 0.161 L, floor at 0.157 H.
+
+   Stations 0 and 1 of the silhouette are the bumper face on the mesh; they
+   are set to the top of the front cover so the bonnet does not plunge. The
+   plan has the mirrors at stations 15-16, interpolated out. The section is
+   taken at 0.55 of the length from the floor to the belt kink at 0.64 H. */
+const REFC_SIL = [
+  0.4620, 0.4920, 0.4873, 0.5583, 0.5991, 0.6287, 0.6524,
+  0.6708, 0.6569, 0.6764, 0.7027, 0.7297, 0.7571, 0.7847,
+  0.8116, 0.8370, 0.8604, 0.8815, 0.9005, 0.9169, 0.9321,
+  0.9517, 0.9623, 0.9718, 0.9799, 0.9865, 0.9918, 0.9958,
+  0.9985, 0.9999, 1.0000, 0.9988, 0.9972, 0.9948, 0.9911,
+  0.9863, 0.9802, 0.9733, 0.9655, 0.9562, 0.9455, 0.9342,
+  0.9220, 0.9064, 0.7961, 0.6655, 0.4975, 0.4684, 0.3069,
+];
+const REFC_PLAN = [
+  0.0890, 0.5202, 0.6667, 0.7621, 0.8238, 0.8487, 0.8621,
+  0.8708, 0.8775, 0.8793, 0.8789, 0.8760, 0.8708, 0.8587,
+  0.8535, 0.8550, 0.8555, 0.8564, 0.8575, 0.8585, 0.8596,
+  0.8605, 0.8613, 0.8621, 0.8627, 0.8631, 0.8635, 0.8636,
+  0.8635, 0.8632, 0.8627, 0.8622, 0.8619, 0.8611, 0.8589,
+  0.8585, 0.8837, 0.8915, 0.8925, 0.8914, 0.8882, 0.8822,
+  0.8730, 0.8601, 0.8430, 0.8189, 0.7598, 0.5866, 0.1781,
+];
+const REFC_SECTION = [
+  [0.000, 0.940], [0.071, 0.960], [0.143, 0.971], [0.214, 0.973], [0.286, 0.988],
+  [0.357, 0.995], [0.429, 0.999], [0.500, 1.000], [0.571, 0.999], [0.643, 0.995],
+  [0.714, 0.989], [0.786, 0.978], [0.857, 0.964], [0.929, 0.945], [1.000, 0.925],
+];
+const REFC_BELT = [
+  [0.000, 0.460], [0.042, 0.490], [0.083, 0.550], [0.125, 0.600], [0.167, 0.630],
+  [0.210, 0.640], [0.300, 0.620], [0.450, 0.625], [0.550, 0.640], [0.700, 0.680],
+  [0.800, 0.700], [0.875, 0.700], [0.917, 0.660], [0.958, 0.550], [1.000, 0.420],
+];
+const REFC_CABIN = [
+  [0.210, 0.700], [0.250, 0.753], [0.300, 0.755], [0.400, 0.759], [0.600, 0.753],
+  [0.790, 0.760], [0.830, 0.755], [0.875, 0.732], [0.900, 0.650], [0.917, 0.554],
+];
+const REFC_TUMBLE = 0.200;
+const REFC_DLO = [
+  [0.210, 0.140], [0.260, 0.550], [0.310, 0.820], [0.400, 0.930], [0.550, 0.950],
+  [0.700, 0.950], [0.800, 0.900], [0.860, 0.750], [0.900, 0.500],
+];
+
 /* Both cars, addressed by archetype. Everything the generator draws for a car
    comes out of its entry here. */
 const REFERENCES = {
   super_gt: { SIL: REF2_SIL, PLAN: REF2_PLAN, SECTION: REF_SECTION, BELT: REF2_BELT,
               CABIN: REF2_CABIN, TUMBLE: REF2_TUMBLE, DLO: REF2_DLO },
+  city: { SIL: REFC_SIL, PLAN: REFC_PLAN, SECTION: REFC_SECTION, BELT: REFC_BELT,
+          CABIN: REFC_CABIN, TUMBLE: REFC_TUMBLE, DLO: REFC_DLO },
 };
 
 const PAINTS = [
@@ -1086,7 +1142,7 @@ const ARCHETYPES = {
     doorLen: [0.98, 1.04], rearDoorLen: [0.86, 0.94],
     wheelStyles: ['five', 'multi'],
     mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.975,
-    dloRear: 0.930, mirrorF: 0.330, tumbleRef: 0.250,
+    dloRear: 0.930, mirrorF: 0.330, tumbleRef: 0.250, greenhouse: 'two-box',
     design: {
       bodyCharacter: 'suv', headlightStyle: 'swept', taillightStyle: 'lightbar',
       grilleStyle: 'signature_oval', intakeStyle: 'round_fog', exhaust: 'twin_oval', ducktailBoost: 0.0,
@@ -1114,6 +1170,52 @@ const ARCHETYPES = {
       sCabin0: 0.315, sCabinMax: 0.50, wCabin: 0.86, sCabin1: 0.92,
       sDlo0: 0.32, sDloPeak: 0.55, dloPeak: 0.97, sDlo1: 0.93,
         },
+  },
+  /* A-segment city car, the second family with a reference of its own -
+     every curve measured off a mesh (REFC_*), nothing borrowed from the GT.
+     Two doors, cab-forward: the cowl sits over the front wheel, so the door
+     starts behind the arch rather than at the cowl. */
+  city: {
+    label: 'Aurelia Uno', doors: 2, layout: 'voorin dwars geplaatste driecilinder · voorwielaandrijving',
+    L: [3.550, 3.620],
+    hRatio: [0.4100, 0.4180], wRatio: [0.5180, 0.5280],
+    wbRatio: [0.6600, 0.6700], frontOhShare: [0.520, 0.540], trackRatio: [0.760, 0.770],
+    diaRatio: [0.1590, 0.1630], tireW: [0.200, 0.210], rearTireExtra: [0.0, 0.0], aspect: [0.42, 0.46],
+    clearance: [0.225, 0.240],
+    sCowl: [0.165, 0.175], sRoofF: [0.440, 0.460], sRoofPeak: [0.610, 0.640],
+    sRoofR: [0.840, 0.860], sDeck: [0.920, 0.940],
+    hNose: [0.460, 0.480], hCowl: [0.650, 0.660], hRoof: [0.997, 1.000],
+    hDeck: [0.780, 0.820], hBelt: [0.620, 0.640], hBeltDoor: [0.620, 0.640],
+    hBeltQuarter: [0.680, 0.700],
+    archGap: [0.030, 0.040],
+    profileJitter: [0.0, 0.0],
+    shoulderDrop: [0.010, 0.020], haunch: [0.0, 0.0], frontFlare: [0.0, 0.0],
+    tumble: [0.180, 0.220], rockerH: [0.100, 0.120], rockerTuck: [0.004, 0.008], beltTuck: [0.006, 0.010],
+    hoodDome: [0.003, 0.006], hoodRise: [0.006, 0.010], hoodCrease: [0.002, 0.005], ducktail: [0.0, 0.0],
+    noseDepth: [0.36, 0.42], tailDepth: [0.30, 0.34], frontRakeBack: [0.08, 0.11], tailRakeIn: [0.02, 0.04],
+    doorLen: [1.28, 1.36],
+    wheelStyles: ['five', 'multi'],
+    mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'station', faceFrac: 0.870,
+    dloRear: 0.900, mirrorF: 0.280, tumbleRef: 0.200, greenhouse: 'two-box',
+    design: {
+      bodyCharacter: 'city', headlightStyle: 'swept', taillightStyle: 'lightbar',
+      grilleStyle: 'signature_oval', intakeStyle: 'round_fog', exhaust: 'twin_oval', ducktailBoost: 0.0,
+      rimColor: 0x8d9298, caliperColor: 0x55595e, interiorColor: 0x2a2724, accent: 0x6f7479, glassTint: 0.28,
+    },
+    apertures: {
+      face: 'oval',
+      // measured: headlamps |z| to 0.795, y 0.459..0.640 H; grille |z| 0.592, y 0.283..0.424 H;
+      // tail lamps |z| to 0.802, y 0.552..0.657 H; valance top 0.275 H
+      lamp: { z: [0.500, 0.795], gap: 0.012, h: [0.180, 0.140] },
+      mouth: { z: 0.592, y: [0.283, 0.424], flat: 0.60, bars: 0.030, blade: false },
+      fog: { z: [0.680, 0.760], y: [0.140, 0.220] },
+      frontSplit: 0.450,
+      tail: 'band',
+      recess: { span: 0.90, y: [0.530, 0.670], gap: 0.028, depth: [0.030, 0.025] },
+      tailLamp: { span: [0.450, 0.800], y: [0.552, 0.657], gap: 0.012, h: 0.100 },
+      rearSplit: 0.300,
+      exh: { z: [], y: [0.200, 0.250] },
+    },
   },
 };
 
@@ -1320,6 +1422,7 @@ function generateDNA(opts = {}) {
     d.gate = shiftGate(d.gate, gateMetrics(dN), gateMetrics(d));
   }
   d.faceEdge = A.faceEdge || 'station';
+  d.greenhouse = A.greenhouse || 'fastback';
   d.faceFrac = A.faceFrac;
   d.tailFloor = A.tailFloor || 0;
   d.xDloRear = d.xNose - (A.dloRear || 0.78) * d.L;
@@ -1327,7 +1430,9 @@ function generateDNA(opts = {}) {
   d.tailTuck = A.tailTuck || null;
 
   // --- panel stations ------------------------------------------------------
-  d.xDoorF = d.xCowl - 0.015;
+  // the door starts at the cowl, or behind the front arch when the cowl sits
+  // over the wheel (a cab-forward city car)
+  d.xDoorF = Math.min(d.xCowl - 0.015, d.xAxleF + d.archDx - d.archR - 0.04);
   // A four-door car cuts the flank twice: the front door ends at the B-pillar
   // and the rear door runs from there to the arch. One draw for doorLen in
   // both cases, so a two-door car's stream is untouched.
@@ -1389,7 +1494,10 @@ function generateDNA(opts = {}) {
     xFirewall: d.xCowl + 0.02,
     xDash: d.xCowl - 0.12,
     xFrontRailEnd: d.xAxleF + 0.30,
-    xCrashBeamF: d.xCornerF + d.noseDepth * 0.42,
+    // ...and never closer than 0.30 m to the tip: on a short nose the beam and
+    // its crush cans stood in the grille mouth, in front of the cavity floor.
+    // The GT's beam sits 0.38 m back and is untouched.
+    xCrashBeamF: Math.min(d.xCornerF + d.noseDepth * 0.42, d.xNose - 0.30),
     xRearRailEnd: d.xAxleR - 0.28,
     xCrashBeamR: d.xCornerR - d.tailDepth * 0.42,
     yRail: d.clearance + 0.16,
@@ -4000,7 +4108,13 @@ function stage_greenhouse(ctx) {
     return p;
   };
   const WS = [d.xCowl, d.xRoofF, 0, 0.13, 0];
-  const RS = [d.xDeck, d.xRoofR - 0.03, 0.12, 0.15, 0.06];
+  /* Two greenhouse families so far. Fastback / notchback: the rear screen lies
+     over the deck, from the deck's front edge up to the roof's rear end. Two-box
+     (city car, SUV, wagon): there is no deck to lie on - the screen is the
+     tailgate's upper half, a steep pane that leaves the roof at its very end
+     and drops to the tail cover's top over a short run. */
+  const twoBox = d.greenhouse === 'two-box';
+  const RS = twoBox ? [d.xDeck, d.xDeck + 0.06 * d.L, 0.12, 0.15, 0.03] : [d.xDeck, d.xRoofR - 0.03, 0.12, 0.15, 0.06];
   // The bar is the master here: the screen's own side edge is the bar's inner
   // edge, so the two shut against each other by construction instead of leaving
   // whatever gap the two curves happened to produce.
@@ -4146,6 +4260,22 @@ function stage_engine(ctx) {
   const ex = lerp(d.xCowl, d.xHoodF, 0.34);
   const railY = (v.adaptiveStructure && v.adaptiveStructure.yRail) || (d.clearance + 0.16);
   const ey = clamp(railY + 0.10, floorY + 0.16, B.hoodY(ex) - 0.30);
+  /* The bay is dressed for a long, tall bonnet. Under a short low one - a
+     city car has 0.55 m between floor and bonnet where the GT has 0.75 - the
+     plenum stood up through the panel. The whole bay scales down to the room
+     it has, about the point where the block sits, so nothing moves on a car
+     that has the room. */
+  const room = B.hoodY(ex) - floorY;
+  const ky = clamp((room - 0.05) / 0.70, 0.5, 1);
+  // ...and in length: the dressing reaches 0.52 m ahead of the block, which on
+  // a short nose put the pulleys out through the grille. Squeezed towards the
+  // firewall until it stays behind the crash beam.
+  const xFrontNeed = ex + 0.52 - d.xCowl, xFrontRoom = d.arch.xCrashBeamF - 0.10 - d.xCowl;
+  const kx = clamp(xFrontRoom / Math.max(0.05, xFrontNeed), 0.3, 1);
+  if (ky < 1 || kx < 1) {
+    eng.inner.scale.set(kx, ky, ky);
+    eng.inner.position.set(d.xCowl * (1 - kx), floorY * (1 - ky), 0);
+  }
   eng.add(new THREE.Mesh(box(0.72, 0.36, 0.72, ex, ey, 0), M.engine), false);
   eng.add(new THREE.Mesh(box(0.66, 0.05, 0.62, ex - 0.02, ey + 0.21, 0), M.accent), false);
   eng.add(new THREE.Mesh(box(0.34, 0.10, 0.50, ex - 0.10, ey + 0.26, 0), M.matte), false);
