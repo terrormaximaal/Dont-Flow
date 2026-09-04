@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 normalen goed om: echte vorm zonder Repareer';
+const VG_BUILD = '4 sep 2026 \u00b7 normalen goed om + naad rond de kappen';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1129,7 +1129,30 @@ function makeBody(d) {
   };
   B.inArch = (x) => archCentres.some((xc2) => Math.abs(x - xc2) < d.archR);
   B.flankBottom = (x) => B.archCut(x, B.rockerTop);
-  B.coverBottom = (x) => B.archCut(x, d.clearance - 0.012);
+  /* The cover's floor. archCut is a circle over a flat floor, and at the
+     circle's widest point the circle's own height is still 330 mm above that
+     floor, so max(floor, circle) fell off a cliff there: the front cover's
+     lower edge dropped from 431 to 102 mm between two samples 5 mm apart. In
+     the flank that step is the wheel opening's near-vertical leading edge and
+     belongs. In a cover that sweeps around the corner through the same station
+     it does not - it tore the panel, and that tear is what broke the bumper
+     shut at both front corners and left the nose reaching 85 mm down into the
+     bumper's half of the face. Outside the circle the cut now runs down to the
+     floor over 50 mm instead of in one step. Short on purpose: at 140 mm the
+     cover stopped reaching the ground beside the tyre and the bumper lost its
+     rear corner. */
+  B.coverBottom = (x) => {
+    const F = d.clearance - 0.012, RUN = 0.05;
+    let y = F;
+    for (const xc2 of archCentres) {
+      const dx = Math.abs(x - xc2);
+      const h = dx < d.archR
+        ? d.archYc + Math.sqrt(d.archR * d.archR - dx * dx)
+        : lerp(d.archYc, F, smootherstep(clamp((dx - d.archR) / RUN, 0, 1)));
+      if (h > y) y = h;
+    }
+    return y;
+  };
   // The wheel-arch lip grows in as the cut rises, so it cannot leave a step at
   // the front and rear of the opening.
   B.archLip = (x, y, cut) => {
@@ -3081,13 +3104,24 @@ function buildVehicle(opts = {}) {
   // A level shut line across a fascia: the v at which the surface reaches a
   // given height. This is what makes the bumper cut horizontal instead of
   // following the parameterisation.
-  const levelLine = (surf, yFrac) => {
+  /* A shut line specified as a height can ask for a height the panel does not
+     reach. On the centreline the front cover's top edge sits 2 mm BELOW the
+     bumper's parting line, so the bisection saturated at v = 1 and the nose
+     came out as a 5 mm sliver there - the shut simply vanished across the
+     middle of the car, and the two panels crossed by 2 mm. The line is now
+     held a fixed distance inside both edges of the surface, softly, so both
+     panels keep a share of it wherever the height itself is out of reach. */
+  const levelLine = (surf, yFrac, margin) => {
     const N = 48, tbl = [];
+    const MARGIN = margin === undefined ? 0.030 : margin;
     for (let i = 0; i <= N; i++) {
       const u = i / N;
       let lo = 0, hi = 1;
       for (let k = 0; k < 22; k++) { const mid = (lo + hi) / 2; if (surf(u, mid)[1] < yFrac * d.H) lo = mid; else hi = mid; }
-      tbl.push((lo + hi) / 2);
+      const p0 = surf(u, 0), p1 = surf(u, 1);
+      const span = Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]);
+      const k = clamp(span > 1e-4 ? MARGIN / span : 0.25, 0.02, 0.42);
+      tbl.push(softMin(softMax((lo + hi) / 2, k, k * 0.35), 1 - k, k * 0.35));
     }
     return (u) => { const t = clamp(u, 0, 1) * N; const i = Math.min(N - 1, Math.floor(t)); return lerp(tbl[i], tbl[i + 1], t - i); };
   };
