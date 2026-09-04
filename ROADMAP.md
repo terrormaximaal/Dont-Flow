@@ -1,6 +1,6 @@
 # Procedural Vehicle Generator — analyse en roadmap
 
-Stand: 4 sep 2026. Stappen 1, 2, 4 t/m 8 zijn gedaan; 3 is gemeten en afgewezen (zie tabel).
+Stand: 4 sep 2026. Stappen 1, 2, 4 t/m 8 zijn gedaan, 9 is een eerste versie; 3 is gemeten en afgewezen (zie tabel). Volgende: 9b (greenhouse-families), dan 10 en 11.
 Alle getallen hieronder zijn gemeten op `sportscar-studio.html`, seed 12345,
 `super_gt`, tenzij anders vermeld. Metingen draaien op een software-rasteriser
 (swiftshader); waar dat het resultaat beïnvloedt staat het erbij.
@@ -124,12 +124,27 @@ zijn.
 | 6 | **Curvegrammatica** ✔ | de vijf tabellen uit ~45 benoemde controles; geijkt op de GT: silhouet gemiddeld 4,6 mm (max 16), plan 2,4 mm, belt 1,5 mm - het niveau van de tracering zelf (1 px ≈ 10 mm). `?grammar=1` bouwt de GT uit de grammatica: QC 21/21, geometrie ok, visueel niet te onderscheiden | afwijking t.o.v. de getraceerde tabellen |
 | 7 | **Kwaliteitspoort per familie** ✔ | `deriveGate`: uit de eigen ranges van de familie (24 neutrale builds, +15% spreiding, vloer per eenheid); designtaal uit een `design`-blok op het archetype | 21 controles blijven zinvol |
 | 8 | **Familie: sedan** ✔ | één archetypeblok (~70 regels), geen enkele stage gedupliceerd. Daarvoor generiek gemaakt: achterportieren (`doors: 4` splitst de flank bij de B-stijl, eigen ruit per deur, B-stijl, jambs en naadstrips), motorkapventilatie optioneel. Drie zaden QC 21/21, geometrie ok, symmetrie 0 mm | hoeveel nieuwe regels? |
-| 9 | Familie: **SUV** | hoge body, andere stance | idem |
-| 10 | Familie: **pickup** | cabine + losse laadbak: eerste echte structuurtest | idem |
-| 11 | Familie: **van** / **truck** | verticale achterkant, andere cabinearchitectuur | idem |
+| 9 | **Familie: SUV** ◐ eerste versie | één archetypeblok, bouwt zonder wijziging aan de stages: QC 21/21 op seed 12345, symmetrie 0 mm, profiel klopt (hoog, 200 mm bodemvrijheid, lang dak, grote wielen). **Maar de achterkant is fout**: de generator kent één greenhouse-familie (fastback/notchback met een dek erachter). Een tweebox heeft een achterklep tot de belt, een cabineplan dat achteraan niet taps loopt en een DLO die tot de staart doorloopt. Dat is de volgende structurele stap - de *greenhouse-families* uit §4 - en die hoort vóór pickup en bestelwagen | idem |
+| 10 | Familie: **pickup** | cabine + losse laadbak: vereist een cab/bed-splitsing achter de B-stijl - na stap 9b | idem |
+| 11 | Familie: **van** / **truck** | verticale achterkant = tweebox-greenhouse (9b) + forward-cab; truck ook een aparte chassis/cabine-architectuur | idem |
+| 9b | **Greenhouse-families** (nieuw, blokkeert 9-11) | `fastback` (GT), `notchback` (sedan), `two-box` (SUV, wagon, hatch, van): achterruit als klep, cabineplan zonder achtertaps, DLO tot de staart, kwartraam vervalt | SUV-achterkant leest als tailgate |
 
 **Afbreekregel** (uit de opdracht, en ik houd me eraan): als een nieuwe familie
 veel duplicaatcode nodig heeft, stop ik en verbeter eerst de architectuur.
+
+Toegepast bij stap 9: de SUV had als data een fatsoenlijk profiel maar een
+verkeerde achterkant. In plaats van de SUV met eigen code te lappen is de
+oorzaak benoemd (één greenhouse-familie) en als stap 9b vóór 10 en 11 gezet.
+
+## Gemeten na stap 9
+
+| | GT | sedan | SUV |
+|---|---|---|---|
+| bouwtijd (desktop) | ~440 ms | ~450 ms | ~450 ms |
+| parts / meshes | 53 / 271 | 59 / 286 | 59 / 286 |
+| QC (seed 12345) | 21/21 | 21/21 | 21/21 |
+| symmetrie | 0 mm | 0 mm | 0 mm |
+| eigen code | tabellen + archetype | archetype (~75 regels) | archetype (~75 regels) |
 
 ### Later, niet nu
 

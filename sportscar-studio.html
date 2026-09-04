@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 sedan met achterportieren';
+const VG_BUILD = '4 sep 2026 \u00b7 drie families: GT, sedan, SUV';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -220,7 +220,7 @@ const VG_BUILD = '4 sep 2026 \u00b7 sedan met achterportieren';
   <div class="strip">
     <button class="c" id="reseed">Nieuwe subtiele variant</button>
     <select class="c" id="family" title="Familie">
-      <option value="super_gt">Familie: super GT</option><option value="sedan">sedan</option>
+      <option value="super_gt">Familie: super GT</option><option value="sedan">sedan</option><option value="suv">SUV</option>
     </select>
     <select class="c" id="character" title="Karakter">
       <option value="neutraal">Karakter: neutraal</option><option value="sportief">sportief</option>
@@ -1059,6 +1059,60 @@ const ARCHETYPES = {
       hBelt: 0.66, hBeltDoor: 0.655, hBeltQuarter: 0.665, sHaunchBelt: 0.82, hTailBelt: 0.58,
       sCabin0: 0.34, sCabinMax: 0.50, wCabin: 0.84, sCabin1: 0.79,
       sDlo0: 0.345, sDloPeak: 0.55, dloPeak: 0.96, sDlo1: 0.775,
+        },
+  },
+  /* Two-box SUV: tall and upright, a short bonnet, a roof that runs almost
+     to the tail, a near-vertical tailgate, big wheels on tall tyres and
+     200 mm of ground clearance. Same archetype format as the sedan, four
+     doors, nothing else new. */
+  suv: {
+    label: 'Aurelia X', doors: 4, layout: 'voorin gemonteerde zes-in-lijn · vierwielaandrijving',
+    L: [4.700, 4.800],
+    hRatio: [0.3550, 0.3650], wRatio: [0.4000, 0.4100],
+    wbRatio: [0.5900, 0.6000], frontOhShare: [0.460, 0.480], trackRatio: [0.840, 0.860],
+    diaRatio: [0.1550, 0.1600], tireW: [0.255, 0.265], rearTireExtra: [0.0, 0.0], aspect: [0.55, 0.60],
+    clearance: [0.200, 0.220],
+    sCowl: [0.305, 0.315], sRoofF: [0.415, 0.425], sRoofPeak: [0.495, 0.505],
+    sRoofR: [0.855, 0.865], sDeck: [0.935, 0.945],
+    hNose: [0.515, 0.525], hCowl: [0.655, 0.665], hRoof: [0.997, 1.000],
+    hDeck: [0.895, 0.905], hBelt: [0.595, 0.605], hBeltDoor: [0.595, 0.605],
+    hBeltQuarter: [0.605, 0.615],
+    archGap: [0.045, 0.055],
+    profileJitter: [0.0, 0.0],
+    shoulderDrop: [0.015, 0.025], haunch: [0.0, 0.0], frontFlare: [0.0, 0.0],
+    tumble: [0.050, 0.070], rockerH: [0.100, 0.120], rockerTuck: [0.004, 0.008], beltTuck: [0.006, 0.010],
+    hoodDome: [0.003, 0.006], hoodRise: [0.006, 0.010], hoodCrease: [0.003, 0.006], ducktail: [0.0, 0.0],
+    noseDepth: [0.46, 0.52], tailDepth: [0.28, 0.34], frontRakeBack: [0.10, 0.13], tailRakeIn: [0.02, 0.04],
+    doorLen: [0.98, 1.04], rearDoorLen: [0.86, 0.94],
+    wheelStyles: ['five', 'multi'],
+    mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.975,
+    dloRear: 0.930, mirrorF: 0.330, tumbleRef: 0.250,
+    design: {
+      bodyCharacter: 'suv', headlightStyle: 'swept', taillightStyle: 'lightbar',
+      grilleStyle: 'signature_oval', intakeStyle: 'round_fog', exhaust: 'twin_oval', ducktailBoost: 0.0,
+      rimColor: 0x8d9298, caliperColor: 0x55595e, interiorColor: 0x2a2724, accent: 0x6f7479, glassTint: 0.34,
+    },
+    apertures: {
+      face: 'oval',
+      lamp: { z: [0.550, 0.900], gap: 0.012, h: [0.150, 0.130] },
+      mouth: { z: 0.550, y: [0.220, 0.400], flat: 0.60, bars: 0.030, blade: false },
+      fog: { z: [0.720, 0.800], y: [0.130, 0.220] },
+      frontSplit: 0.400,
+      tail: 'band',
+      recess: { span: 0.92, y: [0.500, 0.620], gap: 0.028, depth: [0.050, 0.040] },
+      tailLamp: { span: [0.400, 0.880], y: [0.550, 0.640], gap: 0.012, h: 0.070 },
+      rearSplit: 0.360,
+      exh: { z: [[0.380, 0.500]], y: [0.180, 0.250] },
+    },
+    shape: {
+      hNoseTip: 0.52, sNoseEdge: 0.03, hNoseEdge: 0.58, sCowl: 0.31, hCowl: 0.66, hoodBow: 0.020, scuttle: 0.04, scuttleDrop: 0.012,
+      sRoofF: 0.42, roofFrontK: 0.99, screenBow: 0.025, sRoofPeak: 0.50, sRoofR: 0.86, roofRearK: 0.985, hRoof: 1.0,
+      sDeck: 0.94, hDeck: 0.90, fastBow: 0.0, sKick: 0.975, hKick: 0.86, duck: 0.0, hTail: 0.55,
+      wTip: 0.34, wFront: 0.975, sFrontFull: 0.15, sWaist: 0.50, wWaist: 0.965, sHaunch: 0.80, wHaunch: 1.0,
+      sTailStart: 0.93, wTailStart: 0.985, wTailEnd: 0.86,
+      hBelt: 0.60, hBeltDoor: 0.60, hBeltQuarter: 0.61, sHaunchBelt: 0.85, hTailBelt: 0.52,
+      sCabin0: 0.315, sCabinMax: 0.50, wCabin: 0.86, sCabin1: 0.92,
+      sDlo0: 0.32, sDloPeak: 0.55, dloPeak: 0.97, sDlo1: 0.93,
         },
   },
 };
