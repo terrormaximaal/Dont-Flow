@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 curvegrammatica (?grammar=1)';
+const VG_BUILD = '4 sep 2026 \u00b7 tweede familie: sedan';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -219,6 +219,9 @@ const VG_BUILD = '4 sep 2026 \u00b7 curvegrammatica (?grammar=1)';
 <div class="dock">
   <div class="strip">
     <button class="c" id="reseed">Nieuwe subtiele variant</button>
+    <select class="c" id="family" title="Familie">
+      <option value="super_gt">Familie: super GT</option><option value="sedan">sedan</option>
+    </select>
     <select class="c" id="character" title="Karakter">
       <option value="neutraal">Karakter: neutraal</option><option value="sportief">sportief</option>
       <option value="agressief">agressief</option><option value="elegant">elegant</option>
@@ -883,10 +886,19 @@ function dloGrammar(g) {
 
 // The five tables for a vehicle: the traced ones when the family has them,
 // otherwise generated from the family's shape controls.
-function resolveReferences(type, A, useGrammar) {
+function resolveReferences(type, A, useGrammar, d) {
   const traced = REFERENCES[type];
   if (traced && !useGrammar) return traced;
-  const g = A.shape;
+  // The controls that are also DNA - the sampled heights and the roof and
+  // deck stations - are taken from the DNA, so the body the grammar draws is
+  // the body the rest of the generator was told about. The scuttle station is
+  // not coupled: the grammar's is where the screen leaves the bonnet, the
+  // DNA's is the cowl the doors hang off, and on the GT those are 10 mm apart.
+  const g = Object.assign({}, A.shape, d ? {
+    hNoseTip: d.noseTopY / d.H, hCowl: d.cowlY / d.H, hRoof: d.roofY / d.H, hDeck: d.deckY / d.H,
+    sRoofF: d.sRoofF, sRoofPeak: d.sRoofPeak, sRoofR: d.sRoofR, sDeck: d.sDeck,
+    hBelt: d.beltY / d.H, hBeltDoor: d.beltDoorY / d.H, hBeltQuarter: d.beltQuarterY / d.H,
+  } : {});
   const SIL = silhouetteGrammar(g);
   const silFn = (f) => SIL[Math.round(clamp(f, 0, 1) * 48)];
   return { SIL, PLAN: planGrammar(g), SECTION: REF_SECTION, BELT: beltGrammar(g, silFn),
@@ -990,6 +1002,65 @@ const ARCHETYPES = {
       ws: [16, 26], d2a: [0.300, 0.362], hw: [0.650, 0.690],
     },
   },
+  /* The first family built from the grammar alone: a three-box notchback
+     sedan. Longer cabin, a real boot deck, a level belt, blunt nose and tail,
+     a higher and narrower body on smaller wheels. Its proportions are the
+     class's - around a 4.9 m D-segment saloon - not any one car's, and its
+     five curves come out of the shape controls below, so no sheet was traced
+     for it. Where it has no gate of its own the gate is derived from its
+     ranges (deriveGate). One honest limitation for now: the generator builds
+     one door pair, so this sedan carries long coupe doors. Rear doors are the
+     next structural step. */
+  sedan: {
+    label: 'Aurelia L', doors: 4, layout: 'voorin gemonteerde zes-in-lijn · achterwielaandrijving',
+    L: [4.850, 4.920],
+    hRatio: [0.2950, 0.3020], wRatio: [0.3780, 0.3840],
+    wbRatio: [0.5850, 0.5920], frontOhShare: [0.430, 0.450], trackRatio: [0.840, 0.860],
+    diaRatio: [0.1360, 0.1400], tireW: [0.225, 0.235], rearTireExtra: [0.0, 0.0], aspect: [0.45, 0.50],
+    clearance: [0.140, 0.155],
+    sCowl: [0.330, 0.340], sRoofF: [0.460, 0.470], sRoofPeak: [0.525, 0.535],
+    sRoofR: [0.685, 0.695], sDeck: [0.775, 0.785],
+    hNose: [0.495, 0.505], hCowl: [0.685, 0.695], hRoof: [0.997, 1.000],
+    hDeck: [0.695, 0.705], hBelt: [0.655, 0.665], hBeltDoor: [0.650, 0.660],
+    hBeltQuarter: [0.660, 0.670],
+    archGap: [0.035, 0.045],
+    profileJitter: [0.0, 0.0],
+    shoulderDrop: [0.020, 0.030], haunch: [0.0, 0.0], frontFlare: [0.0, 0.0],
+    tumble: [0.070, 0.090], rockerH: [0.090, 0.110], rockerTuck: [0.004, 0.008], beltTuck: [0.006, 0.010],
+    hoodDome: [0.004, 0.008], hoodRise: [0.008, 0.014], hoodCrease: [0.004, 0.008], ducktail: [0.002, 0.005],
+    noseDepth: [0.50, 0.56], tailDepth: [0.34, 0.40], frontRakeBack: [0.12, 0.15], tailRakeIn: [0.04, 0.06],
+    doorLen: [1.05, 1.12],
+    wheelStyles: ['five', 'multi'],
+    mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.975,
+    dloRear: 0.800, mirrorF: 0.350, tumbleRef: 0.300,
+    design: {
+      bodyCharacter: 'sedan', headlightStyle: 'swept', taillightStyle: 'lightbar',
+      grilleStyle: 'signature_oval', intakeStyle: 'round_fog', exhaust: 'twin_oval', ducktailBoost: 0.10,
+      rimColor: 0x8d9298, caliperColor: 0x55595e, interiorColor: 0x2a2724, accent: 0x8a6a44, glassTint: 0.30,
+    },
+    apertures: {
+      face: 'oval',
+      lamp: { z: [0.550, 0.900], gap: 0.012, h: [0.130, 0.110] },
+      mouth: { z: 0.550, y: [0.200, 0.360], flat: 0.60, bars: 0.030, blade: false },
+      fog: { z: [0.720, 0.800], y: [0.130, 0.220] },
+      frontSplit: 0.360,
+      tail: 'band',
+      recess: { span: 0.92, y: [0.520, 0.620], gap: 0.028, depth: [0.050, 0.040] },
+      tailLamp: { span: [0.400, 0.880], y: [0.550, 0.630], gap: 0.012, h: 0.060 },
+      rearSplit: 0.420,
+      exh: { z: [[0.380, 0.500]], y: [0.220, 0.290] },
+    },
+    shape: {
+      hNoseTip: 0.50, sNoseEdge: 0.03, hNoseEdge: 0.56, sCowl: 0.335, hCowl: 0.69, hoodBow: 0.030, scuttle: 0.05, scuttleDrop: 0.015,
+      sRoofF: 0.465, roofFrontK: 0.99, screenBow: 0.030, sRoofPeak: 0.53, sRoofR: 0.67, roofRearK: 0.985, hRoof: 1.0,
+      sDeck: 0.78, hDeck: 0.70, fastBow: 0.0, sKick: 0.97, hKick: 0.685, duck: 0.004, hTail: 0.60,
+      wTip: 0.30, wFront: 0.975, sFrontFull: 0.16, sWaist: 0.55, wWaist: 0.965, sHaunch: 0.80, wHaunch: 1.0,
+      sTailStart: 0.90, wTailStart: 0.975, wTailEnd: 0.80,
+      hBelt: 0.66, hBeltDoor: 0.655, hBeltQuarter: 0.665, sHaunchBelt: 0.82, hTailBelt: 0.58,
+      sCabin0: 0.34, sCabinMax: 0.50, wCabin: 0.84, sCabin1: 0.79,
+      sDlo0: 0.345, sDloPeak: 0.55, dloPeak: 0.96, sDlo1: 0.775,
+        },
+  },
 };
 
 /* =========================================================================
@@ -1036,6 +1107,24 @@ const DNA_PRESETS = {
    proportion away from the neutral DNA of the same seed. The gate keeps its
    width - a character is still held to its archetype's tolerance, just around
    a different centre - and a neutral car keeps its gate untouched. */
+/* A family without a hand-written gate gets one derived from its own ranges:
+   the metrics of a spread of neutral builds, widened by 15% of their spread
+   and never less than a floor per unit, so a car in the middle of its family
+   passes and one at the edge is still told where it stands. */
+const _gateCache = new Map();
+function deriveGate(type) {
+  if (_gateCache.has(type)) return _gateCache.get(type);
+  const FLOOR = { rr: 0.6, ws: 0.6, arch: 0.004, ride: 0.004, deck: 0.006 };
+  const lo = {}, hi = {};
+  for (let i = 0; i < 24; i++) {
+    const m = gateMetrics(generateDNA({ type, seed: (i * 2654435761) >>> 0, _neutralProbe: true }));
+    for (const k in m) { lo[k] = lo[k] === undefined ? m[k] : Math.min(lo[k], m[k]); hi[k] = hi[k] === undefined ? m[k] : Math.max(hi[k], m[k]); }
+  }
+  const gate = {};
+  for (const k in lo) { const pad = Math.max(0.15 * (hi[k] - lo[k]), FLOOR[k] || 0.006); gate[k] = [lo[k] - pad, hi[k] + pad]; }
+  _gateCache.set(type, gate);
+  return gate;
+}
 function gateMetrics(d) {
   return {
     wb: d.wheelbase / d.L, gap: (d.wheelbase - 2 * d.wheelR) / (2 * d.wheelR), arch: d.archClear, ride: d.clearance,
@@ -1155,7 +1244,7 @@ function generateDNA(opts = {}) {
   d.roofFlat = d.xRoofF - d.xRoofR;
 
   // --- measured silhouette and plan, scaled to this car -------------------
-  const REFS = resolveReferences(type, A, !!opts.grammar || (typeof window !== 'undefined' && window.VG_GRAMMAR));
+  const REFS = resolveReferences(type, A, !!opts.grammar || (typeof window !== 'undefined' && window.VG_GRAMMAR), d);
   const jit = R('profileJitter');
   d.topProfile = REFS.SIL.map((h, i) => {
     const f = i / (REFS.SIL.length - 1);
@@ -1171,10 +1260,10 @@ function generateDNA(opts = {}) {
   d.secTopProfile = REFS.SECTOP ? REFS.SECTOP.map(([f, h]) => [S(f), h]) : null;
   d.cabProfile = REFS.CABPROF || null;
   d.ap = A.apertures;
-  d.gate = A.gate;
+  d.gate = A.gate || (opts._neutralProbe ? null : deriveGate(type));
   if (Object.keys(bias).length && !opts._neutralProbe) {
     const dN = generateDNA({ type, seed, _neutralProbe: true });
-    d.gate = shiftGate(A.gate, gateMetrics(dN), gateMetrics(d));
+    d.gate = shiftGate(d.gate, gateMetrics(dN), gateMetrics(d));
   }
   d.faceEdge = A.faceEdge || 'station';
   d.faceFrac = A.faceFrac;
@@ -1197,33 +1286,40 @@ function generateDNA(opts = {}) {
   // air curtains in the corners, a tall side gill, a slim full-width lamp bar
   // and a strake diffuser.
   const isS = type === 'super_gt';
-  d.design = {
+  // The GT's language is spelled out here; another family supplies its own
+  // block on the archetype and inherits anything it leaves out.
+  const DS = Object.assign({
     bodyCharacter: isS ? 'super_gt' : 'gt', creaseStyle: 'soft',
     headlightStyle: isS ? 'slit' : 'swept', drlStyle: 'brow',
     taillightStyle: isS ? 'lightbar' : 'oval_recess',
     grilleStyle: isS ? 'shield' : 'signature_oval', bumperStyle: 'clean',
-    intakeStyle: isS ? 'air_curtain' : 'round_fog',
+    intakeStyle: isS ? 'air_curtain' : 'round_fog', mirrorStyle: 'stalk',
+    exhaust: isS ? 'quad' : 'twin_oval', ducktailBoost: isS ? 0.55 : 0.10,
+    rimColor: isS ? 0x3a3d42 : 0x8d9298, caliperColor: isS ? 0xb0201a : 0x9b1c16,
+    interiorColor: isS ? 0x1a1c20 : 0x2a1d18, accent: isS ? 0x6f7479 : 0x8a6a44, glassTint: isS ? 0.38 : 0.30,
+  }, A.design || {});
+  d.design = Object.assign({}, DS, {
     wheelStyle: (() => { const ax = dominantAxis(character); const want = ax && DNA_STYLES.wheel[ax];
-      return (want && A.wheelStyles.indexOf(want) >= 0) ? want : r.pick(A.wheelStyles); })(), mirrorStyle: 'stalk',
-  };
+      return (want && A.wheelStyles.indexOf(want) >= 0) ? want : r.pick(A.wheelStyles); })(),
+  });
   d.theme = d.design.bodyCharacter;
   d.lampStyle = d.design.headlightStyle; d.tailStyle = d.design.taillightStyle;
-  d.grilleStyle = d.design.grilleStyle; d.bumperStyle = 'clean';
-  d.intakeStyle = d.design.intakeStyle; d.drlStyle = 'brow';
+  d.grilleStyle = d.design.grilleStyle; d.bumperStyle = d.design.bumperStyle;
+  d.intakeStyle = d.design.intakeStyle; d.drlStyle = d.design.drlStyle;
   d.wheelStyle = d.design.wheelStyle;
-  d.creaseStyle = 'soft';
-  d.splitterDepth = 0;                 // no front splitter on this car
+  d.creaseStyle = d.design.creaseStyle;
+  d.splitterDepth = 0;                 // no front splitter on these cars
   d.pillarThick = 0.100;               // window frame bar: one section throughout
-  d.sideVent = true;
-  d.ducktailBoost = isS ? 0.55 : 0.10;
-  d.exhaust = isS ? 'quad' : 'twin_oval';
+  d.sideVent = A.sideVent === undefined ? true : A.sideVent > 0;
+  d.ducktailBoost = DS.ducktailBoost;
+  d.exhaust = DS.exhaust;
   d.paint = PAINTS.find((p) => p.name === 'Liquid silver');
   d.spokes = { five: 5, split: 5, multi: 10, turbine: 12 }[d.wheelStyle];
-  d.rimColor = isS ? 0x3a3d42 : 0x8d9298;
-  d.caliperColor = isS ? 0xb0201a : 0x9b1c16;
-  d.interiorColor = isS ? 0x1a1c20 : 0x2a1d18;
-  d.accent = isS ? 0x6f7479 : 0x8a6a44;
-  d.glassTint = isS ? 0.38 : 0.30;
+  d.rimColor = DS.rimColor;
+  d.caliperColor = DS.caliperColor;
+  d.interiorColor = DS.interiorColor;
+  d.accent = DS.accent;
+  d.glassTint = DS.glassTint;
 
   // --- architecture: structural stations, all derived from the DNA --------
   d.arch = {
@@ -3458,7 +3554,7 @@ function stage_body(ctx) {
   // Twin louvred heat extractors in the bonnet, exactly symmetrical.
   const hoodVents = mk('hood.vents', 'Motorkapventilatie', { kind: 'trim', detachable: true, stiffness: 0.8, stage: 7 });
   const HV = d.ap.hoodVent;
-  for (const sideBand of HV.bands) {
+  if (HV) for (const sideBand of HV.bands) {
     const vent = subSurface(hoodFn, HV.u[0], HV.u[1], sideBand[0], sideBand[1], 0.004);
     shell(hoodVents, vent, 10, 2, M.matte, hoodRef, 0.010, false);
     const span = (HV.u[1] - HV.u[0]) / (HV.blades + 0.6);
@@ -5642,6 +5738,9 @@ Vehicle.prototype.validateGeometry = function () {
   });
 
   chip('reseed', () => spawnDeferred(type, (Math.random() * 4294967295) >>> 0, 'Nieuwe variant wordt opgebouwd…'));
+  $('family').addEventListener('change', () => {
+    spawnDeferred($('family').value, seed, 'Familie ' + $('family').options[$('family').selectedIndex].text + ' wordt opgebouwd…');
+  });
   $('character').addEventListener('change', () => {
     characterName = $('character').value;
     spawnDeferred(type, seed, 'Karakter ' + characterName + ' wordt opgebouwd…');
