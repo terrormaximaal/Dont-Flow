@@ -310,6 +310,33 @@ scharnieren en de wielen, de klapkracht bij de schadeknoppen. De balk is
 er niet hoger van geworden (279 px, was 278) omdat de rijen strakker
 staan.
 
+### Lak: kleur en afwerking als keuze (4 sep)
+
+De twaalf gemeten lakken stonden al in de tabel maar de auto pakte er altijd
+één, Liquid silver. Nu zijn ze te kiezen, met daarnaast een afwerking:
+
+- **Kleur en afwerking zijn twee dingen.** De kleur draagt zijn eigen
+  vlokbelading (hoeveel aluminium er in de basislaag zit); de afwerking is de
+  laag erover en bepaalt wat die vlok met het licht mag doen. `metallic` is de
+  gemeten waarde van de kleur zelf, `mat` houdt de vlok maar maakt de lak en
+  de blanke laag ruw (ruwheid +0,44 tot ten hoogste 0,88, blanke laag van 0,95
+  naar 0,25 en ruwheid 0,75). De blanke laag gaat nooit naar nul: dan compileert
+  three.js een tweede shaderprogramma voor dezelfde auto.
+- **Overspuiten is niet opnieuw bouwen.** Alle gelakte panelen delen één
+  materiaal, en klei, reflectietest en structuur bewaren een verwijzing in
+  plaats van een kopie, dus een nieuwe kleur wordt er rechtstreeks in
+  geschreven. Direct zichtbaar, en de keuze blijft staan bij een nieuw zaad of
+  een andere familie.
+- **De kleur is nu ook echt die kleur.** De renderer schrijft sRGB en tonemapt,
+  maar een hex die aan three.js wordt gegeven geldt als lineair licht, dus
+  0x9e1212 kwam er als zalmroze uit in plaats van het diepe rood dat het heet.
+  De lak is het enige oppervlak waarvan de kleur bij naam wordt gekozen, dus
+  die wordt op de weg naar binnen van sRGB naar lineair omgezet. Gevolg: de
+  standaardauto in Liquid silver is een tint dieper dan voorheen (ongeveer 16%
+  van de pixels verschilt, alleen de lak; de geometrie is onveranderd). De
+  kleuren van sierlijsten, glas en interieur zijn met het oog op de
+  ongecorrigeerde pijplijn gekozen en zijn niet aangeraakt.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.

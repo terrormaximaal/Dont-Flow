@@ -198,7 +198,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 zitpositie, geen karakter, geordende balk';
+const VG_BUILD = '4 sep 2026 \u00b7 lak: twaalf kleuren, metallic of mat';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -241,6 +241,10 @@ const VG_BUILD = '4 sep 2026 \u00b7 zitpositie, geen karakter, geordende balk';
     <button class="c" id="reseed">Nieuwe variant</button>
     <select class="c" id="family" title="Familie">
       <option value="super_gt">Familie: super GT</option><option value="city">stadsauto</option><option value="sedan">sedan</option><option value="suv">SUV</option>
+    </select>
+    <select class="c" id="paint" title="Lakkleur"></select>
+    <select class="c" id="finish" title="Afwerking">
+      <option value="metallic">Afwerking: metallic</option><option value="mat">mat</option>
     </select>
   </div>
   <div class="strip g-view" aria-label="Camera-aanzichten">
@@ -1008,6 +1012,13 @@ const REFERENCES = {
           CABIN: REFC_CABIN, TUMBLE: REFC_TUMBLE, DLO: REFC_DLO, HOODEDGE: REFC_HOODEDGE },
 };
 
+/* A paint is a colour and a finish, and they are not the same kind of thing.
+   The colour carries its own flake load - how much aluminium is in the base
+   coat - because that belongs to the paint. The finish is the coat over it and
+   decides what that flake is allowed to do with the light: a gloss clearcoat
+   lets it sparkle, a satin one scatters the reflection before it gets there.
+   So the twelve colours below hold their measured metallic values, and the
+   matte finish is derived from them rather than being a second list. */
 const PAINTS = [
   { name: 'Nardo grey', hex: 0x8c9096, metal: 0.15, rough: 0.42, flake: 0.0 },
   { name: 'Ceramic white', hex: 0xe4e6e6, metal: 0.25, rough: 0.30, flake: 0.2 },
@@ -1022,6 +1033,32 @@ const PAINTS = [
   { name: 'Oxblood', hex: 0x4a1622, metal: 0.80, rough: 0.25, flake: 0.7 },
   { name: 'Miami blue', hex: 0x2f9bc9, metal: 0.40, rough: 0.25, flake: 0.2 },
 ];
+const FINISHES = ['metallic', 'mat'];
+/* The surface values a colour gets under a finish. Metallic is the colour's
+   own measurement, untouched. Matte keeps the flake in the base coat - a
+   frozen metallic still has it - and roughens both the paint and the coat over
+   it, which is what turns a sparkle into a sheen. The clearcoat is thinned but
+   never removed: a matte lacquer still has one, and a clearcoat that reaches
+   zero makes three.js compile a second shader program for the same car. */
+/* The renderer writes sRGB and tone-maps, but a colour handed to three.js as a
+   hex is taken as LINEAR light, so 0x9e1212 came out of the pipeline as a pale
+   salmon rather than the deep red it names. The paint is the one surface whose
+   colour is chosen by name, so it is the one that has to survive the trip: it
+   is converted from sRGB to linear on the way in, and what the list calls
+   Signal red is what the car is. (The trim, glass and interior colours were
+   picked by eye against the uncorrected pipeline and are left alone.) */
+function srgbToLinear(hex) {
+  const c = new THREE.Color(hex);
+  return c.convertSRGBToLinear();
+}
+function paintSurface(p, finish) {
+  if (finish === 'mat') {
+    return { color: srgbToLinear(p.hex), metal: p.metal * 0.85, rough: Math.min(0.88, p.rough + 0.44),
+      clear: 0.25, clearRough: 0.75 };
+  }
+  return { color: srgbToLinear(p.hex), metal: p.metal, rough: p.rough,
+    clear: 0.95, clearRough: 0.05 + (1 - p.flake) * 0.04 };
+}
 
 const ARCHETYPES = {
   super_gt: {
@@ -1485,7 +1522,8 @@ function generateDNA(opts = {}) {
   d.sideVent = A.sideVent === undefined ? true : A.sideVent > 0;
   d.ducktailBoost = DS.ducktailBoost;
   d.exhaust = DS.exhaust;
-  d.paint = PAINTS.find((p) => p.name === 'Liquid silver');
+  d.paint = PAINTS.find((q) => q.name === opts.paint) || PAINTS.find((q) => q.name === 'Liquid silver');
+  d.finish = FINISHES.indexOf(opts.finish) >= 0 ? opts.finish : 'metallic';
   d.spokes = { five: 5, split: 5, multi: 10, turbine: 12 }[d.wheelStyle];
   d.rimColor = DS.rimColor;
   d.caliperColor = DS.caliperColor;
@@ -2341,12 +2379,22 @@ function makeMaterials(s) {
     return new THREE.MeshStandardMaterial(q);
   };
   const roughMap = noiseTexture(s.seed ^ 0x33, 128, 0.72, 1.0, 40);
+  const ps = paintSurface(p, s.finish);
   M.paint = phys({
-    color: p.hex, metalness: p.metal, roughness: p.rough + 0.06, roughnessMap: roughMap,
-    clearcoat: 0.95, clearcoatRoughness: 0.05 + (1 - p.flake) * 0.04,
+    color: ps.color, metalness: ps.metal, roughness: ps.rough + 0.06, roughnessMap: roughMap,
+    clearcoat: ps.clear, clearcoatRoughness: ps.clearRough,
     vertexColors: true, side: THREE.DoubleSide,
   });
-  M.paintBase = { metalness: p.metal, roughness: p.rough };
+  /* Repainting does not rebuild the car: every painted mesh shares this one
+     material, and clay, zebra and x-ray keep a reference to it rather than a
+     copy, so writing the new surface into it reaches all of them at once. */
+  M.repaint = (paint, finish) => {
+    const q = paintSurface(paint, finish);
+    M.paint.color.copy(q.color);
+    M.paint.metalness = q.metal;
+    M.paint.roughness = q.rough + 0.06;
+    if ('clearcoat' in M.paint) { M.paint.clearcoat = q.clear; M.paint.clearcoatRoughness = q.clearRough; }
+  };
   M.clay = std({ color: 0x9a9591, metalness: 0.0, roughness: 0.78, side: THREE.DoubleSide, vertexColors: true });
   M.clayPlain = std({ color: 0x9a9591, metalness: 0.0, roughness: 0.78, side: THREE.DoubleSide });
   M.clayDark = std({ color: 0x6f6b67, metalness: 0.0, roughness: 0.85, side: THREE.DoubleSide });
@@ -5958,6 +6006,7 @@ Vehicle.prototype.validateGeometry = function () {
 
   /* ---- vehicle --------------------------------------------------------- */
   let car = null, type = 'super_gt', seed = 12345, explode = 0, explodeTarget = 0;
+  let paintName = 'Liquid silver', finishName = 'metallic';
   let dentMode = true, spinning = false, tyreCursor = 0, clay = false, stage = 8, zebra = false, xray = false;
 
   function buildExplodeGuides(v) {
@@ -5991,7 +6040,7 @@ Vehicle.prototype.validateGeometry = function () {
       });
     }
     type = t; seed = sd >>> 0;
-    car = buildVehicle({ type, seed });
+    car = buildVehicle({ type, seed, paint: paintName, finish: finishName });
     car._val = null;
     buildExplodeGuides(car);
     car.qc = qualityGate(car);
@@ -6258,7 +6307,7 @@ Vehicle.prototype.validateGeometry = function () {
     const deg = (rad) => Math.round(rad * 180 / Math.PI);
     const az = ((deg(cam.az) % 360) + 360) % 360;
     const out = ['GT-STUDIO AANWIJZING',
-      'auto: ' + car.spec.typeLabel + ' · seed ' + seed + ' · ' + car.spec.paint.name,
+      'auto: ' + car.spec.typeLabel + ' · seed ' + seed + ' · ' + car.spec.paint.name + ' ' + car.spec.finish,
       'maten: ' + L.toFixed(3) + ' x ' + W.toFixed(3) + ' x ' + H.toFixed(3) + ' m',
       'camera: az ' + az + '° · el ' + deg(cam.el) + '° · afstand ' + cam.dist.toFixed(2) + ' m',
       ''];
@@ -6330,7 +6379,7 @@ Vehicle.prototype.validateGeometry = function () {
     const s = car.spec;
     $('vtype').textContent = s.typeLabel;
     $('vseed').textContent = 'Master · ' + String(s.seed).slice(-4).padStart(4, '0');
-    $('vpaint').textContent = s.paint.name + '  ·  ' + s.layout;
+    $('vpaint').textContent = s.paint.name + ' ' + s.finish + '  ·  ' + s.layout;
     $('vdims').textContent =
       s.L.toFixed(2) + ' x ' + s.W.toFixed(2) + ' x ' + s.H.toFixed(2) + ' m  ·  wielbasis ' + s.wheelbase.toFixed(2) +
       ' m  ·  ' + car.parts.size + ' onderdelen';
@@ -6490,6 +6539,31 @@ Vehicle.prototype.validateGeometry = function () {
   });
 
   chip('reseed', () => spawnDeferred(type, (Math.random() * 4294967295) >>> 0, 'Nieuwe variant wordt opgebouwd…'));
+  /* Painting the car is not building it: the surface is one material shared by
+     every panel, so a new colour or finish is written straight into it. That
+     keeps it instant, and it keeps the choice - a repaint must not hand you a
+     different car, and a new seed must not hand you a different colour. */
+  for (const q of PAINTS) {
+    const o = document.createElement('option');
+    o.value = q.name; o.textContent = (q.name === paintName ? 'Lak: ' : '') + q.name;
+    $('paint').appendChild(o);
+  }
+  $('paint').value = paintName;
+  const repaint = () => {
+    if (!car) return;
+    car.mat.repaint(car.spec.paint, car.spec.finish);
+    updateHUD();
+  };
+  $('paint').addEventListener('change', () => {
+    paintName = $('paint').value;
+    car.spec.paint = PAINTS.find((q) => q.name === paintName) || car.spec.paint;
+    repaint();
+  });
+  $('finish').addEventListener('change', () => {
+    finishName = $('finish').value;
+    car.spec.finish = finishName;
+    repaint();
+  });
   $('family').addEventListener('change', () => {
     spawnDeferred($('family').value, seed, 'Familie ' + $('family').options[$('family').selectedIndex].text + ' wordt opgebouwd…');
   });
