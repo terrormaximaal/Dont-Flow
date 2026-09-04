@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '3 sep 2026 \u00b7 flens 24 mm onder klep en kap';
+const VG_BUILD = '4 sep 2026 \u00b7 normalen goed om: echte vorm zonder Repareer';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -508,7 +508,15 @@ function _grid(us, vs, fn, ref) {
     for (let i = 0; i < nu; i++) {
       if (us[i + 1] === us[i]) continue;
       const a = j * (nu + 1) + i, b = a + 1, c = a + nu + 1, dd = c + 1;
-      tri(a, c, b); tri(b, c, dd);
+      /* Wound to agree with the analytic normal above. It used to be the other
+         way round - tri(a, c, b) gives (dv x du), the opposite of the (du x dv)
+         stored per vertex - and with double-sided materials three.js decides
+         "front facing" from the winding and negates the vertex normal when it
+         says the face is a back face. So every visible painted surface was lit
+         with a normal pointing INTO the car: no form, no highlight, a flat pale
+         body. Pressing Repareer hid it, because repair() recomputes the normals
+         from the winding and the two agreed again. */
+      tri(a, b, c); tri(b, dd, c);
     }
   }
   return _orient({ pos, nrm, idx }, ref);
@@ -575,8 +583,10 @@ function buildShell(us, vs, fn, thickness, ref) {
       const cx = ay * bz - az * by, cy = az * bx - ax * bz, cz = ax * by - ay * bx;
       if (cx * cx + cy * cy + cz * cz >= 1e-16) idx.push(x, y, z);
     };
-    rimTri(base, base + 1, base + 2);
-    rimTri(base + 1, base + 3, base + 2);
+    // ...and the rim with them: its normal is e x n, so the winding runs
+    // outer-edge, inner-edge, next-outer.
+    rimTri(base, base + 2, base + 1);
+    rimTri(base + 1, base + 2, base + 3);
   };
   for (let i = 0; i < nu; i++) { if (us[i + 1] === us[i]) continue; rim(i + 1, i); rim(nv * (nu + 1) + i, nv * (nu + 1) + i + 1); }
   for (let j = 0; j < nv; j++) { if (vs[j + 1] === vs[j]) continue; rim(j * (nu + 1), (j + 1) * (nu + 1)); rim((j + 1) * (nu + 1) + nu, j * (nu + 1) + nu); }
@@ -1760,21 +1770,24 @@ function makeMaterials(s) {
      a colour chart: with the sun at 2.25 plus the hemisphere and the fill, an
      albedo this dark still came back at 193 of 255 - silver, not graphite - and
      darkening it further barely moved (171 at half the albedo). The environment
-     was doing the work, so that is the term to cut; at 0.08 the vanes read 153
-     against a 114 recess, which is graphite standing just proud of its own
-     shadow. */
+     was doing the work, so that is the term to cut.
+     Re-measured after the normals were wound the right way round, because every
+     number here was read off a surface that was being lit backwards: the vanes
+     now come back at 163 against an 85 recess, so 78 apart where they used to
+     be 33. Graphite standing well proud of its own shadow. */
   /* The diffuser dish, near black. Its albedo was already this dark and it
      still came back at 96 of 255, because under this studio the environment
-     term does the work; cutting that to 0.30 puts it at 59, which reads black
-     without going flat, and leaves the graphite strakes 70 clear of it. */
+     term does the work; cutting that to 0.30 puts it at 45 with the normals
+     right (59 before), black without going flat, and 67 clear of the strakes
+     in front of it. */
   M.dish = std({ color: 0x0e0f11, metalness: 0.05, roughness: 0.95, envMapIntensity: 0.30, side: THREE.DoubleSide });
   M.vane = std({ color: 0x2e3238, metalness: 0.0, roughness: 1.0, envMapIntensity: 0.08, side: THREE.DoubleSide });
   /* The diffuser strakes are the same graphite, mixed against a darker
      backdrop: the dish behind them reads 96 of 255 where the grille's cavity
      reads 114, so the same recipe left them 17 apart and they disappeared into
-     it. Opened up to 132 they sit 36 clear of the dish - the same separation
-     the vanes have from their own recess - and still read as grey rather than
-     the near-white 144 they were. */
+     it. Opened up they now read 112 against a 45 dish - 67 clear, the same
+     separation the vanes have from their own recess - and still grey rather
+     than the near-white 144 they were. */
   M.strake = std({ color: 0x33383e, metalness: 0.0, roughness: 1.0, envMapIntensity: 0.20, side: THREE.DoubleSide });
   M.grilleFrame = std({ color: 0x24272b, metalness: 0.40, roughness: 0.45, side: THREE.DoubleSide });
   M.tire = std({ color: 0x131416, metalness: 0.0, roughness: 0.93, bumpMap: treadTexture(), bumpScale: 0.004, side: THREE.DoubleSide });
@@ -1805,8 +1818,9 @@ function makeMaterials(s) {
   M.interiorDark = std({ color: 0x0e0f11, metalness: 0.05, roughness: 0.95, side: THREE.DoubleSide });
   /* The inside of a tailpipe. A near-black albedo is not enough on its own
      under this studio - the grille cavity is this same 0e0f11 and comes back
-     at 114 of 255 - so the environment term is cut almost out. Measured value
-     in the comment beside the pipes. */
+     at 85 of 255 - so the environment term is cut almost out. The end disc is
+     unlit on purpose: it is the one surface here that has to read as a hole
+     rather than as a dark surface, and it measures 0 against a 128 rim. */
   M.bore = std({ color: 0x050607, metalness: 0.10, roughness: 0.90, envMapIntensity: 0.02, side: THREE.DoubleSide });
   M.boreEnd = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
   M.accent = std({ color: s.accent, metalness: 0.2, roughness: 0.6, side: THREE.DoubleSide });
