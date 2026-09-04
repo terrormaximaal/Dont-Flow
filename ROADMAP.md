@@ -318,13 +318,31 @@ De twaalf gemeten lakken stonden al in de tabel maar de auto pakte er altijd
 - **Kleur en afwerking zijn twee dingen.** De kleur draagt zijn eigen
   vlokbelading (hoeveel aluminium er in de basislaag zit); de afwerking is de
   laag erover en bepaalt wat die vlok met het licht mag doen. `metallic` is
-  gepolijst: de gemeten ruwheid van de kleur maal 0,62, een blanke laag van 1,0
-  die zelf vrijwel niet verstrooit (0,02 tot 0,05) en een omgeving die 1,25 keer
-  zo hard weerkaatst. De ruwheid wordt geschaald en niet vervangen, zodat de
-  vlakste van de twaalf de vlakste blijft. `mat` houdt de vlok maar maakt de lak
-  en de blanke laag ruw (ruwheid +0,50 tot ten hoogste 0,94, blanke laag 0,25 en
-  ruwheid 0,75). De blanke laag gaat nooit naar nul: dan compileert three.js een
-  tweede shaderprogramma voor dezelfde auto.
+  metaal: het metaalgehalte komt uit de vlokbelading (0,74 tot 0,99) in plaats
+  van uit een derde getal per kleur, de ruwheid is de gemeten waarde maal 0,50,
+  de blanke laag staat op 1,0 en verstrooit zelf vrijwel niets (0,015 tot 0,04),
+  en de omgeving weerkaatst 1,55 keer zo hard. `mat` houdt de vlok maar maakt de
+  lak en de blanke laag ruw (ruwheid +0,50 tot ten hoogste 0,94, blanke laag
+  0,25 en ruwheid 0,75). De blanke laag gaat nooit naar nul: dan compileert
+  three.js een tweede shaderprogramma voor dezelfde auto.
+- **Er is een lichtstraat, geen gradiënt meer.** Een metallic lak heeft zelf
+  bijna niets te tonen: hij geeft je een plaatje van de ruimte. De oude
+  omgevingskaart was een gladde verticale verloop met drie platte witte vlakken,
+  dus een gepolijst paneel spiegelde een glad verloop en bleef plastic hoe hoog
+  het metaalgehalte ook stond. De nieuwe is een studio: een licht plafond, vier
+  softboxen, een harde horizon waar de wand de vloer raakt, en een donkere
+  vloer. Die horizon doet het werk, want een scherpe donkere rand die over een
+  spatbord schuift is wat het oog vertelt dat het oppervlak een spiegel is.
+- **Wat niet is gelukt.** Een echte vlok per fragment is gebouwd: een hash van
+  de wereldpositie in cellen van een paar millimeter, elke cel kantelt de normaal
+  van de basislaag terwijl de blanke laag erboven glad blijft, wat precies de
+  opbouw van echte metallic is. Op deze schaal rendert dat als korrel en niet
+  als glinstering: een vlok is hier kleiner dan een pixel, dus wat op het scherm
+  komt is ruis die een zwarte auto grijs maakt. Weer verwijderd; het zou zijn
+  plek verdienen in een close-upmodus.
+- **De roughnessMap op de lak was dood.** 29 van de 30 gelakte meshes zijn
+  analytische oppervlakken zonder UV-coördinaten, dus elke fragment las dezelfde
+  texel: een constante vermenigvuldiging vermomd als textuur. Weg.
 - **Overspuiten is niet opnieuw bouwen.** Alle gelakte panelen delen één
   materiaal, en klei, reflectietest en structuur bewaren een verwijzing in
   plaats van een kopie, dus een nieuwe kleur wordt er rechtstreeks in

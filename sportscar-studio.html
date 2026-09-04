@@ -198,7 +198,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 lak: twaalf kleuren, metallic glanzender';
+const VG_BUILD = '4 sep 2026 \u00b7 metallic: echt metaal, echte lichtstraat';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1058,14 +1058,23 @@ function paintSurface(p, finish) {
     return { color: srgbToLinear(p.hex), metal: p.metal * 0.85, rough: Math.min(0.94, p.rough + 0.50),
       clear: 0.25, clearRough: 0.75, env: 1.0 };
   }
-  /* Metallic is polished: a show-car clearcoat, not a used one. The colour's
-     measured roughness is scaled back rather than replaced, so a paint that was
-     always the flattest of the twelve stays the flattest, and the coat over it
-     carries almost no scatter of its own - which is where the sharpness of the
-     reflection, and the sparkle of the flake, actually comes from. The
-     environment is reflected a little harder for the same reason. */
-  return { color: srgbToLinear(p.hex), metal: p.metal, rough: p.rough * 0.62 + 0.02,
-    clear: 1.0, clearRough: 0.02 + (1 - p.flake) * 0.03, env: 1.25 };
+  /* Metallic is polished, and it is metal: the metalness comes from the
+     colour's flake load rather than from a third number per colour, because
+     that is what the finish means - a paint with more aluminium in it reflects
+     more like aluminium. Even the solid colours of the twelve pick up a base
+     load here, which is the point of asking for the metallic finish. The
+     clearcoat over it carries almost no scatter of its own, which is where the
+     sharpness of the reflection comes from, and the environment is reflected
+     half again as hard.
+
+     There is no per-fragment flake. It was built - a hash of the world position
+     diced into cells, each tilting the base-layer normal under an untouched
+     clearcoat, which is how the real thing is layered - and at this scale it
+     renders as grain, not sparkle: a flake is smaller than a pixel here, so
+     what reaches the screen is noise that lightens a black car into a grey one.
+     It would earn its place in a close-up mode, not on a car in frame. */
+  return { color: srgbToLinear(p.hex), metal: 0.74 + 0.25 * p.flake, rough: p.rough * 0.50 + 0.015,
+    clear: 1.0, clearRough: 0.015 + (1 - p.flake) * 0.025, env: 1.55 };
 }
 
 const ARCHETYPES = {
@@ -2386,10 +2395,14 @@ function makeMaterials(s) {
     for (const k in o) if (k !== 'clearcoat' && k !== 'clearcoatRoughness' && k !== 'transmission' && k !== 'ior') q[k] = o[k];
     return new THREE.MeshStandardMaterial(q);
   };
-  const roughMap = noiseTexture(s.seed ^ 0x33, 128, 0.72, 1.0, 40);
   const ps = paintSurface(p, s.finish);
+  /* No roughness map on the paint. There was one, a noise texture, and it did
+     nothing: 29 of the 30 painted meshes are analytic surfaces built without UV
+     coordinates, so every fragment sampled the same texel and the map was a
+     constant multiplier dressed up as a texture. The roughness below is the
+     whole truth about how glossy this paint is. */
   M.paint = phys({
-    color: ps.color, metalness: ps.metal, roughness: ps.rough, roughnessMap: roughMap,
+    color: ps.color, metalness: ps.metal, roughness: ps.rough,
     clearcoat: ps.clear, clearcoatRoughness: ps.clearRough, envMapIntensity: ps.env,
     vertexColors: true, side: THREE.DoubleSide,
   });
@@ -5823,22 +5836,44 @@ Vehicle.prototype.validateGeometry = function () {
       return tex;
     }
   }
+  /* The light rig. A metallic paint has almost nothing of its own to show: it
+     hands you a picture of the room. The old map was a smooth vertical
+     gradient with three flat white patches, so a polished panel reflected a
+     smooth vertical gradient and read as plastic no matter how high its
+     metalness went. This one is a studio: a bright ceiling, four soft boxes
+     overhead, a hard horizon where the wall meets the floor, and a dark floor
+     under it. The horizon is what does the work - a defined dark edge sliding
+     across a wing is what tells the eye the surface is a mirror. */
   function environmentMap() {
     const c = document.createElement('canvas');
-    c.width = 256; c.height = 128;
+    c.width = 512; c.height = 256;
     const g = c.getContext('2d');
-    const grad = g.createLinearGradient(0, 0, 0, 128);
-    grad.addColorStop(0.00, '#dfe4e9');
-    grad.addColorStop(0.34, '#f7f8f9');
-    grad.addColorStop(0.48, '#ffffff');
-    grad.addColorStop(0.62, '#b8c0c9');
-    grad.addColorStop(1.00, '#3e444c');
-    g.fillStyle = grad; g.fillRect(0, 0, 256, 128);
-    g.fillStyle = 'rgba(255,255,255,0.85)';
-    g.fillRect(30, 26, 62, 16);
-    g.fillRect(150, 20, 46, 12);
-    g.fillStyle = 'rgba(255,255,255,0.35)';
-    g.fillRect(196, 34, 40, 9);
+    const grad = g.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0.00, '#e8ecf0');   // zenith
+    grad.addColorStop(0.18, '#ffffff');   // ceiling bank
+    grad.addColorStop(0.34, '#f2f5f8');
+    grad.addColorStop(0.46, '#dfe5ea');   // wall, just above the horizon
+    grad.addColorStop(0.500, '#aab2ba');
+    grad.addColorStop(0.505, '#5c636b');  // the horizon: wall meets floor
+    grad.addColorStop(0.70, '#474d54');
+    grad.addColorStop(1.00, '#23262a');   // floor, straight down
+    g.fillStyle = grad; g.fillRect(0, 0, 512, 256);
+    // four overhead soft boxes, long in azimuth so they streak down a flank
+    const box = (x, y, w, h, a) => {
+      const r = g.createRadialGradient(x + w / 2, y + h / 2, 0, x + w / 2, y + h / 2, Math.max(w, h) / 2);
+      r.addColorStop(0, 'rgba(255,255,255,' + a + ')');
+      r.addColorStop(0.55, 'rgba(255,255,255,' + (a * 0.72) + ')');
+      r.addColorStop(1, 'rgba(255,255,255,0)');
+      g.save(); g.translate(x + w / 2, y + h / 2); g.scale(1, h / w); g.translate(-(x + w / 2), -(y + h / 2));
+      g.fillStyle = r; g.fillRect(x - w, y - w, w * 3, w * 3); g.restore();
+    };
+    box(20, 22, 150, 34, 1.0);
+    box(210, 14, 120, 30, 0.95);
+    box(360, 30, 130, 28, 0.85);
+    box(120, 60, 90, 20, 0.55);
+    // a soft bounce card low on the wall, so the rocker does not go black
+    box(60, 210, 200, 26, 0.30);
+    box(300, 214, 170, 24, 0.26);
     return prefilter(c);
   }
   const envStudio = environmentMap();
