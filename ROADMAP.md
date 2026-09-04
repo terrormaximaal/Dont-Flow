@@ -1,6 +1,6 @@
 # Procedural Vehicle Generator — analyse en roadmap
 
-Stand: 4 sep 2026. Stappen 1, 2, 4 en 5 zijn gedaan; 3 is gemeten en afgewezen (zie tabel).
+Stand: 4 sep 2026. Stappen 1, 2, 4, 5 en 6 zijn gedaan; 3 is gemeten en afgewezen (zie tabel).
 Alle getallen hieronder zijn gemeten op `sportscar-studio.html`, seed 12345,
 `super_gt`, tenzij anders vermeld. Metingen draaien op een software-rasteriser
 (swiftshader); waar dat het resultaat beïnvloedt staat het erbij.
@@ -121,7 +121,7 @@ zijn.
 | 3 | `_grid` goedkoper ✗ gemeten en afgewezen | rasternormalen: 370 -> 170 ms maar 30 639 pixels verschoven (plooien in de flank smaller dan een cel); voorwaartse differenties: -54 ms, nog 18 878 pixels | bouwtijd, pixeldiff |
 | 4 | **`buildVehicle` in twaalf stages met één `ctx`** ✔ | mechanisch gesplitst op de sectiemarkeringen, 38 grensoverschrijdende namen via ctx, 0 pixels verschil | regels per functie, geen gedragsverandering |
 | 5 | **Vehicle DNA-laag** ✔ | acht karakterassen, regels per proportie, kwaliteitspoort schuift mee; neutraal = 0 pixels verschil, alle acht presets QC 21/21 | zichtbare variatie bij vaste seed |
-| 6 | **Curvegrammatica**: SIL/PLAN/BELT/CABIN/DLO uit controlepunten | maakt families mogelijk zonder nieuw stylingblad | afwijking t.o.v. de getraceerde tabellen |
+| 6 | **Curvegrammatica** ✔ | de vijf tabellen uit ~45 benoemde controles; geijkt op de GT: silhouet gemiddeld 4,6 mm (max 16), plan 2,4 mm, belt 1,5 mm - het niveau van de tracering zelf (1 px ≈ 10 mm). `?grammar=1` bouwt de GT uit de grammatica: QC 21/21, geometrie ok, visueel niet te onderscheiden | afwijking t.o.v. de getraceerde tabellen |
 | 7 | `qualityGate` per familie configureerbaar | anders faalt elke nieuwe familie op GT-aannames | 21 controles blijven zinvol |
 | 8 | Familie: **sedan** | eerste bewijs dat de architectuur werkt | hoeveel nieuwe regels? |
 | 9 | Familie: **SUV** | hoge body, andere stance | idem |

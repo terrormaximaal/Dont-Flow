@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 Vehicle DNA: acht karakters';
+const VG_BUILD = '4 sep 2026 \u00b7 curvegrammatica (?grammar=1)';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -349,6 +349,8 @@ window.addEventListener('error', function (e) {
   var qs = new URLSearchParams(window.location.search);
   var q = parseFloat(qs.get('q'));
   window.VG_QUALITY = (q > 0 && q <= 1) ? q : (window.VG_LOW ? 0.62 : 1);
+  // ?grammar=1 builds the car from the curve grammar instead of its traced tables
+  window.VG_GRAMMAR = qs.get('grammar') === '1';
 })();
 </script>
 <script id="core">
@@ -778,6 +780,119 @@ const REF2_DLO = [
   [0.680, 0.90], [0.730, 0.78], [0.790, 0.52],
 ];
 
+/* =========================================================================
+   Curve grammar: named controls -> the same tables a tracing produces
+   -------------------------------------------------------------------------
+   The traced tables above are what make this car look like a car, and they
+   are also the one thing a second vehicle family cannot inherit. So the same
+   five curves can be GENERATED from a few dozen named controls - where the
+   cowl is, how high the roof, how far the haunch fills out - through the same
+   monotone cubic the traced tables go through. A family that has a traced
+   sheet uses it; a family that has none supplies controls instead, and the
+   rest of the generator cannot tell the difference.
+
+   The grammar carries shape knowledge of its own that is not any one car's:
+   how a nose fills out over its first fifth, how a bonnet's rise is
+   front-loaded, that the front belt is the bonnet's side edge and runs 2 mm
+   under the silhouette. It is calibrated against the super GT's traced
+   tables, controls read off them by hand, and the residual is the honest
+   measure of how much of a real car the grammar captures:
+
+     silhouette  mean 4.6 mm, max 16 mm (upper windscreen)
+     plan        mean 2.4 mm, max  7 mm
+     belt        mean 1.5 mm, max  7 mm
+     cabin       mean 0.4 mm      dlo  mean 0.2 (of 1)
+
+   That is the level of the tracing itself: one pixel of the sheet is about
+   10 mm. ?grammar=1 builds the GT from the grammar instead of the tables, so
+   the two can be put side by side at any time. */
+function silhouetteGrammar(g) {
+  const pts = [];
+  pts.push([0, g.hNoseTip]);
+  pts.push([g.sNoseEdge, g.hNoseEdge]);
+  // bonnet: a chord from the nose edge to the scuttle, bowed upward and
+  // front-loaded - a bonnet rises quickly off its leading edge and then eases
+  // into the cowl plateau
+  const sScuttle = g.sCowl - g.scuttle, hScuttle = g.hCowl - g.scuttleDrop;
+  const bx0 = g.sNoseEdge, by0 = g.hNoseEdge, bx1 = sScuttle, by1 = hScuttle;
+  for (const [t, k] of [[0.25, 1.0], [0.5, 0.96], [0.75, 0.43]]) pts.push([lerp(bx0, bx1, t), lerp(by0, by1, t) + g.hoodBow * k]);
+  pts.push([sScuttle, hScuttle]);
+  pts.push([g.sCowl, g.hCowl]);
+  // windscreen: from the cowl to the roof's front edge, convex (a real screen
+  // is curved in section and the centreline shows it)
+  const wx0 = g.sCowl, wy0 = g.hCowl, wx1 = g.sRoofF, wy1 = g.hRoof * g.roofFrontK;
+  for (const [t, k] of [[0.08, 0.30], [0.35, 0.92], [0.62, 1.0], [0.85, 0.55]]) pts.push([lerp(wx0, wx1, t), lerp(wy0, wy1, t) + g.screenBow * k]);
+  pts.push([g.sRoofF, wy1]);
+  pts.push([g.sRoofPeak, g.hRoof]);
+  pts.push([g.sRoofR, g.hRoof * g.roofRearK]);
+  // fastback: accelerating fall to the deck
+  const fx0 = g.sRoofR, fy0 = g.hRoof * g.roofRearK, fx1 = g.sDeck, fy1 = g.hDeck;
+  for (const t of [0.35, 0.7]) pts.push([lerp(fx0, fx1, t), lerp(fy0, fy1, t) + g.fastBow * Math.sin(Math.PI * t)]);
+  pts.push([g.sDeck, g.hDeck]);
+  // deck: drops to the kick, kicks up, then the trailing edge
+  pts.push([lerp(g.sDeck, g.sKick, 0.5), lerp(g.hDeck, g.hKick, 0.55)]);
+  pts.push([g.sKick, g.hKick]);
+  pts.push([g.sKick + 0.6 * (1 - g.sKick), g.hKick + g.duck]);
+  pts.push([1, g.hTail]);
+  const c = curve1D(pts);
+  const out = []; for (let i = 0; i < 49; i++) out.push(c(i / 48));
+  return out;
+}
+
+function planGrammar(g) {
+  // shape constants of the grammar, not of one car: how a nose fills out and
+  // how a tail draws in, as fractions of the way between the two widths
+  const NOSE = [[0.11, 0.467], [0.22, 0.694], [0.33, 0.790], [0.44, 0.876], [0.55, 0.935], [0.77, 0.990]];
+  const TAIL = [[0.4, 0.225], [0.6, 0.425], [0.8, 0.675]];
+  const pts = [[0, g.wTip]];
+  for (const [u, k] of NOSE) pts.push([u * g.sFrontFull, lerp(g.wTip, g.wFront, k)]);
+  pts.push([g.sFrontFull, g.wFront], [g.sFrontFull + 0.03, g.wFront]);
+  // flank: a slow draw-in to the waist, holding two plateaus
+  pts.push([g.sFrontFull + 0.08, lerp(g.wFront, g.wWaist, 0.45)], [g.sFrontFull + 0.14, lerp(g.wFront, g.wWaist, 0.70)], [lerp(g.sFrontFull + 0.14, g.sWaist, 0.55), lerp(g.wFront, g.wWaist, 0.85)], [g.sWaist, g.wWaist]);
+  // haunch: fills out late and fast
+  pts.push([g.sHaunch - 0.10, lerp(g.wWaist, g.wHaunch, 0.32)], [g.sHaunch - 0.04, lerp(g.wWaist, g.wHaunch, 0.89)], [g.sHaunch, g.wHaunch], [g.sHaunch + 0.04, g.wHaunch * 0.996]);
+  pts.push([g.sTailStart, g.wTailStart]);
+  for (const [t, k] of TAIL) pts.push([lerp(g.sTailStart, 0.98, t), lerp(g.wTailStart, g.wTailEnd, k)]);
+  pts.push([0.98, g.wTailEnd], [1, g.wTip * 1.2]);
+  const c = curve1D(pts);
+  const out = []; for (let i = 0; i < 49; i++) out.push(c(i / 48));
+  return out;
+}
+
+function beltGrammar(g, sil) {
+  // Ahead of the cowl the belt IS the top of the front wing, which is the
+  // bonnet's side edge: the traced belt runs 2 mm under the traced silhouette
+  // there at every station. So it is read off the silhouette, not restated.
+  const pts = [];
+  for (const f of [0, 0.04, 0.085, 0.13, 0.18, 0.24, 0.30]) pts.push([f, sil(f) - 0.002]);
+  pts.push([g.sCowl + 0.01, g.hBelt], [0.42, g.hBeltDoor + 0.002], [0.50, g.hBeltDoor], [0.58, g.hBeltDoor + 0.002],
+    [0.65, g.hBeltDoor + 0.010], [0.70, g.hBeltDoor + 0.021], [0.76, g.hBeltQuarter - 0.007], [g.sHaunchBelt, g.hBeltQuarter],
+    [0.87, g.hBeltQuarter - 0.006], [0.92, g.hBeltQuarter - 0.020], [0.958, g.hBeltQuarter - 0.042], [0.98, g.hBeltQuarter - 0.082], [1, g.hTailBelt]);
+  return pts;
+}
+
+function cabinGrammar(g) {
+  return [[g.sCabin0, g.wCabin * 0.80], [g.sCabin0 + 0.055, g.wCabin * 0.954], [g.sCabinMax, g.wCabin], [g.sCabinMax + 0.08, g.wCabin * 0.995],
+    [g.sCabinMax + 0.14, g.wCabin * 0.98], [g.sCabinMax + 0.20, g.wCabin * 0.942], [g.sCabin1 - 0.06, g.wCabin * 0.797], [g.sCabin1, g.wCabin * 0.628]];
+}
+
+function dloGrammar(g) {
+  return [[g.sDlo0, 0.14], [g.sDlo0 + 0.05, 0.52], [g.sDlo0 + 0.10, 0.80], [g.sDlo0 + 0.16, 0.93], [g.sDloPeak, g.dloPeak],
+    [g.sDloPeak + 0.06, g.dloPeak * 0.947], [g.sDloPeak + 0.11, g.dloPeak * 0.82], [g.sDlo1, 0.52]];
+}
+
+// The five tables for a vehicle: the traced ones when the family has them,
+// otherwise generated from the family's shape controls.
+function resolveReferences(type, A, useGrammar) {
+  const traced = REFERENCES[type];
+  if (traced && !useGrammar) return traced;
+  const g = A.shape;
+  const SIL = silhouetteGrammar(g);
+  const silFn = (f) => SIL[Math.round(clamp(f, 0, 1) * 48)];
+  return { SIL, PLAN: planGrammar(g), SECTION: REF_SECTION, BELT: beltGrammar(g, silFn),
+           CABIN: cabinGrammar(g), TUMBLE: A.tumbleRef === undefined ? REF2_TUMBLE : A.tumbleRef, DLO: dloGrammar(g) };
+}
+
 /* Both cars, addressed by archetype. Everything the generator draws for a car
    comes out of its entry here. */
 const REFERENCES = {
@@ -857,6 +972,17 @@ const ARCHETYPES = {
       gill: { f: [0.283, 0.368], v: [0.20, 0.46], blades: 2 },
       hoodVent: { u: [0.34, 0.70], bands: [[0.225, 0.350], [0.650, 0.775]], blades: 4 },
     },
+    // the grammar's controls for this car, read off its traced tables
+    shape: {
+      hNoseTip: 0.4385, sNoseEdge: 0.045, hNoseEdge: 0.545, sCowl: 0.375, hCowl: 0.7433, hoodBow: 0.050, scuttle: 0.06, scuttleDrop: 0.022,
+      sRoofF: 0.575, roofFrontK: 0.996, screenBow: 0.040, sRoofPeak: 0.606, sRoofR: 0.70, roofRearK: 0.980, hRoof: 1.0,
+      sDeck: 0.87, hDeck: 0.8455, fastBow: 0.006, sKick: 0.958, hKick: 0.7594, duck: 0.016, hTail: 0.754,
+      wTip: 0.1345, wFront: 0.984, sFrontFull: 0.19, sWaist: 0.62, wWaist: 0.9287, sHaunch: 0.79, wHaunch: 1.0,
+      sTailStart: 0.875, wTailStart: 0.9676, wTailEnd: 0.6434,
+      hBelt: 0.74, hBeltDoor: 0.727, hBeltQuarter: 0.782, sHaunchBelt: 0.82, hTailBelt: 0.452,
+      sCabin0: 0.385, sCabinMax: 0.52, wCabin: 0.828, sCabin1: 0.86,
+      sDlo0: 0.40, sDloPeak: 0.62, dloPeak: 0.95, sDlo1: 0.79,
+        },
     gate: {
       wb: [0.585, 0.592], gap: [2.72, 3.08], arch: [0.022, 0.045], ride: [0.104, 0.126],
       dlo: [0.255, 0.292], ohf: [0.186, 0.199], ohr: [0.213, 0.227], track: [0.80, 0.88],
@@ -1029,7 +1155,7 @@ function generateDNA(opts = {}) {
   d.roofFlat = d.xRoofF - d.xRoofR;
 
   // --- measured silhouette and plan, scaled to this car -------------------
-  const REFS = REFERENCES[type];
+  const REFS = resolveReferences(type, A, !!opts.grammar || (typeof window !== 'undefined' && window.VG_GRAMMAR));
   const jit = R('profileJitter');
   d.topProfile = REFS.SIL.map((h, i) => {
     const f = i / (REFS.SIL.length - 1);
