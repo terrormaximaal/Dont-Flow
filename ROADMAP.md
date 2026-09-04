@@ -265,11 +265,50 @@ de echte. Variatie op de mesh (roosterdeformatie) is niet gedaan.
 
 Wielen: op aanwijzing van de opdrachtgever komen die van het eigen
 wielsysteem, ook op de mesh-stadsauto, zodat er één systeem is voor alle
-families (band, velg, schijf, klauw, lekke band, velgstijl per karakter).
+families (band, velg, schijf, klauw, lekke band, velgstijl per zaad).
 De maat klopt: de mesh meet band 20,4 cm breed, straal 28,9 cm, velg
 19,3 cm; de DNA van de familie geeft 20,0-21,0 cm, 0,159-0,163 L en een
 hoogte-breedteverhouding 0,42-0,46 (mesh: 0,47). De velg, band en schijf
 van de mesh zitten niet meer in MESH_LIB (bestand 130 kB kleiner).
+
+### Vierde ronde: zitpositie, karakter eruit, knoppen geordend (4 sep)
+
+Drie aanwijzingen van de opdrachtgever, in één ronde:
+
+**Zitpositie is een familieparameter.** De voorstoel stond op een vaste
+0,74 m achter de cowl, voor alle families dezelfde. Dat kan niet: de cowl
+van de stadsauto staat vrijwel boven de vooras en die van de GT bijna een
+meter erachter, dus dezelfde millimeters geven vier verschillende auto's.
+Nieuw is `seatSet` per archetype, het heuppunt achter de cowl uitgedrukt in
+wielbasissen. Iedere familie zit nu 9 tot 11 cm verder naar achter:
+
+| familie | heuppunt achter de vooras, was | nu |
+|---|---|---|
+| super GT | 0,593 wielbasis | 0,632 |
+| stadsauto | 0,299 | 0,338 |
+| sedan | 0,519 | 0,555 |
+| SUV | 0,463 | 0,495 |
+
+**Het karaktersysteem is weg.** Acht assen (sportief, agressief, elegant …)
+duwden een set proporties samen tot buiten het gemeten bereik van de
+familie, en de kwaliteitspoort moest dan mee opschuiven om te blijven
+kloppen. Een auto die buiten de envelop van zijn eigen referentie stapt is
+die auto niet meer. `DNA_AXES`, `DNA_RULES`, `DNA_STYLES`, `DNA_PRESETS`,
+`dnaBias`, `normaliseCharacter`, `dominantAxis` en `shiftGate` zijn
+verwijderd, samen met de keuzelijst in de balk. Variatie komt nu alleen
+van het zaad binnen het gemeten bereik; de zaadlijst is er niet door
+veranderd (18 van 80, identiek aan de basislijn), want een neutraal
+karakter trok al geen enkel extra getal uit de stroom.
+
+**De knoppenbalk is gesorteerd en gekleurd.** Achtentwintig knoppen in
+zes naamloze grijze rijen zijn zes rijen met een naam in de kantlijn en een
+eigen kleur geworden: auto (amber), aanzicht (blauw), bouwstap (violet),
+bekijken (groenblauw), bewegen (groen), schade (rood). De kleur hoort bij
+de groep, niet bij de knop, dus het oog vindt eerst de rij. De twee
+schuifjes staan nu in de rij waar ze op werken: de stuurhoek bij de
+scharnieren en de wielen, de klapkracht bij de schadeknoppen. De balk is
+er niet hoger van geworden (279 px, was 278) omdat de rijen strakker
+staan.
 
 ## 4. Nieuwe designregels die ik wil voorstellen
 

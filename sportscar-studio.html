@@ -37,23 +37,41 @@
     background:linear-gradient(145deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;
     box-shadow:0 20px 70px rgba(0,0,0,.20);-webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);
     padding:10px 11px calc(10px + env(safe-area-inset-bottom))}
-  .strip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+  /* The dock is sorted into rows, one per kind of control, and each row
+     carries its own colour and a tag in the margin. The colour belongs to the
+     GROUP, not to the button: the eye finds the row first - view, build step,
+     inspection, movement, damage - and the button inside it second. Before
+     this every button was the same grey and the rows had no names, so finding
+     one meant reading all twenty-eight. */
+  .strip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px;align-items:center;
+    --g:#d9a64a;--gl:rgba(217,166,74,.38);--gf:rgba(217,166,74,.15)}
+  .strip.g-view{--g:#7fa9d6;--gl:rgba(127,169,214,.38);--gf:rgba(127,169,214,.15)}
+  .strip.g-build{--g:#b092d4;--gl:rgba(176,146,212,.38);--gf:rgba(176,146,212,.15)}
+  .strip.g-look{--g:#6fb2a6;--gl:rgba(111,178,166,.38);--gf:rgba(111,178,166,.15)}
+  .strip.g-move{--g:#8fb17d;--gl:rgba(143,177,125,.38);--gf:rgba(143,177,125,.15)}
+  .strip.g-dmg{--g:#d4785a;--gl:rgba(212,120,90,.42);--gf:rgba(212,120,90,.16)}
+  .strip.g-set{--g:#9aa1ab;--gl:rgba(154,161,171,.34);--gf:rgba(154,161,171,.13)}
   .strip::-webkit-scrollbar{display:none}
-  .strip+.strip{margin-top:6px}
+  .strip+.strip{margin-top:5px}
+  .tag{flex:0 0 auto;width:72px;color:var(--g);font-size:9.5px;font-weight:700;line-height:1.15;
+    letter-spacing:.13em;text-transform:uppercase;border-left:2px solid var(--g);padding-left:7px;
+    align-self:stretch;display:flex;align-items:center}
   button.c,select.c{flex:0 0 auto;appearance:none;background:rgba(255,255,255,.025);color:var(--txt);
-    border:1px solid var(--line);border-radius:9px;padding:8px 11px;font:inherit;
+    border:1px solid var(--gl);border-radius:9px;padding:7px 11px;font:inherit;
     font-size:12.5px;letter-spacing:.08px;cursor:pointer;white-space:nowrap;transition:.18s ease}
-  button.c:hover{background:rgba(255,255,255,.075);border-color:rgba(255,255,255,.25)}
-  button.c:active{background:rgba(255,255,255,.07)}
-  button.c.sel{background:rgba(217,150,47,.16);border-color:rgba(217,150,47,.5);color:#f1d7ad}
-  button.c.warn{border-color:rgba(192,74,51,.45);color:#e6a394}
-  .sliders{display:flex;gap:12px;margin-top:8px;align-items:center}
-  .sl{flex:1;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim)}
-  .sl input{flex:1;-webkit-appearance:none;height:2px;background:var(--line);border-radius:2px;outline:none}
+  button.c:hover,select.c:hover{background:var(--gf);border-color:var(--g)}
+  button.c:active{background:var(--gf)}
+  button.c.sel{background:var(--gf);border-color:var(--g);color:#fff;font-weight:600}
+  /* Each slider sits in the row it acts on - the steering angle with the
+     hinges and the wheels, the impact force with the damage buttons - rather
+     than in a settings row of its own, which named neither. */
+  .sl{flex:0 0 168px;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim);
+    margin-left:4px;padding-left:10px;border-left:1px solid var(--gl)}
+  .sl input{flex:1;min-width:0;-webkit-appearance:none;height:2px;background:var(--gl);border-radius:2px;outline:none}
   .sl input::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;
     background:#d8d3c9;border:1px solid #0d0f11;cursor:pointer}
   .sl input::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:#d8d3c9;border:1px solid #0d0f11}
-  .hint{margin-top:7px;font-size:10.5px;color:var(--dim);text-align:center}
+  .hint{margin-top:6px;font-size:10.5px;color:var(--dim);text-align:center}
 
   #panel{position:fixed;left:12px;right:12px;bottom:12px;z-index:7;background:var(--panel);
     border-top:1px solid var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
@@ -152,6 +170,7 @@
          every frame, which a phone pays for in framerate */
       -webkit-backdrop-filter:none;backdrop-filter:none;background:var(--panel)}
     button.c{padding:7px 9px;font-size:11.5px}
+    .tag{width:54px;font-size:8.5px;letter-spacing:.09em;padding-left:5px}
     .hint{display:none}
   }
 </style>
@@ -179,7 +198,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 stadsauto: mesh-huid, eigen wielen';
+const VG_BUILD = '4 sep 2026 \u00b7 zitpositie, geen karakter, geordende balk';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -218,30 +237,23 @@ const VG_BUILD = '4 sep 2026 \u00b7 stadsauto: mesh-huid, eigen wielen';
 
 <div class="dock">
   <div class="strip">
-    <button class="c" id="reseed">Nieuwe subtiele variant</button>
+    <span class="tag">Auto</span>
+    <button class="c" id="reseed">Nieuwe variant</button>
     <select class="c" id="family" title="Familie">
       <option value="super_gt">Familie: super GT</option><option value="city">stadsauto</option><option value="sedan">sedan</option><option value="suv">SUV</option>
     </select>
-    <select class="c" id="character" title="Karakter">
-      <option value="neutraal">Karakter: neutraal</option><option value="sportief">sportief</option>
-      <option value="agressief">agressief</option><option value="elegant">elegant</option>
-      <option value="luxe">luxe</option><option value="robuust">robuust</option>
-      <option value="futuristisch">futuristisch</option><option value="klassiek">klassiek</option>
-    </select>
-    <button class="c" id="clayBtn">Klei</button>
-    <button class="c" id="zebraBtn">Reflectietest</button>
-    <button class="c" id="xrayBtn">Structuur</button>
-    <button class="c" id="qcBtn">Kwaliteitscheck</button>
   </div>
-  <div class="strip" aria-label="Camera-aanzichten">
+  <div class="strip g-view" aria-label="Camera-aanzichten">
+    <span class="tag">Aanzicht</span>
     <button class="c sel" id="viewHero">Hero 3/4</button>
     <button class="c" id="viewFront">Voor</button>
     <button class="c" id="viewSide">Zij</button>
     <button class="c" id="viewRear">Achter</button>
     <button class="c" id="viewTop">Boven</button>
   </div>
-  <div class="strip">
-    <button class="c" data-stage="1">1 Structuur+silhouet</button>
+  <div class="strip g-build" aria-label="Bouwstappen">
+    <span class="tag">Bouwstap</span>
+    <button class="c" data-stage="1">1 Structuur</button>
     <button class="c" data-stage="2">2 Wielen</button>
     <button class="c" data-stage="3">3 Ruiten</button>
     <button class="c" data-stage="4">4 Binnenpanelen</button>
@@ -250,24 +262,31 @@ const VG_BUILD = '4 sep 2026 \u00b7 stadsauto: mesh-huid, eigen wielen';
     <button class="c" data-stage="7">7 Details</button>
     <button class="c sel" data-stage="8">8 Materialen</button>
   </div>
-  <div class="strip">
+  <div class="strip g-look" aria-label="Bekijken en controleren">
+    <span class="tag">Bekijken</span>
+    <button class="c" id="clayBtn">Klei</button>
+    <button class="c" id="zebraBtn">Reflectietest</button>
+    <button class="c" id="xrayBtn">Structuur</button>
+    <button class="c" id="explodeBtn">Exploded view</button>
+    <button class="c" id="panelToggle">Onderdelen</button>
+    <button class="c" id="qcBtn">Kwaliteitscheck</button>
+    <button class="c" id="pinBtn">Aanwijzen</button>
+  </div>
+  <div class="strip g-move" aria-label="Openen en bewegen">
+    <span class="tag">Bewegen</span>
     <button class="c" id="doors">Deuren</button>
     <button class="c" id="bonnet">Motorkap</button>
     <button class="c" id="boot">Kofferklep</button>
     <button class="c" id="allopen">Alles open</button>
-    <button class="c" id="explodeBtn">Exploded view</button>
-    <button class="c" id="spin">Wielen</button>
-  </div>
-  <div class="strip">
-    <button class="c warn" id="wreck">Sloop</button>
-    <button class="c warn" id="flat">Band lek</button>
-    <button class="c sel" id="dent">Tik = deuk</button>
-    <button class="c" id="pinBtn">Aanwijzen</button>
-    <button class="c" id="repair">Repareer</button>
-    <button class="c" id="panelToggle">Onderdelen</button>
-  </div>
-  <div class="sliders">
+    <button class="c" id="spin">Wielen draaien</button>
     <label class="sl">stuur<input id="steer" type="range" min="-100" max="100" value="0"></label>
+  </div>
+  <div class="strip g-dmg" aria-label="Schade">
+    <span class="tag">Schade</span>
+    <button class="c sel" id="dent">Tik = deuk</button>
+    <button class="c" id="wreck">Sloop</button>
+    <button class="c" id="flat">Band lek</button>
+    <button class="c" id="repair">Repareer</button>
     <label class="sl">kracht<input id="force" type="range" min="15" max="100" value="55"></label>
   </div>
   <div class="hint">Sleep = draaien · knijp/scroll = zoomen · vaste aanzichten zijn geschikt als 3D-referentie · tik op de auto = deuk</div>
@@ -1011,6 +1030,7 @@ const ARCHETYPES = {
     hRatio: [0.2750, 0.2770], wRatio: [0.4110, 0.4140],
     wbRatio: [0.5870, 0.5900], frontOhShare: [0.464, 0.472], trackRatio: [0.830, 0.860],
     diaRatio: [0.1500, 0.1530], tireW: [0.272, 0.280], rearTireExtra: [0.044, 0.052], aspect: [0.34, 0.36],
+    seatSet: 0.300,
     clearance: [0.108, 0.120],
     // silhouette stations, as fractions of length from the nose
     sCowl: [0.381, 0.390], sRoofF: [0.575, 0.585], sRoofPeak: [0.600, 0.612],
@@ -1026,7 +1046,7 @@ const ARCHETYPES = {
     hoodDome: [0.006, 0.011], hoodRise: [0.010, 0.018], hoodCrease: [0.008, 0.014], ducktail: [0.014, 0.021],
     noseDepth: [0.62, 0.68], tailDepth: [0.30, 0.36], frontRakeBack: [0.15, 0.19], tailRakeIn: [0.05, 0.075],
     doorLen: [1.10, 1.18],
-    wheelStyles: ['split', 'five', 'multi', 'turbine'],   // first is the reference's own; character may pick another
+    wheelStyles: ['split', 'five', 'multi', 'turbine'],   // first is the reference's own; a seed may pick another
     mirror: 'stalk', sideVent: 1.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.980,
     dloRear: 0.760, mirrorF: 0.392,
     apertures: {
@@ -1094,6 +1114,7 @@ const ARCHETYPES = {
     hRatio: [0.2950, 0.3020], wRatio: [0.3780, 0.3840],
     wbRatio: [0.5850, 0.5920], frontOhShare: [0.430, 0.450], trackRatio: [0.840, 0.860],
     diaRatio: [0.1360, 0.1400], tireW: [0.225, 0.235], rearTireExtra: [0.0, 0.0], aspect: [0.45, 0.50],
+    seatSet: 0.290,
     clearance: [0.140, 0.155],
     sCowl: [0.330, 0.340], sRoofF: [0.460, 0.470], sRoofPeak: [0.525, 0.535],
     sRoofR: [0.685, 0.695], sDeck: [0.775, 0.785],
@@ -1148,6 +1169,7 @@ const ARCHETYPES = {
     hRatio: [0.3550, 0.3650], wRatio: [0.4000, 0.4100],
     wbRatio: [0.5900, 0.6000], frontOhShare: [0.460, 0.480], trackRatio: [0.840, 0.860],
     diaRatio: [0.1550, 0.1600], tireW: [0.255, 0.265], rearTireExtra: [0.0, 0.0], aspect: [0.55, 0.60],
+    seatSet: 0.290,
     clearance: [0.200, 0.220],
     sCowl: [0.305, 0.315], sRoofF: [0.415, 0.425], sRoofPeak: [0.495, 0.505],
     sRoofR: [0.855, 0.865], sDeck: [0.935, 0.945],
@@ -1202,6 +1224,7 @@ const ARCHETYPES = {
     hRatio: [0.4100, 0.4180], wRatio: [0.5180, 0.5280],
     wbRatio: [0.6600, 0.6700], frontOhShare: [0.520, 0.540], trackRatio: [0.760, 0.770],
     diaRatio: [0.1590, 0.1630], tireW: [0.200, 0.210], rearTireExtra: [0.0, 0.0], aspect: [0.42, 0.46],
+    seatSet: 0.345,
     clearance: [0.225, 0.240],
     sCowl: [0.165, 0.175], sRoofF: [0.440, 0.460], sRoofPeak: [0.610, 0.640],
     sRoofR: [0.840, 0.860], sDeck: [0.935, 0.945],
@@ -1258,49 +1281,19 @@ const ARCHETYPES = {
 };
 
 /* =========================================================================
-   Vehicle DNA: character -> coherent parameter bias
+   Vehicle DNA
    -------------------------------------------------------------------------
-   An archetype gives every proportion a range measured off its reference.
-   Character does not add new random numbers on top of that; it says WHERE in
-   (and, for a strong character, how far beyond) each range the car lands, and
-   it moves several proportions together. 'aggressive' lowers the stance,
-   widens the track, tightens the arch gap, sharpens the bonnet crease and
-   lifts the ducktail at once; 'elegant' lengthens the bonnet and softens the
-   same creases. Eight axes, each 0..1; a car is a small mix of them.
+   An archetype gives every proportion a range measured off its reference, and
+   a seed picks a point inside every one of those ranges. That is the whole
+   variation model: one family, one measured envelope, a subtle variant per
+   seed. There used to be a second layer on top - eight 'character' axes that
+   pushed a set of proportions together, and beyond the measured range - but a
+   car that leaves its own reference's envelope is no longer that car, and the
+   quality gate then had to be moved along with it to keep passing. It is gone;
+   what a family may look like is decided by the family, in ARCHETYPES.
 
-   Rules are weights, -1..1, per proportion. The bias for one proportion is the
-   weighted sum over the axes, clamped, and it moves the sampled value by up to
-   1.5 range-widths or 3% of the value, whichever is more - a measured range
-   here can be only a few millimetres wide, and a character that could not
-   leave it would be invisible. A neutral character reproduces the archetype
-   exactly, seed for seed. */
-const DNA_AXES = ['sporty', 'aggressive', 'elegant', 'luxury', 'rugged', 'futuristic', 'classic', 'practical'];
-const DNA_RULES = {
-  sporty:     { hRatio: -1.0, wRatio: +0.6, rearTireExtra: +0.6, tumble: +0.4, diaRatio: +0.4, clearance: -0.4 },
-  aggressive: { clearance: -1.0, wRatio: +0.5, shoulderDrop: +0.8, hoodCrease: +0.8, ducktail: +0.4, noseDepth: +0.4, archGap: -0.6 },
-  elegant:    { sCowl: +0.8, hoodCrease: -0.8, shoulderDrop: -0.6, ducktail: -0.7, frontRakeBack: +0.6, hoodDome: -0.3 },
-  luxury:     { wbRatio: +1.0, doorLen: +0.8, L: +0.6, tumble: -0.3, rockerH: +0.3 },
-  rugged:     { clearance: +1.0, archGap: +1.0, aspect: +1.0, hRatio: +0.6, rockerH: +0.6, tireW: +0.5 },
-  futuristic: { tumble: +0.7, hoodRise: -0.5, frontRakeBack: +0.4 },
-  classic:    { tumble: -0.7, aspect: +0.6, hoodDome: +0.7, hoodRise: +0.5 },
-  practical:  { frontOhShare: -0.6, tailDepth: -0.6, hRatio: +0.4, doorLen: -0.4 },
-};
-// Discrete choices follow the character too, where the build has alternatives.
-const DNA_STYLES = {
-  wheel: { sporty: 'split', aggressive: 'multi', elegant: 'five', luxury: 'multi', rugged: 'five',
-           futuristic: 'turbine', classic: 'five', practical: 'five' },
-};
-const DNA_PRESETS = {
-  neutraal: {}, sportief: { sporty: 1, aggressive: 0.4 }, agressief: { aggressive: 1, sporty: 0.5 },
-  elegant: { elegant: 1, luxury: 0.4 }, luxe: { luxury: 1, elegant: 0.5 }, robuust: { rugged: 1, practical: 0.4 },
-  futuristisch: { futuristic: 1, sporty: 0.3 }, klassiek: { classic: 1, elegant: 0.3 },
-};
-/* The quality gate holds every proportion inside the reference's own envelope.
-   A character departs from that envelope on purpose, so the gate moves with
-   it: each range is shifted by exactly the amount the biased DNA moved that
-   proportion away from the neutral DNA of the same seed. The gate keeps its
-   width - a character is still held to its archetype's tolerance, just around
-   a different centre - and a neutral car keeps its gate untouched. */
+   The quality gate holds every proportion inside the reference's own
+   envelope. */
 /* A family without a hand-written gate gets one derived from its own ranges:
    the metrics of a spread of neutral builds, widened by 15% of their spread
    and never less than a floor per unit, so a car in the middle of its family
@@ -1329,61 +1322,32 @@ function gateMetrics(d) {
     rr: d.rearRake * 180 / Math.PI, ws: d.wsRake * 180 / Math.PI, d2a: d.dashToAxle / d.wheelbase, hw: d.H / d.W,
   };
 }
-function shiftGate(gate, from, to) {
-  const out = {};
-  for (const k in gate) {
-    const dx = (k in from && k in to) ? to[k] - from[k] : 0;
-    out[k] = Math.abs(dx) > 1e-9 ? [gate[k][0] + dx, gate[k][1] + dx] : gate[k];
-  }
-  return out;
-}
-function normaliseCharacter(c) {
-  if (typeof c === 'string') c = DNA_PRESETS[c] || {};
-  const out = {};
-  for (const ax of DNA_AXES) out[ax] = clamp(+(c && c[ax]) || 0, 0, 1);
-  return out;
-}
-function dnaBias(character) {
-  const bias = {};
-  for (const ax of DNA_AXES) {
-    const w = character[ax]; if (!w) continue;
-    for (const k in DNA_RULES[ax]) bias[k] = (bias[k] || 0) + w * DNA_RULES[ax][k];
-  }
-  for (const k in bias) bias[k] = clamp(bias[k], -1, 1);
-  return bias;
-}
-function dominantAxis(character) {
-  let best = null, bw = 0;
-  for (const ax of DNA_AXES) if (character[ax] > bw) { bw = character[ax]; best = ax; }
-  return best;
-}
 
 function generateDNA(opts = {}) {
   const type = ARCHETYPES[opts.type] ? opts.type : 'super_gt';
   const A = ARCHETYPES[type];
   const seed = (opts.seed === undefined ? (Math.random() * 1e9) | 0 : opts.seed) >>> 0;
   const r = new RNG(seed);
-  const character = normaliseCharacter(opts.character);
-  const bias = dnaBias(character);
-  // Sample a proportion from its archetype range, then move it by its bias.
-  // The random draw is taken first, always, so a neutral character consumes
-  // the stream exactly as before and every existing seed builds the same car.
+  // Sample a proportion from its archetype range. A range whose ends are equal
+  // still takes no draw, so the stream stays where it was.
   const R = (key) => {
     const rng = A[key];
     const u = rng[0] === rng[1] ? 0 : r.f(0, 1);
-    const val = rng[0] + (rng[1] - rng[0]) * u;
-    const b = bias[key];
-    if (!b) return val;
-    const span = Math.abs(rng[1] - rng[0]), mid = (rng[0] + rng[1]) / 2;
-    return val + b * Math.max(1.5 * span, 0.03 * Math.abs(mid));
+    return rng[0] + (rng[1] - rng[0]) * u;
   };
-  const d = { type, typeLabel: A.label, seed, doors: A.doors, layout: A.layout, character, characterName: opts.characterName || dominantAxis(character) || 'neutraal' };
+  const d = { type, typeLabel: A.label, seed, doors: A.doors, layout: A.layout };
 
   // --- architecture, straight from the measured reference ----------------
   d.L = R('L');
   d.H = d.L * R('hRatio');
   d.W = d.L * R('wRatio');
   d.wheelbase = d.L * R('wbRatio');
+  /* Where the driver sits, as the H-point behind the cowl in wheelbases. A
+     fixed number of millimetres cannot serve four families: the cowl of the
+     city car stands almost over its front axle and the GT's is a metre behind
+     it. Measured off each family's own package: the GT seats its driver deep
+     between the axles, the hatchback well forward of its rear bench. */
+  d.seatSet = (A.seatSet || 0.300) * d.wheelbase;
   const oh = d.L - d.wheelbase;
   d.frontOh = oh * R('frontOhShare'); d.rearOh = oh - d.frontOh;
   d.xNose = d.L / 2; d.xTail = -d.L / 2;
@@ -1455,10 +1419,6 @@ function generateDNA(opts = {}) {
   d.cabProfile = REFS.CABPROF || null;
   d.ap = A.apertures;
   d.gate = A.gate || (opts._neutralProbe ? null : deriveGate(type));
-  if (Object.keys(bias).length && !opts._neutralProbe) {
-    const dN = generateDNA({ type, seed, _neutralProbe: true });
-    d.gate = shiftGate(d.gate, gateMetrics(dN), gateMetrics(d));
-  }
   d.faceEdge = A.faceEdge || 'station';
   // A raised bonnet: its side edge in plan, and how far its top falls from
   // the centreline to that edge. Absent on a car whose bonnet reaches the wing.
@@ -1513,10 +1473,7 @@ function generateDNA(opts = {}) {
     rimColor: isS ? 0x3a3d42 : 0x8d9298, caliperColor: isS ? 0xb0201a : 0x9b1c16,
     interiorColor: isS ? 0x1a1c20 : 0x2a1d18, accent: isS ? 0x6f7479 : 0x8a6a44, glassTint: isS ? 0.38 : 0.30,
   }, A.design || {});
-  d.design = Object.assign({}, DS, {
-    wheelStyle: (() => { const ax = dominantAxis(character); const want = ax && DNA_STYLES.wheel[ax];
-      return (want && A.wheelStyles.indexOf(want) >= 0) ? want : r.pick(A.wheelStyles); })(),
-  });
+  d.design = Object.assign({}, DS, { wheelStyle: r.pick(A.wheelStyles) });
   d.theme = d.design.bodyCharacter;
   d.lampStyle = d.design.headlightStyle; d.tailStyle = d.design.taillightStyle;
   d.grilleStyle = d.design.grilleStyle; d.bumperStyle = d.design.bumperStyle;
@@ -5215,7 +5172,7 @@ function stage_interior(ctx) {
   inte.add(new THREE.Mesh(box(0.36, 0.28, B.hw(dashX) * 1.66, dashX, dashY, 0), M.interior), false);
   inte.add(new THREE.Mesh(box(0.32, 0.05, B.hw(dashX) * 1.60, dashX - 0.03, dashY + 0.16, 0), M.interiorDark), false);
   inte.add(new THREE.Mesh(box(0.7, 0.24, 0.20, dashX - 0.45, dashY - 0.05, 0), M.interiorDark), false);   // centre console
-  const seatX = d.xCowl - 0.74, seatY = d.clearance + 0.12;
+  const seatX = d.xCowl - d.seatSet, seatY = d.clearance + 0.12;
   for (const q of [-1, 1]) {
     const z = q * B.hw(seatX) * 0.40;
     inte.add(new THREE.Mesh(box(0.52, 0.10, 0.44, seatX, seatY, z), M.interior), false);
@@ -6001,7 +5958,6 @@ Vehicle.prototype.validateGeometry = function () {
 
   /* ---- vehicle --------------------------------------------------------- */
   let car = null, type = 'super_gt', seed = 12345, explode = 0, explodeTarget = 0;
-  let characterName = 'neutraal';
   let dentMode = true, spinning = false, tyreCursor = 0, clay = false, stage = 8, zebra = false, xray = false;
 
   function buildExplodeGuides(v) {
@@ -6035,7 +5991,7 @@ Vehicle.prototype.validateGeometry = function () {
       });
     }
     type = t; seed = sd >>> 0;
-    car = buildVehicle({ type, seed, character: characterName, characterName });
+    car = buildVehicle({ type, seed });
     car._val = null;
     buildExplodeGuides(car);
     car.qc = qualityGate(car);
@@ -6374,7 +6330,7 @@ Vehicle.prototype.validateGeometry = function () {
     const s = car.spec;
     $('vtype').textContent = s.typeLabel;
     $('vseed').textContent = 'Master · ' + String(s.seed).slice(-4).padStart(4, '0');
-    $('vpaint').textContent = s.paint.name + '  ·  ' + s.layout + (s.characterName && s.characterName !== 'neutraal' ? '  ·  ' + s.characterName : '');
+    $('vpaint').textContent = s.paint.name + '  ·  ' + s.layout;
     $('vdims').textContent =
       s.L.toFixed(2) + ' x ' + s.W.toFixed(2) + ' x ' + s.H.toFixed(2) + ' m  ·  wielbasis ' + s.wheelbase.toFixed(2) +
       ' m  ·  ' + car.parts.size + ' onderdelen';
@@ -6536,10 +6492,6 @@ Vehicle.prototype.validateGeometry = function () {
   chip('reseed', () => spawnDeferred(type, (Math.random() * 4294967295) >>> 0, 'Nieuwe variant wordt opgebouwd…'));
   $('family').addEventListener('change', () => {
     spawnDeferred($('family').value, seed, 'Familie ' + $('family').options[$('family').selectedIndex].text + ' wordt opgebouwd…');
-  });
-  $('character').addEventListener('change', () => {
-    characterName = $('character').value;
-    spawnDeferred(type, seed, 'Karakter ' + characterName + ' wordt opgebouwd…');
   });
   chip('doors', () => {
     const list = [...car.parts.values()].filter((p) => p.id.indexOf('door.') === 0);
