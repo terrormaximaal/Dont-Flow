@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 normalen goed om + naad rond de kappen';
+const VG_BUILD = '4 sep 2026 \u00b7 banden samengevoegd: 274 draw calls';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -2736,6 +2736,94 @@ const SKIN_INNER = /^(body\.structure|interior|seats|dash)/;
 const SKIN_CELL = 0.045;                      // 45 mm grid
 const SKIN_GAP = 0.012;                       // keep this far under the panel
 
+/* One draw call per band is one draw call too many. Every panel here is cut
+   into bands around its openings - the front bumper alone comes out as twelve -
+   and each band is its own mesh, so a 59 000 triangle car was 413 draw calls
+   and 413 geometries. Bands of the same part that share a parent, a material
+   and every render flag are one surface as far as the GPU is concerned, so
+   they are welded into a single geometry here.
+
+   Nothing about the shape changes: the same triangles, the same materials, the
+   same parts, the same hinges, the same damage behaviour. Only meshes the two
+   band helpers made are eligible - anything the build kept a reference to, or
+   gave its own transform, or that carries a different build stage, stays as it
+   is. It runs after symmetrise, so both halves are cut the same way and the
+   symmetry check still pairs them up. */
+function mergeBands(v) {
+  let before = 0, after = 0;
+  const tmp = new THREE.Vector3(), nrm = new THREE.Matrix3();
+  for (const [, part] of v.parts) {
+    before += part.meshes.length;
+    const order = [], groups = new Map();
+    for (const m of part.meshes) {
+      const g = m.geometry;
+      const solo = !m.userData.band || m.userData.noMerge || !g || !g.index
+        || !g.attributes.position || !g.attributes.normal;
+      const key = solo ? m.uuid : [
+        m.parent ? m.parent.uuid : '-', m.material.uuid, m.castShadow, m.receiveShadow,
+        m.visible, m.renderOrder, m.userData.stage || 0,
+        part.panels.indexOf(m) >= 0, !!g.attributes.color,
+      ].join('|');
+      let bucket = groups.get(key);
+      if (!bucket) { bucket = []; groups.set(key, bucket); order.push(key); }
+      bucket.push(m);
+    }
+    const meshes = [], panels = [];
+    for (const key of order) {
+      const bucket = groups.get(key);
+      if (bucket.length === 1) {
+        meshes.push(bucket[0]);
+        if (part.panels.indexOf(bucket[0]) >= 0) panels.push(bucket[0]);
+        continue;
+      }
+      const first = bucket[0], hasColor = !!first.geometry.attributes.color;
+      const pos = [], nor = [], col = [], idx = [];
+      let base = 0;
+      for (const m of bucket) {
+        const g = m.geometry;
+        m.updateMatrix();
+        const useM = !m.matrix.equals(new THREE.Matrix4());
+        if (useM) nrm.getNormalMatrix(m.matrix);
+        const pa = g.attributes.position, na = g.attributes.normal, ca = g.attributes.color;
+        for (let i = 0; i < pa.count; i++) {
+          tmp.fromBufferAttribute(pa, i); if (useM) tmp.applyMatrix4(m.matrix);
+          pos.push(tmp.x, tmp.y, tmp.z);
+          tmp.fromBufferAttribute(na, i); if (useM) tmp.applyMatrix3(nrm).normalize();
+          nor.push(tmp.x, tmp.y, tmp.z);
+          if (hasColor) col.push(ca.getX(i), ca.getY(i), ca.getZ(i));
+        }
+        const ix = g.index;
+        for (let i = 0; i < ix.count; i++) idx.push(ix.getX(i) + base);
+        base += pa.count;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      if (hasColor) geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      geo.setIndex(idx);
+      geo.computeBoundingBox(); geo.computeBoundingSphere();
+      const merged = new THREE.Mesh(geo, first.material);
+      merged.castShadow = first.castShadow; merged.receiveShadow = first.receiveShadow;
+      merged.visible = first.visible; merged.renderOrder = first.renderOrder;
+      merged.userData = { part, band: true, merged: bucket.length };
+      if (first.userData.stage) merged.userData.stage = first.userData.stage;
+      const parent = first.parent;
+      for (const m of bucket) { if (m.parent) m.parent.remove(m); m.geometry.dispose(); }
+      parent.add(merged);
+      meshes.push(merged);
+      if (part.panels.indexOf(first) >= 0) {
+        merged.userData.orig = Float32Array.from(geo.attributes.position.array);
+        merged.userData.onrm = Float32Array.from(geo.attributes.normal.array);
+        panels.push(merged);
+      }
+    }
+    part.meshes = meshes;
+    part.panels = panels;
+    after += meshes.length;
+  }
+  v.mergeStats = { before, after };
+}
+
 function skinCeiling(v) {
   const g = new Map();
   const p1 = new THREE.Vector3(), p2 = new THREE.Vector3(), p3 = new THREE.Vector3();
@@ -2839,14 +2927,19 @@ function buildVehicle(opts = {}) {
   B.gap = G;                                   // panel gap: 10 mm between skins
   const inset = (fn, k, dy) => (u, w) => { const p = fn(u, w); return [p[0], p[1] + (dy || 0), p[2] * k]; };
   const mk = (id, label, opt) => new Part(id, opt.kind || 'panel', Object.assign({ label }, opt));
+  // band: built by one of these two helpers off a parametric surface, with no
+  // transform of its own and nothing else holding a reference to it. Those are
+  // the meshes mergeBands() is allowed to weld together at the end of the build.
   const shell = (part, fn, nu, nv, mat, ref, thick, deform) => {
     const m = new THREE.Mesh(buildShell(nu, nv, fn, thick === undefined ? 0.026 : thick, ref), mat);
     part.add(m, deform !== false);
+    m.userData.band = true;
     return m;
   };
   const patch = (part, fn, nu, nv, mat, ref, deform) => {
     const m = new THREE.Mesh(buildPatch(nu, nv, fn, ref), mat);
     part.add(m, !!deform);
+    m.userData.band = true;
     return m;
   };
   const midX = (a, b) => (a + b) / 2;
@@ -3379,8 +3472,11 @@ function buildVehicle(opts = {}) {
     const ref = [midX(fn(0.5, 0)[0], fn(0.5, 1)[0]), (d.beltY + d.roofY) / 2 - 0.55, 0];
     const gm = patch(p, fn, nu, nv, M.glass.clone(), ref);
     const cm = patch(p, inset(fn, 1.0, 0.004), nu, nv, M.cracks.clone(), ref);
+    // glassBehaviour keeps all three of these by reference
+    gm.userData.noMerge = cm.userData.noMerge = true;
     cm.visible = false; cm.castShadow = false;
     const sh = patch(p, jag(fn, d.seed + id.length * 31), nu, 2, M.glass.clone(), ref);
+    sh.userData.noMerge = true;
     sh.visible = false;
     glassBehaviour(p, gm, cm, sh);
     v.addPart(p, host);
@@ -3943,6 +4039,7 @@ function buildVehicle(opts = {}) {
 
   enforceSkinDominance(v);
   symmetriseVehicle(v);
+  mergeBands(v);
 
   /* ---- caches for demo + gate ------------------------------------------ */
   v.chassis.updateMatrixWorld(true);
