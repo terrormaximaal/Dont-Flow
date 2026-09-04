@@ -222,6 +222,47 @@ Nog open aan de stadsauto: de A-stijl en dakrand hebben nog de dunne
 GT-lijst (referentie: dikke stijlen in carrosseriekleur); de klep krijgt
 nog geen kentekenuitsparing; de grille zit iets hoger dan op het model.
 
+### Derde ronde: de mesh zelf, in onderdelen (4 sep, op aanwijzing van de opdrachtgever)
+
+De opdrachtgever wil dat de stadsauto er precies uitziet als het ingeladen
+model, met alle losse onderdelen. Dat is een ander product dan de
+parametrische stadsauto hierboven, en het is zo gebouwd:
+
+```
+.obj  ->  tools/reference/cut_body.py   snijdt de carrosserie (een vlak) in panelen:
+                                         deuren via hun eigen groef (wanden = vlakken die
+                                         > 40 graden van het lokale oppervlak afwijken),
+                                         de rest door driehoeken te clippen op velden
+                                         (bumperbovenkant 0,475 H, klepzijkant 0,46 hw,
+                                         kaprand, dak 0,72 H, dorpel 0,24 H, middenlijn ...);
+                                         glas = donker in de textuur, boven de belt
+      ->  tools/reference/pack_mesh.py  pakt losse groepen en panelen in MESH_LIB
+                                         (uint16 posities, int8 normalen, uint16 indices,
+                                         linkerhelften; 521 kB binair, 700 kB tekst)
+      ->  stage_meshSkin / stage_meshDoors / stage_meshLighting
+                                         panelen krijgen een rug en een rand (offsetShell,
+                                         15 mm), scharnieren aan hun eigen box, glas als
+                                         eigen delen; rechts = gespiegelde kopie
+```
+
+Wat de mesh gaf en wat niet: de deuren zijn dichte platen in een groef
+van 5 mm; alle andere naden ontbreken (ook in de textuur), dus die zijn
+gesneden. Geen binnenkant: motorruimte, interieur, structuur, schade en
+scharnieren komen uit de generator. De parametrische afsluiters van de
+generator (deurstijlen, flenzen, cowlpaneel, naadstrips) staan op een
+mesh-huid uit: ze waren op het parametrische lijf getekend en staken door
+de mesh heen.
+
+Gemeten: GT 0 pixels verschil, zaadlijst identiek; stadsauto QC 21/21,
+geometrie ok op drie zaden, symmetrie exact (gespiegelde helften);
+bouwtijd 320 ms; 48 onderdelen, 158 meshes. Eén auto, geen zaadvariatie
+in de vorm behalve lengte, hoogte en breedte (de panelen schalen mee).
+
+Nog open: de deuren tonen hun kale binnenvlak (geen deurkaart); de
+achterklep heeft in de mesh een kentekenuitsparing, maar de bovenkant van
+de klep en het dak delen nog één rand zonder rubber; de A-stijl is nu wel
+de echte. Variatie op de mesh (roosterdeformatie) is niet gedaan.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
