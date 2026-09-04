@@ -71,6 +71,12 @@ losse schillen: ze delen geen hoekpunten met de huid. Dat is genoeg.
    zijn: de B-stijlnaad op 0,52 L, de wielkasten op 0,10–0,25 en 0,70–0,86 L,
    de voorrand van de kofferklep op 0,845 L. De achterrand van de motorkap
    volgt de onderrand van de voorruit zelf.
+   Het raamframe hoort bij de deur: de A- en B-stijllijnen liggen op elke
+   hoogte midden tussen de aangrenzende ruiten, het achterportier draagt
+   het kwartraam en eindigt net achter dat raam op de C-stijl; de daklijst
+   snijdt op 0,968 H. De zijrand van de kofferklep is de gemeten schouder
+   van het dek (0,80 hw voor, 0,74 hw achter). Het kwartraam krijgt een
+   `host` (doorR) mee, die de packer in de bibliotheek zet.
    Elke driehoek vertrekt met een label (paneel of deel) en een
    materiaal-tag: `None` voor lak, of chrome / lens / tailred / amber /
    plastic / paint. Een getagde driehoek op een paneel is het sierwerk van

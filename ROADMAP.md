@@ -507,6 +507,34 @@ gemodelleerde groeven; de deurramen zitten in het dakdeel en niet in een
 raamframe aan de deur; de lampen zijn de reflector en de kap van het model
 zonder gloeidraad; deurgrepen zitten in de huid geperst en zijn geen los deel.
 
+### Sedan, tweede mesh: deuren met frame, kofferklep op de schouder, vier zitplaatsen (4 sep)
+
+Opmerkingen van de opdrachtgever op de eerste versie: de maat moet kloppen
+met de andere auto's, er moeten vier zitplaatsen in, en de deur- en
+kofferklepsneden gingen niet goed.
+
+- Maat: de sedan is 4,80–4,86 m bij 1,90–1,92 m breed en 1,50–1,52 m hoog
+  (GT 4,78–4,82 × 1,98 × 1,32; SUV 4,70–4,80 × 1,93 × 1,67–1,72; stadsauto
+  3,55–3,62 × 1,87 × 1,46–1,49). Dat is de maat van het model zelf (482 cm)
+  en van een E-segment sedan. Niets gewijzigd.
+- Vier zitplaatsen: een vierdeurs krijgt nu twee gevormde achterstoelen op
+  een gedeeld kussen in plaats van de vlakke bank (die blijft in de
+  tweedeurs, zodat de GT pixel-identiek blijft).
+- Deuren: het raamframe hoort bij de deur en gaat nu mee. Waar een frame
+  ophoudt en een stijl begint is aan het glas afgelezen: de A-stijllijn ligt
+  op elke hoogte midden tussen de zijrand van de voorruit en de voorrand van
+  de voorruit van het portier (0,293 L bij de belt, 0,435 L bovenaan), de
+  B-stijllijn midden tussen de twee ruiten (0,526–0,539 L), en het frame
+  van het achterportier draagt het kwartraam en eindigt net achter dat raam
+  op de C-stijl (0,732 L). Bovenaan snijdt de daklijst op 0,968 H. Het
+  kwartraam reist met het achterportier mee: de cut geeft het een `host`,
+  de packer zet dat in de bibliotheek, en stage_meshDoors hangt het aan de
+  deur.
+- Kofferklep: de zijrand van de klep is de schouder van het dek, gemeten:
+  0,80 hw aan de voorrand, naar 0,74 hw bij de staart. De vaste snede op
+  0,86 hw zigzagde over de flank, die boven de belt precies tot die breedte
+  intrekt, en gaf de klep gekartelde zijkanten en de hoeken boven de lampen.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.

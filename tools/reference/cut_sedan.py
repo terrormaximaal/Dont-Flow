@@ -151,6 +151,30 @@ def cowl(z):
     return min(s for az, s in scrv if abs(az - a) < 0.12) - 0.006
 print('cowl van het midden naar de zijkant: %s' % ' '.join('%.3f' % cowl(z / 20) for z in range(0, 18, 3)))
 
+# The door frames go with the doors. Where a frame ends and a pillar begins is
+# read off the glass: the A-pillar line runs midway between the windscreen's
+# side edge and the front pane's leading edge at every height, the B-pillar
+# line midway between the two panes, and the rear door's frame carries the
+# quarter light, so it ends just behind that pane at the C-pillar.
+def edge(role, pick, y):
+    pts = [(st(P[v]), yh(P[v])) for tri, r in zip(faces, ROLE) if r == role for v in tri if P[v][2] > 0]
+    near = [s for s, yy in pts if abs(yy - y) < 0.03]
+    if not near: near = [s for s, yy in sorted(pts, key=lambda q: abs(q[1] - y))[:6]]
+    return pick(near)
+_cache = {}
+def line(kind, y):
+    k = (kind, round(y, 3))
+    if k in _cache: return _cache[k]
+    if kind == 'a': v = (edge('glass.windshield', max, y) + edge('glass', min, y)) / 2
+    else: v = (edge('glass', max, y) + edge('glassR', min, y)) / 2
+    _cache[k] = v
+    return v
+aLine = lambda y: line('a', min(0.96, max(0.66, y)))
+bLine = lambda y: line('b', min(0.96, max(0.66, y)))
+C_LINE = edge('glass.quarter', max, 0.80) + 0.006
+FRAME_TOP = 0.968                                  # the drip rail: above it the roof
+print('stijlen: A %.3f..%.3f  B %.3f..%.3f  C %.3f' % (aLine(0.66), aLine(0.96), bLine(0.66), bLine(0.96), C_LINE))
+
 # ---- the plan --------------------------------------------------------------------
 # front axle at 0.176 L, rear at 0.775 L. door seam crease 0.522, doors' front
 # edge behind the front arch 0.275, rear door to the rear arch 0.692. Belt at
@@ -160,10 +184,15 @@ BELT, ROCKER, FLOOR = 0.655, 0.215, 0.185
 BODY = lambda c, r: r == 'body'
 clip(lambda p: yh(p) - FLOOR, lambda c, r: BODY(c, r) and 0.04 < st(c) < 0.96)                  # underbody
 clip(lambda p: yh(p) - ROCKER, lambda c, r: BODY(c, r) and DOOR_F - 0.02 < st(c) < DOOR_R + 0.02)   # rocker
-clip(lambda p: st(p) - DOOR_F, lambda c, r: BODY(c, r) and yh(c) > FLOOR)                       # door edges, pillars included
-clip(lambda p: st(p) - DOOR_B, lambda c, r: BODY(c, r) and yh(c) > FLOOR)
-clip(lambda p: st(p) - DOOR_R, lambda c, r: BODY(c, r) and yh(c) > FLOOR)
-clip(lambda p: yh(p) - BELT, lambda c, r: BODY(c, r) and DOOR_F - 0.03 < st(c) < 0.86)          # belt: doors / greenhouse
+clip(lambda p: yh(p) - BELT, lambda c, r: BODY(c, r) and DOOR_F - 0.03 < st(c) < 0.86)          # belt: door skins / frames and pillars
+clip(lambda p: st(p) - DOOR_F, lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT)                # door edges below the belt
+clip(lambda p: st(p) - DOOR_B, lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT)
+clip(lambda p: st(p) - DOOR_R, lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT)
+clip(lambda p: yh(p) - FRAME_TOP, lambda c, r: BODY(c, r) and 0.26 < st(c) < 0.80)              # the drip rail
+above = lambda c, r: BODY(c, r) and BELT < yh(c) < FRAME_TOP + 0.01
+clip(lambda p: st(p) - aLine(yh(p)), lambda c, r: above(c, r) and 0.25 < st(c) < 0.50)          # A-pillar / front door frame
+clip(lambda p: st(p) - bLine(yh(p)), lambda c, r: above(c, r) and 0.45 < st(c) < 0.60)          # front frame / rear frame at the B-pillar
+clip(lambda p: st(p) - C_LINE, lambda c, r: above(c, r) and 0.65 < st(c) < 0.80)                # rear frame / C-pillar
 clip(lambda p: yh(p) - 0.455, lambda c, r: BODY(c, r) and (st(c) < 0.12 or st(c) > 0.84))       # bumper tops
 clip(lambda p: st(p) - 0.10, lambda c, r: BODY(c, r) and yh(c) < 0.47)                          # front bumper's rear edge
 clip(lambda p: st(p) - 0.86, lambda c, r: BODY(c, r) and yh(c) < 0.47)                          # rear bumper's front edge
@@ -173,7 +202,11 @@ clip(lambda p: abs(zh(p)) - 0.80, lambda c, r: BODY(c, r) and st(c) < 0.32 and y
 clip(lambda p: st(p) - cowl(zh(p)), lambda c, r: BODY(c, r) and st(c) < 0.36 and yh(c) > 0.55)  # bonnet rear edge
 clip(lambda p: st(p) - 0.845, lambda c, r: BODY(c, r) and yh(c) > 0.50)                         # roof, quarter / boot lid
 clip(lambda p: yh(p) - 0.72, lambda c, r: BODY(c, r) and st(c) > 0.90)                          # boot lid / tail panel
-clip(lambda p: abs(zh(p)) - 0.86, lambda c, r: BODY(c, r) and 0.83 < st(c) < 0.94 and yh(c) > 0.55)   # boot lid / quarter
+# the lid's side edge is the deck's shoulder, measured: 0.80 hw at its front edge,
+# drawing in to 0.74 hw at the tail (a plane cut at a fixed width zigzagged
+# across the flank, which tucks in above the belt to just that width)
+LID_EDGE = lambda s: 0.80 - 0.63 * (s - 0.845)
+clip(lambda p: abs(zh(p)) - LID_EDGE(st(p)), lambda c, r: BODY(c, r) and 0.83 < st(c) < 0.95 and yh(c) > 0.55)   # boot lid / quarter
 clip(lambda p: abs(zh(p)) - 0.42, lambda c, r: BODY(c, r) and st(c) > 0.92 and 0.44 < yh(c) < 0.74)   # the lid runs down between the lamps to the bumper
 clip(lambda p: p[2], lambda c, r: True)                                                          # the centreline, everything
 print('na het snijden: %d driehoeken, %d punten' % (len(faces), len(P)))
@@ -206,8 +239,10 @@ for i, (tri, role, tag) in enumerate(zip(faces, ROLE, TAG)):
     if DOOR_F - 0.02 < s < DOOR_R + 0.02 and y < ROCKER: lab[i] = 'rocker.' + side; continue
     if DOOR_F < s < DOOR_B and y < BELT: lab[i] = 'door.' + side; continue
     if DOOR_B < s < DOOR_R and y < BELT: lab[i] = 'doorR.' + side; continue
+    if BELT < y < FRAME_TOP and aLine(y) < s < bLine(y): lab[i] = 'door.' + side; continue        # the frame
+    if BELT < y < FRAME_TOP and bLine(y) < s < C_LINE: lab[i] = 'doorR.' + side; continue        # the frame, quarter light included
     if 0.045 < s < cowl(z) and az < 0.80 and y > 0.56: lab[i] = 'hood'; continue
-    if s > 0.845 and y > 0.50 and (az < 0.86 or s > 0.94) and (y > 0.72 or s < 0.93): lab[i] = 'trunk'; continue   # the lid, over the lamps
+    if s > 0.845 and y > 0.50 and az < LID_EDGE(s) and (y > 0.72 or s < 0.93): lab[i] = 'trunk'; continue   # the lid, to the shoulders
     if s > 0.92 and 0.455 < y < 0.74 and az < 0.42: lab[i] = 'trunk'; continue                                       # and down between them, plate and all
     if y > BELT and DOOR_F - 0.03 < s < 0.845: lab[i] = 'roof'; continue
     if s < DOOR_F: lab[i] = 'fender.' + side; continue
@@ -241,4 +276,6 @@ for it in range(4):
     if not changed: break
 cnt = collections.Counter((l, t) for l, t in zip(lab, TAG))
 for (l, t), n in sorted(cnt.items(), key=lambda x: (x[0][0], str(x[0][1]))): print('  %-22s %-8s %6d' % (l, t or 'paint', n))
-json.dump({'L': L, 'H': H, 'HW': HW, 'XC': XC, 'P': P, 'N': NR, 'F': faces, 'lab': lab, 'mat': TAG}, open(out_path, 'w'))
+# the quarter light sits in the rear door's frame, so it rides with that door
+json.dump({'L': L, 'H': H, 'HW': HW, 'XC': XC, 'P': P, 'N': NR, 'F': faces, 'lab': lab, 'mat': TAG,
+           'host': {'glass.quarter': 'doorR'}}, open(out_path, 'w'))
