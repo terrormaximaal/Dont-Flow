@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 tweede familie: sedan';
+const VG_BUILD = '4 sep 2026 \u00b7 sedan met achterportieren';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1029,7 +1029,7 @@ const ARCHETYPES = {
     tumble: [0.070, 0.090], rockerH: [0.090, 0.110], rockerTuck: [0.004, 0.008], beltTuck: [0.006, 0.010],
     hoodDome: [0.004, 0.008], hoodRise: [0.008, 0.014], hoodCrease: [0.004, 0.008], ducktail: [0.002, 0.005],
     noseDepth: [0.50, 0.56], tailDepth: [0.34, 0.40], frontRakeBack: [0.12, 0.15], tailRakeIn: [0.04, 0.06],
-    doorLen: [1.05, 1.12],
+    doorLen: [0.98, 1.04], rearDoorLen: [0.80, 0.88],
     wheelStyles: ['five', 'multi'],
     mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.975,
     dloRear: 0.800, mirrorF: 0.350, tumbleRef: 0.300,
@@ -1274,7 +1274,14 @@ function generateDNA(opts = {}) {
 
   // --- panel stations ------------------------------------------------------
   d.xDoorF = d.xCowl - 0.015;
-  d.xDoorR = Math.max(d.xDoorF - R('doorLen'), d.xAxleR - d.archDx + d.archR + 0.07);
+  // A four-door car cuts the flank twice: the front door ends at the B-pillar
+  // and the rear door runs from there to the arch. One draw for doorLen in
+  // both cases, so a two-door car's stream is untouched.
+  const doorLen = R('doorLen');
+  if (d.doors >= 4) {
+    d.xDoorMid = d.xDoorF - doorLen;
+    d.xDoorR = Math.max(d.xDoorMid - R('rearDoorLen'), d.xAxleR - d.archDx + d.archR + 0.07);
+  } else d.xDoorR = Math.max(d.xDoorF - doorLen, d.xAxleR - d.archDx + d.archR + 0.07);
   d.xRockerF = d.xAxleF + d.archDx - d.archR - 0.02;
   d.xRockerR = d.xAxleR - d.archDx + d.archR + 0.02;
 
@@ -3401,6 +3408,10 @@ function stage_structure(ctx) {
     };
     patch(tub, jamb(() => d.xDoorF, 1), 2, 10, M.matte, [d.xDoorF - 1, 0.6, 0]);
     patch(tub, jamb((vv) => B.doorRearX(vv), -1), 2, 10, M.matte, [d.xDoorR + 1, 0.6, 0]);
+    if (d.xDoorMid !== undefined) {
+      patch(tub, jamb(() => d.xDoorMid, 1), 2, 10, M.matte, [d.xDoorMid - 1, 0.6, 0]);
+      patch(tub, jamb(() => d.xDoorMid, -1), 2, 10, M.matte, [d.xDoorMid + 1, 0.6, 0]);
+    }
     patch(tub, (u, w) => { const x = lerp(d.xDoorR, d.xDoorF, u); const z = SIDE[k] * B.zAt(x, B.rockerTop) * lerp(0.80, 0.985, w); return [x, B.rockerTop - 0.006, z]; }, 8, 2, M.matte, [0, 1, 0]);
   }
   patch(tub, (u, w) => { const x = lerp(xQ + 0.05, xF - 0.05, u); return [x, d.clearance + 0.06, (w * 2 - 1) * B.hw(x) * 0.88]; },
@@ -3414,7 +3425,7 @@ function stage_structure(ctx) {
   const yBumperTop = lerp(B.coverBottom(xQ), B.belt(xQ) - 0.012, VSEAM);
   const vAtY = (x, y) => { const bot = B.flankBottom(x), sh = B.shoulderY(x), top = B.belt(x); return y < sh ? B.VSH * (y - bot) / (sh - bot) : B.VSH + (1 - B.VSH) * (y - sh) / (top - sh); };
   for (const k in SIDE) {
-    for (const [xs, v1] of [[d.xDoorF, 1], [d.xDoorR, 1], [xF, 1], [xQ, clamp(vAtY(xQ, yBumperTop), 0.05, 1)]]) {
+    for (const [xs, v1] of [[d.xDoorF, 1], [d.xDoorR, 1], [xF, 1], [xQ, clamp(vAtY(xQ, yBumperTop), 0.05, 1)]].concat(d.xDoorMid !== undefined ? [[d.xDoorMid, 1]] : [])) {
       const shifted = (xs === d.xDoorR)
         ? B.sideRectV((vv) => B.doorRearX(vv) + 0.02, (vv) => B.doorRearX(vv) - 0.02, 0, v1, SIDE[k])
         : B.sideRect(xs + 0.02, xs - 0.02, 0, v1, SIDE[k]);
@@ -3970,11 +3981,20 @@ function stage_doors(ctx) {
   /* ================= 4. DOORS (construction) ============================= */
   for (const k in SIDE) {
     const sd = SIDE[k];
-    const x0 = d.xDoorF - G, x1 = d.xDoorR + G;
-    const dr = mk('door.' + k, 'Portier ' + k.toUpperCase(), { detachable: true, stiffness: 1.1, stage: 1 });
-    shell(dr, B.sideRectV(x0, (vv) => B.doorRearX(vv) + G, 0, 1, sd), 14, B.flankVs(0, 1, 8), M.paint, flankRef(x0, x1));
+    /* One door or two. A four-door car's front door ends on a straight cut at
+       the B-pillar; the rearmost door, in either case, carries the curved cut
+       that follows the arch and the quarter light behind it. The mirror rides
+       on the front door only. */
+    const segs = d.xDoorMid !== undefined
+      ? [{ id: 'door.' + k, label: 'Portier voor ' + k.toUpperCase(), xa: d.xDoorF, xb: d.xDoorMid, rear: () => d.xDoorMid, mirror: true, last: false },
+         { id: 'door.r' + k, label: 'Portier achter ' + k.toUpperCase(), xa: d.xDoorMid, xb: d.xDoorR, rear: (vv) => B.doorRearX(vv), mirror: false, last: true }]
+      : [{ id: 'door.' + k, label: 'Portier ' + k.toUpperCase(), xa: d.xDoorF, xb: d.xDoorR, rear: (vv) => B.doorRearX(vv), mirror: true, last: true }];
+    for (const S of segs) {
+    const x0 = S.xa - G, x1 = S.xb + G;
+    const dr = mk(S.id, S.label, { detachable: true, stiffness: 1.1, stage: 1 });
+    shell(dr, B.sideRectV(x0, (vv) => S.rear(vv) + G, 0, 1, sd), 14, B.flankVs(0, 1, 8), M.paint, flankRef(x0, x1));
     const dRef = flankRef(x0, x1);
-    shell(dr, B.beltClose(sd, x0, B.doorRearX(1) + G, () => 0.05), 16, 4, M.paint, dRef);
+    shell(dr, B.beltClose(sd, x0, S.rear(1) + G, () => 0.05), 16, 4, M.paint, dRef);
     patch(dr, inset(B.sideRect(x0 + 0.012, x1 - 0.012, 0.02, 0.99, sd), 0.90), 10, 4, M.stamped, dRef).userData.stage = 4;
     for (const rect of [[0.04, 0.14, 0.05, 0.95], [0.86, 0.96, 0.05, 0.95], [0.05, 0.95, 0.05, 0.14]]) {
       const m = new THREE.Mesh(buildShell(rect[1] - rect[0] > 0.3 ? 10 : 3, 2,
@@ -4006,8 +4026,8 @@ function stage_doors(ctx) {
     v.addPart(dr);
     // Side glass: the top edge is the measured daylight opening, which rises
     // steeply over the A-pillar and falls away into the fastback.
-    const xGlassRear = B.doorRearX(1) + G + 0.02;
-    glassPart('glass.' + k, 'Zijruit ' + k.toUpperCase(), (u, w) => {
+    const xGlassRear = S.rear(1) + G + 0.02;
+    glassPart('glass.' + S.id.slice(5), 'Zijruit ' + S.id.slice(5).toUpperCase(), (u, w) => {
       const xg = lerp(x0 - 0.012, xGlassRear, u);
       const topV = clamp(B.dloTop(xg), 0.12, 0.99);
       return B.cabin(xg, lerp(0.05, topV, w), sd);
@@ -4015,13 +4035,14 @@ function stage_doors(ctx) {
     // The reference glazes on past the door cut to 0.80 of the length; without
     // this pane the whole quarter light was drawn as paint.
     const qtrPart = v.get('quarter.' + k);
-    if (d.xDloRear < xGlassRear - 0.05) {
+    if (S.last && d.xDloRear < xGlassRear - 0.05) {
       glassPart('glass.quarter.' + k, 'Zijruit achter ' + k.toUpperCase(), (u, w) => {
         const xg = lerp(xGlassRear + G, d.xDloRear, u);
         const topV = clamp(B.dloTop(xg), 0.10, 0.99);
         return B.cabin(xg, lerp(0.05, topV, w), sd);
       }, qtrPart, 8, 5);
     }
+    if (!S.mirror) continue;
     // mirror: a teardrop pod on a thin stalk
     const mi = mk('mirror.' + k, 'Spiegel ' + k.toUpperCase(), { detachable: true, stiffness: 0.45, stage: 7 });
     const mx = clamp(d.xMirror, x1 + 0.10, x0 - 0.02), my = B.belt(mx) + 0.015, mz = sd * (B.zAt(mx, B.belt(mx) - 0.02) - 0.004);
@@ -4045,6 +4066,20 @@ function stage_doors(ctx) {
     mi.add(gm, false);
     mi.setPivot(new THREE.Vector3(mx, my, mz));
     v.addPart(mi, dr);
+    }
+    // B-pillar: a post between the two door windows, standing just proud of
+    // the glass line so both panes can run up to it
+    if (d.xDoorMid !== undefined) {
+      const pb = mk('pillar.b.' + k, 'B-stijl ' + k.toUpperCase(), { kind: 'trim', stiffness: 2.0, stage: 3 });
+      const xm = d.xDoorMid;
+      patch(pb, (u, w) => {
+        const xg = lerp(xm - 0.035, xm + 0.035, u);
+        const topV = clamp(B.dloTop(xg), 0.12, 0.99);
+        const q = B.cabin(xg, lerp(0.0, topV, w), sd);
+        return [q[0], q[1], q[2] + sd * 0.006];
+      }, 2, 8, M.trim, flankRef(xm, xm));
+      v.addPart(pb);
+    }
   }
 
 }
@@ -5684,7 +5719,7 @@ Vehicle.prototype.validateGeometry = function () {
     document.querySelectorAll('[data-car]').forEach((b) => b.classList.toggle('sel', b.dataset.car === type));
     $('clayBtn').classList.toggle('sel', useClay);
     $('xrayBtn').classList.toggle('sel', xray);
-    for (const id of ['hood', 'trunk', 'door.l', 'door.r', 'fender.l', 'fender.r', 'quarter.l', 'quarter.r', 'roof', 'bumper.front', 'bumper.rear', 'nose', 'tail', 'rocker.l', 'rocker.r']) {
+    for (const id of ['hood', 'trunk', 'door.l', 'door.r', 'door.rl', 'door.rr', 'fender.l', 'fender.r', 'quarter.l', 'quarter.r', 'roof', 'bumper.front', 'bumper.rear', 'nose', 'tail', 'rocker.l', 'rocker.r']) {
       const p = car.get(id);
       if (!p) continue;
       for (const m of p.meshes) {
