@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 wielen delen geometrie: 226 draw calls';
+const VG_BUILD = '4 sep 2026 \u00b7 build in twaalf stages';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -2192,10 +2192,19 @@ class Wheel {
        double as the untouched original every deformation reads from. */
     const cache = v._wheelGeo || (v._wheelGeo = new Map());
     const cached = (key, make) => { let g = cache.get(key); if (!g) { g = make(); cache.set(key, g); } return g; };
-    this.tireTemplate = cached('tyre|' + w.toFixed(4), () => {
+    /* The right-hand template is a mirrored copy of the left one - the shape
+       is symmetric anyway, but the validation compares the two sides vertex by
+       vertex, index for index, and a shared lathe puts vertex i on opposite
+       sides of the wheel's centre plane. A copy with the same vertex order
+       keeps that check meaningful for 5 kB per axle. */
+    const tyreLeft = cached('tyre|' + w.toFixed(4), () => {
       const g = lathe(tp, 36);
       g.userData.orig = Float32Array.from(g.attributes.position.array);
-      g.userData.zSymmetric = true;         // the profile is symmetric about the wheel's centre plane
+      return g;
+    });
+    this.tireTemplate = side > 0 ? tyreLeft : cached('tyre|' + w.toFixed(4) + '|R', () => {
+      const g = mirrorGeometryZ(tyreLeft);
+      g.userData.orig = Float32Array.from(g.attributes.position.array);
       return g;
     });
     this.tire = new THREE.Mesh(this.tireTemplate, M.tire.clone());
@@ -2588,14 +2597,13 @@ function symmetriseVehicle(v) {
     const M2 = new THREE.Matrix4().copy(dst.matrixWorld).invert()
       .multiply(new THREE.Matrix4().makeScale(1, 1, -1))
       .multiply(src.matrixWorld);
-    /* The wheels are built once and shared: the right rim is a mirrored COPY
-       of the left one, and the two tyres on an axle are one geometry that is
-       symmetric in z by construction. Either way the pair is an exact mirror
-       already, provided the two meshes sit under exactly mirrored transforms -
-       and that is what M2 says: for mirrored placements it comes out as the
-       reflection itself, diag(1, 1, -1). Then there is nothing to copy. */
+    /* The wheels are built once per axle: the right rim and tyre are mirrored
+       COPIES of the left ones. Such a pair is an exact mirror already, provided
+       the two meshes sit under exactly mirrored transforms - and that is what
+       M2 says: for mirrored placements it comes out as the reflection itself,
+       diag(1, 1, -1). Then there is nothing to copy. */
     const gd = dst.geometry.userData;
-    if (gd.mirrorOf === src.geometry || (src.geometry === dst.geometry && src.geometry.userData.zSymmetric)) {
+    if (gd.mirrorOf === src.geometry) {
       const e = M2.elements;
       let off = 0;
       for (let i = 0; i < 16; i++) off = Math.max(off, Math.abs(e[i] - (i === 10 ? -1 : i % 5 === 0 ? 1 : 0)));
@@ -2821,13 +2829,14 @@ function weldGeometries(items) {
    proper front-facing surface on the other side of the car. */
 function mirrorGeometryZ(src) {
   const g = new THREE.BufferGeometry();
-  for (const name of ['position', 'normal']) {
-    const a = src.attributes[name]; if (!a) continue;
-    const arr = Float32Array.from(a.array);
-    for (let i = 2; i < arr.length; i += 3) arr[i] = -arr[i];
-    g.setAttribute(name, new THREE.BufferAttribute(arr, 3));
+  for (const name in src.attributes) {
+    const a = src.attributes[name];
+    if (name === 'position' || name === 'normal') {
+      const arr = Float32Array.from(a.array);
+      for (let i = 2; i < arr.length; i += 3) arr[i] = -arr[i];
+      g.setAttribute(name, new THREE.BufferAttribute(arr, 3));
+    } else g.setAttribute(name, a.clone());      // uv and colour carry over as they are
   }
-  if (src.attributes.color) g.setAttribute('color', src.attributes.color.clone());
   if (src.index) {
     const a = src.index.array, ix = new Uint32Array(a.length);
     for (let i = 0; i < a.length; i += 3) { ix[i] = a[i]; ix[i + 1] = a[i + 2]; ix[i + 2] = a[i + 1]; }
@@ -3030,6 +3039,19 @@ function buildVehicle(opts = {}) {
   const deckGap = G * 3;   // the lid meets the tail band at a convex corner
   const deckFn = B.topSheet(B.deckEdge(deckGap), d.xDeck - G, B.deckTopY, null, 2 * G, (z) => B.tailEdge.y(z));
 
+  /* The build is a pipeline of named stages sharing one context. Each stage
+     reads what it needs from ctx and hands on what later stages use, so a
+     vehicle family can swap or drop a stage without touching the others. The
+     order is the one the single long function used to run in. */
+  const ctx = { B, G, M, d, deckFn, deckGap, fRef, flankRef, hoodFn, inset, midX, mk, patch, rRef, shell, v, xF, xQ };
+  for (const stage of (opts.pipeline || BUILD_PIPELINE)) stage(ctx);
+  return v;
+}
+
+const BUILD_PIPELINE = [stage_structure, stage_skeleton, stage_body, stage_frontRear, stage_wheels, stage_greenhouse, stage_doors, stage_engine, stage_lighting, stage_interior, stage_details, stage_finish];
+
+function stage_structure(ctx) {
+  const { B, M, d, deckFn, flankRef, hoodFn, inset, mk, patch, shell, v, xF, xQ } = ctx;
   /* ================= 1. STRUCTURE (hidden volumes) ======================= */
   const tub = mk('body.structure', 'Chassisdeel', { kind: 'fixed', stiffness: 3, stage: 1 });
   for (const k in SIDE) {
@@ -3125,9 +3147,18 @@ function buildVehicle(opts = {}) {
     return [x, yc2, zt * Math.min(B.hw(x) - d.beltTuck - 0.02, B.cabinHW(x, yc2) - 0.008)]; }, 10, 2, M.matte, [0, 0.4, 0]);
   v.addPart(tub);
 
+  Object.assign(ctx, { tub });
+}
+
+function stage_skeleton(ctx) {
+  const { v, tub } = ctx;
   /* ================= 0. STRUCTURAL SKELETON ============================== */
   buildStructure(v, tub);
 
+}
+
+function stage_body(ctx) {
+  const { B, G, M, d, deckFn, flankRef, hoodFn, midX, mk, patch, shell, v, xF, xQ, tub } = ctx;
   /* ================= 1. SILHOUETTE + BODY VOLUMES ======================== */
   for (const k in SIDE) {
     const sd = SIDE[k];
@@ -3221,6 +3252,11 @@ function buildVehicle(opts = {}) {
   boot.setHinge({ axis: 'z', closed: 0, open: -0.55, speed: 1.6, pivot: new THREE.Vector3(d.xDeck - G, d.deckY - 0.03, 0), sagSign: -1 });
   v.addPart(boot);
 
+  Object.assign(ctx, { hood, roof });
+}
+
+function stage_frontRear(ctx) {
+  const { B, G, M, d, fRef, mk, rRef, shell, v } = ctx;
   /* ================= 4. FRONT & REAR ASSEMBLY ============================ */
   /* ---------------------------------------------------------------------
      Measured-aperture solver. Openings are specified in real dimensions
@@ -3527,6 +3563,11 @@ function buildVehicle(opts = {}) {
   mirrorHalfInto(br, 0);
   v.addPart(br);
 
+  Object.assign(ctx, { AP, MY, bf, br, cornerHole, exhHole, lampHole, lowerOpening, mouthHole, nose, pillShape, recessHole, solveFront, tailBand, tailLampHole });
+}
+
+function stage_wheels(ctx) {
+  const { M, d, v, tub } = ctx;
   /* ================= 2. WHEELS ============================================ */
   const WNAME = { fl: 'LV', fr: 'RV', rl: 'LA', rr: 'RA' };
   for (const [wid, x, sd, front] of [['fl', d.xAxleF, 1, true], ['fr', d.xAxleF, -1, true], ['rl', d.xAxleR, 1, false], ['rr', d.xAxleR, -1, false]]) {
@@ -3544,6 +3585,10 @@ function buildVehicle(opts = {}) {
     tub.add(arm, false);
   }
 
+}
+
+function stage_greenhouse(ctx) {
+  const { B, M, d, inset, midX, mk, patch, shell, v, roof } = ctx;
   /* ================= 3. GREENHOUSE ======================================= */
   const glassPart = (id, label, fn, host, nu, nv, stage) => {
     const p = mk(id, label, { kind: 'glass', stiffness: 0.95, stage: stage || 3 });
@@ -3588,6 +3633,11 @@ function buildVehicle(opts = {}) {
     shell(roof, B.screenSurround(RS[0], RS[1], RS[2], RS[3], RS[4], sd2), 14, 5, M.paint, rf, 0.020);
   }
 
+  Object.assign(ctx, { glassPart });
+}
+
+function stage_doors(ctx) {
+  const { B, G, M, d, flankRef, inset, mk, patch, shell, v, glassPart } = ctx;
   /* ================= 4. DOORS (construction) ============================= */
   for (const k in SIDE) {
     const sd = SIDE[k];
@@ -3668,6 +3718,10 @@ function buildVehicle(opts = {}) {
     v.addPart(mi, dr);
   }
 
+}
+
+function stage_engine(ctx) {
+  const { B, M, d, mk, v } = ctx;
   /* ================= 4. ENGINE BAY ======================================== */
   const eng = mk('engine', 'Motorruimte', { kind: 'fixed', stiffness: 2.4, stage: 4 });
   const floorY = d.clearance + 0.06;
@@ -3699,6 +3753,10 @@ function buildVehicle(opts = {}) {
   eng.add(new THREE.Mesh(box(0.05, 0.26, 0.62, d.arch.xFirewall - 0.06, ey + 0.20, 0), M.stamped), false);
   v.addPart(eng);
 
+}
+
+function stage_lighting(ctx) {
+  const { B, M, d, fRef, inset, mk, patch, rRef, shell, v, AP, MY, bf, br, cornerHole, exhHole, lampHole, lowerOpening, mouthHole, nose, pillShape, recessHole, solveFront, tailBand, tailLampHole } = ctx;
   /* ================= 5. LIGHTING ASSEMBLIES ============================== */
   // Headlight: the lens IS the aperture surface, so the unit follows the body
   // exactly. Inside sit a reflector bowl, projectors and a brow light bar.
@@ -4029,6 +4087,11 @@ function buildVehicle(opts = {}) {
   }
   v.addPart(sens, bf);
 
+  Object.assign(ctx, { grille });
+}
+
+function stage_interior(ctx) {
+  const { B, M, d, mk, v } = ctx;
   /* ================= 6. INTERIOR ========================================= */
   const inte = mk('interior', 'Interieur', { kind: 'fixed', stiffness: 2.2, stage: 6 });
   const dashX = d.xCowl - 0.16, dashY = B.belt(dashX) - 0.17;
@@ -4069,6 +4132,10 @@ function buildVehicle(opts = {}) {
   v.steeringWheel = swSpin;
   v.addPart(swPart);
 
+}
+
+function stage_details(ctx) {
+  const { B, M, d, flankRef, inset, mk, v, AP } = ctx;
   /* ================= 7. DETAILS ========================================== */
   const det = mk('details', 'Details', { kind: 'fixed', stiffness: 1.5, stage: 7 });
   for (const q of [-0.50, 0.10]) {
@@ -4095,6 +4162,10 @@ function buildVehicle(opts = {}) {
 
   // Eight assembly layers, so the exploded view separates the car the way a
   // technical teardown does instead of pushing every part out equally.
+}
+
+function stage_finish(ctx) {
+  const { d, v, hood, roof, nose, grille } = ctx;
   const LAYERS = [
     [1, 'Carrosserie', /^(hood|trunk|roof|nose|tail|fender\.|quarter\.|door\.|rocker\.|bumper\.)/],
     [2, 'Verlichting', /^(headlight|taillight|foglamp)/],
@@ -4196,7 +4267,6 @@ function buildVehicle(opts = {}) {
     if (p.parentPart && p.parentPart.explodeOffset) p.explodeLocal.sub(p.parentPart.explodeOffset);
   });
   v.updateStructure();
-  return v;
 }
 
 /* ---- shared damage behaviours ------------------------------------------ */
