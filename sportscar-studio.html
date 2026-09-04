@@ -198,7 +198,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 metallic: echt metaal, echte lichtstraat';
+const VG_BUILD = '4 sep 2026 \u00b7 kooi volgt de mesh';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -3081,6 +3081,32 @@ function buildStructure(v, tub) {
   const midCab = (A.xFirewall + d.xDeck) / 2;
   cell.add(plate(Math.abs(A.xFirewall - d.xDeck), 0.05, v.B.zAt(midCab, A.yFloor + 0.06) * 1.70, midCab, A.yFloor, 0, M.stamped), false);
   cell.add(plate(0.30, 0.16, 0.14, (A.xFirewall + d.xDeck) / 2, A.yFloor + 0.10, 0, M.frame), false);   // transmission tunnel
+  const cage = meshCage(d);
+  if (cage) {
+    /* Hung on the mesh's own corners: sill along the door aperture, A-pillar up
+       the screen's outboard edge at the screen's own rake, B-pillar at the back
+       of the door, roof rail over the top of both, and a rear pillar behind the
+       quarter light. */
+    const C = cage;
+    const sillY = C.sillF.y + 0.04, sillZ = Math.abs(C.sillZ) - 0.05;
+    const aFootZ = Math.min(Math.abs(C.aFoot.z), sillZ) - 0.01;
+    const aTopZ = Math.abs(C.aTop.z) - 0.02;
+    const bZ = Math.abs(C.bTop.z) - 0.03;
+    const railY = C.roofY - 0.05;
+    const cRearX = C.cRear ? C.cRear.x + 0.03 : C.roofR.x + 0.10;
+    for (const s of [-1, 1]) {
+      cell.add(beam(C.sillF.x, sillY, s * sillZ, C.sillR.x, sillY, s * sillZ, 0.15, 0.13, M.frame), false);            // sill
+      cell.add(beam(C.sillF.x, sillY, s * sillZ, C.aFoot.x, C.aFoot.y - 0.02, s * aFootZ, 0.10, 0.09, M.stamped), false); // A-pillar foot
+      cell.add(beam(C.aFoot.x, C.aFoot.y - 0.02, s * aFootZ, C.aTop.x + 0.04, C.aTop.y - 0.03, s * aTopZ, 0.08, 0.08, M.stamped), false); // A-pillar
+      cell.add(beam(C.bTop.x + 0.03, sillY, s * sillZ, C.bTop.x + 0.03, C.bTop.y - 0.03, s * bZ, 0.10, 0.10, M.stamped), false);          // B-pillar
+      cell.add(beam(cRearX, sillY + 0.10, s * (sillZ - 0.06), cRearX, railY, s * (bZ - 0.03), 0.09, 0.09, M.stamped), false);             // rear pillar
+      cell.add(beam(C.aTop.x + 0.04, C.aTop.y - 0.03, s * aTopZ, C.roofR.x + 0.05, railY, s * (bZ - 0.03), 0.07, 0.06, M.stamped), false); // roof rail
+    }
+    for (const t of [0.30, 0.72]) {
+      const xb = lerp(C.aTop.x + 0.04, C.roofR.x + 0.05, t), zb = bZ - 0.05;
+      cell.add(beam(xb, railY + 0.01, -zb, xb, railY + 0.01, zb, 0.06, 0.05, M.stamped), false);   // roof bow
+    }
+  } else
   for (const s of [-1, 1]) {
     const zs = s * (B.zAt(d.xDoorF, B.rockerTop) - 0.07);
     cell.add(beam(d.xDoorF + 0.06, B.rockerTop - 0.06, zs, d.xDoorR - 0.06, B.rockerTop - 0.06, zs, 0.17, 0.15, M.frame), false);  // sill
@@ -3093,7 +3119,7 @@ function buildStructure(v, tub) {
     const yR = B.roofYAt(d.xRoofF) - 0.03;
     cell.add(beam(d.xCowl - 0.14, yA, s * (B.cabinHW(d.xCowl - 0.14, yA) - 0.05), d.xRoofR, B.roofYAt(d.xRoofR) - 0.03, s * (B.cabinHW(d.xRoofR, yR) - 0.05), 0.07, 0.06, M.stamped), false); // roof rail
   }
-  for (const xb of [d.xRoofF - 0.03, lerp(d.xRoofF, d.xRoofR, 0.55)]) {
+  if (!cage) for (const xb of [d.xRoofF - 0.03, lerp(d.xRoofF, d.xRoofR, 0.55)]) {
     const y = B.roofYAt(xb) - 0.035;
     cell.add(beam(xb, y, -B.cabinHW(xb, y) + 0.05, xb, y, B.cabinHW(xb, y) - 0.05, 0.06, 0.05, M.stamped), false);   // roof bow
   }
@@ -3557,6 +3583,46 @@ function addMeshPart(part, subs, M, sd, stage) {
 }
 
 // a skin panel from the library, as an indexed geometry with the exporter's normals, scaled onto this car
+/* The corner of a panel that lies furthest along a direction. A bounding box
+   cannot give a pillar: it says where the panel reaches, not where its corners
+   are, and a raked screen's box has no vertex at three of its eight corners.
+   This asks the panel itself, which is what a cage has to be hung on. */
+function meshExtreme(geo, ax, ay, az) {
+  const a = geo.attributes.position.array;
+  let best = -Infinity, bi = 0;
+  for (let i = 0; i < a.length; i += 3) {
+    const s = ax * a[i] + ay * a[i + 1] + az * a[i + 2];
+    if (s > best) { best = s; bi = i; }
+  }
+  return new THREE.Vector3(a[bi], a[bi + 1], a[bi + 2]);
+}
+/* Where the pillars of a mesh body actually are. Read off the panels: the
+   door's own corners give the sill and the B-pillar, the windscreen's outboard
+   edge gives the A-pillar and its rake, the quarter light and the roof give the
+   back of the cabin. Built from the parametric stations instead, the cage put
+   its A-pillar across the bonnet and a roof bow through the tailgate glass. */
+function meshCage(d) {
+  if (!(d.mesh && d.mesh.skin && typeof MESH_LIB !== 'undefined' && MESH_LIB[d.mesh.lib])) return null;
+  const lib = MESH_LIB[d.mesh.lib];
+  const sc = [d.L, d.H, d.W / 2];
+  const have = (n) => lib.skin && lib.skin[n];
+  if (!(have('door') && have('glass.windshield') && have('roof') && have('rocker'))) return null;
+  const g = (n) => meshSkinGeometry(d.mesh.lib, n, sc);
+  const door = g('door'), screen = g('glass.windshield'), roof = g('roof'), rocker = g('rocker');
+  const qtr = have('glass.quarter') ? g('glass.quarter') : null;
+  const E = meshExtreme;
+  return {
+    sillF: E(door, 1, -0.4, 0),            // front bottom corner of the door aperture
+    sillR: E(door, -1, -0.4, 0),           // rear bottom corner
+    sillZ: E(rocker, 0, 0, 1).z,
+    aFoot: E(screen, 0.7, -0.5, 0.9),      // the screen's outboard bottom corner
+    aTop: E(screen, -0.4, 1, 0.5),         // its outboard top corner
+    bTop: E(door, -0.9, 1, 0),             // rear top of the door: the B-pillar
+    cRear: qtr ? E(qtr, -1, 0.3, 0) : null,
+    roofR: E(roof, -1, 0.3, 0),
+    roofY: E(roof, 0, 1, 0).y,
+  };
+}
 function meshSkinGeometry(libName, name, scale) {
   const key = libName + '|skin|' + name + '|' + scale.map((x) => x.toFixed(5)).join(',');
   if (_meshLibCache.has(key)) return _meshLibCache.get(key);

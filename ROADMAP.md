@@ -358,6 +358,24 @@ De twaalf gemeten lakken stonden al in de tabel maar de auto pakte er altijd
   kleuren van sierlijsten, glas en interieur zijn met het oog op de
   ongecorrigeerde pijplijn gekozen en zijn niet aangeraakt.
 
+### Kooiconstructie op de mesh (4 sep)
+
+Als je de stadsauto sloopte kwamen er balken tevoorschijn die diagonaal door
+de auto liepen. Oorzaak: de kooi werd gebouwd uit parametrische stations
+(`d.xCowl`, `d.xDoorF`, `B.roofYAt`) terwijl de carrosserie van de mesh komt.
+Die twee lopen tientallen centimeters uiteen, dus de A-stijl eindigde boven de
+motorkap en een dakspant liep door het achterruit.
+
+Nieuw is `meshCage(d)`: die leest de hoekpunten van de panelen zelf. Een
+bounding box is niet genoeg, want een gehelde ruit heeft in drie van de acht
+hoeken van zijn box geen enkel punt; `meshExtreme(geo, ax, ay, az)` vraagt het
+paneel om het punt dat het verst in een richting ligt. Daaruit komen de dorpel
+(voor- en achterhoek van de deur), de A-stijl (de buitenste onder- en
+bovenhoek van de voorruit, dus met de echte helling), de B-stijl (achterste
+bovenhoek van de deur), de achterstijl (achter het zijruitje) en de daklijn.
+Alleen actief als de familie een mesh-huid heeft; de andere families houden
+hun eigen kooi.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
