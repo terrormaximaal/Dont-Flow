@@ -317,11 +317,14 @@ De twaalf gemeten lakken stonden al in de tabel maar de auto pakte er altijd
 
 - **Kleur en afwerking zijn twee dingen.** De kleur draagt zijn eigen
   vlokbelading (hoeveel aluminium er in de basislaag zit); de afwerking is de
-  laag erover en bepaalt wat die vlok met het licht mag doen. `metallic` is de
-  gemeten waarde van de kleur zelf, `mat` houdt de vlok maar maakt de lak en
-  de blanke laag ruw (ruwheid +0,44 tot ten hoogste 0,88, blanke laag van 0,95
-  naar 0,25 en ruwheid 0,75). De blanke laag gaat nooit naar nul: dan compileert
-  three.js een tweede shaderprogramma voor dezelfde auto.
+  laag erover en bepaalt wat die vlok met het licht mag doen. `metallic` is
+  gepolijst: de gemeten ruwheid van de kleur maal 0,62, een blanke laag van 1,0
+  die zelf vrijwel niet verstrooit (0,02 tot 0,05) en een omgeving die 1,25 keer
+  zo hard weerkaatst. De ruwheid wordt geschaald en niet vervangen, zodat de
+  vlakste van de twaalf de vlakste blijft. `mat` houdt de vlok maar maakt de lak
+  en de blanke laag ruw (ruwheid +0,50 tot ten hoogste 0,94, blanke laag 0,25 en
+  ruwheid 0,75). De blanke laag gaat nooit naar nul: dan compileert three.js een
+  tweede shaderprogramma voor dezelfde auto.
 - **Overspuiten is niet opnieuw bouwen.** Alle gelakte panelen delen één
   materiaal, en klei, reflectietest en structuur bewaren een verwijzing in
   plaats van een kopie, dus een nieuwe kleur wordt er rechtstreeks in

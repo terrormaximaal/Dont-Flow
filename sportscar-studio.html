@@ -198,7 +198,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 lak: twaalf kleuren, metallic of mat';
+const VG_BUILD = '4 sep 2026 \u00b7 lak: twaalf kleuren, metallic glanzender';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1051,13 +1051,21 @@ function srgbToLinear(hex) {
   const c = new THREE.Color(hex);
   return c.convertSRGBToLinear();
 }
+/* The roughness returned here is the final one: the material used to add its
+   own 0.06 on top, which meant two places decided how glossy a car was. */
 function paintSurface(p, finish) {
   if (finish === 'mat') {
-    return { color: srgbToLinear(p.hex), metal: p.metal * 0.85, rough: Math.min(0.88, p.rough + 0.44),
-      clear: 0.25, clearRough: 0.75 };
+    return { color: srgbToLinear(p.hex), metal: p.metal * 0.85, rough: Math.min(0.94, p.rough + 0.50),
+      clear: 0.25, clearRough: 0.75, env: 1.0 };
   }
-  return { color: srgbToLinear(p.hex), metal: p.metal, rough: p.rough,
-    clear: 0.95, clearRough: 0.05 + (1 - p.flake) * 0.04 };
+  /* Metallic is polished: a show-car clearcoat, not a used one. The colour's
+     measured roughness is scaled back rather than replaced, so a paint that was
+     always the flattest of the twelve stays the flattest, and the coat over it
+     carries almost no scatter of its own - which is where the sharpness of the
+     reflection, and the sparkle of the flake, actually comes from. The
+     environment is reflected a little harder for the same reason. */
+  return { color: srgbToLinear(p.hex), metal: p.metal, rough: p.rough * 0.62 + 0.02,
+    clear: 1.0, clearRough: 0.02 + (1 - p.flake) * 0.03, env: 1.25 };
 }
 
 const ARCHETYPES = {
@@ -2381,8 +2389,8 @@ function makeMaterials(s) {
   const roughMap = noiseTexture(s.seed ^ 0x33, 128, 0.72, 1.0, 40);
   const ps = paintSurface(p, s.finish);
   M.paint = phys({
-    color: ps.color, metalness: ps.metal, roughness: ps.rough + 0.06, roughnessMap: roughMap,
-    clearcoat: ps.clear, clearcoatRoughness: ps.clearRough,
+    color: ps.color, metalness: ps.metal, roughness: ps.rough, roughnessMap: roughMap,
+    clearcoat: ps.clear, clearcoatRoughness: ps.clearRough, envMapIntensity: ps.env,
     vertexColors: true, side: THREE.DoubleSide,
   });
   /* Repainting does not rebuild the car: every painted mesh shares this one
@@ -2392,7 +2400,8 @@ function makeMaterials(s) {
     const q = paintSurface(paint, finish);
     M.paint.color.copy(q.color);
     M.paint.metalness = q.metal;
-    M.paint.roughness = q.rough + 0.06;
+    M.paint.roughness = q.rough;
+    M.paint.envMapIntensity = q.env;
     if ('clearcoat' in M.paint) { M.paint.clearcoat = q.clear; M.paint.clearcoatRoughness = q.clearRough; }
   };
   M.clay = std({ color: 0x9a9591, metalness: 0.0, roughness: 0.78, side: THREE.DoubleSide, vertexColors: true });
