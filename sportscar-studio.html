@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 banden samengevoegd: 274 draw calls';
+const VG_BUILD = '4 sep 2026 \u00b7 wielen delen geometrie: 226 draw calls';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -2187,9 +2187,19 @@ class Wheel {
       [R, -w * 0.30], [R, w * 0.30], [R * 0.992, w * 0.40], [R * 0.955, w * 0.47],
       [rr + 0.02, w * 0.485], [rr, w * 0.47], [rr, -w * 0.47],
     ];
-    const tg = lathe(tp, 36);
-    this.tire = new THREE.Mesh(tg, M.tire.clone());
-    this.tire.userData.orig = Float32Array.from(tg.attributes.position.array);
+    /* One tyre template per axle, shared by both wheels on it; a wheel gets
+       its own copy only when it actually goes flat. The template's positions
+       double as the untouched original every deformation reads from. */
+    const cache = v._wheelGeo || (v._wheelGeo = new Map());
+    const cached = (key, make) => { let g = cache.get(key); if (!g) { g = make(); cache.set(key, g); } return g; };
+    this.tireTemplate = cached('tyre|' + w.toFixed(4), () => {
+      const g = lathe(tp, 36);
+      g.userData.orig = Float32Array.from(g.attributes.position.array);
+      g.userData.zSymmetric = true;         // the profile is symmetric about the wheel's centre plane
+      return g;
+    });
+    this.tire = new THREE.Mesh(this.tireTemplate, M.tire.clone());
+    this.tire.userData.orig = this.tireTemplate.userData.orig;
     this.tirePart = new Part(id + '.tire', 'tire', { label: id + ' tyre', stiffness: 1, stage: 2 });
     this.tirePart.wheel = this;
     this.tirePart.add(this.tire, false);
@@ -2197,56 +2207,76 @@ class Wheel {
     this.tirePart.parentPart = part;
     part.children.push(this.tirePart);
 
-    // ---- rim barrel + outer lip
-    const zLip = side * w * 0.31, zHub = side * w * 0.05;
-    part.add(new THREE.Mesh(lathe([
-      [rr - 0.016, -w * 0.44], [rr, -w * 0.41], [rr, w * 0.41], [rr - 0.016, w * 0.44],
-    ], 36), M.rim), false, this.spin);
-    const lip = new THREE.Mesh(lathe([
-      [rr * 0.86, -0.014], [rr * 0.995, -0.008], [rr * 0.995, 0.008], [rr * 0.86, 0.014], [rr * 0.86, -0.014],
-    ], 36), M.rim);
-    lip.position.z = zLip;
-    part.add(lip, false, this.spin);
-    const backing = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.93, rr * 0.93, 0.012, 24), M.interiorDark);
+    /* Rim and brake are built ONCE per axle and shared by both wheels on it.
+       Everything that spins is built for the left side and the right side is
+       that same geometry with z mirrored on the spin group; three.js flips the
+       front face for a negative-determinant matrix, so lighting and shadows
+       come out right. The tyre stays per wheel: a flat tyre rewrites its own
+       vertices. Before this a car carried 76 wheel meshes and 76 wheel
+       geometries, of which 4 x 19 were the same 19 things. */
+    const zLip = w * 0.31, zHub = w * 0.05;          // built in the left-side frame
+    const rimKey = 'rim|' + d.wheelStyle + '|' + d.spokes + '|' + rr.toFixed(4) + '|' + w.toFixed(4);
+    const rimLeft = cached(rimKey, () => {
+      const items = [];
+      const I = new THREE.Matrix4();
+      items.push({ geometry: lathe([
+        [rr - 0.016, -w * 0.44], [rr, -w * 0.41], [rr, w * 0.41], [rr - 0.016, w * 0.44],
+      ], 36), matrix: I });
+      items.push({ geometry: lathe([
+        [rr * 0.86, -0.014], [rr * 0.995, -0.008], [rr * 0.995, 0.008], [rr * 0.86, 0.014], [rr * 0.86, -0.014],
+      ], 36), matrix: new THREE.Matrix4().makeTranslation(0, 0, zLip) });
+      // spokes, angled outward so the face reads as concave
+      const spoke = (angle, wd, th, tipOffset) => {
+        const a0 = new THREE.Vector3(rr * 0.30, 0, zHub), a1 = new THREE.Vector3(rr * 0.965, tipOffset || 0, zLip - 0.004);
+        const g = strut(a0, a1, wd, th);
+        g.rotateZ(angle);
+        items.push({ geometry: g, matrix: I });
+      };
+      const style = d.wheelStyle, n = d.spokes;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        if (style === 'five') spoke(a, 0.078, 0.030);
+        else if (style === 'split') { spoke(a - 0.075, 0.026, 0.024); spoke(a + 0.075, 0.026, 0.024); }
+        else if (style === 'multi') spoke(a, 0.030, 0.022);
+        else spoke(a, 0.030, 0.020, 0.06);          // turbine: swept tips
+      }
+      items.push({ geometry: new THREE.CylinderGeometry(rr * 0.27, rr * 0.30, 0.03, 20),
+        matrix: new THREE.Matrix4().makeRotationX(Math.PI / 2).setPosition(0, 0, zHub + 0.008) });
+      const g = weldGeometries(items);
+      for (const it of items) it.geometry.dispose();
+      return g;
+    });
+    // The right side is a mirrored COPY, not a negative scale: a reflection in
+    // the transform flips bump-map derivatives and shadow winding, and the
+    // tread came out lit differently left and right. Two extra geometries per
+    // car is a price worth paying for identical shading.
+    const rimGeo = side > 0 ? rimLeft : cached(rimKey + '|R', () => mirrorGeometryZ(rimLeft));
+    part.add(new THREE.Mesh(rimGeo, M.rim), false, this.spin);
+    const backing = new THREE.Mesh(cached('backing|' + rr.toFixed(4),
+      () => new THREE.CylinderGeometry(rr * 0.93, rr * 0.93, 0.012, 24)), M.interiorDark);
     backing.rotation.x = Math.PI / 2; backing.position.z = -side * w * 0.38;
     part.add(backing, false, this.spin);
-
-    // ---- spokes, angled outward so the face reads as concave
-    const style = d.wheelStyle, n = d.spokes;
-    const spoke = (angle, wd, th, tipOffset) => {
-      const a0 = new THREE.Vector3(rr * 0.30, 0, zHub), a1 = new THREE.Vector3(rr * 0.965, tipOffset || 0, zLip - side * 0.004);
-      const g = strut(a0, a1, wd, th);
-      g.rotateZ(angle);
-      const m = new THREE.Mesh(g, M.rim);
-      part.add(m, false, this.spin);
-    };
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      if (style === 'five') spoke(a, 0.078, 0.030);
-      else if (style === 'split') { spoke(a - 0.075, 0.026, 0.024); spoke(a + 0.075, 0.026, 0.024); }
-      else if (style === 'multi') spoke(a, 0.030, 0.022);
-      else spoke(a, 0.030, 0.020, 0.06);          // turbine: swept tips
-    }
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.27, rr * 0.30, 0.03, 20), M.rim);
-    hub.rotation.x = Math.PI / 2; hub.position.z = zHub + side * 0.008;
-    part.add(hub, false, this.spin);
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.11, rr * 0.11, 0.012, 16), M.darkChrome);
-    cap.rotation.x = Math.PI / 2; cap.position.z = zHub + side * 0.03;
+    const cap = new THREE.Mesh(cached('cap|' + rr.toFixed(4),
+      () => new THREE.CylinderGeometry(rr * 0.11, rr * 0.11, 0.012, 16)), M.darkChrome);
+    cap.rotation.x = Math.PI / 2; cap.position.z = side * (zHub + 0.03);
     part.add(cap, false, this.spin);
 
-    // ---- brake: separate serviceable assembly (does not spin)
+    // ---- brake: separate serviceable assembly (does not spin, so it is
+    // placed explicitly per side rather than mirrored)
     this.brakePart = new Part(id + '.brake', 'trim', { label: id + ' brake', stiffness: 1.8, stage: 2 });
     this.brakePart.wheel = this;
     this.steer.add(this.brakePart.group);
     this.brakePart.parentPart = part;
     part.children.push(this.brakePart);
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.80, rr * 0.80, 0.028, 32), M.brake);
+    const disc = new THREE.Mesh(cached('disc|' + rr.toFixed(4),
+      () => new THREE.CylinderGeometry(rr * 0.80, rr * 0.80, 0.028, 32)), M.brake);
     disc.rotation.x = Math.PI / 2; disc.position.z = -side * w * 0.05;
     this.brakePart.add(disc, false);
-    const hat = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.42, rr * 0.42, 0.05, 20), M.interiorDark);
+    const hat = new THREE.Mesh(cached('hat|' + rr.toFixed(4),
+      () => new THREE.CylinderGeometry(rr * 0.42, rr * 0.42, 0.05, 20)), M.interiorDark);
     hat.rotation.x = Math.PI / 2; hat.position.z = -side * w * 0.03;
     this.brakePart.add(hat, false);
-    const cal = new THREE.Mesh(box(0.075, 0.19, 0.055, 0, 0, 0), M.caliper);
+    const cal = new THREE.Mesh(cached('caliper', () => box(0.075, 0.19, 0.055, 0, 0, 0)), M.caliper);
     const ca = isFront ? 0.55 : -0.55;
     cal.position.set(Math.cos(ca) * rr * 0.64, Math.sin(ca) * rr * 0.64, -side * w * 0.05);
     cal.rotation.z = ca - Math.PI / 2;
@@ -2268,6 +2298,11 @@ class Wheel {
   setTireState(n) {
     n = clamp(n | 0, 0, 3);
     this.tireState = n;
+    // a wheel still on the shared template deforms into a copy of its own
+    if (this.tire.geometry === this.tireTemplate) {
+      if (n === 0) { this.targetDrop = 0; if (this.tirePart) this.tirePart.damage = 0; return; }
+      this.tire.geometry = this.tireTemplate.clone();
+    }
     const squash = [1, 0.90, 0.62, 0.26][n];
     const widen = [1, 1.02, 1.12, 1.34][n];
     const jag = [0, 0, 0.004, 0.016][n];
@@ -2553,6 +2588,19 @@ function symmetriseVehicle(v) {
     const M2 = new THREE.Matrix4().copy(dst.matrixWorld).invert()
       .multiply(new THREE.Matrix4().makeScale(1, 1, -1))
       .multiply(src.matrixWorld);
+    /* The wheels are built once and shared: the right rim is a mirrored COPY
+       of the left one, and the two tyres on an axle are one geometry that is
+       symmetric in z by construction. Either way the pair is an exact mirror
+       already, provided the two meshes sit under exactly mirrored transforms -
+       and that is what M2 says: for mirrored placements it comes out as the
+       reflection itself, diag(1, 1, -1). Then there is nothing to copy. */
+    const gd = dst.geometry.userData;
+    if (gd.mirrorOf === src.geometry || (src.geometry === dst.geometry && src.geometry.userData.zSymmetric)) {
+      const e = M2.elements;
+      let off = 0;
+      for (let i = 0; i < 16; i++) off = Math.max(off, Math.abs(e[i] - (i === 10 ? -1 : i % 5 === 0 ? 1 : 0)));
+      if (off < 1e-6) return true;
+    }
     const N = new THREE.Matrix3().getNormalMatrix(M2);
     const g = new THREE.BufferGeometry();
     const pos = new Float32Array(sa.position.count * 3);
@@ -2736,6 +2784,60 @@ const SKIN_INNER = /^(body\.structure|interior|seats|dash)/;
 const SKIN_CELL = 0.045;                      // 45 mm grid
 const SKIN_GAP = 0.012;                       // keep this far under the panel
 
+/* Weld a list of geometries into one, baking each one's matrix. Position and
+   normal always; colour only when every input has it. Anything else (uv) is
+   dropped - nothing in this car reads a uv. */
+function weldGeometries(items) {
+  const tmp = new THREE.Vector3(), nm = new THREE.Matrix3();
+  const hasColor = items.every((it) => !!it.geometry.attributes.color);
+  const pos = [], nor = [], col = [], idx = [];
+  let base = 0;
+  for (const it of items) {
+    const g = it.geometry, M = it.matrix;
+    const useM = !!M && !M.equals(new THREE.Matrix4());
+    if (useM) nm.getNormalMatrix(M);
+    const pa = g.attributes.position, na = g.attributes.normal, ca = g.attributes.color;
+    for (let i = 0; i < pa.count; i++) {
+      tmp.fromBufferAttribute(pa, i); if (useM) tmp.applyMatrix4(M);
+      pos.push(tmp.x, tmp.y, tmp.z);
+      tmp.fromBufferAttribute(na, i); if (useM) tmp.applyMatrix3(nm).normalize();
+      nor.push(tmp.x, tmp.y, tmp.z);
+      if (hasColor) col.push(ca.getX(i), ca.getY(i), ca.getZ(i));
+    }
+    if (g.index) { const ix = g.index; for (let i = 0; i < ix.count; i++) idx.push(ix.getX(i) + base); }
+    else for (let i = 0; i < pa.count; i++) idx.push(i + base);
+    base += pa.count;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  if (hasColor) geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.setIndex(idx);
+  geo.computeBoundingBox(); geo.computeBoundingSphere();
+  return geo;
+}
+
+/* The same geometry with z negated and the winding reversed, so it stays a
+   proper front-facing surface on the other side of the car. */
+function mirrorGeometryZ(src) {
+  const g = new THREE.BufferGeometry();
+  for (const name of ['position', 'normal']) {
+    const a = src.attributes[name]; if (!a) continue;
+    const arr = Float32Array.from(a.array);
+    for (let i = 2; i < arr.length; i += 3) arr[i] = -arr[i];
+    g.setAttribute(name, new THREE.BufferAttribute(arr, 3));
+  }
+  if (src.attributes.color) g.setAttribute('color', src.attributes.color.clone());
+  if (src.index) {
+    const a = src.index.array, ix = new Uint32Array(a.length);
+    for (let i = 0; i < a.length; i += 3) { ix[i] = a[i]; ix[i + 1] = a[i + 2]; ix[i + 2] = a[i + 1]; }
+    g.setIndex(new THREE.BufferAttribute(ix, 1));
+  }
+  g.computeBoundingBox(); g.computeBoundingSphere();
+  g.userData.mirrorOf = src;
+  return g;
+}
+
 /* One draw call per band is one draw call too many. Every panel here is cut
    into bands around its openings - the front bumper alone comes out as twelve -
    and each band is its own mesh, so a 59 000 triangle car was 413 draw calls
@@ -2751,7 +2853,6 @@ const SKIN_GAP = 0.012;                       // keep this far under the panel
    symmetry check still pairs them up. */
 function mergeBands(v) {
   let before = 0, after = 0;
-  const tmp = new THREE.Vector3(), nrm = new THREE.Matrix3();
   for (const [, part] of v.parts) {
     before += part.meshes.length;
     const order = [], groups = new Map();
@@ -2776,32 +2877,9 @@ function mergeBands(v) {
         if (part.panels.indexOf(bucket[0]) >= 0) panels.push(bucket[0]);
         continue;
       }
-      const first = bucket[0], hasColor = !!first.geometry.attributes.color;
-      const pos = [], nor = [], col = [], idx = [];
-      let base = 0;
-      for (const m of bucket) {
-        const g = m.geometry;
-        m.updateMatrix();
-        const useM = !m.matrix.equals(new THREE.Matrix4());
-        if (useM) nrm.getNormalMatrix(m.matrix);
-        const pa = g.attributes.position, na = g.attributes.normal, ca = g.attributes.color;
-        for (let i = 0; i < pa.count; i++) {
-          tmp.fromBufferAttribute(pa, i); if (useM) tmp.applyMatrix4(m.matrix);
-          pos.push(tmp.x, tmp.y, tmp.z);
-          tmp.fromBufferAttribute(na, i); if (useM) tmp.applyMatrix3(nrm).normalize();
-          nor.push(tmp.x, tmp.y, tmp.z);
-          if (hasColor) col.push(ca.getX(i), ca.getY(i), ca.getZ(i));
-        }
-        const ix = g.index;
-        for (let i = 0; i < ix.count; i++) idx.push(ix.getX(i) + base);
-        base += pa.count;
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-      if (hasColor) geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-      geo.setIndex(idx);
-      geo.computeBoundingBox(); geo.computeBoundingSphere();
+      const first = bucket[0];
+      for (const m of bucket) m.updateMatrix();
+      const geo = weldGeometries(bucket.map((m) => ({ geometry: m.geometry, matrix: m.matrix })));
       const merged = new THREE.Mesh(geo, first.material);
       merged.castShadow = first.castShadow; merged.receiveShadow = first.receiveShadow;
       merged.visible = first.visible; merged.renderOrder = first.renderOrder;
@@ -5435,7 +5513,7 @@ Vehicle.prototype.validateGeometry = function () {
     window.__vgRenderer = renderer;
     window.__vgCamera = () => camera;
     window.__setCam = (az, el, sc) => { cam.az = az; cam.el = el; frameCar(sc, 0.46); autoSpin = false; };
-    window.__aim = (az, el, dist, tx, ty, tz) => { cam.az = az; cam.el = el; cam.dist = dist; cam.target.set(tx, ty, tz); autoSpin = false; camFit = null; };
+    window.__aim = (az, el, dist, tx, ty, tz) => { cam.az = az; cam.el = el; cam.dist = dist; cam.target.set(tx, ty, tz); autoSpin = false; idleSince = performance.now(); camFit = null; };
     window.__vgBuildOnly = (i) => buildVehicle({ type, seed: (seed + i) >>> 0 });
   } catch (err) {
     window.__vgFail('Opbouwen van het voertuig mislukte', String(err && err.stack || err));
