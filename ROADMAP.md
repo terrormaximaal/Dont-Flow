@@ -413,6 +413,48 @@ Wat de sedan hiermee niet krijgt: het gezicht is nog dat van de familie zelf
 de textuur. En de generator bouwt nog één deurpaar, dus de sedan heeft lange
 coupédeuren; achterdeuren zijn de volgende structurele stap.
 
+### Sedan: de mesh zelf, in onderdelen (4 sep, op aanwijzing van de opdrachtgever)
+
+De opdrachtgever wil de sedan zoals de stadsauto: de aangeleverde mesh,
+uitgeknipt in delen, modulair. Het is gedaan, met de kanttekening dat 668
+driehoeken grove panelen geeft; het zijn wél de panelen van dit model.
+
+```
+.FBX  ->  tools/reference/fbx2obj.js   binaire FBX naar OBJ (three.js in een headless browser)
+      ->  uvmask2.js                    klassen van de textuur: 0 lak, 1 donker, 2 licht, 3 rood
+      ->  tools/reference/cut_sedan.py  wielen eruit als eigen componenten; snijden op stations
+                                         (deuren 0,31 / 0,53 / 0,72 L uit de assen en de stijlen,
+                                         belt 0,683 H, dorpel 0,25 H, cowl 0,275 + 0,05 z², dak /
+                                         kofferklep 0,79 L, kap / scherm 0,86 hw); lampen en
+                                         grille als dozen uit de textuur: klassen gemeten over
+                                         het oppervlak van elke driehoek, teruggerekend naar 3D,
+                                         en dan met vlakken uitgesneden
+      ->  tools/reference/pack_mesh.py  nu voor meerdere bibliotheken: city blijft byte-identiek,
+                                         sedan erbij (16 huidpanelen, 3 delen: koplamp, achterlicht,
+                                         grille, met hun materiaal-tag)
+      ->  stage_meshSkin / stage_meshDoors / stage_meshLighting
+                                         kofferklep in plaats van achterklep (achterruit blijft in
+                                         de carrosserie), tweede deurpaar door.rl/door.rr met eigen
+                                         ruiten, lampen uit de huid met lens/tailred/grille,
+                                         delen die de mesh niet heeft worden overgeslagen
+```
+
+Wat de textuur gaf dat de geometrie niet had: de ruiten (donker boven de
+belt, begrensd op station omdat het dak in deze foto óók donker is), de
+koplampen (licht), de achterlichten (rood), de grille (donker, laag in de
+neus). Wat een monster per driehoek mist, want een lamp is een fractie van
+één van deze driehoeken, vindt bemonstering over het oppervlak wel.
+
+Gemeten: GT 0 pixels verschil, zaadlijst identiek; sedan QC 21/21 en
+geometrie ok op drie zaden en op het telefoonpad, symmetrie 0 mm over
+8765 punten, rooktest zonder JS-fouten; stadsauto ongewijzigd. Bouwtijd
+van de mesh-sedan rond de 60 tot 100 ms.
+
+Nog open: de panelen zijn zo grof als de mesh (een deur is 35 driehoeken),
+de lampen zijn dozen met een lensmateriaal en geen lampen met een reflector,
+en de sedan heeft geen spiegels, grepen, wissers of diffuser omdat de mesh
+die niet heeft.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.

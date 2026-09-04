@@ -35,6 +35,15 @@ te meten.
 2. `smeas.py` — leest die OBJ, zet de assen om, bepaalt zelf welke kant de
    neus is (de lage kant), en meet SIL, PLAN, BELT, CABIN, DLO, SECTION en de
    tumblehome. `python3 smeas.py model.obj`
+3. `cut_sedan.py` — snijdt de sedan in panelen: wielen eruit als eigen
+   componenten, deuren op stations (er zijn geen groeven), ruiten, lampen en
+   grille uit de textuurklassen (masker van `uvmask2.js`, één cijfer per
+   texel: 0 lak, 1 donker, 2 licht, 3 rood).
+   `python3 cut_sedan.py model.obj mask.txt sedan_cut.json`
+4. `pack_mesh.py` — pakt één bibliotheek en laat de andere staan:
+   `python3 pack_mesh.py sportscar-studio.html sedan sedan_cut.json`
+   (de stadsauto: `... city body_cut.json <obj>`, met de OBJ voor de losse
+   groepen).
 
 De belt heeft op zo weinig driehoeken een andere methode nodig: er zit geen
 knik in de flank waar de schouder hoort, want het zijvlak loopt in een paar
