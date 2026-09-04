@@ -1,6 +1,6 @@
 # Procedural Vehicle Generator — analyse en roadmap
 
-Stand: 4 sep 2026, na commit `db1227b`.
+Stand: 4 sep 2026. Stappen 1, 2, 4 en 5 zijn gedaan; 3 is gemeten en afgewezen (zie tabel).
 Alle getallen hieronder zijn gemeten op `sportscar-studio.html`, seed 12345,
 `super_gt`, tenzij anders vermeld. Metingen draaien op een software-rasteriser
 (swiftshader); waar dat het resultaat beïnvloedt staat het erbij.
@@ -116,11 +116,11 @@ zijn.
 
 | # | Stap | Waarom | Meetbaar aan |
 |---|---|---|---|
-| 1 | **Draw calls: banden samenvoegen** ✔ gedaan | 413 -> 319 meshes, 368 -> 274 calls, beeld pixelidentiek | draw calls, pixeldiff |
-| 2 | Gedeelde wiel-geometrie + instancing | 4x hetzelfde wiel, 5412 duplicaatdriehoeken | geometries, geheugen |
-| 3 | `_grid`: normalen uit het raster i.p.v. 4 extra monsters | ~5x minder oppervlakevaluaties | bouwtijd, normaalafwijking in graden |
-| 4 | `buildVehicle` opsplitsen in stages met een expliciet `ctx` | maakt hergebruik per familie mogelijk | regels per functie, geen gedragsverandering |
-| 5 | **Vehicle DNA-laag**: karakterassen -> proportieregels | `aggressive`, `elegant`, `rugged` sturen meerdere parameters samenhangend | zichtbare variatie bij vaste seed |
+| 1 | **Draw calls: banden samenvoegen** ✔ | 413 -> 319 meshes, 368 -> 274 calls, beeld pixelidentiek | draw calls, pixeldiff |
+| 2 | **Gedeelde wiel-geometrie** ✔ | 76 -> 28 wielmeshes, 274 -> 226 calls, bouwtijd 606 -> 434 ms, pixelidentiek | geometries, geheugen |
+| 3 | `_grid` goedkoper ✗ gemeten en afgewezen | rasternormalen: 370 -> 170 ms maar 30 639 pixels verschoven (plooien in de flank smaller dan een cel); voorwaartse differenties: -54 ms, nog 18 878 pixels | bouwtijd, pixeldiff |
+| 4 | **`buildVehicle` in twaalf stages met één `ctx`** ✔ | mechanisch gesplitst op de sectiemarkeringen, 38 grensoverschrijdende namen via ctx, 0 pixels verschil | regels per functie, geen gedragsverandering |
+| 5 | **Vehicle DNA-laag** ✔ | acht karakterassen, regels per proportie, kwaliteitspoort schuift mee; neutraal = 0 pixels verschil, alle acht presets QC 21/21 | zichtbare variatie bij vaste seed |
 | 6 | **Curvegrammatica**: SIL/PLAN/BELT/CABIN/DLO uit controlepunten | maakt families mogelijk zonder nieuw stylingblad | afwijking t.o.v. de getraceerde tabellen |
 | 7 | `qualityGate` per familie configureerbaar | anders faalt elke nieuwe familie op GT-aannames | 21 controles blijven zinvol |
 | 8 | Familie: **sedan** | eerste bewijs dat de architectuur werkt | hoeveel nieuwe regels? |
