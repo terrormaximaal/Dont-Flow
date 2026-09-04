@@ -35,11 +35,12 @@ te meten.
 2. `smeas.py` — leest die OBJ, zet de assen om, bepaalt zelf welke kant de
    neus is (de lage kant), en meet SIL, PLAN, BELT, CABIN, DLO, SECTION en de
    tumblehome. `python3 smeas.py model.obj`
-3. `cut_sedan.py` — snijdt de sedan in panelen: wielen eruit als eigen
-   componenten, deuren op stations (er zijn geen groeven), ruiten, lampen en
-   grille uit de textuurklassen (masker van `uvmask2.js`, één cijfer per
-   texel: 0 lak, 1 donker, 2 licht, 3 rood).
-   `python3 cut_sedan.py model.obj mask.txt sedan_cut.json`
+3. `cut_sonata.py` — snijdt die eerste sedan in panelen: wielen eruit als
+   eigen componenten, deuren op stations (er zijn geen groeven), ruiten,
+   lampen en grille uit de textuurklassen (masker van `uvmask2.js`, één
+   cijfer per texel: 0 lak, 1 donker, 2 licht, 3 rood).
+   `python3 cut_sonata.py model.obj mask.txt sedan_cut.json`
+   (Heette `cut_sedan.py`; die naam is nu van de tweede sedan, hieronder.)
 4. `pack_mesh.py` — pakt één bibliotheek en laat de andere staan:
    `python3 pack_mesh.py sportscar-studio.html sedan sedan_cut.json`
    (de stadsauto: `... city body_cut.json <obj>`, met de OBJ voor de losse
@@ -50,3 +51,42 @@ knik in de flank waar de schouder hoort, want het zijvlak loopt in een paar
 vlakken door tot het dak. Daarom is de belt de hoogte waarop de flank voor
 het eerst 8% smaller wordt dan het breedste punt van datzelfde station, in
 plaats van de grootste sprong.
+
+## De tweede sedan: een mesh mét losse delen (4 sep)
+
+De opdrachtgever vond de eerste sedan niets en leverde een andere: een
+vierdeurs saloon van 82 000 driehoeken als OBJ met MTL. Geen groepen per
+onderdeel zoals bij de stadsauto, maar wel materialen, en de delen zijn
+losse schillen: ze delen geen hoekpunten met de huid. Dat is genoeg.
+
+1. `cut_sedan.py` — deelt de mesh in schillen (samenhangende driehoeken op
+   hoekpuntindex) en geeft elke schil een rol uit haar materiaal en plek:
+   de grote geverfde schil is de carrosserie, glas is voorruit / achterruit /
+   deurruit / kwartraam naar station, chroom in de neus is grille of
+   koplampreflector, het glas ervoor de lampkap, rood is achterlicht,
+   de schillen met spiegelglas zijn de spiegels. Wielen (velg en band) en
+   het interieur vallen af; de generator bouwt zijn eigen.
+   De huid heeft geen groeven bij de deuren (naden van een paar graden),
+   dus die worden op stations gesneden, afgelezen aan de knikken die er wél
+   zijn: de B-stijlnaad op 0,52 L, de wielkasten op 0,10–0,25 en 0,70–0,86 L,
+   de voorrand van de kofferklep op 0,845 L. De achterrand van de motorkap
+   volgt de onderrand van de voorruit zelf.
+   Elke driehoek vertrekt met een label (paneel of deel) en een
+   materiaal-tag: `None` voor lak, of chrome / lens / tailred / amber /
+   plastic / paint. Een getagde driehoek op een paneel is het sierwerk van
+   dat paneel (de chroomlijst op een deur) en reist ermee mee.
+   `python3 cut_sedan.py Sedan.obj sedan_cut.json`
+2. `smeas.py` heeft er drie opties bij voor zo'n mesh: `--ground=<y>` als
+   de OBJ zonder wielen wordt aangeboden, `--nose=low|high` als de twee
+   uiteinden even hoog zijn, en `--belt=<h>:<f0>:<f1>` om de raamdorpel op
+   te geven door de cabine (deze flank heeft een chroomlijst op 0,38 H en
+   een schouder op 0,53 H, en de detector houdt die voor de belt).
+   `python3 smeas.py body.obj --ground=0 --nose=low --belt=0.655:0.28:0.85`
+3. `pack_mesh.py` leest de tags: op een deel worden ze subs met dat
+   materiaal (koplamp = chroom reflector + lens), op een paneel worden ze
+   `trim`, dat de generator in zijn eigen materiaal aan het paneel hangt.
+   `python3 pack_mesh.py sportscar-studio.html sedan sedan_cut.json`
+
+Gemeten aan deze mesh: L/H/HW 482,4 / 150,8 / 95,3 cm, wielbasis 0,599 L,
+vooroverhang 0,176 L, band 65,5 cm op een velg van 45 cm, bandvlak op
+0,895 van de halve breedte. Die getallen staan in het archetype.

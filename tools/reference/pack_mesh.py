@@ -137,8 +137,12 @@ if obj_path:
             rec['subs'].append(sub)
             print('  part %-18s %6d tris %6d verts  (%s)' % (name + '/' + g, len(fs), len(pos), mat))
         if rec['subs']: parts[name] = rec
-# labels that are parts, not skin, and the material the generator dresses them in
-PART_MAT = {'headlight': 'lens', 'taillight': 'tailred', 'grille': 'grille', 'diffuser': 'plastic'}
+# labels that are parts, not skin, and the material the generator dresses their
+# untagged faces in. A cut may tag faces with a material of their own ('mat',
+# parallel to 'lab'): on a part they become subs of that material, on a panel
+# they become its trim - the chrome moulding on a door travels with the door.
+PART_MAT = {'headlight': 'lens', 'taillight': 'tailred', 'grille': 'grille', 'diffuser': 'plastic', 'mirror': 'plastic'}
+CM = cut.get('mat') or [None] * len(CL)
 
 for name in sorted(set(CL)):
     if name.endswith('.r'): continue
@@ -148,16 +152,33 @@ for name in sorted(set(CL)):
     fs = [i for i in fs if area2(i) > 1e-4]          # drop slivers and the mesh's own degenerate faces
     if not fs: continue
     base = name[:-2] if name.endswith('.l') else name
-    pos, nrm, idx = pack_faces(fs)
+    if base in PART_MAT:
+        rec = {'frame': 'body', 'half': True, 'subs': []}
+        for mat in sorted({CM[i] or PART_MAT[base] for i in fs}):
+            sub_fs = [i for i in fs if (CM[i] or PART_MAT[base]) == mat]
+            pos, nrm, idx = pack_faces(sub_fs)
+            assert len(pos) < 65536, (name, len(pos))
+            sub, nbytes = encode(pos, nrm, idx)
+            total += nbytes
+            rec['subs'].append(dict(sub, mat=mat))
+            print('  part %-18s %6d tris %6d verts  (%s)' % (name, len(sub_fs), len(pos), mat))
+        parts[base] = rec
+        continue
+    plain = [i for i in fs if CM[i] is None]
+    pos, nrm, idx = pack_faces(plain)
     assert len(pos) < 65536, (name, len(pos))
     rec, nbytes = encode(pos, nrm, idx)
     total += nbytes
-    if base in PART_MAT:
-        parts[base] = {'frame': 'body', 'half': True, 'subs': [dict(rec, mat=PART_MAT[base])]}
-        print('  part %-18s %6d tris %6d verts  (%s)' % (name, len(fs), len(pos), PART_MAT[base]))
-    else:
-        skin[base] = {'half': True, 'solid': base.startswith('door'), 'sub': rec}
-        print('  skin %-18s %6d tris %6d verts' % (name, len(fs), len(pos)))
+    skin[base] = {'half': True, 'solid': base.startswith('door'), 'sub': rec}
+    print('  skin %-18s %6d tris %6d verts' % (name, len(plain), len(pos)))
+    for mat in sorted({CM[i] for i in fs if CM[i]}):
+        sub_fs = [i for i in fs if CM[i] == mat]
+        pos, nrm, idx = pack_faces(sub_fs)
+        sub, nbytes = encode(pos, nrm, idx)
+        total += nbytes
+        skin[base].setdefault('trim', []).append(dict(sub, mat=mat))
+        print('  trim %-18s %6d tris %6d verts  (%s)' % (name, len(sub_fs), len(pos), mat))
+
 
 print('binary total %.0f kB' % (total / 1024))
 

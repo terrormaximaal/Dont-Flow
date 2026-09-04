@@ -455,6 +455,58 @@ de lampen zijn dozen met een lensmateriaal en geen lampen met een reflector,
 en de sedan heeft geen spiegels, grepen, wissers of diffuser omdat de mesh
 die niet heeft.
 
+### Sedan, tweede poging: een andere mesh, weer in onderdelen (4 sep)
+
+De opdrachtgever vond de eerste sedan niets en gaf een andere: een vierdeurs
+saloon van 82 000 driehoeken (OBJ + MTL). Dezelfde opdracht: de mesh nemen
+en de delen uitknippen zoals bij de stadsauto. Dit model heeft geen groepen
+per onderdeel, maar wel materialen, en de delen zijn losse schillen die geen
+hoekpunten met de huid delen. Dat is genoeg om ze uit elkaar te halen.
+
+```
+Sedan.obj  ->  tools/reference/cut_sedan.py  (nieuw; de oude heet nu cut_sonata.py)
+               schillen op hoekpuntindex; rol per schil uit materiaal en plek:
+                 huid (21 754 driehoeken), glas (5 ruiten, naar station), grille
+                 (chroom in de neus + donkere achterwand), koplamp (chroom
+                 reflector + glazen kap, twee per kant), achterlicht, spiegel
+                 (lakhuis + spiegelglas), chroomlijsten; wielen en interieur eruit
+               huid gesneden op stations uit de knikken die er zijn: B-stijlnaad
+                 0,52 L, wielkasten 0,10-0,25 en 0,70-0,86 L, kofferklep vanaf
+                 0,845 L; deuren 0,275 / 0,522 / 0,692 L, belt 0,655 H (de
+                 raamdorpel), dorpel 0,215 H, kap / scherm 0,80 hw, kap-achterrand
+                 langs de onderrand van de voorruit, kofferklep tussen de lampen
+                 door tot op de bumper (zoals bij het echte model)
+               elke driehoek: label + materiaal-tag (None = lak)
+           ->  pack_mesh.py  tags op een deel = subs (koplamp: chroom + lens),
+                             tags op een paneel = trim (de chroomlijst op een deur)
+           ->  studio        meshSkinTrim: het sierwerk hangt aan zijn paneel;
+                             materiaal-tags amber en paint erbij (M.amber voor de
+                             knipperlichten, lak voor het spiegelhuis, dat daarmee
+                             ook meelakt en deukt)
+```
+
+Het archetype is op deze mesh gezet: 4,80–4,86 m, H/L 0,3115–0,314,
+W/L 0,3935–0,397, wielbasis 0,597–0,601 L, vooroverhang 0,434–0,444 van de
+overhang, band 0,1345–0,137 L bij 25,5–27 cm breed, bandvlak op 0,895 van
+de halve breedte (waar het model zijn eigen wielen had). De referentietabellen
+zijn opnieuw gemeten met smeas.py, met de belt opgegeven (0,655 H door de
+cabine) omdat de detector de chroomlijst of de schouder pakte. Achter de
+achterruit is de belt de zijrand van de kofferklep (0,66 H, dan omlaag naar
+de bumper); met het silhouet zelf daar zakte de parametrische klep 8 mm onder
+de bumperrand en viel de geometriecontrole om.
+
+Gemeten: GT 0 pixels verschil op vijf views, zaadlijst identiek (18/80);
+sedan QC 21/21 en geometrie ok op drie zaden en op het telefoonpad,
+symmetrie 0 mm over 66 768 punten, deurnaden 10–11 mm; stadsauto en SUV
+ongewijzigd (het mesh-blok van de stadsauto byte-identiek; de SUV had 20/21
+op twee zaden en heeft dat nog). Rooktest zonder JS-fouten. Bouwtijd van de
+sedan 300–480 ms; het bestand is 1,25 MB (was 0,98).
+
+Nog open: de deurnaden zijn vlakke sneden door een gladde huid, geen
+gemodelleerde groeven; de deurramen zitten in het dakdeel en niet in een
+raamframe aan de deur; de lampen zijn de reflector en de kap van het model
+zonder gloeidraad; deurgrepen zitten in de huid geperst en zijn geen los deel.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.

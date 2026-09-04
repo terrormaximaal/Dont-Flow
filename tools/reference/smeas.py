@@ -2,7 +2,16 @@
 die REFERENCES nodig heeft (SIL, PLAN, BELT, CABIN, DLO, SECTION, TUMBLE)."""
 import json, math, sys
 
-path = sys.argv[1] if len(sys.argv) > 1 else 'sedan/sonata.obj'
+args = [a for a in sys.argv[1:] if not a.startswith('--')]
+opts = dict(a[2:].split('=', 1) for a in sys.argv[1:] if a.startswith('--'))
+path = args[0] if args else 'sedan/sonata.obj'
+# --ground=<y>: the ground in the model's own up axis, for a mesh that comes
+# without its wheels; --nose=low|high: which end of the length axis is the nose,
+# for a mesh whose two ends are so alike that the height rule cannot tell;
+# --belt=<h>:<f0>:<f1>: the window sill as a fraction of H through the cabin
+# stations f0..f1, for a car whose flank has a chrome moulding or a shoulder
+# the detector mistakes for the belt. Outside the cabin the belt is then the
+# silhouette itself, 2 mm under it: the wing top and the boot deck.
 V = []
 faces = []
 grp = None
@@ -18,7 +27,7 @@ for line in open(path, errors='ignore'):
 
 # model: x lateral, y up, z length. ours: x length, y up, z lateral.
 P = [(p[2], p[1], p[0]) for p in V]
-ymin = min(p[1] for p in P)
+ymin = float(opts['ground']) if 'ground' in opts else min(p[1] for p in P)
 P = [(p[0], p[1] - ymin, p[2]) for p in P]
 xs = [p[0] for p in P]
 x0, x1 = min(xs), max(xs)
@@ -59,6 +68,8 @@ side = Caster(0, 1, 2)    # cast sideways: half width at (x, y)
 def hAt(x): return top.top(x, 0.0) or top.top(x, 1.0) or 0
 lo = hAt(x0 + 0.02 * (x1 - x0)); hi = hAt(x1 - 0.02 * (x1 - x0))
 NOSE, TAIL = (x1, x0) if hi < lo else (x0, x1)
+if opts.get('nose') == 'low': NOSE, TAIL = x0, x1
+if opts.get('nose') == 'high': NOSE, TAIL = x1, x0
 print('mesh L %.1f H %.1f HW %.1f  neus op x=%.1f (hoogte daar %.1f vs %.1f aan de andere kant)'
       % (abs(x1 - x0), H, HW, NOSE, min(lo, hi), max(lo, hi)))
 L = abs(NOSE - TAIL)
@@ -106,6 +117,9 @@ for i in range(0, 49):
             if y > yw and w < 0.92 * wmax: by = y; break
     topy = max([y for y, w in pr if w > 0.30 * HW] or [0])
     if by is None: by = topy
+    if 'belt' in opts:
+        bh, f0, f1 = map(float, opts['belt'].split(':'))
+        by = bh * H if f0 <= f <= f1 else SIL[i] * H - 0.002 * H
     wa = [w for y, w in pr if abs(y - (by + 0.05 * H)) < 0.8]
     cab = (wa[0] / HW) if wa else 0
     dlo = (topy - by) / (0.40 * H)
@@ -125,6 +139,7 @@ wmax = max(w for y, w in pr)
 floor = min(y for y, w in pr if w > 0.5 * HW)
 yw = max(y for y, w in pr if w >= wmax - 1e-6 and y > 0.30 * H)
 belt = next((y for y, w in pr if y > yw and w < 0.92 * wmax), yw)
+if 'belt' in opts: belt = float(opts['belt'].split(':')[0]) * H
 print('\nsectie f=0.55: vloer %.1f (%.3f H)  belt %.1f (%.3f H)  max hw %.3f HW'
       % (floor, floor / H, belt, belt / H, wmax / HW))
 sec = []
