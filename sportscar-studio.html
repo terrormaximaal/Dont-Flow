@@ -179,7 +179,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 stadsauto, gemeten van een mesh';
+const VG_BUILD = '4 sep 2026 \u00b7 stadsauto: eigen gezicht, klep en stijlen';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -922,7 +922,7 @@ function resolveReferences(type, A, useGrammar, d) {
    plan has the mirrors at stations 15-16, interpolated out. The section is
    taken at 0.55 of the length from the floor to the belt kink at 0.64 H. */
 const REFC_SIL = [
-  0.4620, 0.4920, 0.4873, 0.5583, 0.5991, 0.6287, 0.6524,
+  0.4620, 0.4700, 0.4873, 0.5583, 0.5991, 0.6287, 0.6524,
   0.6708, 0.6569, 0.6764, 0.7027, 0.7297, 0.7571, 0.7847,
   0.8116, 0.8370, 0.8604, 0.8815, 0.9005, 0.9169, 0.9321,
   0.9517, 0.9623, 0.9718, 0.9799, 0.9865, 0.9918, 0.9958,
@@ -944,9 +944,14 @@ const REFC_SECTION = [
   [0.357, 0.995], [0.429, 0.999], [0.500, 1.000], [0.571, 0.999], [0.643, 0.995],
   [0.714, 0.989], [0.786, 0.978], [0.857, 0.964], [0.929, 0.945], [1.000, 0.925],
 ];
+/* Ahead of the cowl the belt is the WING TOP, and on this car that is a low
+   shelf beside a raised bonnet: 0.46 H at the nose, 0.49 at the lamp, 0.55 by
+   the cowl - measured on the mesh with rays from above, station by station.
+   An earlier reading took the top of the bonnet's side wall for it and put
+   the whole front shoulder a tenth of the height too high. */
 const REFC_BELT = [
-  [0.000, 0.460], [0.042, 0.490], [0.083, 0.550], [0.125, 0.600], [0.167, 0.630],
-  [0.210, 0.640], [0.300, 0.620], [0.450, 0.625], [0.550, 0.640], [0.700, 0.680],
+  [0.000, 0.460], [0.045, 0.452], [0.075, 0.463], [0.105, 0.479], [0.135, 0.503],
+  [0.165, 0.551], [0.195, 0.600], [0.225, 0.614], [0.260, 0.610], [0.300, 0.620], [0.450, 0.625], [0.550, 0.640], [0.700, 0.680],
   [0.800, 0.700], [0.875, 0.700], [0.917, 0.660], [0.958, 0.550], [1.000, 0.420],
 ];
 const REFC_CABIN = [
@@ -954,6 +959,17 @@ const REFC_CABIN = [
   [0.790, 0.760], [0.830, 0.755], [0.875, 0.732], [0.900, 0.650], [0.917, 0.554],
 ];
 const REFC_TUMBLE = 0.200;
+/* The bonnet is a raised centre section: its side edge steps 0.10-0.13 H
+   down onto the wing top, and the lamps sit in the wedge between that edge
+   and the flank. Where the edge runs, in plan, per station (fraction of the
+   overall half width): 0.45 at the lamp's front, out to the flank by the
+   A-pillar. Measured as the station of the largest single drop in the top
+   surface along z. */
+const REFC_HOODEDGE = [
+  [0.030, 0.360], [0.060, 0.420], [0.075, 0.450], [0.090, 0.490], [0.105, 0.490],
+  [0.120, 0.530], [0.135, 0.575], [0.150, 0.640], [0.165, 0.700], [0.180, 0.735],
+  [0.195, 0.760], [0.210, 0.775], [0.250, 0.800], [0.300, 0.820],
+];
 const REFC_DLO = [
   [0.210, 0.140], [0.260, 0.550], [0.310, 0.820], [0.400, 0.930], [0.550, 0.950],
   [0.700, 0.950], [0.800, 0.900], [0.860, 0.750], [0.900, 0.500],
@@ -965,7 +981,7 @@ const REFERENCES = {
   super_gt: { SIL: REF2_SIL, PLAN: REF2_PLAN, SECTION: REF_SECTION, BELT: REF2_BELT,
               CABIN: REF2_CABIN, TUMBLE: REF2_TUMBLE, DLO: REF2_DLO },
   city: { SIL: REFC_SIL, PLAN: REFC_PLAN, SECTION: REFC_SECTION, BELT: REFC_BELT,
-          CABIN: REFC_CABIN, TUMBLE: REFC_TUMBLE, DLO: REFC_DLO },
+          CABIN: REFC_CABIN, TUMBLE: REFC_TUMBLE, DLO: REFC_DLO, HOODEDGE: REFC_HOODEDGE },
 };
 
 const PAINTS = [
@@ -1183,9 +1199,10 @@ const ARCHETYPES = {
     diaRatio: [0.1590, 0.1630], tireW: [0.200, 0.210], rearTireExtra: [0.0, 0.0], aspect: [0.42, 0.46],
     clearance: [0.225, 0.240],
     sCowl: [0.165, 0.175], sRoofF: [0.440, 0.460], sRoofPeak: [0.610, 0.640],
-    sRoofR: [0.840, 0.860], sDeck: [0.920, 0.940],
+    sRoofR: [0.840, 0.860], sDeck: [0.935, 0.945],
     hNose: [0.460, 0.480], hCowl: [0.650, 0.660], hRoof: [0.997, 1.000],
-    hDeck: [0.780, 0.820], hBelt: [0.620, 0.640], hBeltDoor: [0.620, 0.640],
+    // the deck point is the foot of the tailgate glass: measured 0.64-0.69 H at 0.935-0.94
+    hDeck: [0.640, 0.670], hBelt: [0.620, 0.640], hBeltDoor: [0.620, 0.640],
     hBeltQuarter: [0.680, 0.700],
     archGap: [0.030, 0.040],
     profileJitter: [0.0, 0.0],
@@ -1194,27 +1211,41 @@ const ARCHETYPES = {
     hoodDome: [0.003, 0.006], hoodRise: [0.006, 0.010], hoodCrease: [0.002, 0.005], ducktail: [0.0, 0.0],
     noseDepth: [0.36, 0.42], tailDepth: [0.30, 0.34], frontRakeBack: [0.08, 0.11], tailRakeIn: [0.02, 0.04],
     doorLen: [1.28, 1.36],
+    windowFrame: 'framed', handleF: 0.90, handleDrop: 0.045,   // handle measured at 0.60-0.63 of the length, 4.5 cm under the belt
+    hoodSideDrop: [0.028, 0.034],      // the bonnet's top falls this much of H to its side edge (measured 0.037 at the lamp, 0.02 by the cowl)
     wheelStyles: ['five', 'multi'],
     mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'station', faceFrac: 0.870,
-    dloRear: 0.900, mirrorF: 0.280, tumbleRef: 0.200, greenhouse: 'two-box',
+    // the quarter light ends at 0.86; from there to the tailgate glass at 0.90 is the C-pillar
+    dloRear: 0.860, mirrorF: 0.280, tumbleRef: 0.200, greenhouse: 'two-box',
     design: {
-      bodyCharacter: 'city', headlightStyle: 'swept', taillightStyle: 'lightbar',
-      grilleStyle: 'signature_oval', intakeStyle: 'round_fog', exhaust: 'twin_oval', ducktailBoost: 0.0,
+      bodyCharacter: 'city', headlightStyle: 'pod', taillightStyle: 'wrap',
+      grilleStyle: 'slats', intakeStyle: 'none', exhaust: 'hidden', ducktailBoost: 0.0,
       rimColor: 0x8d9298, caliperColor: 0x55595e, interiorColor: 0x2a2724, accent: 0x6f7479, glassTint: 0.28,
     },
     apertures: {
-      face: 'oval',
-      // measured: headlamps |z| to 0.795, y 0.459..0.640 H; grille |z| 0.592, y 0.283..0.424 H;
-      // tail lamps |z| to 0.802, y 0.552..0.657 H; valance top 0.275 H
-      lamp: { z: [0.500, 0.795], gap: 0.012, h: [0.180, 0.140] },
-      mouth: { z: 0.592, y: [0.283, 0.424], flat: 0.60, bars: 0.030, blade: false },
-      fog: { z: [0.680, 0.760], y: [0.140, 0.220] },
+      face: 'pill',                       // a wide rounded mouth, not the GT's pointed oval
+      /* All measured on the mesh. The lamps are pods on the wing top, given
+         in plan - [lateral of the half width, front station, rear station] -
+         read off the lamp's chrome housing from above: a teardrop that
+         starts under the bonnet's edge and runs back to 0.215 of the length
+         at its widest. The grille is a wide low mouth with eleven horizontal
+         slats, |z| 0.59, y 0.283..0.424 H. No fog lamps: the corners are
+         plain. The tail lamps are two units, |z| 0.49..0.80, y 0.55..0.66 H,
+         wrapped around the corner; a black valance fills the bumper below
+         0.275 H. */
+      lamp: { on: 'wing', plan: [
+        [0.440, 0.060, 0.150], [0.470, 0.055, 0.150], [0.510, 0.053, 0.180], [0.550, 0.054, 0.191],
+        [0.600, 0.063, 0.207], [0.640, 0.077, 0.215], [0.680, 0.093, 0.214], [0.725, 0.109, 0.199],
+        [0.770, 0.121, 0.187], [0.810, 0.157, 0.165] ] },
+      mouth: { z: 0.592, y: [0.283, 0.424], flat: 0.60, slats: 11, blade: false },
       frontSplit: 0.450,
       tail: 'band',
       recess: { span: 0.90, y: [0.530, 0.670], gap: 0.028, depth: [0.030, 0.025] },
-      tailLamp: { span: [0.450, 0.800], y: [0.552, 0.657], gap: 0.012, h: 0.100 },
+      tailLamp: { span: [0.490, 0.800], y: [0.552, 0.657], gap: 0.012, h: 0.100 },
       rearSplit: 0.300,
       exh: { z: [], y: [0.200, 0.250] },
+      diffuser: { z: 0.580, y: [0.175, 0.275], strakes: 0, depth: 0.012 },
+      tailgate: { z: 0.450 },             // the lamps start at 0.49; the tailgate runs between them
     },
   },
 };
@@ -1422,12 +1453,21 @@ function generateDNA(opts = {}) {
     d.gate = shiftGate(d.gate, gateMetrics(dN), gateMetrics(d));
   }
   d.faceEdge = A.faceEdge || 'station';
+  // A raised bonnet: its side edge in plan, and how far its top falls from
+  // the centreline to that edge. Absent on a car whose bonnet reaches the wing.
+  d.hoodEdgeProfile = REFS.HOODEDGE ? REFS.HOODEDGE.map(([f, z]) => [S(f), (d.W / 2) * z]) : null;
+  d.hoodSideDrop = A.hoodSideDrop ? d.H * R('hoodSideDrop') : 0;
   d.greenhouse = A.greenhouse || 'fastback';
+  d.windowFrame = A.windowFrame || 'frameless';       // 'framed': black frames round the door glass, a B-pillar on a two-door too
+  d.handleF = A.handleF === undefined ? 0.34 : A.handleF;   // along the door, 0 = front
+  d.handleDrop = A.handleDrop === undefined ? 0.115 : A.handleDrop;   // below the belt, metres
   d.faceFrac = A.faceFrac;
   d.tailFloor = A.tailFloor || 0;
   d.xDloRear = d.xNose - (A.dloRear || 0.78) * d.L;
   d.xMirror = d.xNose - (A.mirrorF || 0.40) * d.L;
   d.tailTuck = A.tailTuck || null;
+  // hatchback: the tailgate's half width at lamp height, in metres
+  d.tailgateZ = A.apertures && A.apertures.tailgate ? A.apertures.tailgate.z * (d.W / 2) : 0;
 
   // --- panel stations ------------------------------------------------------
   // the door starts at the cowl, or behind the front arch when the cowl sits
@@ -1614,6 +1654,24 @@ function makeBody(d) {
   // The side edge of a closure panel. This car's bonnet shuts along the top of
   // the wing, so both the panel and the validation read the same line.
   B.closureSideLine = (x) => B.belt(x) - 0.004;
+  /* The bonnet's side edge. On the GT it is the top of the wing: the bonnet
+     shuts against the flank. On a car with a raised bonnet (the city car) the
+     edge runs inboard of that along a measured plan curve, the panel's top
+     falls a little towards it, and from it a wall steps down onto a wing top
+     that the fender carries and the lamps sit on. Both cases are read through
+     these three, so the panel, the wing top and the validation agree. */
+  const HOODEDGE = d.hoodEdgeProfile ? curve1D(d.hoodEdgeProfile) : null;
+  B.flankTopZ = (x) => B.zAt(x, B.closureSideLine(x));
+  B.hoodSideZ = HOODEDGE ? (x) => Math.min(B.flankTopZ(x), HOODEDGE(xc(x))) : B.flankTopZ;
+  // ...and never below the wing top: at the nose the bonnet is low and there
+  // is no wall yet, the edge simply lies on the wing
+  // ...nor below the bumper cover's top edge where the panel shuts onto it.
+  // noseEdge is built further down this function; by the time a panel is
+  // sampled it exists.
+  B.hoodSideY = HOODEDGE
+    ? (x) => Math.max(B.hoodY(x) - d.hoodSideDrop, B.closureSideLine(x), B.noseEdge ? B.noseEdge.y(B.hoodSideZ(x)) - 0.002 : -1)
+    : B.closureSideLine;
+  B.hasWingTop = !!HOODEDGE;
 
   /* ---- wheel arch: circle concentric with the hub ----------------------- */
   const archCentres = [d.xAxleF + d.archDx, d.xAxleR - d.archDx];
@@ -2091,31 +2149,46 @@ function makeBody(d) {
     // the reference's tail rolls under hard: its rearmost face stops at 300 mm,
     // so the cover's floor is that line, not the underbody's
     const yBot = Math.max(B.coverBottom(s.x0), (d.tailFloor || 0) * d.H);
-    const yTop = lerp(B.tailTopY - 0.004, B.belt(s.x0) - 0.010, smootherstep(s.w));
+    /* On a hatchback the tailgate is narrower than the body where the lamps
+       are: outboard of it the tail band runs up to the belt and carries the
+       lamps, inboard it stops at the bumper's top and the tailgate takes over.
+       So the cover's top edge steps up at the tailgate's side, over 4 cm. */
+    let up = smootherstep(s.w), high = B.belt(s.x0) - 0.010;
+    if (d.tailgateZ) {
+      // level along the tailgate, then the step; the corner's belt carried
+      // round above it, which is where the lamps sit
+      up = smootherstep((B.hw(xc(s.x0)) * s.zk - d.tailgateZ) / 0.04 + 0.5);
+      high = B.belt(d.xCornerR) - 0.010;
+    }
+    const yTop = lerp(B.tailTopY - 0.004, high, up);
     const y = lerp(yBot, yTop, v);
     const q = rSweep(u, v, y / d.H);
     return [q.x, y, s.pz * B.zAt(xc(s.x0), y) * s.zk];
   };
   // The full 3D top edge of a bumper cover, as x(z) and y(z). This is the one
   // curve that both the cover and its closure panel read from.
-  const edgeLookup = (fn) => {
+  const edgeLookup = (fn, n) => {
     const px = [], py = [];
-    for (let i = 0; i <= 96; i++) { const p = fn(i / 96, 1); px.push([p[2], p[0]]); py.push([p[2], p[1]]); }
+    n = n || 96;
+    for (let i = 0; i <= n; i++) { const p = fn(i / n, 1); px.push([p[2], p[0]]); py.push([p[2], p[1]]); }
     return { x: curve1D(px), y: curve1D(py) };
   };
   B.noseEdge = edgeLookup(B.frontFascia);
-  B.tailEdge = edgeLookup(B.rearFascia);
+  // a tailgate's step in the tail band is 4 cm wide; 96 samples round the
+  // whole tail put one every 8 cm there and the lookup smeared the step
+  B.tailEdge = edgeLookup(B.rearFascia, d.tailgateZ ? 384 : 96);
   B.xFenderF = d.xCornerF - 0.010;   // fender ends one gap behind the cover's shoulder
   B.xQuarterR = d.xCornerR + 0.010;  // quarter ends one gap ahead of the tail band
 
   /* ---- closure boundary shared with the bumper cover -------------------- */
   // RULE: the free edge of the bonnet and of the boot lid IS the top edge of
   // the bumper cover, offset by exactly one panel gap along the edge normal.
-  B.closureEdge = (edge, gap, sign) => (zt) => {
+  B.closureEdge = (edge, gap, sign, sideZ) => (zt) => {
+    const sz = sideZ || B.flankTopZ;
     let x = sign > 0 ? d.xHoodF : d.xCornerR;
     let z = 0;
     for (let i = 0; i < 6; i++) {                    // fixed point: z depends on x
-      z = zt * (B.zAt(x, B.closureSideLine(x)) - gap);
+      z = zt * (sz(x) - gap);
       x = edge.x(z);
     }
     const e = 0.004;                                  // edge tangent in the x-z plane
@@ -2131,15 +2204,18 @@ function makeBody(d) {
   };
 
   /* ---- horizontal sheets (hood, deck): G2 blends, smooth centreline ------ */
-  B.topSheet = (edgeFn, x1, yFn, domeFn, gap, edgeY) => (u, v) => {
+  // sideZ / sideY: where the sheet's side edge runs and how high it is. The
+  // deck and the GT's bonnet leave them out and get the top of the flank.
+  B.topSheet = (edgeFn, x1, yFn, domeFn, gap, edgeY, sideZ, sideY) => (u, v) => {
+    const sz = sideZ || B.flankTopZ, sy = sideY || B.closureSideLine;
     const zt = v * 2 - 1;
     const E = edgeFn(zt);                                   // point on the cover's edge
     const x = lerp(E[0], x1, u);
-    const zRule = (xx) => zt * (B.zAt(xx, B.closureSideLine(xx)) - gap);
+    const zRule = (xx) => zt * (sz(xx) - gap);
     const z = zRule(x) + (E[2] - zRule(E[0])) * (1 - smootherstep(clamp(u / 0.07, 0, 1)));
     const rise = smootherstep((1 - Math.abs(zt)) / 0.30);
     const crown = 0.005 * Math.pow(1 - zt * zt, 2);
-    const prof = (xx) => lerp(B.closureSideLine(xx), yFn(xx), rise) + (domeFn ? domeFn(xx, zt) : 0) + crown;
+    const prof = (xx) => lerp(sy(xx), yFn(xx), rise) + (domeFn ? domeFn(xx, zt) : 0) + crown;
     // exact height match at the shut line, blended into the panel's own profile
     let y = prof(x) + (E[1] - prof(E[0])) * (1 - smootherstep(clamp(u / 0.34, 0, 1)));
     // ...and never below the cover's top edge near the seam
@@ -2150,8 +2226,40 @@ function makeBody(d) {
     }
     return [x, y, z];
   };
-  B.hoodEdge = (gap) => B.closureEdge(B.noseEdge, gap, 1);
-  B.deckEdge = (gap) => B.closureEdge(B.tailEdge, gap, -1);
+  B.hoodEdge = (gap) => B.closureEdge(B.noseEdge, gap, 1, B.hoodSideZ);
+  // the bonnet as a surface, both layouts, so the build and the checks share it
+  B.hoodSheet = (gap) => B.topSheet(B.hoodEdge(gap), d.xCowl + gap / 2, B.hoodY, B.dome, gap, (z) => B.noseEdge.y(z), B.hoodSideZ, B.hoodSideY);
+  /* The wing top: the shelf between the bonnet's side edge and the top of the
+     flank, from the bumper cover's edge back to the cowl. u runs across it -
+     0 a gap outboard of the bonnet's wall, 1 on the top of the flank - and w
+     along it, so a lamp cut into it is a u-range with w-bounds, like every
+     other opening. It lies at the belt, which is what the belt IS ahead of
+     the cowl, and rolls 8 mm down to meet the flank's top edge. At its front
+     it lands on the cover's top edge, a gap behind it. */
+  B.wingTop = (sd, gap) => (u, w) => {
+    let x = d.xHoodF, z = 0;
+    for (let i = 0; i < 4; i++) {
+      z = lerp(B.hoodSideZ(x) + gap, B.flankTopZ(x), u);
+      x = lerp(B.noseEdge.x(z) - gap, d.xCowl, w);
+    }
+    const yW = lerp(B.belt(x) + 0.004, B.belt(x) - 0.004, u);
+    const xE = B.noseEdge.x(z) - gap;
+    const y = yW + (B.noseEdge.y(z) - (lerp(B.belt(xE) + 0.004, B.belt(xE) - 0.004, u))) * (1 - smootherstep(clamp(w / 0.30, 0, 1)));
+    return [x, y, sd * z];
+  };
+  // The wall: from the bonnet's side edge straight down onto the wing top, a
+  // gap above it, leaning out 8 mm so it is a face and not a fold.
+  B.hoodWall = (sheet, sd, gap) => (u, w) => {
+    const p = sheet(u, sd > 0 ? 1 : 0);
+    const foot = B.belt(p[0]) + gap;
+    return [p[0], lerp(p[1], Math.min(p[1], foot), w), p[2] + sd * 0.008 * w];
+  };
+  // the boot lid reaches the flank; a tailgate stops at its own side, 3 cm
+  // inside the step in the tail band
+  B.deckSideZ = d.tailgateZ ? (x) => Math.min(B.flankTopZ(x), d.tailgateZ - 0.04) : B.flankTopZ;
+  // ...and is flat across, where a boot lid falls to the top of the quarter
+  B.deckSideY = d.tailgateZ ? (x) => B.deckTopY(x) - 0.012 : B.closureSideLine;
+  B.deckEdge = (gap) => B.closureEdge(B.tailEdge, gap, -1, B.deckSideZ);
   // The reference bonnet is a raised centre panel with a step down to the
   // outer thirds, and a long soft bead either side of it. The centreline is
   // already the traced profile, so the dome only carries that step.
@@ -3020,6 +3128,7 @@ function holeUs(n) {
   return out;
 }
 function bandsAround(holes, vLo, vHi) {
+  holes = holes.filter(Boolean);                  // a family may leave an opening out
   vLo = vLo === undefined ? 0 : vLo;
   vHi = vHi === undefined ? 1 : vHi;
   const ev = (v, uu) => (typeof v === 'function' ? v(uu) : v);
@@ -3533,9 +3642,9 @@ function buildVehicle(opts = {}) {
   const rRef = [d.xCornerR + 0.45, (d.clearance + d.beltY) / 2, 0];
   const xF = B.xFenderF, xQ = B.xQuarterR;
   // closures read their free edge straight off the bumper cover's top edge
-  const hoodFn = B.topSheet(B.hoodEdge(2 * G), d.xCowl + G, B.hoodY, B.dome, 2 * G, (z) => B.noseEdge.y(z));
+  const hoodFn = B.hoodSheet(2 * G);
   const deckGap = G * 3;   // the lid meets the tail band at a convex corner
-  const deckFn = B.topSheet(B.deckEdge(deckGap), d.xDeck - G, B.deckTopY, null, 2 * G, (z) => B.tailEdge.y(z));
+  const deckFn = B.topSheet(B.deckEdge(deckGap), d.xDeck - G, B.deckTopY, null, 2 * G, (z) => B.tailEdge.y(z), B.deckSideZ, B.deckSideY);
 
   /* The build is a pipeline of named stages sharing one context. Each stage
      reads what it needs from ctx and hands on what later stages use, so a
@@ -3678,7 +3787,7 @@ function stage_body(ctx) {
 
     const fen = mk('fender.' + k, 'Voorscherm ' + k.toUpperCase(), { detachable: true, stiffness: 1.0, stage: 1 });
     shell(fen, B.sideRect(d.xDoorF + G, xF, 0, 1, sd), B.flankUs(d.xDoorF + G, xF, 9), B.flankVs(0, 1, 8), M.paint, flankRef(d.xDoorF, xF));
-    v.addPart(fen);
+    v.addPart(fen);   // the wing top beside a raised bonnet is added in stage_frontRear, once the lamp holes exist
 
     const qtr = mk('quarter.' + k, 'Achterscherm ' + k.toUpperCase(), { stiffness: 1.4, stage: 1 });
     shell(qtr, B.sideRectV((vv) => B.doorRearX(vv) - G, xQ, 0, 1, sd), B.flankUs(d.xDoorR - G, xQ, 11), B.flankVs(0, 1, 8), M.paint, flankRef(d.xDoorR, xQ));
@@ -3713,6 +3822,7 @@ function stage_body(ctx) {
   const hood = mk('hood', 'Motorkap', { detachable: true, stiffness: 0.95, stage: 1 });
   const hoodRef = [midX(d.xHoodF, d.xCowl), B.hoodY(d.xCowl) - 0.5, 0];
   shell(hood, hoodFn, 20, 20, M.paint, hoodRef);
+  if (B.hasWingTop) for (const k in SIDE) shell(hood, B.hoodWall(hoodFn, SIDE[k], 2 * G), 20, 2, M.paint, hoodRef, 0.020);
   // inner reinforcement: a stamped frame you actually see when the hood is up
   const hoodInner = (u, w) => { const q = hoodFn(u, w); return [q[0], q[1] - 0.055, q[2] * 0.94]; };
   patch(hood, hoodInner, 12, 8, M.stamped, hoodRef).userData.stage = 4;
@@ -3740,7 +3850,9 @@ function stage_body(ctx) {
   v.addPart(hoodVents, hood);
 
   const boot = mk('trunk', 'Kofferklep', { detachable: true, stiffness: 1.0, stage: 1 });
-  const bootRef = [midX(d.xCornerR, d.xDeck), d.deckY - 0.5, 0];
+  // a boot lid lies flat, so its inside is below it; a tailgate stands up, so
+  // its inside is ahead of it
+  const bootRef = d.greenhouse === 'two-box' ? [d.xDeck + 0.6, d.deckY - 0.3, 0] : [midX(d.xCornerR, d.xDeck), d.deckY - 0.5, 0];
   shell(boot, deckFn, 16, 18, M.paint, bootRef);
   const bootInner = (u, w) => { const q = deckFn(u, w); return [q[0], q[1] - 0.05, q[2] * 0.94]; };
   patch(boot, bootInner, 10, 6, M.stamped, bootRef).userData.stage = 4;
@@ -3810,6 +3922,38 @@ function stage_frontRear(ctx) {
   };
   const solveFront = uvSolver(B.frontFascia);
   const solveRear = uvSolver(B.rearFascia);
+  // The same for a near-horizontal surface, where an opening is given in
+  // PLAN: lateral position and station instead of lateral position and height.
+  const xzSolver = (surf) => {
+    const NU = 48, NV = 48, grid = [];
+    for (let i = 0; i <= NU; i++) {
+      const row = [];
+      for (let j = 0; j <= NV; j++) row.push(surf(i / NU, j / NV));
+      grid.push(row);
+    }
+    return (zFrac, stFrac) => {
+      const zT = zFrac * d.W / 2, xT = d.xNose - stFrac * d.L;
+      let best = null;
+      for (let i = 0; i <= NU; i++) for (let j = 0; j <= NV; j++) {
+        const p = grid[i][j];
+        const e = Math.pow(p[2] - zT, 2) + Math.pow(p[0] - xT, 2);
+        if (!best || e < best.e) best = { e, u: i / NU, v: j / NV };
+      }
+      let { u, v } = best, step = 1 / NU;
+      for (let k = 0; k < 13; k++) {
+        step *= 0.72;
+        let improved = false;
+        for (const [du, dv] of [[step, 0], [-step, 0], [0, step], [0, -step], [step, step], [-step, -step], [step, -step], [-step, step]]) {
+          const uu = clamp(u + du, 0, 1), vv = clamp(v + dv, 0, 1);
+          const p = surf(uu, vv);
+          const e = Math.pow(p[2] - zT, 2) + Math.pow(p[0] - xT, 2);
+          if (e < best.e) { best = { e, u: uu, v: vv }; u = uu; v = vv; improved = true; }
+        }
+        if (!improved && step < 1e-4) break;
+      }
+      return { u, v };
+    };
+  };
   // A level shut line across a fascia: the v at which the surface reaches a
   // given height. This is what makes the bumper cut horizontal instead of
   // following the parameterisation.
@@ -3903,7 +4047,9 @@ function stage_frontRear(ctx) {
   const AP = d.ap;
   const lampHeight = (t) => lerp(AP.lamp.h[0], AP.lamp.h[1], smootherstep(clamp(t * 1.08, 0, 1)));
   const lampHoles = {};
+  const lampOnWing = AP.lamp.on === 'wing';
   const lampHole = (sd) => {
+    if (lampOnWing) return null;                   // cut out of the wing top instead, below
     if (!lampHoles[1]) {
       const h = hugHole(solveFront, B.noseEdge, 1, AP.lamp.z[0], AP.lamp.z[1], AP.lamp.gap, lampHeight);
       /* The lamp is measured down from the wing crest, and over its inboard
@@ -3951,6 +4097,7 @@ function stage_frontRear(ctx) {
   const cornerSpec = AP.fog || AP.corner;
   const cornerHoles = {};
   const cornerHole = (sd) => {
+    if (!cornerSpec) return null;                  // no corner opening on this family
     if (!cornerHoles[1]) cornerHoles[1] = measuredHole(solveFront, 1, cornerSpec.z[0], cornerSpec.z[1],
       cornerSpec.y[0], cornerSpec.y[1], AP.fog ? ellipse : pillShape(0.62));
     if (!cornerHoles[-1]) cornerHoles[-1] = mirrorHole(cornerHoles[1]);
@@ -4065,7 +4212,35 @@ function stage_frontRear(ctx) {
   mirrorHalfInto(br, 0);
   v.addPart(br);
 
-  Object.assign(ctx, { AP, MY, bf, br, cornerHole, exhHole, lampHole, lowerOpening, mouthHole, nose, pillShape, recessHole, solveFront, tailBand, tailLampHole });
+  /* ---- the wing top, on a car with a raised bonnet ---------------------- */
+  // Part of the fender: the shelf between the bonnet's wall and the flank,
+  // from the cover's edge to the cowl. A family that puts its lamps on the
+  // wing gives their outline in PLAN - lateral position, front and rear
+  // station, measured off the reference from above - and the lamp is cut out
+  // of the shelf here. The wing top is built the same way on both sides, u
+  // across and w along, so one hole serves both.
+  let wingHole = null, wingTopOf = null;
+  if (B.hasWingTop) {
+    wingTopOf = (sd) => B.wingTop(sd, 2 * G);
+    if (lampOnWing) {
+      const solveWing = xzSolver(wingTopOf(1));
+      const pts = [];
+      for (const [z, f, r] of AP.lamp.plan) {
+        pts.push({ u: solveWing(z, (f + r) / 2).u, v0: solveWing(z, f).v, v1: solveWing(z, r).v });
+      }
+      pts.sort((p, q) => p.u - q.u);
+      wingHole = smoothRim(pts);
+    }
+    for (const k in SIDE) {
+      const sd = SIDE[k], fen = v.get('fender.' + k), wt = wingTopOf(sd);
+      const wRef = [d.xCowl - 0.2, B.belt(d.xCowl) - 0.6, 0];
+      for (const r of bandsAround([wingHole], 0, 1)) {
+        shell(fen, surfRegion(wt, r, 0, wRef), Math.max(4, Math.round(14 * (r.u1 - r.u0))), 20, M.paint, wRef, 0.020);
+      }
+    }
+  }
+
+  Object.assign(ctx, { AP, MY, bf, br, cornerHole, exhHole, lampHole, lowerOpening, mouthHole, nose, pillShape, recessHole, solveFront, tailBand, tailLampHole, wingHole, wingTopOf });
 }
 
 function stage_wheels(ctx) {
@@ -4182,11 +4357,30 @@ function stage_doors(ctx) {
     spk.userData.stage = 4;
     dr.add(spk, false);
     patch(dr, inset(B.sideRect(x0 + 0.03, x1 - 0.03, 0.03, 0.97, sd), 0.86), 8, 4, M.interior, dRef).userData.stage = 6;
+    if (d.windowFrame === 'framed') {
+      // a framed door: a black frame round the glass, 32 mm wide, following
+      // the daylight opening along the top and standing 4 mm proud of it
+      const xGl0 = x0 - 0.012, xGl1 = S.rear(1) + G + 0.02;
+      const frameTop = (u, w) => {
+        const xg = lerp(xGl0, xGl1, u), topV = clamp(B.dloTop(xg), 0.12, 0.99);
+        const q = B.cabin(xg, lerp(topV - 0.055, topV, w), sd);
+        return [q[0], q[1], q[2] + sd * 0.004];
+      };
+      const frameSide = (xa, xb) => (u, w) => {
+        const xg = lerp(xa, xb, u), topV = clamp(B.dloTop(xg), 0.12, 0.99);
+        const q = B.cabin(xg, lerp(0.05, topV, w), sd);
+        return [q[0], q[1], q[2] + sd * 0.004];
+      };
+      patch(dr, frameTop, 12, 1, M.trim, flankRef(x0, x1)).userData.stage = 3;
+      patch(dr, frameSide(xGl0, xGl0 + 0.032), 1, 6, M.trim, flankRef(x0, x1)).userData.stage = 3;
+      patch(dr, frameSide(xGl1 - 0.032, xGl1), 1, 6, M.trim, flankRef(x0, x1)).userData.stage = 3;
+    } else {
     // frameless window: thin seal at the top and a trim strip at the trailing edge
     shell(dr, inset(B.cabinRect(x0 + 0.01, x1 - 0.03, 0.865, 0.905, sd), 0.997), 10, 1, M.trim, flankRef(x0, x1), 0.008, false).userData.stage = 3;
     patch(dr, inset(B.cabinRect(x1, x1 - 0.028, 0.0, 0.905, sd), 0.988), 2, 6, M.trim, flankRef(x0, x1)).userData.stage = 3;
+    }
     // pull handle
-    const hx = lerp(x0, x1, 0.34), hy = B.belt(hx) - 0.115;
+    const hx = lerp(x0, x1, d.handleF), hy = B.belt(hx) - d.handleDrop;
     const hm = new THREE.Mesh(box(0.16, 0.030, 0.014, hx, hy, sd * (B.zAt(hx, hy) + 0.006)), M.brushed);
     dr.add(hm, false); hm.userData.stage = 7;
     dr.setHinge({ axis: 'y', closed: 0, open: sd * 0.95, speed: 2.6,
@@ -4237,9 +4431,13 @@ function stage_doors(ctx) {
     }
     // B-pillar: a post between the two door windows, standing just proud of
     // the glass line so both panes can run up to it
-    if (d.xDoorMid !== undefined) {
+    // On a two-door car with framed glass the pillar stands between the door
+    // glass and the quarter light instead, on the door's rear cut.
+    const xPillar = d.xDoorMid !== undefined ? d.xDoorMid
+      : (d.windowFrame === 'framed' ? B.doorRearX(1) + G + 0.02 + 0.03 : undefined);
+    if (xPillar !== undefined) {
       const pb = mk('pillar.b.' + k, 'B-stijl ' + k.toUpperCase(), { kind: 'trim', stiffness: 2.0, stage: 3 });
-      const xm = d.xDoorMid;
+      const xm = xPillar;
       patch(pb, (u, w) => {
         const xg = lerp(xm - 0.035, xm + 0.035, u);
         const topV = clamp(B.dloTop(xg), 0.12, 0.99);
@@ -4304,11 +4502,56 @@ function stage_engine(ctx) {
 }
 
 function stage_lighting(ctx) {
-  const { B, M, d, fRef, inset, mk, patch, rRef, shell, v, AP, MY, bf, br, cornerHole, exhHole, lampHole, lowerOpening, mouthHole, nose, pillShape, recessHole, solveFront, tailBand, tailLampHole } = ctx;
+  const { B, M, d, fRef, inset, mk, patch, rRef, shell, v, AP, MY, bf, br, cornerHole, exhHole, lampHole, lowerOpening, mouthHole, nose, pillShape, recessHole, solveFront, tailBand, tailLampHole, wingHole, wingTopOf } = ctx;
   /* ================= 5. LIGHTING ASSEMBLIES ============================== */
+  /* A lamp POD: the unit stands on the wing top, in the wedge between the
+     bonnet's wall and the flank, rising to the height of the bonnet's edge.
+     Its inboard face is the wall itself, its outboard side rolls down onto the
+     wing, and its ends round off. A glass dome over a bright dome, with a
+     projector set into it. The outline is the measured plan cut in the wing. */
+  const podUnit = (k, sd) => {
+    const p = mk('headlight.' + k, 'Koplamp ' + k.toUpperCase(), { kind: 'light', detachable: true, stiffness: 0.55, stage: 5 });
+    const fen = v.get('fender.' + k);
+    const base = surfRegion(wingTopOf(sd), wingHole, 0, null);
+    const ref = [d.xCowl - 0.2, B.belt(d.xCowl) - 0.6, 0];
+    const pod = (hk, inset) => (a, b) => {
+      const q = base(a, b);
+      const top = B.hoodSideY(q[0]) - 0.008;
+      const h = Math.max(0.02, top - q[1]) * hk;
+      // inboard: a wall; outboard: a quarter ellipse down to the wing; ends: rounded
+      const across = a < 0.12 ? 1 : Math.sqrt(Math.max(0, 1 - Math.pow((a - 0.12) / 0.88, 2)));
+      const along = Math.pow(Math.max(0, 1 - Math.pow(2 * b - 1, 2)), 0.30);
+      const e = Math.min(a, 1 - a, b, 1 - b);
+      return [q[0], q[1] + h * across * along + inset * smootherstep(clamp(e / 0.12, 0, 1)), q[2]];
+    };
+    const lens = new THREE.Mesh(buildShell(24, 12, pod(1.0, 0), 0.006, ref), M.lens.clone());
+    lens.castShadow = false;
+    p.add(lens, false);
+    const dome = new THREE.Mesh(buildShell(20, 10, pod(0.88, -0.004), 0.008, ref), M.reflector);
+    p.add(dome, false);
+    // the projector: a short cylinder standing up in the dome, near the front
+    const c = pod(0.5, 0)(0.45, 0.35);
+    const eye = new THREE.Mesh(new THREE.CylinderGeometry(0.030, 0.030, 0.026, 20), M.lampHousing);
+    eye.position.set(c[0], c[1], c[2]);
+    p.add(eye, false);
+    const ledMat = M.led.clone();
+    const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.004, 20), ledMat);
+    glow.position.set(c[0], c[1] + 0.015, c[2]);
+    p.add(glow, false);
+    p.onDamage = (lvl, dmg) => {
+      ledMat.emissiveIntensity = 2.2 * clamp(1 - dmg / 2.6, 0, 1);
+      lens.material.roughness = 0.06 + clamp(dmg, 0, 3) * 0.22;
+      lens.material.opacity = lerp(0.42, 0.72, clamp(dmg / 3, 0, 1));
+      lens.visible = lvl < 3;
+      glow.visible = lvl < 4;
+    };
+    v.addPart(p, fen);
+    return p;
+  };
   // Headlight: the lens IS the aperture surface, so the unit follows the body
   // exactly. Inside sit a reflector bowl, projectors and a brow light bar.
   const headlightUnit = (k, sd) => {
+    if (wingHole) return podUnit(k, sd);
     const p = mk('headlight.' + k, 'Koplamp ' + k.toUpperCase(), { kind: 'light', detachable: true, stiffness: 0.55, stage: 5 });
     const hole = lampHole(sd);
     const reg = (a0, a1, b0, b1, off) => surfRegion(B.frontFascia, {
@@ -4369,6 +4612,7 @@ function stage_lighting(ctx) {
   };
   // The bumper corner: a round fog lamp on the GT, an air curtain on the S.
   const cornerUnit = (k, sd) => {
+    if (!cornerHole(sd)) return null;
     const isFog = !!AP.fog;
     const p = mk((isFog ? 'foglamp.' : 'intake.') + k,
       (isFog ? 'Mistlamp ' : 'Hoekinlaat ') + k.toUpperCase(),
@@ -4471,6 +4715,15 @@ function stage_lighting(ctx) {
         const s1 = clamp((Math.max(a, b) - hole.u0) / (hole.u1 - hole.u0), 0, 1);
         if (s1 - s0 > 0.004) shell(grille, inner(s0, s1, 0.16, 0.92, -0.030), 5, 5, M.matte, fRef, 0.010, false);
       }
+    } else if (AP.mouth.slats) {
+      // horizontal slats, the measured count, each a tenth of its pitch thick
+      const n = AP.mouth.slats, hb = 0.5 / n * 0.42;
+      for (let i = 1; i < n; i++) {
+        const t = i / n;
+        shell(grille, inner(0.02, 0.98, t - hb, t + hb, -0.034), 30, 1, M.vane, fRef, 0.010, false);
+      }
+      shell(grille, inner(0.0, 1.0, 0.955, 1.0, -0.020), 34, 1, M.grilleFrame, fRef, 0.014, false);
+      shell(grille, inner(0.0, 1.0, 0.0, 0.045, -0.020), 34, 1, M.grilleFrame, fRef, 0.014, false);
     } else {
       // the shield: a full set of vertical vanes and a chrome upper lip
       const n = Math.max(8, Math.round((hole.u1 - hole.u0) / AP.mouth.bars));
@@ -4527,7 +4780,7 @@ function stage_lighting(ctx) {
     };
     // Two rounded slots low in the dish, carrying the pipes. They are cut in
     // the dish's own (a, b) space, so they follow it however it is shaped.
-    const PL = AP.diffuser.pill;
+    const PL = AP.diffuser.pill;               // absent: a plain valance, no slots, no pipes
     const abPill = (ac) => {
       const a0 = ac - PL.halfA, a1 = ac + PL.halfA, shape = pillShape(0.45);
       const at = (uu) => shape(clamp((uu - a0) / (a1 - a0), 0, 1));
@@ -4535,7 +4788,7 @@ function stage_lighting(ctx) {
                v0: (uu) => lerp(PL.b[0], PL.b[1], at(uu).lo),
                v1: (uu) => lerp(PL.b[0], PL.b[1], at(uu).hi) };
     };
-    const pills = [abPill(0.5 - PL.off), abPill(0.5 + PL.off)];
+    const pills = PL ? [abPill(0.5 - PL.off), abPill(0.5 + PL.off)] : [];
     const abRegion = (r) => (s2, t) => {
       const a = lerp(r.u0, r.u1, s2);
       const v0 = typeof r.v0 === 'function' ? r.v0(a) : r.v0;
@@ -4548,7 +4801,7 @@ function stage_lighting(ctx) {
     // Spaced across the whole dish and then dropped where a slot is in the way,
     // so the outer corners and the middle each keep a few rather than the slots
     // swallowing almost all of them.
-    const nStrake = Math.max(6, AP.diffuser.strakes * 2);
+    const nStrake = AP.diffuser.strakes ? Math.max(6, AP.diffuser.strakes * 2) : 0;
     for (let i = 1; i < nStrake; i++) {
       const a = i / nStrake;
       if (pills.some((q) => a > q.u0 - 0.014 && a < q.u1 + 0.014)) continue;
@@ -5029,7 +5282,7 @@ Vehicle.prototype.validateGeometry = function () {
 
   // Bonnet fit, measured on all four of its edges.
   const G3 = gap;
-  const hoodOf = () => B.topSheet(B.hoodEdge(2 * G3), d.xCowl + G3, B.hoodY, B.dome, 2 * G3, (z) => B.noseEdge.y(z));
+  const hoodOf = () => B.hoodSheet(2 * G3);
   (function bonnetFit() {
     const hood = hoodOf();
     let gmin = 1e9, gmax = -1e9, step = 0;
@@ -5044,7 +5297,7 @@ Vehicle.prototype.validateGeometry = function () {
     for (let i = 0; i <= 16; i++) {
       const p = hood(i / 16, 1);
       if (p[0] > B.xFenderF || p[0] < d.xCowl) continue;
-      hstep = Math.max(hstep, Math.abs(B.closureSideLine(p[0]) - p[1]));
+      hstep = Math.max(hstep, Math.abs(B.hoodSideY(p[0]) - p[1]));
     }
     it('Hoogteverschil kap / voorscherm', mm(hstep), hstep <= 0.008);
     let bumps = 0, prev = null, prevSlope = null;
@@ -5064,7 +5317,7 @@ Vehicle.prototype.validateGeometry = function () {
   (function coverStep() {
     for (const [nm, fn, edge] of [
       ['Motorkap', hoodOf(), B.noseEdge],
-      ['Kofferklep', B.topSheet(B.deckEdge(2 * gap), d.xDeck - gap, B.deckTopY, null, 2 * gap, (z) => B.tailEdge.y(z)), B.tailEdge]]) {
+      ['Kofferklep', B.topSheet(B.deckEdge(2 * gap), d.xDeck - gap, B.deckTopY, null, 2 * gap, (z) => B.tailEdge.y(z), B.deckSideZ, B.deckSideY), B.tailEdge]]) {
       let worst = 0;
       for (let i = 0; i <= 18; i++) {
         for (let j = 0; j <= 18; j++) {
@@ -5082,7 +5335,7 @@ Vehicle.prototype.validateGeometry = function () {
     for (let i = 0; i <= 24; i++) {
       const p = panel(i / 24, 1);
       if (p[0] > xHi || p[0] < xLo) continue;
-      const g = B.zAt(p[0], B.closureSideLine(p[0])) - p[2];
+      const g = B.hoodSideZ(p[0]) - p[2];
       mn = Math.min(mn, g); mx = Math.max(mx, g);
     }
     return { mn, mx };

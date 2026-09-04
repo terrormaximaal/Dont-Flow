@@ -185,11 +185,42 @@ Wat daarvoor generiek moest worden:
 
 Stand stadsauto: QC 21/21, geometrie ok op drie zaden, GT 0 pixels verschil.
 Proporties, stance, belt en de tweebox-staart kloppen met de referentie.
-**Nog GT-vormtaal**, en dus het volgende werk: ronde koplampen (nu slit),
-horizontale grillelamellen (nu verticaal), B- en C-stijl met massa (nu de
-frameloze dunne bogen van de GT), aparte achterlichten (nu een lichtbalk).
-Dat zijn de vormtaalfamilies uit §4 - koplampsignaturen, grille-
-architecturen, stijlfamilies - en die komen vóór sedan en SUV opnieuw.
+
+### Tweede ronde: de eigen vormtaal van de stadsauto (4 sep, later)
+
+Opnieuw gemeten, nu van boven en van achteren, station voor station:
+
+- De **motorkap is een verhoogd middendeel**: zijn zijrand loopt in plan van
+  0,45 (bij de lamp) naar 0,78 van de halve breedte (bij de A-stijl) en
+  stapt daar 0,10–0,13 H omlaag op een lage **spatbordschelp**. De eerdere
+  belt vóór de cowl (0,55–0,64 H) was de bovenkant van die kapwand; de
+  schelp zelf ligt op 0,46–0,55 H. Tabel `REFC_BELT` gecorrigeerd,
+  `REFC_HOODEDGE` nieuw.
+- De **koplampen zijn pods** op die schelp, in de wig tussen kapwand en
+  flank, druppelvormig in plan (chroomhuis van 0,44 tot 0,81 van de halve
+  breedte, station 0,05–0,215), bovenkant gelijk met de kaprand.
+- Grille: elf **horizontale lamellen**, |z| 0,59, 0,28–0,42 H; geen
+  mistlampen; zwarte valance 0,175–0,275 H.
+- Achter: de **achterklep is smaller dan de carrosserie** op lamphoogte
+  (halve breedte 0,45); buiten de klep loopt de staartband op tot de belt
+  van de hoek (0,66 H) en draagt de twee achterlichten (|z| 0,49–0,80,
+  0,55–0,66 H, om de hoek). Klepglas vanaf 0,64 H (dekpunt 0,94 L).
+  Zijruit eindigt op 0,86: C-stijl van 0,86 tot 0,90.
+- Zij: omlijste portierruit, B-stijl op een tweedeurs, greep op 0,90 van
+  het portier, 4,5 cm onder de belt.
+
+Generiek geworden (geen stadsauto-takken in de code):
+`topSheet`/`closureEdge` lezen hun zijrand via `sideZ`/`sideY`
+(`B.hoodSideZ/Y`, `B.deckSideZ/Y`); `B.wingTop` + `B.hoodWall`;
+`lamp.on: 'wing'` met een plan-omtrek en een `xzSolver`; `mouth.slats`;
+`fog`/`corner` optioneel; `diffuser` zonder `pill` = valance;
+`apertures.tailgate.z`; `windowFrame: 'framed'`, `handleF`, `handleDrop`.
+De GT loopt door dezelfde functies met de oude defaults en blijft 0 pixels
+verschillend; de zaadlijst is identiek aan de basislijn.
+
+Nog open aan de stadsauto: de A-stijl en dakrand hebben nog de dunne
+GT-lijst (referentie: dikke stijlen in carrosseriekleur); de klep krijgt
+nog geen kentekenuitsparing; de grille zit iets hoger dan op het model.
 
 ## 4. Nieuwe designregels die ik wil voorstellen
 
