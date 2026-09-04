@@ -376,6 +376,43 @@ bovenhoek van de deur), de achterstijl (achter het zijruitje) en de daklijn.
 Alleen actief als de familie een mesh-huid heeft; de andere families houden
 hun eigen kooi.
 
+### Sedan: getraceerd van een eigen referentie (4 sep)
+
+De opdrachtgever leverde een sedan-referentie aan. Die is van een andere
+soort dan die van de stadsauto en dat bepaalt wat ermee kan:
+
+| | stadsauto | sedan |
+|---|---|---|
+| driehoeken | 20 324 alleen al in de carrosserie | 668 in de hele auto |
+| onderdelen | Body, Tire, Disk, brake, grid, koplampglas, achterlicht, spiegel, greep, wisser, diffuser | één mesh |
+| lampen, ruiten, wielen | eigen geometrie | in de textuur gebakken |
+| naden | groeven om de deuren | geen |
+
+Uit 668 driehoeken valt niets te snijden: een deur zou zes driehoeken zijn.
+De vorm is er wel, en die is op dezelfde manier gemeten als de andere twee.
+Nieuw gereedschap in `tools/reference/`: `fbx2obj.js` (three.js in een
+headless browser, want niets anders hier leest FBX) en `smeas.py` (assen
+omzetten, zelf bepalen welke kant de neus is, en SIL, PLAN, BELT, CABIN,
+DLO, SECTION en tumblehome meten).
+
+De belt had een andere methode nodig. Op 668 driehoeken zit er geen knik in
+de flank waar de schouder hoort: het zijvlak loopt in een paar vlakken door
+tot het dak. De belt is daarom de hoogte waarop de flank voor het eerst 8%
+smaller wordt dan het breedste punt van datzelfde station. Vóór de cowl is
+de belt de bovenkant van het voorscherm en dus van het silhouet afgelezen,
+2 mm eronder: de schouder die de detector daar vindt is de zijkreuk van de
+motorkap, honderd millimeter te laag, en een kap die daarop landt steekt
+boven zijn eigen scherm uit.
+
+Gemeten: wielbasis 0,587 L, vooroverhang 0,191 L, achteroverhang 0,222 L,
+hoogte 0,312 L, breedte 0,379 L. Dat is een D-segment sedan van rond de
+4,86 m, en de ranges van de familie staan daar nu op.
+
+Wat de sedan hiermee niet krijgt: het gezicht is nog dat van de familie zelf
+(grille, lampen, bumper), niet dat van de referentie, want dat zit alleen in
+de textuur. En de generator bouwt nog één deurpaar, dus de sedan heeft lange
+coupédeuren; achterdeuren zijn de volgende structurele stap.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.

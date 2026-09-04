@@ -20,3 +20,24 @@ Let op wat een mesh niet geeft: stations 0–1 van het silhouet zijn de
 bumperface, niet de motorkap (handmatig op de kaptop gezet), en spiegels
 staan in het plan (geïnterpoleerd). De belt is de grootste helling-knik
 tussen 0,55 en 0,75 H, gecontroleerd tegen deurgreep en spiegelvoet.
+
+## Een referentie die geen losse delen heeft (sedan, 4 sep)
+
+De sedan-referentie is een low-poly model: één mesh van 668 driehoeken met
+alles in de textuur gebakken. Geen losse lampen, ruiten of wielen, en geen
+naden. Daar valt niets uit te snijden zoals bij de stadsauto; wel is de vorm
+te meten.
+
+1. `fbx2obj.js` — zet een binaire FBX om naar de OBJ die de rest leest, met
+   posities, normalen, UV's en een groep per mesh. three.js kan FBX lezen en
+   niets anders hier, dus dat gebeurt in een headless browser.
+   `node fbx2obj.js model.FBX model.obj`
+2. `smeas.py` — leest die OBJ, zet de assen om, bepaalt zelf welke kant de
+   neus is (de lage kant), en meet SIL, PLAN, BELT, CABIN, DLO, SECTION en de
+   tumblehome. `python3 smeas.py model.obj`
+
+De belt heeft op zo weinig driehoeken een andere methode nodig: er zit geen
+knik in de flank waar de schouder hoort, want het zijvlak loopt in een paar
+vlakken door tot het dak. Daarom is de belt de hoogte waarop de flank voor
+het eerst 8% smaller wordt dan het breedste punt van datzelfde station, in
+plaats van de grootste sprong.

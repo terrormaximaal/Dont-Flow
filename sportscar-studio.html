@@ -198,7 +198,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 kooi volgt de mesh';
+const VG_BUILD = '4 sep 2026 \u00b7 sedan getraceerd van een eigen referentie';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1005,11 +1005,79 @@ const REFC_DLO = [
 
 /* Both cars, addressed by archetype. Everything the generator draws for a car
    comes out of its entry here. */
+/* =========================================================================
+   SEDAN: getraceerd van een eigen referentie-mesh
+   -------------------------------------------------------------------------
+   Een low-poly sedan (668 driehoeken, alles in de textuur gebakken: geen
+   losse lampen, ruiten of wielen). Daar valt niets uit te snijden zoals bij
+   de stadsauto, maar de VORM is er wel, en die is op dezelfde manier gemeten
+   als de andere twee: ray-casten door de mesh, station voor station, met
+   tools/reference/smeas.py.
+
+   De belt was het enige dat een andere methode nodig had. Op 668 driehoeken
+   zit er geen knik in de flank waar de schouder hoort: het zijvlak loopt in
+   een paar vlakken door tot het dak. De belt is daarom de hoogte waarop de
+   flank voor het eerst 8% smaller wordt dan het breedste punt van datzelfde
+   station, in plaats van de grootste sprong.
+
+   Gemeten: L/H/HW 187,4 / 58,5 / 35,6 in modeleenheden, wielbasis 0,587 L,
+   vooroverhang 0,191 L, achteroverhang 0,222 L. Dat is een D-segment sedan
+   van rond de 4,86 m. */
+const REFS_SIL = [
+  0.3760, 0.5336, 0.5779, 0.5968, 0.6156, 0.6344, 0.6490, 0.6554,
+  0.6617, 0.6681, 0.6744, 0.6819, 0.7112, 0.7406, 0.7699, 0.7992,
+  0.8286, 0.8579, 0.8872, 0.9166, 0.9359, 0.9491, 0.9624, 0.9756,
+  0.9879, 0.9898, 0.9918, 0.9937, 0.9956, 0.9976, 0.9995, 0.9947,
+  0.9875, 0.9803, 0.9731, 0.9659, 0.9530, 0.9278, 0.9027, 0.8776,
+  0.8525, 0.8274, 0.8023, 0.7772, 0.7688, 0.7640, 0.7592, 0.7544,
+  0.5016,
+];
+const REFS_PLAN = [
+  0.4276, 0.6319, 0.7250, 0.8367, 0.9112, 0.9463, 0.9803, 0.9952,
+  0.9908, 0.9838, 0.9846, 0.9927, 0.9987, 0.9980, 0.9959, 0.9937,
+  0.9915, 0.9893, 0.9872, 0.9850, 0.9830, 0.9825, 0.9821, 0.9816,
+  0.9812, 0.9815, 0.9816, 0.9817, 0.9818, 0.9819, 0.9819, 0.9831,
+  0.9845, 0.9858, 0.9872, 0.9884, 0.9858, 0.9854, 0.9855, 0.9890,
+  0.9915, 0.9832, 0.9630, 0.9425, 0.9215, 0.9014, 0.8685, 0.7101,
+  0.2602,
+];
+/* Ahead of the cowl the belt IS the top of the front wing, so there it is read
+   off the silhouette (2 mm under it) rather than from the flank: on this mesh
+   the shoulder the detector finds down there is the bonnet's side crease, a
+   hundred millimetres below the wing top, and a bonnet dropped onto that line
+   stands proud of its own wing. Through the cabin the measured line stands:
+   roof minus belt comes out at 0.29 H, the daylight opening of a real saloon. */
+const REFS_BELT = [
+  [0.000, 0.374], [0.042, 0.576], [0.083, 0.614], [0.125, 0.647], [0.167, 0.660],
+  [0.208, 0.672], [0.250, 0.706], [0.292, 0.700], [0.333, 0.692], [0.396, 0.687],
+  [0.458, 0.685], [0.500, 0.683], [0.562, 0.683], [0.625, 0.683], [0.688, 0.683],
+  [0.750, 0.683], [0.792, 0.681], [0.833, 0.676], [0.875, 0.666], [0.917, 0.660],
+  [0.958, 0.547], [0.979, 0.495], [1.000, 0.460],
+];
+const REFS_CABIN = [
+  [0.250, 0.574], [0.292, 0.805], [0.333, 0.839], [0.396, 0.854], [0.458, 0.855],
+  [0.500, 0.846], [0.562, 0.849], [0.625, 0.849], [0.688, 0.838], [0.750, 0.826],
+  [0.792, 0.796], [0.833, 0.854], [0.875, 0.794],
+];
+const REFS_DLO = [
+  [0.292, 0.316], [0.333, 0.581], [0.396, 0.792], [0.458, 0.844], [0.500, 0.897],
+  [0.562, 0.897], [0.625, 0.950], [0.688, 0.844], [0.750, 0.792], [0.792, 0.633],
+  [0.833, 0.581], [0.875, 0.369],
+];
+const REFS_SECTION = [
+  [0.000, 0.955], [0.071, 0.961], [0.143, 0.966], [0.214, 0.971], [0.286, 0.977],
+  [0.357, 0.985], [0.429, 0.990], [0.500, 0.994], [0.571, 0.998], [0.643, 0.995],
+  [0.714, 0.985], [0.786, 0.976], [0.857, 0.967], [0.929, 0.955], [1.000, 0.909],
+];
+const REFS_TUMBLE = 0.475;
+
 const REFERENCES = {
   super_gt: { SIL: REF2_SIL, PLAN: REF2_PLAN, SECTION: REF_SECTION, BELT: REF2_BELT,
               CABIN: REF2_CABIN, TUMBLE: REF2_TUMBLE, DLO: REF2_DLO },
   city: { SIL: REFC_SIL, PLAN: REFC_PLAN, SECTION: REFC_SECTION, BELT: REFC_BELT,
           CABIN: REFC_CABIN, TUMBLE: REFC_TUMBLE, DLO: REFC_DLO, HOODEDGE: REFC_HOODEDGE },
+  sedan: { SIL: REFS_SIL, PLAN: REFS_PLAN, SECTION: REFS_SECTION, BELT: REFS_BELT,
+           CABIN: REFS_CABIN, TUMBLE: REFS_TUMBLE, DLO: REFS_DLO },
 };
 
 /* A paint is a colour and a finish, and they are not the same kind of thing.
@@ -1164,9 +1232,9 @@ const ARCHETYPES = {
      next structural step. */
   sedan: {
     label: 'Aurelia L', doors: 4, layout: 'voorin gemonteerde zes-in-lijn · achterwielaandrijving',
-    L: [4.850, 4.920],
-    hRatio: [0.2950, 0.3020], wRatio: [0.3780, 0.3840],
-    wbRatio: [0.5850, 0.5920], frontOhShare: [0.430, 0.450], trackRatio: [0.840, 0.860],
+    L: [4.840, 4.900],
+    hRatio: [0.3040, 0.3110], wRatio: [0.3780, 0.3840],
+    wbRatio: [0.5840, 0.5900], frontOhShare: [0.455, 0.468], trackRatio: [0.840, 0.860],
     diaRatio: [0.1360, 0.1400], tireW: [0.225, 0.235], rearTireExtra: [0.0, 0.0], aspect: [0.45, 0.50],
     seatSet: 0.290,
     clearance: [0.140, 0.155],
