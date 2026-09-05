@@ -215,7 +215,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '5 sep 2026 \u00b7 supercar met echte middenmotor';
+const VG_BUILD = '5 sep 2026 \u00b7 koplampen met binnenwerk, spiegelende metallic, middenmotor';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1219,8 +1219,21 @@ function paintSurface(p, finish) {
      renders as grain, not sparkle: a flake is smaller than a pixel here, so
      what reaches the screen is noise that lightens a black car into a grey one.
      It would earn its place in a close-up mode, not on a car in frame. */
-  return { color: srgbToLinear(p.hex), metal: 0.74 + 0.25 * p.flake, rough: p.rough * 0.50 + 0.015,
-    clear: 1.0, clearRough: 0.015 + (1 - p.flake) * 0.025, env: 1.55 };
+  /* Sharpened again on request: a metallic should read like the reflection
+     test, with the studio's own light strips legible in the flank. What blurs
+     a reflection is roughness, in the base coat and in the clearcoat over it,
+     so both are cut to about a third of what they were and the reflection comes
+     back as a mirror image of the studio's strips rather than a smear.
+
+     What does NOT make a car shinier is turning the environment up, or the
+     metalness with it: a surface at metalness one only tints what it reflects,
+     so under a bright studio a blue car came back white. The metalness is
+     pulled back off the ceiling for that reason - the sharpness lives in the
+     roughness, the colour in the base coat, and the mirror in the clearcoat
+     over both. Matte is untouched: it is the contrast between the two that
+     makes either one worth choosing. */
+  return { color: srgbToLinear(p.hex), metal: 0.52 + 0.28 * p.flake, rough: p.rough * 0.14 + 0.004,
+    clear: 1.0, clearRough: 0.004 + (1 - p.flake) * 0.008, env: 1.70 };
 }
 
 const ARCHETYPES = {
@@ -2713,6 +2726,29 @@ function makeMaterials(s) {
      order the renderer happens to pick - which is where the speckled, half-lit
      patchwork inside both lamps came from. Front faces only leaves one layer of
      glass over the lamp, which is what a lens is. */
+  /* A lamp made from a patch of skin: a dark surround with a bright element
+     in it. The surround has to be MATTE and reflect almost nothing of the
+     studio: a smooth dark surface on a nearly horizontal wing top is seen at a
+     grazing angle, where a mirror reflects everything, and it came back as
+     white as the bodywork around it. */
+  M.lampBack = std({ color: 0x15181d, metalness: 0.0, roughness: 0.85, envMapIntensity: 0.12, side: THREE.DoubleSide });
+  // the reflector is a DIMMED mirror: at full chrome it returned the studio's
+  // white ceiling and the lamp came back as white as the wing it sits in
+  M.lampDish = std({ color: 0x9aa6b2, metalness: 1.0, roughness: 0.28, envMapIntensity: 0.40, side: THREE.DoubleSide });
+  /* A lamp that the reference gives as a bare patch of skin gets this instead
+     of the clear cover: dark, and deliberately DULL. This car's lamps lie on
+     the wing tops, which the camera sees at a grazing angle - and at a grazing
+     angle a glossy surface returns the studio's white ceiling whole, so a
+     clear cover, smoked glass, chrome and a polished black all came back as
+     white as the paint around them. What makes a lamp read here is that it
+     reflects less than the bodywork, not that it is darker. */
+  M.lampGlass = std({ color: 0x0a0c10, metalness: 0.0, roughness: 0.88, envMapIntensity: 0.05, side: THREE.DoubleSide });
+  M.lampOn = std({ color: 0xf4f7fb, emissive: 0xdfe8f2, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.0, side: THREE.DoubleSide });
+  // the daytime running blade: the one thing in the lamp that is brighter than
+  // white bodywork in a white studio, so it is the thing that makes the lamp
+  // read at all. Emissive, so it does not depend on catching a reflection.
+  M.drl = std({ color: 0xffffff, emissive: 0xf2f7ff, emissiveIntensity: 1.35, roughness: 0.25, metalness: 0.0, side: THREE.DoubleSide });
+  M.drlRed = std({ color: 0xff4032, emissive: 0xff2010, emissiveIntensity: 1.15, roughness: 0.25, metalness: 0.0, side: THREE.DoubleSide });
   M.lens = phys({ color: 0xc9d6e2, metalness: 0.0, roughness: 0.06, transparent: true, opacity: 0.50, side: THREE.FrontSide, depthWrite: false, clearcoat: 1 });
   M.lensRed = phys({ color: 0xb01018, metalness: 0.0, roughness: 0.08, transparent: true, opacity: 0.55, side: THREE.FrontSide, depthWrite: false, clearcoat: 1 });
   M.interior = std({ color: s.interiorColor, metalness: 0.02, roughness: 0.9, side: THREE.DoubleSide });
@@ -3878,7 +3914,7 @@ meshLibPart.decode = (sub, scale) => {
 };
 // the packer's material tags -> this car's materials
 function meshLibMaterial(M, tag) {
-  return { lens: M.lens, chrome: M.chrome, tailred: M.tailRed, amber: M.amber, plastic: M.matte, grille: M.vane, paint: M.paint }[tag] || M.matte;
+  return { lens: M.lens, lampglass: M.lampGlass, chrome: M.chrome, tailred: M.tailRed, amber: M.amber, plastic: M.matte, grille: M.vane, paint: M.paint }[tag] || M.matte;
 }
 // add a packed part's pieces to a Part; sd < 0 mirrors a left half to the right
 function addMeshPart(part, subs, M, sd, stage) {
@@ -4350,11 +4386,152 @@ function stage_meshDoors(ctx) {
 function stage_meshLighting(ctx) {
   const { M, d, mk, v, bf, br } = ctx;
   const lib = d.mesh.lib, MS = [d.L, d.H, d.W / 2];
+  /* A lamp cut from the skin is only its cover, and a clear cover over
+     bodywork reads as bodywork - which is why the supercar looked as though it
+     had no lamps at all where its reference in fact carries them, big teardrops
+     on the wing tops. Where a reference gives no lamp innards of its own, they
+     are made from the cover, OUTWARD: a lamp face on the surface itself and
+     the glass 4 mm proud of it. Pushing them inward, the way a bowl would be
+     dressed, put them under the bodywork - on this reference the lamps are
+     flat patches of skin, not bowls, and nothing behind them ever reached the
+     screen. */
+  /* Innards for a lamp the reference gives as a bare patch of skin. Scaled
+     copies of that patch were tried first and could not be seen: shrinking a
+     convex shell towards its own centre drops its surface BELOW the cover, so
+     three millimetres of lift never cleared it. This builds geometry instead.
+     The ridge of the patch - its highest line, running along the lamp - is
+     sampled and a tube is laid over it, standing a centimetre proud. That
+     reads from every angle, because it is a shape, not a reflection. */
+  /* Innards for a lamp the reference gives as a bare patch of skin. Scaled
+     copies of that patch were tried first and could not be seen: shrinking a
+     convex shell towards its own centre drops its surface BELOW the cover, so
+     three millimetres of lift never cleared it. A tube laid over the ridge was
+     visible but wandered, because the ridge of a teardrop draped over a wing
+     runs along its edge. This builds an inlay instead: the lamp face is sliced
+     along its own long axis, and each slice contributes the middle of the face
+     at that station, so the element keeps the outline of the lamp and shrinks
+     towards its centreline. That is how a light unit is actually shaped. */
+  const lampInlay = (geo, out, wFrac, uFrac, mat) => {
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox, c = bb.getCenter(new THREE.Vector3());
+    const pa = geo.attributes.position, na = geo.attributes.normal;
+    if (!na) return null;
+    const n = new THREE.Vector3();
+    for (let i = 0; i < na.count; i++) n.set(n.x + na.getX(i), n.y + na.getY(i), n.z + na.getZ(i));
+    if (n.lengthSq() < 1e-9) return null;
+    n.normalize();
+    // in-plane axes, then the direction of largest spread: this teardrop lies
+    // diagonally across the wing, so neither x nor z is its long axis
+    let e1 = new THREE.Vector3(0, 1, 0);
+    if (Math.abs(n.y) > 0.9) e1.set(1, 0, 0);
+    e1.addScaledVector(n, -e1.dot(n)).normalize();
+    const e2 = new THREE.Vector3().crossVectors(n, e1).normalize();
+    const t = new THREE.Vector3();
+    let cuu = 0, cvv = 0, cuw = 0;
+    for (let i = 0; i < pa.count; i++) {
+      t.set(pa.getX(i) - c.x, pa.getY(i) - c.y, pa.getZ(i) - c.z);
+      const u = t.dot(e1), w = t.dot(e2);
+      cuu += u * u; cvv += w * w; cuw += u * w;
+    }
+    const th = 0.5 * Math.atan2(2 * cuw, cuu - cvv);
+    const ax = e1.clone().multiplyScalar(Math.cos(th)).addScaledVector(e2, Math.sin(th)).normalize();
+    const cross = new THREE.Vector3().crossVectors(n, ax).normalize();
+    let uMin = Infinity, uMax = -Infinity;
+    const uu = new Float32Array(pa.count), vv = new Float32Array(pa.count), hh = new Float32Array(pa.count);
+    for (let i = 0; i < pa.count; i++) {
+      t.set(pa.getX(i) - c.x, pa.getY(i) - c.y, pa.getZ(i) - c.z);
+      uu[i] = t.dot(ax); vv[i] = t.dot(cross); hh[i] = t.dot(n);
+      if (uu[i] < uMin) uMin = uu[i];
+      if (uu[i] > uMax) uMax = uu[i];
+    }
+    const uMid = (uMax + uMin) / 2, len = uMax - uMin;
+    const N = 22, half = len * 0.5 * uFrac;
+    const lo = new Float64Array(N).fill(Infinity), hi = new Float64Array(N).fill(-Infinity);
+    const top = new Float64Array(N).fill(-Infinity), cnt = new Int32Array(N);
+    for (let i = 0; i < pa.count; i++) {
+      const u = uu[i] - uMid;
+      if (u < -half || u > half) continue;
+      const b = Math.min(N - 1, Math.floor((u + half) / (2 * half) * N));
+      if (vv[i] < lo[b]) lo[b] = vv[i];
+      if (vv[i] > hi[b]) hi[b] = vv[i];
+      if (hh[i] > top[b]) top[b] = hh[i];
+      cnt[b]++;
+    }
+    const idx = [];
+    for (let b = 0; b < N; b++) if (cnt[b] >= 3) idx.push(b);
+    if (idx.length < 4) return null;
+    const mid = idx.map((b) => (lo[b] + hi[b]) / 2);
+    const wid = idx.map((b) => (hi[b] - lo[b]) / 2);
+    const hgt = idx.map((b) => top[b]);
+    const smooth = (a) => {
+      for (let s = 0; s < 2; s++) {
+        const q = a.slice();
+        for (let i = 1; i < a.length - 1; i++) a[i] = (q[i - 1] + 2 * q[i] + q[i + 1]) / 4;
+      }
+      return a;
+    };
+    smooth(mid); smooth(wid); smooth(hgt);
+    /* A round lamp is not a long one. The same fraction of the width that
+       makes a slim bar on the supercar's teardrop made a bone shape in the
+       sedan's round lamp, so the element widens as the face gets stubbier. */
+    let mw = 0;
+    for (const w of wid) mw += w;
+    mw = Math.max(1e-4, 2 * mw / wid.length);
+    const aspect = len / mw;
+    wFrac = Math.min(0.88, wFrac * clamp(2.2 / aspect, 1, 2));
+    const P = (k, sgn, lift) => new THREE.Vector3().copy(c)
+      .addScaledVector(ax, uMid + (idx[k] + 0.5) / N * 2 * half - half)
+      .addScaledVector(cross, mid[k] + sgn * wid[k] * wFrac)
+      .addScaledVector(n, hgt[k] + lift);
+    const vtx = [], push = (a, b2, c2) => { vtx.push(a.x, a.y, a.z, b2.x, b2.y, b2.z, c2.x, c2.y, c2.z); };
+    const quad = (a, b2, c2, d2) => { push(a, b2, c2); push(a, c2, d2); };
+    const base = 0.0015;
+    for (let k = 0; k + 1 < idx.length; k++) {
+      const a0 = P(k, -1, out), b0 = P(k, 1, out), a1 = P(k + 1, -1, out), b1 = P(k + 1, 1, out);
+      const a0b = P(k, -1, base), b0b = P(k, 1, base), a1b = P(k + 1, -1, base), b1b = P(k + 1, 1, base);
+      quad(a0, a1, b1, b0);                    // the lit face
+      quad(b0b, b1b, a1b, a0b);                // the seat on the cover
+      quad(a0b, a1b, a1, a0);                  // and the two side walls
+      quad(b0, b1, b1b, b0b);
+    }
+    const e = idx.length - 1;
+    quad(P(0, -1, base), P(0, -1, out), P(0, 1, out), P(0, 1, base));
+    quad(P(e, 1, base), P(e, 1, out), P(e, -1, out), P(e, -1, base));
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(vtx, 3));
+    g.computeVertexNormals(); g.computeBoundingBox(); g.computeBoundingSphere();
+    return new THREE.Mesh(g, mat);
+  };
   const unit = (id, label, name, sd, host, kind) => {
     const rec = MESH_LIB[lib].parts[name];
     if (!rec) return null;                   // this reference has no such part
     const p = mk(id, label, { kind: kind || 'light', detachable: true, stiffness: 0.6, stage: 5 });
-    addMeshPart(p, meshLibPart(lib, name, MS), M, sd);
+    let subs = meshLibPart(lib, name, MS);
+    /* Every lamp cut from a skin gets innards, including the ones that came
+       with a chrome ring of their own: a ring around a clear cover over
+       bodywork still read as a white blister on the city car and the sedan,
+       for the same reason it did on the supercar. The ring is kept. */
+    if (/^(headlight|taillight)$/.test(name)) {
+      const head = name === 'headlight';
+      subs = subs.map((q) => {
+        if (q.mat !== 'lens' && q.mat !== 'tailred') return q;
+        // a bright blade over the ridge, and a slimmer one beside it
+        // a reflector across the whole face, and the lit element inside it
+        for (const [out, wf, uf, mat] of [[0.006, 0.72, 0.90, head ? M.lampDish : M.tailRed],
+                                          [0.013, 0.30, 0.80, head ? M.drl : M.drlRed]]) {
+          const m = lampInlay(q.geometry, out, wf, uf, mat);
+          if (!m) continue;
+          if (sd < 0) m.geometry = mirrorGeometryZ(m.geometry);
+          m.castShadow = false; p.add(m, false);
+        }
+        // and the cover itself, on the surface, in the lamp's own material.
+        // A COPY: meshLibPart hands out the cached record, and writing an
+        // offset back into it moved the cover another few millimetres out of
+        // the wing on every rebuild until it stood over the lamp like a blister.
+        return { mat: q.mat === 'lens' ? 'lampglass' : q.mat, geometry: q.geometry };
+      });
+    }
+    addMeshPart(p, subs, M, sd);
     // a centre part cut from the skin is stored as its left half, like a panel
     if (sd > 0 && rec.half && /^(grille|diffuser)$/.test(name)) addMeshPart(p, meshLibPart(lib, name, MS), M, -1);
     v.addPart(p, host);
@@ -5199,7 +5376,7 @@ function stage_engine(ctx) {
      bonnet. Everything below is written about the block, times a direction. */
   const mid = d.engineBay === 'mid';
   const dir = mid ? -1 : 1;
-  const ex = mid ? lerp(d.xCowl - d.seatSet - 0.30, d.xAxleR, 0.50) : lerp(d.xCowl, d.xHoodF, 0.34);
+  const ex = mid ? lerp(d.xCowl - d.seatSet - 0.30, d.xAxleR, 0.72) : lerp(d.xCowl, d.xHoodF, 0.34);
   const X = (o) => ex + dir * o;                          // an offset along the bay, from the block
   const lid = mid ? B.deckTopY(ex) : B.hoodY(ex);
   const railY = (v.adaptiveStructure && v.adaptiveStructure.yRail) || (d.clearance + 0.16);
@@ -5700,17 +5877,19 @@ function stage_interior(ctx) {
      the engine bay. Its bulkhead stands right behind the front seats and
      carries a short ledge where a saloon has a parcel shelf. */
   const midEngine = d.engineBay === 'mid';
-  const rearX = midEngine ? seatX - 0.30 : lerp(d.xCowl, d.xDeck, 0.74);
+  const rearX = midEngine ? seatX - 0.34 : lerp(d.xCowl, d.xDeck, 0.74);
   const rearHW = B.hw(rearX) * 0.84;
   // the parcel shelf sits at the rear window's base: the mesh's own if the
   // car has one, the parametric deck otherwise
-  let shelfX = midEngine ? rearX - 0.20 : d.xDeck - 0.02;
+  // on a mid-engined car the shelf runs BACK from the bulkhead, over the
+  // engine, so it is the panel that closes the bay off from the cabin
+  let shelfX = midEngine ? rearX - 0.62 : d.xDeck - 0.02;
   let shelfY = B.belt(midEngine ? rearX : d.xDeck) - 0.03;
   if (!midEngine && d.mesh && d.mesh.skin && MESH_LIB[d.mesh.lib].skin['glass.rear']) {
     const base = meshExtreme(meshSkinGeometry(d.mesh.lib, 'glass.rear', [d.L, d.H, d.W / 2]), 0, -1, 0);
     shelfX = base.x + 0.01; shelfY = base.y - 0.025;
   }
-  const bulkX = rearX - (midEngine ? 0.12 : 0.36);
+  const bulkX = rearX - (midEngine ? 0.10 : 0.36);
   // above the belt the cabin draws in (tumblehome), so whatever stands that
   // high - the backrest's top, the bulkhead, the shelf - is cut to the
   // greenhouse's width there rather than the body's
@@ -5738,7 +5917,11 @@ function stage_interior(ctx) {
   inte.add(new THREE.Mesh(box(d.xCowl - bulkX, 0.02, cabHW * 2, midX, floorY + 0.01, 0), M.interiorDark), false);
   inte.add(new THREE.Mesh(box(0.03, dashY + 0.14 - floorY, B.hw(d.xCowl) * 1.66, d.xCowl + 0.01, (dashY + 0.14 + floorY) / 2, 0), M.interiorDark), false);
   slab(bulkX, 0.03, floorY, shelfY, rearHW, topHW, M.interiorDark);                                 // the bulkhead
-  inte.add(new THREE.Mesh(box(shelfX - bulkX + 0.03, 0.03, topHW * 2, (shelfX + bulkX) / 2, shelfY, 0), M.interior), false);
+  // the shelf spans between the bulkhead and its far edge, whichever way round
+  // those lie: a saloon's runs back to the rear window, a mid-engined car's
+  // forward over the engine. Written as a width it went negative and the panel
+  // came out inside-out.
+  inte.add(new THREE.Mesh(box(Math.abs(shelfX - bulkX) + 0.03, 0.03, topHW * 2, (shelfX + bulkX) / 2, shelfY, 0), M.interior), false);
   for (const q of [-1, 1]) {
     // over the rear arch, from the last door's rear edge to the bulkhead
     const x0 = d.xDoorR - 0.01, x1 = bulkX;
@@ -7299,6 +7482,8 @@ Vehicle.prototype.validateGeometry = function () {
     window.__vgCamera = () => camera;
     window.__setCam = (az, el, sc) => { cam.az = az; cam.el = el; frameCar(sc, 0.46); autoSpin = false; };
     window.__spec = () => car && car.spec;   // for the test harness: where the wheels are
+    window.__carRef = () => car;             // for the test harness: the car itself
+    window.__camRef = () => cam;             // for the test harness: the camera
     window.__aim = (az, el, dist, tx, ty, tz) => { cam.az = az; cam.el = el; cam.dist = dist; cam.target.set(tx, ty, tz); autoSpin = false; idleSince = performance.now(); camFit = null; };
     window.__vgBuildOnly = (i) => buildVehicle({ type, seed: (seed + i) >>> 0 });
   } catch (err) {

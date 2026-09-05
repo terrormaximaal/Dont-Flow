@@ -651,7 +651,7 @@ middenmotor, omdat de motorruimte aan de motorkap was gebouwd.
   andere families staan op 'front' en veranderen niet.
 - `stage_engine` bouwt dezelfde aankleding om het blok heen, maal een
   richting: bij een middenmotor staat het blok tussen de stoelen en de
-  achteras (station 0,56 tot 0,80 van de lengte, de achteras op 0,81), en
+  achteras (station 0,61 tot 0,85 van de lengte, de achteras op 0,81), en
   is de hele boel omgedraaid, zodat de poelies en de riemaandrijving naar
   de staart wijzen en de plaat de ruimte tegen het cabineschot afsluit. Het
   paneel erboven is de achterklep in plaats van de motorkap, en de
@@ -660,10 +660,51 @@ middenmotor, omdat de motorruimte aan de motorkap was gebouwd.
   direct achter de voorstoelen met een korte richel, en de ruimte
   daarachter is de motorruimte.
 
-Gemeten: motor van de supercar op station 0,557-0,798 (stoel 0,489,
+Gemeten: motor van de supercar op station 0,612-0,854 (stoel 0,489,
 achteras 0,806), niets steekt door het paneel erboven; GT, sedan en
-stadsauto onveranderd, hun motor nog op 0,11-0,40; GT 0 pixels verschil;
-zaadlijst identiek; QC 21/21 op alle families behalve de bekende SUV-zaden.
+stadsauto onveranderd, hun motor nog op 0,11-0,40; zaadlijst identiek;
+QC 21/21 op alle families behalve de bekende SUV-zaden.
+
+### Koplampen met binnenwerk, en een metallic die spiegelt (5 sep)
+
+Drie punten van de opdrachtgever: de supercar had geen zichtbare koplampen,
+de metallic mocht veel spiegelender, en de motor moest verder naar achteren
+met een schot ertussen.
+
+- **Het binnenwerk van een lamp.** Een lamp die uit de huid gesneden is, is
+  alleen een dekglas; een helder dekglas over carrosserie leest als
+  carrosserie. Drie pogingen faalden en zeggen waarom: een geschaalde kopie
+  van het dekglas zakt eronder (een bolle schaal die naar haar eigen midden
+  krimpt, gaat naar binnen, niet naar buiten), chroom en gepolijst zwart
+  komen op een bijna horizontale spatbordbovenkant wit terug (bij scherende
+  hoek spiegelt alles het witte plafond van de studio), en een buis over de
+  nokkenlijn liep de rand van de druppel op in plaats van het midden.
+  Wat wel werkt is `lampInlay`: het lampvlak wordt langs zijn eigen hoofdas
+  gesneden - via de covariantie van het vlak, want deze druppel ligt schuin
+  over het spatbord - en elke plak levert het midden van het vlak op de
+  hoogte van zijn nok. Daaruit komt een ingelegd element dat de omtrek van
+  de lamp volgt: een reflector over de hele breedte en een lichtgevende balk
+  van 13 mm hoog daarin, in een dekglas dat mat en bijna zwart is.
+- Elke uit een mesh gesneden lamp krijgt dit nu, ook de lampen die al een
+  chromen ring hadden: de stadsauto en de sedan lazen om dezelfde reden als
+  een witte blaar. Het element schaalt mee met de vorm - hoe ronder de lamp,
+  hoe breder de balk - zodat de ronde sedanlamp geen bothvorm krijgt.
+- **De metallic.** De scherpte van een spiegeling zit in de ruwheid, niet in
+  de omgeving: de lakruwheid staat op 0,004 en de blanke laag erover op
+  0,004 tot 0,012, en de lichtbalken van de studio zijn nu als rechthoeken
+  leesbaar in de flank. De metalness blijft bewust van het plafond af
+  (0,52 tot 0,80), want bij metalness 1 tint een vlak alleen nog wat het
+  spiegelt en kwam een blauwe auto wit terug.
+- **De motor.** Staat nu op station 0,612-0,854 in plaats van 0,557-0,798,
+  dus achter de stoelen (0,489) en over de achteras (0,806) heen, met de
+  schotplaat en een korte hoedenplank ertussen.
+
+Gemeten: QC 21/21 op alle families, geen JS-fouten, zaadlijst identiek
+(80 varianten, 18 met bekende fouten), symmetrie ongewijzigd op 2,24 mm in
+de grille. De GT-referentiebeelden zijn opnieuw vastgelegd: de lakwijziging
+raakt elke auto, dus de GT verschilt van de oude basislijn in lakglans -
+de vorm is pixel voor pixel dezelfde silhouet, alleen de spiegeling is
+scherper.
 
 ## 4. Nieuwe designregels die ik wil voorstellen
 

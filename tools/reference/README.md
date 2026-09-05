@@ -111,3 +111,14 @@ omdat de sliver-drempel van de packer in cm² is. Voor `smeas.py` geldt
 hetzelfde: lever de OBJ in centimeters aan (het bemonstert in hele eenheden).
 `python3 cut_super.py 18549_supercar_V1.obj super_cut.json` (ruim zes
 minuten) en `python3 pack_mesh.py sportscar-studio.html supercar super_cut.json`.
+
+## Lampen uit een gesneden huid
+
+Een referentie levert de koplamp meestal als een stukje huid met een eigen
+materiaaltag, dus als dekglas zonder binnenwerk. De studio bouwt het
+binnenwerk er zelf bij (`lampInlay` in `stage_meshLighting`), en dat gaat
+langs de hoofdas van het lampvlak, niet langs x of z: bij een druppel die
+schuin over het spatbord ligt, wijzen de bakassen de verkeerde kant op.
+Wie een nieuwe referentie snijdt, hoeft dus alleen het dekglas als één
+groep met de tag `lens` (of `tailred`) af te leveren; de reflector en de
+lichtbalk komen uit de vorm van die groep.
