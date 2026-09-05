@@ -69,6 +69,12 @@
     border:1px solid var(--line);border-radius:999px;padding:7px 11px;font:inherit;
     font-size:12.5px;letter-spacing:.08px;cursor:pointer;white-space:nowrap;transition:.18s ease;
     box-shadow:0 1px 2px rgba(20,22,26,.05)}
+  /* The menus: an opaque white field and explicit option colours. With a
+     translucent field the platform drew the list in its own scheme, which on
+     a dark system theme meant grey type on grey. */
+  select.c{background:#fff;color:var(--txt);color-scheme:light;padding-right:14px}
+  select.c option,select.c optgroup{background:#fff;color:#16181c}
+  select.c optgroup{font-weight:600;color:#6b7078}
   button.c:hover,select.c:hover{background:var(--btnHover);border-color:var(--gl)}
   button.c:active{background:var(--gf)}
   button.c.sel{background:var(--gf);border-color:var(--g);color:var(--txt);font-weight:600;box-shadow:0 0 0 1px var(--gl) inset}
@@ -209,7 +215,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '5 sep 2026 \u00b7 lichte studio-look, sedanstoelen naar voren';
+const VG_BUILD = '5 sep 2026 \u00b7 velgenbibliotheek, leesbare menu\u2019s';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -257,6 +263,7 @@ const VG_BUILD = '5 sep 2026 \u00b7 lichte studio-look, sedanstoelen naar voren'
     <select class="c" id="finish" title="Afwerking">
       <option value="metallic">Afwerking: metallic</option><option value="mat">mat</option>
     </select>
+    <select class="c" id="rims" title="Velgen"></select>
   </div>
   <div class="strip g-view" aria-label="Camera-aanzichten">
     <span class="tag">Aanzicht</span>
@@ -1265,7 +1272,7 @@ const ARCHETYPES = {
     hoodDome: [0.004, 0.008], hoodRise: [0.008, 0.014], hoodCrease: [0.004, 0.008], ducktail: [0.002, 0.005],
     noseDepth: [0.50, 0.56], tailDepth: [0.34, 0.40], frontRakeBack: [0.12, 0.15], tailRakeIn: [0.04, 0.06],
     doorLen: [0.98, 1.04], rearDoorLen: [0.80, 0.88],
-    wheelStyles: ['five', 'multi'],
+    wheelStyles: ['multi', 'turbine', 'dish', 'twin7'],
     // the tyre faces where the reference's own wheels had them: 85.3 of a 95.3 half width
     mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.895,
     dloRear: 0.800, mirrorF: 0.350, tumbleRef: 0.300,
@@ -1321,7 +1328,7 @@ const ARCHETYPES = {
     hoodDome: [0.003, 0.006], hoodRise: [0.006, 0.010], hoodCrease: [0.003, 0.006], ducktail: [0.0, 0.0],
     noseDepth: [0.46, 0.52], tailDepth: [0.28, 0.34], frontRakeBack: [0.10, 0.13], tailRakeIn: [0.02, 0.04],
     doorLen: [0.98, 1.04], rearDoorLen: [0.86, 0.94],
-    wheelStyles: ['five', 'multi'],
+    wheelStyles: ['six', 'star', 'splitsix'],
     mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.975,
     dloRear: 0.930, mirrorF: 0.330, tumbleRef: 0.250, greenhouse: 'two-box',
     design: {
@@ -1379,7 +1386,7 @@ const ARCHETYPES = {
     doorLen: [1.28, 1.36],
     windowFrame: 'framed', handleF: 0.90, handleDrop: 0.045,   // handle measured at 0.60-0.63 of the length, 4.5 cm under the belt
     hoodSideDrop: [0.028, 0.034],      // the bonnet's top falls this much of H to its side edge (measured 0.037 at the lamp, 0.02 by the cowl)
-    wheelStyles: ['five', 'multi'],
+    wheelStyles: ['four', 'petal', 'steel'],
     mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'station', faceFrac: 0.870,
     // the quarter light ends at 0.86; from there to the tailgate glass at 0.90 is the C-pillar
     dloRear: 0.860, mirrorF: 0.280, tumbleRef: 0.200, greenhouse: 'two-box',
@@ -1611,7 +1618,9 @@ function generateDNA(opts = {}) {
     rimColor: isS ? 0x3a3d42 : 0x8d9298, caliperColor: isS ? 0xb0201a : 0x9b1c16,
     interiorColor: isS ? 0x1a1c20 : 0x2a1d18, accent: isS ? 0x6f7479 : 0x8a6a44, glassTint: isS ? 0.38 : 0.30,
   }, A.design || {});
-  d.design = Object.assign({}, DS, { wheelStyle: r.pick(A.wheelStyles) });
+  // the seed's pick still draws from the RNG, so the seed list stands; the studio's choice overrides it
+  const seedRim = r.pick(A.wheelStyles);
+  d.design = Object.assign({}, DS, { wheelStyle: (opts.rim && RIMS[opts.rim]) ? opts.rim : seedRim });
   d.theme = d.design.bodyCharacter;
   d.lampStyle = d.design.headlightStyle; d.tailStyle = d.design.taillightStyle;
   d.grilleStyle = d.design.grilleStyle; d.bumperStyle = d.design.bumperStyle;
@@ -1625,7 +1634,7 @@ function generateDNA(opts = {}) {
   d.exhaust = DS.exhaust;
   d.paint = PAINTS.find((q) => q.name === opts.paint) || PAINTS.find((q) => q.name === 'Liquid silver');
   d.finish = FINISHES.indexOf(opts.finish) >= 0 ? opts.finish : 'metallic';
-  d.spokes = { five: 5, split: 5, multi: 10, turbine: 12 }[d.wheelStyle];
+  d.spokes = RIMS[d.wheelStyle].n;
   d.rimColor = DS.rimColor;
   d.caliperColor = DS.caliperColor;
   d.interiorColor = DS.interiorColor;
@@ -2892,6 +2901,31 @@ class Vehicle {
 
 const TIRE_STATE = ['ok', 'damaged', 'leaking', 'flat'];
 
+/* The rim catalogue. Every design is drawn in the rim's own units - a spoke is
+   so many rim radii wide, its depth so many tyre widths - so the same design
+   fits any car: the DNA gives the rim radius and the tyre width, the design
+   gives the pattern. Each family has a few of its own (the first is what a
+   seed picks by default), and the studio lets any of them onto any car.
+   The four the GT started with keep their original dimensions in metres, so
+   the GT's own reference wheel is unchanged. */
+const RIMS = {
+  split:    { label: 'Dubbelspaaks', fam: 'super_gt', n: 5 },
+  five:     { label: 'Vijfspaaks', fam: 'super_gt', n: 5 },
+  blade:    { label: 'Blade', fam: 'super_gt', n: 5 },
+  y:        { label: 'Y-spaak', fam: 'super_gt', n: 7 },
+  mesh:     { label: 'Kruisspaak', fam: 'super_gt', n: 16 },
+  multi:    { label: 'Tienspaaks', fam: 'sedan', n: 10 },
+  turbine:  { label: 'Turbine', fam: 'sedan', n: 12 },
+  dish:     { label: 'Aeroschijf', fam: 'sedan', n: 10 },
+  twin7:    { label: 'Zeven dubbel', fam: 'sedan', n: 7 },
+  six:      { label: 'Zesspaaks', fam: 'suv', n: 6 },
+  star:     { label: 'Ster', fam: 'suv', n: 5 },
+  splitsix: { label: 'Twaalfspaaks', fam: 'suv', n: 6 },
+  four:     { label: 'Vierspaaks', fam: 'city', n: 4 },
+  petal:    { label: 'Bloemblad', fam: 'city', n: 8 },
+  steel:    { label: 'Stalen velg', fam: 'city', n: 6 },
+};
+
 class Wheel {
   constructor(v, id, x, side, isFront) {
     const d = v.dna, M = v.mat;
@@ -2971,15 +3005,62 @@ class Wheel {
         g.rotateZ(angle);
         items.push({ geometry: g, matrix: I });
       };
+      // a segment of a spoke between two radii, for designs that fork or taper
+      const seg = (angle, r0, z0, r1, z1, wd, th, tipOffset) => {
+        const g = strut(new THREE.Vector3(rr * r0, 0, z0), new THREE.Vector3(rr * r1, tipOffset || 0, z1), wd, th);
+        g.rotateZ(angle);
+        items.push({ geometry: g, matrix: I });
+      };
       const style = d.wheelStyle, n = d.spokes;
+      const zMid = (zHub + zLip) / 2, zFace = zLip - 0.004;
+      let hubR = 0.27;
       for (let i = 0; i < n; i++) {
         const a = (i / n) * Math.PI * 2;
-        if (style === 'five') spoke(a, 0.078, 0.030);
-        else if (style === 'split') { spoke(a - 0.075, 0.026, 0.024); spoke(a + 0.075, 0.026, 0.024); }
-        else if (style === 'multi') spoke(a, 0.030, 0.022);
-        else spoke(a, 0.030, 0.020, 0.06);          // turbine: swept tips
+        switch (style) {
+          case 'five': spoke(a, 0.078, 0.030); break;
+          case 'split': spoke(a - 0.075, 0.026, 0.024); spoke(a + 0.075, 0.026, 0.024); break;
+          case 'multi': spoke(a, 0.030, 0.022); break;
+          case 'turbine': spoke(a, 0.030, 0.020, 0.06); break;              // swept tips
+          // GT: a wide concave blade with a ridge down its middle
+          case 'blade': spoke(a, rr * 0.30, rr * 0.075); spoke(a, rr * 0.10, rr * 0.11); break;
+          // GT: a stem from the hub that forks halfway to the rim
+          case 'y': seg(a, 0.30, zHub, 0.62, zMid, rr * 0.11, rr * 0.09);
+            seg(a, 0.58, zMid - 0.002, 0.965, zFace, rr * 0.07, rr * 0.075, rr * 0.16);
+            seg(a, 0.58, zMid - 0.002, 0.965, zFace, rr * 0.07, rr * 0.075, -rr * 0.16); break;
+          // GT: motorsport cross-lacing, two layers that cross
+          case 'mesh': seg(a + 0.07, 0.30, zHub, 0.965, zFace, rr * 0.035, rr * 0.05);
+            seg(a - 0.07, 0.30, zHub + 0.006, 0.965, zFace - 0.006, rr * 0.035, rr * 0.05); break;
+          // sedan: a flat aero face with raised ribs
+          case 'dish': seg(a, 0.30, zFace - 0.012, 0.95, zFace - 0.006, rr * 0.05, rr * 0.05); break;
+          // sedan: seven pairs
+          case 'twin7': spoke(a - 0.06, rr * 0.075, rr * 0.075); spoke(a + 0.06, rr * 0.075, rr * 0.075); break;
+          // SUV: six chunky spokes
+          case 'six': spoke(a, rr * 0.24, rr * 0.11); break;
+          // SUV: a star that tapers from a wide hub
+          case 'star': hubR = 0.34; seg(a, 0.30, zHub, 0.64, zMid, rr * 0.28, rr * 0.10);
+            seg(a, 0.60, zMid - 0.002, 0.965, zFace, rr * 0.15, rr * 0.09); break;
+          // SUV: six split pairs
+          case 'splitsix': spoke(a - 0.11, rr * 0.09, rr * 0.085); spoke(a + 0.11, rr * 0.09, rr * 0.085); break;
+          // city: four broad spokes on a big hub
+          case 'four': hubR = 0.36; spoke(a, rr * 0.30, rr * 0.10); break;
+          // city: petals that widen towards the rim
+          case 'petal': seg(a, 0.30, zHub, 0.62, zMid, rr * 0.10, rr * 0.08);
+            seg(a, 0.58, zMid - 0.002, 0.965, zFace, rr * 0.22, rr * 0.07); break;
+          // city: a pressed steel disc with vent bosses; the spokes are the bosses
+          case 'steel': { hubR = 0.20;
+            const b = new THREE.CylinderGeometry(rr * 0.075, rr * 0.075, 0.012, 12).rotateX(Math.PI / 2);
+            b.translate(rr * 0.62 * Math.cos(a), rr * 0.62 * Math.sin(a), zMid + 0.006);
+            items.push({ geometry: b, matrix: I }); break; }
+        }
       }
-      items.push({ geometry: new THREE.CylinderGeometry(rr * 0.27, rr * 0.30, 0.03, 20),
+      if (style === 'dish' || style === 'steel') {
+        // the face itself: a shallow dish from the hub to the well
+        const zd = style === 'dish' ? zFace - 0.014 : zMid, lift = style === 'dish' ? 0.008 : 0;
+        items.push({ geometry: lathe([
+          [rr * 0.24, zd - 0.006], [rr * 0.94, zd + lift - 0.006], [rr * 0.94, zd + lift + 0.006], [rr * 0.24, zd + 0.006], [rr * 0.24, zd - 0.006],
+        ], 36), matrix: I });
+      }
+      items.push({ geometry: new THREE.CylinderGeometry(rr * hubR, rr * (hubR + 0.03), 0.03, 20),
         matrix: new THREE.Matrix4().makeRotationX(Math.PI / 2).setPosition(0, 0, zHub + 0.008) });
       const g = weldGeometries(items);
       for (const it of items) it.geometry.dispose();
@@ -6296,7 +6377,7 @@ Vehicle.prototype.validateGeometry = function () {
 
   /* ---- vehicle --------------------------------------------------------- */
   let car = null, type = 'super_gt', seed = 12345, explode = 0, explodeTarget = 0;
-  let paintName = 'Liquid silver', finishName = 'metallic';
+  let paintName = 'Liquid silver', finishName = 'metallic', rimName = '';
   let dentMode = true, spinning = false, tyreCursor = 0, clay = false, stage = 8, zebra = false, xray = false;
 
   function buildExplodeGuides(v) {
@@ -6330,7 +6411,7 @@ Vehicle.prototype.validateGeometry = function () {
       });
     }
     type = t; seed = sd >>> 0;
-    car = buildVehicle({ type, seed, paint: paintName, finish: finishName });
+    car = buildVehicle({ type, seed, paint: paintName, finish: finishName, rim: rimName });
     car._val = null;
     buildExplodeGuides(car);
     car.qc = qualityGate(car);
@@ -6854,6 +6935,25 @@ Vehicle.prototype.validateGeometry = function () {
     car.spec.finish = finishName;
     repaint();
   });
+  /* The rims: every design in the catalogue, on any car. The wheels are built
+     with the car, so a new design rebuilds it with the same seed and paint. */
+  {
+    const famLabel = { super_gt: 'GT', sedan: 'Sedan', suv: 'SUV', city: 'Stadsauto' };
+    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Velgen: eigen keuze van de auto';
+    $('rims').appendChild(o0);
+    for (const fam of Object.keys(famLabel)) {
+      const grp = document.createElement('optgroup'); grp.label = famLabel[fam];
+      for (const k of Object.keys(RIMS)) if (RIMS[k].fam === fam) {
+        const o = document.createElement('option'); o.value = k; o.textContent = RIMS[k].label + ' (' + famLabel[fam] + ')';
+        grp.appendChild(o);
+      }
+      $('rims').appendChild(grp);
+    }
+    $('rims').addEventListener('change', () => {
+      rimName = $('rims').value;
+      spawnDeferred(type, seed, 'Velgen worden gemonteerd…');
+    });
+  }
   $('family').addEventListener('change', () => {
     spawnDeferred($('family').value, seed, 'Familie ' + $('family').options[$('family').selectedIndex].text + ' wordt opgebouwd…');
   });
@@ -7032,6 +7132,7 @@ Vehicle.prototype.validateGeometry = function () {
     window.__vgRenderer = renderer;
     window.__vgCamera = () => camera;
     window.__setCam = (az, el, sc) => { cam.az = az; cam.el = el; frameCar(sc, 0.46); autoSpin = false; };
+    window.__spec = () => car && car.spec;   // for the test harness: where the wheels are
     window.__aim = (az, el, dist, tx, ty, tz) => { cam.az = az; cam.el = el; cam.dist = dist; cam.target.set(tx, ty, tz); autoSpin = false; idleSince = performance.now(); camFit = null; };
     window.__vgBuildOnly = (i) => buildVehicle({ type, seed: (seed + i) >>> 0 });
   } catch (err) {

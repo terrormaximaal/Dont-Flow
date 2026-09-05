@@ -578,6 +578,27 @@ geen wielen ziet, en het stuur moet bij elke auto links.
   rooktest die op de dock klikt landt nog op dezelfde plek: 21/21 na deuken
   en na repareren, geen JS-fouten. De 3D-scène is ongewijzigd.
 
+### Velgenbibliotheek en leesbare menu's (5 sep)
+
+- De keuzemenu's waren slecht leesbaar: het veld was halfdoorzichtig en op
+  een donker systeemthema tekende het platform de lijst in zijn eigen
+  schema, grijs op grijs. Nu een dekkend wit veld met expliciete kleuren
+  voor de opties (`select.c`, `option`, `optgroup`, `color-scheme: light`).
+- Vijftien velgontwerpen in een catalogus (`RIMS`), per familie een paar:
+  GT dubbelspaaks, vijfspaaks, blade, Y-spaak, kruisspaak; sedan tienspaaks,
+  turbine, aeroschijf, zeven dubbel; SUV zesspaaks, ster, twaalfspaaks;
+  stadsauto vierspaaks, bloemblad, stalen velg. Elk ontwerp is in de eigen
+  maten van de velg getekend (spaakbreedte in velgstralen, diepte in
+  bandbreedtes), dus hetzelfde ontwerp past op elke auto: de DNA geeft de
+  velgstraal en de bandbreedte, het ontwerp het patroon. De vier waarmee de
+  GT begon houden hun oorspronkelijke maten in meters, zodat het
+  referentiewiel van de GT niet verandert (0 pixels verschil).
+- Een menu "Velgen" in de rij Auto: standaard de eigen keuze van de auto
+  (de eerste van haar lijst, of wat het zaad kiest), of elk ontwerp uit de
+  catalogus op elke auto. De keuze overleeft een nieuwe variant en een
+  andere familie. De zaadkeuze trekt nog steeds uit de RNG, dus de
+  zaadlijst blijft staan.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
