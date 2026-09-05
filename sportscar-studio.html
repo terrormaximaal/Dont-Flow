@@ -215,7 +215,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '5 sep 2026 \u00b7 lamellengrille, eenvoudige lampen';
+const VG_BUILD = '5 sep 2026 \u00b7 sedan op een sportievere stand';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1409,12 +1409,23 @@ const ARCHETYPES = {
     // the reference mesh itself, cut into its panels (see tools/reference/cut_sedan.py).
     // Its mirrors are its own; the handles are pressed into the door skins.
     mesh: { lib: 'sedan', skin: true, lamps: true, grille: true, mirrors: true },
-    L: [4.800, 4.860],
-    hRatio: [0.3115, 0.3140], wRatio: [0.3935, 0.3970],
-    wbRatio: [0.5970, 0.6010], frontOhShare: [0.434, 0.444], trackRatio: [0.745, 0.760],
-    diaRatio: [0.1345, 0.1370], tireW: [0.255, 0.270], rearTireExtra: [0.0, 0.0], aspect: [0.37, 0.41],
+    /* Given a sportier stance on request. The mesh is the same mesh: what
+       changed is the box it is scaled into and how the car stands on its
+       wheels. It is stretched about 3% in length while the height stays where
+       it was in metres, so the car is longer and lower without the wheel
+       arches - which scale with the height, being cut into the skin - coming
+       down onto the wheels. The tyre keeps roughly its diameter and gives up
+       sidewall for rim, which costs nothing in the arch and is most of what
+       reads as sporting. The rest is stance: the wheel faces move out from
+       where the reference had them (0.895 of the half width) to nearly flush,
+       the ride height comes down, and the rear tyre is a little wider than the
+       front. */
+    L: [4.940, 5.000],
+    hRatio: [0.2955, 0.2980], wRatio: [0.3935, 0.3970],
+    wbRatio: [0.5970, 0.6010], frontOhShare: [0.434, 0.444], trackRatio: [0.805, 0.820],
+    diaRatio: [0.1390, 0.1415], tireW: [0.262, 0.278], rearTireExtra: [0.014, 0.022], aspect: [0.29, 0.32],
     seatSet: 0.262,
-    clearance: [0.140, 0.155],
+    clearance: [0.128, 0.142],
     sCowl: [0.330, 0.340], sRoofF: [0.460, 0.470], sRoofPeak: [0.525, 0.535],
     sRoofR: [0.685, 0.695], sDeck: [0.775, 0.785],
     hNose: [0.495, 0.505], hCowl: [0.685, 0.695], hRoof: [0.997, 1.000],
@@ -1428,8 +1439,9 @@ const ARCHETYPES = {
     noseDepth: [0.50, 0.56], tailDepth: [0.34, 0.40], frontRakeBack: [0.12, 0.15], tailRakeIn: [0.04, 0.06],
     doorLen: [0.98, 1.04], rearDoorLen: [0.80, 0.88],
     wheelStyles: ['multi', 'turbine', 'dish', 'twin7'],
-    // the tyre faces where the reference's own wheels had them: 85.3 of a 95.3 half width
-    mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.895,
+    // the reference had its tyre faces at 85.3 of a 95.3 half width, which left
+    // the wheels standing 105 mm inside the flank; nearly flush is 58 mm
+    mirror: 'stalk', sideVent: 0.0, wingChance: 0.0, faceEdge: 'corner', faceFrac: 0.945,
     dloRear: 0.800, mirrorF: 0.350, tumbleRef: 0.300,
     design: {
       bodyCharacter: 'sedan', headlightStyle: 'swept', taillightStyle: 'lightbar',

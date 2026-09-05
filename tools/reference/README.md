@@ -146,3 +146,14 @@ in met de eigen omtrek van de lamp en verder niets: schaal de omtrek in het
 vlak van het lampvlak, en pers het vlak eerst naar zijn hoogste punt voordat je
 het optilt - anders zakt de lens in het dekglas, want een bolling is hoger naar
 het midden toe.
+
+## De stand van een auto met een gesneden huid
+
+De wielkasten zitten in de huid en schalen dus mee met de hoogte. Het dak
+omlaag brengen brengt de wielkast even hard omlaag, en dan moeten de wielen
+kleiner - het tegenovergestelde van wat je meestal wilt. Wil je een auto lager
+laten lijken, rek hem dan in de lengte en laat de hoogte in meters staan.
+Wat vrij is: de verhouding velg/flank bij gelijke banddiameter, de wielvlakken
+(`faceFrac`) en de rijhoogte. Let op dat `archGap` een parameter is en geen
+meting: de kwaliteitspoort ziet niet of een band door de wielkast van de mesh
+steekt, dus render de wielkast van dichtbij voordat je een grotere band kiest.

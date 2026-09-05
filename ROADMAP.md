@@ -759,6 +759,37 @@ maken heeft, en op de ronde sedanlamp kwam het als een schuine bothvorm uit.
 
 Gemeten: QC 21/21, GT 0 pixels verschil, zaadlijst identiek, geen JS-fouten.
 
+### De sedan op een sportievere stand (5 sep)
+
+Op verzoek opgepept. De mesh is dezelfde mesh: wat verandert is de doos waarin
+hij geschaald wordt en hoe de auto op zijn wielen staat.
+
+Wat je bij een gesneden referentie NIET kunt doen, en waarom: de wielkasten
+zitten in de huid, dus ze schalen mee met de hoogte. Het dak omlaag brengen
+brengt de wielkast even hard omlaag, en dan moeten de wielen kleiner - precies
+het tegenovergestelde van sportief. De speling wielkast-band is bovendien geen
+meting maar een parameter (`archGap`), dus de kwaliteitspoort waarschuwt hier
+niet: dit moet je zien.
+
+Wat wel kan:
+- **Langer bij gelijke hoogte.** De auto is ~3% gerekt (4,80-4,86 m wordt
+  4,94-5,00 m) terwijl de hoogte in meters blijft waar hij stond. H/L gaat van
+  0,312 naar 0,296: langer en lager, zonder dat de wielkasten zakken.
+- **Velg in plaats van flank.** De band houdt ongeveer zijn diameter en levert
+  flank in voor velg: aspect 0,37-0,41 wordt 0,29-0,32, de velg groeit van
+  0,45 naar 0,53 m. Dat kost niets in de wielkast en is het grootste deel van
+  wat als sportief leest.
+- **Stand.** De wielvlakken gaan van waar de referentie ze had (`faceFrac`
+  0,895, wielen 105 mm binnen de flank) naar bijna vlak (0,945, 58 mm), de
+  rijhoogte zakt van 0,152 naar 0,134 m, en de achterband is iets breder dan
+  de voorste.
+- De banddiameter mag daardoor toch omhoog, van 0,658 naar 0,699 m, want de
+  wielkast bleef staan waar hij stond.
+
+Gemeten: L 5,00 · H 1,48 · B 1,98 · wielbasis 3,00 · spoor 1,58 · velg 0,53;
+sedan 40 zaden allemaal foutloos, QC 21/21, GT 0 pixels verschil, zaadlijst
+identiek, geen JS-fouten.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
