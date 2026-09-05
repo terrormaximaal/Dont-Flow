@@ -706,6 +706,34 @@ raakt elke auto, dus de GT verschilt van de oude basislijn in lakglans -
 de vorm is pixel voor pixel dezelfde silhouet, alleen de spiegeling is
 scherper.
 
+### Een geweven U-grille voor de supercar (5 sep)
+
+De referentie levert de grille van de supercar als één kaal, gebogen paneel:
+een donkere vlek in de neus zonder patroon.
+
+- `faceMap` legt een vlak in eigen coordinaten: langs de hoofdas van het
+  paneel en dwars daarop, met per cel van een grof raster de gemiddelde
+  POSITIE en NORMAAL van het vlak daar, en lege cellen bijgevuld vanuit hun
+  buren. Een patroon wordt in die coordinaten getekend en teruggezet op het
+  oppervlak, zodat het de welving volgt in plaats van er dwars doorheen te
+  gaan. Twee dingen die eerst misgingen en waarom:
+  - een celmasker over een gebogen, getrianguleerd paneel zit vol gaten en
+    liet de helft van de U's vallen. Het masker is nu een profiel: hoe hoog
+    en hoe laag het vlak reikt op elke stand langs de opening.
+  - de grille loopt om de neus heen, dus gelijke stappen in de rechte
+    coordinaat worden steeds kortere stappen over het oppervlak, en de U's
+    kwamen aan beide uiteinden geplet uit. De kolommen worden nu op booglengte
+    gezet, gemeten door het midden van de opening te belopen.
+- `grilleWeave` tekent daar rijen U's in: elke U is één pad - omlaag, rond,
+  omhoog - dat tot een vierkante staaf wordt uitgesleept die van het paneel
+  af staat. De rijen volgen de opening, dus waar de grille smaller wordt,
+  worden de U's mee kleiner in plaats van door de rand heen te lopen.
+- Het archetype vraagt erom met `grillePattern: 'u'`; de andere families
+  hebben een eigen grille uit hun referentie en veranderen niet.
+
+Gemeten: supercar 315 390 driehoeken waarvan 7 696 in de grille, QC 21/21,
+GT 0 pixels verschil, zaadlijst identiek.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.

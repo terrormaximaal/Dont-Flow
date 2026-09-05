@@ -122,3 +122,15 @@ schuin over het spatbord ligt, wijzen de bakassen de verkeerde kant op.
 Wie een nieuwe referentie snijdt, hoeft dus alleen het dekglas als één
 groep met de tag `lens` (of `tailred`) af te leveren; de reflector en de
 lichtbalk komen uit de vorm van die groep.
+
+## Een patroon over een gesneden paneel
+
+`faceMap` in `stage_meshLighting` zet een gesneden paneel om in coordinaten
+langs en dwars op zijn hoofdas, met de positie en de normaal van het vlak per
+rastercel. Wie een patroon over een referentie-onderdeel wil leggen - een
+grille, een ventilatierooster - tekent het in die coordinaten en laat de map
+het terugzetten. Twee dingen om te weten: het masker van de opening is een
+hoogteprofiel per kolom, niet een celmasker (een celmasker over een gebogen
+paneel zit vol gaten), en kolommen worden op booglengte gezet, want bij een
+paneel dat om de neus loopt zijn gelijke stappen in de rechte coordinaat
+ongelijke stappen over het oppervlak.

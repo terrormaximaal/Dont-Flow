@@ -215,7 +215,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '5 sep 2026 \u00b7 koplampen met binnenwerk, spiegelende metallic, middenmotor';
+const VG_BUILD = '5 sep 2026 \u00b7 supercar met geweven U-grille';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1319,7 +1319,7 @@ const ARCHETYPES = {
   supercar: {
     label: 'Aurelia R', doors: 2, layout: 'middenmotor V12 · achterwielaandrijving',
     engineBay: 'mid',
-    mesh: { lib: 'supercar', skin: true, lamps: true, grille: true, mirrors: true, diffuser: true },
+    mesh: { lib: 'supercar', skin: true, lamps: true, grille: true, grillePattern: 'u', mirrors: true, diffuser: true },
     L: [4.580, 4.640],
     hRatio: [0.2660, 0.2690], wRatio: [0.4300, 0.4330],
     wbRatio: [0.6130, 0.6170], frontOhShare: [0.489, 0.499], trackRatio: [0.830, 0.860],
@@ -2696,6 +2696,10 @@ function makeMaterials(s) {
      in front of it. */
   M.dish = std({ color: 0x0e0f11, metalness: 0.05, roughness: 0.95, envMapIntensity: 0.30, side: THREE.DoubleSide });
   M.vane = std({ color: 0x2e3238, metalness: 0.0, roughness: 1.0, envMapIntensity: 0.08, side: THREE.DoubleSide });
+  /* The bars of a woven grille. Metal with a little sheen, so the weave catches
+     an edge highlight against the near-black cavity behind it: a matte bar on a
+     matte panel is a pattern you can only see in the wireframe. */
+  M.grilleBar = std({ color: 0x4b525a, metalness: 0.85, roughness: 0.38, envMapIntensity: 0.55, side: THREE.DoubleSide });
   /* The diffuser strakes are the same graphite, mixed against a darker
      backdrop: the dish behind them reads 96 of 255 where the grille's cavity
      reads 114, so the same recipe left them 17 apart and they disappeared into
@@ -4502,6 +4506,236 @@ function stage_meshLighting(ctx) {
     g.computeVertexNormals(); g.computeBoundingBox(); g.computeBoundingSphere();
     return new THREE.Mesh(g, mat);
   };
+  /* A grille pattern woven over the reference's own grille panel. The panel is
+     one curved band that wraps around the nose, so a single flat plane will not
+     do as a canvas: the face is mapped into (langs, dwars) coordinates, each
+     cell of a coarse grid keeps the average POSITION and NORMAL of the face
+     there, and empty cells are filled from their neighbours. A pattern is then
+     drawn in those coordinates and put back onto the surface, so it follows the
+     wrap instead of cutting through it. */
+  const faceMap = (geo, NU, NV) => {
+    geo.computeBoundingBox();
+    const c = geo.boundingBox.getCenter(new THREE.Vector3());
+    const pa = geo.attributes.position, na = geo.attributes.normal;
+    if (!na) return null;
+    const n = new THREE.Vector3();
+    for (let i = 0; i < na.count; i++) n.set(n.x + na.getX(i), n.y + na.getY(i), n.z + na.getZ(i));
+    if (n.lengthSq() < 1e-9) return null;
+    n.normalize();
+    let e1 = new THREE.Vector3(0, 1, 0);
+    if (Math.abs(n.y) > 0.9) e1.set(1, 0, 0);
+    e1.addScaledVector(n, -e1.dot(n)).normalize();
+    const e2 = new THREE.Vector3().crossVectors(n, e1).normalize();
+    const t = new THREE.Vector3();
+    let cuu = 0, cvv = 0, cuw = 0;
+    for (let i = 0; i < pa.count; i++) {
+      t.set(pa.getX(i) - c.x, pa.getY(i) - c.y, pa.getZ(i) - c.z);
+      const u = t.dot(e1), w = t.dot(e2);
+      cuu += u * u; cvv += w * w; cuw += u * w;
+    }
+    const th = 0.5 * Math.atan2(2 * cuw, cuu - cvv);
+    const ax = e1.clone().multiplyScalar(Math.cos(th)).addScaledVector(e2, Math.sin(th)).normalize();
+    const cr = new THREE.Vector3().crossVectors(n, ax).normalize();
+    let uMin = Infinity, uMax = -Infinity, vMin = Infinity, vMax = -Infinity;
+    const uu = new Float32Array(pa.count), vv = new Float32Array(pa.count);
+    for (let i = 0; i < pa.count; i++) {
+      t.set(pa.getX(i) - c.x, pa.getY(i) - c.y, pa.getZ(i) - c.z);
+      uu[i] = t.dot(ax); vv[i] = t.dot(cr);
+      if (uu[i] < uMin) uMin = uu[i];
+      if (uu[i] > uMax) uMax = uu[i];
+      if (vv[i] < vMin) vMin = vv[i];
+      if (vv[i] > vMax) vMax = vv[i];
+    }
+    const K = NU * NV, px = new Float64Array(K * 3), nx = new Float64Array(K * 3);
+    const cnt = new Int32Array(K), seen = new Uint8Array(K);
+    const cell = (u, v) => {
+      const a = Math.min(NU - 1, Math.max(0, Math.floor((u - uMin) / Math.max(1e-6, uMax - uMin) * NU)));
+      const b = Math.min(NV - 1, Math.max(0, Math.floor((v - vMin) / Math.max(1e-6, vMax - vMin) * NV)));
+      return b * NU + a;
+    };
+    for (let i = 0; i < pa.count; i++) {
+      const k = cell(uu[i], vv[i]);
+      px[k * 3] += pa.getX(i); px[k * 3 + 1] += pa.getY(i); px[k * 3 + 2] += pa.getZ(i);
+      nx[k * 3] += na.getX(i); nx[k * 3 + 1] += na.getY(i); nx[k * 3 + 2] += na.getZ(i);
+      cnt[k]++;
+    }
+    for (let k = 0; k < K; k++) if (cnt[k]) {
+      seen[k] = 1;
+      for (let j = 0; j < 3; j++) { px[k * 3 + j] /= cnt[k]; nx[k * 3 + j] /= cnt[k]; }
+    }
+    // empty cells take the average of their filled neighbours, a ring at a time
+    const have = seen.slice();
+    for (let pass = 0; pass < 12; pass++) {
+      const add = [];
+      for (let b = 0; b < NV; b++) for (let a = 0; a < NU; a++) {
+        const k = b * NU + a;
+        if (have[k]) continue;
+        const acc = [0, 0, 0, 0, 0, 0];
+        let m = 0;
+        for (const [da, db] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+          const a2 = a + da, b2 = b + db;
+          if (a2 < 0 || a2 >= NU || b2 < 0 || b2 >= NV) continue;
+          const k2 = b2 * NU + a2;
+          if (!have[k2]) continue;
+          for (let j = 0; j < 3; j++) { acc[j] += px[k2 * 3 + j]; acc[j + 3] += nx[k2 * 3 + j]; }
+          m++;
+        }
+        if (m) add.push([k, acc, m]);
+      }
+      if (!add.length) break;
+      for (const [k, acc, m] of add) {
+        for (let j = 0; j < 3; j++) { px[k * 3 + j] = acc[j] / m; nx[k * 3 + j] = acc[j + 3] / m; }
+        have[k] = 1;
+      }
+    }
+    const at = (u, v, outP, outN) => {
+      const fa = (u - uMin) / Math.max(1e-6, uMax - uMin) * NU - 0.5;
+      const fb = (v - vMin) / Math.max(1e-6, vMax - vMin) * NV - 0.5;
+      const a0 = Math.min(NU - 1, Math.max(0, Math.floor(fa))), b0 = Math.min(NV - 1, Math.max(0, Math.floor(fb)));
+      const a1 = Math.min(NU - 1, a0 + 1), b1 = Math.min(NV - 1, b0 + 1);
+      const wa = Math.min(1, Math.max(0, fa - a0)), wb = Math.min(1, Math.max(0, fb - b0));
+      outP.set(0, 0, 0); outN.set(0, 0, 0);
+      for (const [a, b, w] of [[a0, b0, (1 - wa) * (1 - wb)], [a1, b0, wa * (1 - wb)],
+                               [a0, b1, (1 - wa) * wb], [a1, b1, wa * wb]]) {
+        const k = b * NU + a;
+        outP.set(outP.x + px[k * 3] * w, outP.y + px[k * 3 + 1] * w, outP.z + px[k * 3 + 2] * w);
+        outN.set(outN.x + nx[k * 3] * w, outN.y + nx[k * 3 + 1] * w, outN.z + nx[k * 3 + 2] * w);
+      }
+      outN.normalize();
+    };
+    /* Where the face actually IS, column by column. A cell mask over a curved,
+       triangulated band has holes in it - the first weave dropped half its U's
+       into them - so the opening is described instead by how high and how low
+       the face reaches at each station along it, smoothed and then read back
+       with interpolation. */
+    const lo = new Float64Array(NU).fill(Infinity), hi = new Float64Array(NU).fill(-Infinity);
+    for (let i = 0; i < pa.count; i++) {
+      const a = Math.min(NU - 1, Math.max(0, Math.floor((uu[i] - uMin) / Math.max(1e-6, uMax - uMin) * NU)));
+      if (vv[i] < lo[a]) lo[a] = vv[i];
+      if (vv[i] > hi[a]) hi[a] = vv[i];
+    }
+    for (let a = 0; a < NU; a++) if (!isFinite(lo[a])) { lo[a] = 1; hi[a] = -1; }
+    const band = (arr, sgn) => {
+      const q = arr.slice();
+      for (let a = 0; a < NU; a++) {
+        if (q[a] * sgn === -Infinity) continue;
+        let m = q[a], k = 0;
+        for (const d of [-1, 1]) { const b = a + d; if (b >= 0 && b < NU && hi[b] >= lo[b]) { m += q[b]; k++; } }
+        arr[a] = m / (1 + k);
+      }
+    };
+    band(lo, 1); band(hi, -1);
+    const bandAt = (u) => {
+      const f = (u - uMin) / Math.max(1e-6, uMax - uMin) * NU - 0.5;
+      const a0 = Math.min(NU - 1, Math.max(0, Math.floor(f))), a1 = Math.min(NU - 1, a0 + 1);
+      if (hi[a0] < lo[a0] || hi[a1] < lo[a1]) return null;
+      const w = Math.min(1, Math.max(0, f - a0));
+      return [lo[a0] * (1 - w) + lo[a1] * w, hi[a0] * (1 - w) + hi[a1] * w];
+    };
+    const inside = (u, v) => { const b = bandAt(u); return !!b && v >= b[0] && v <= b[1]; };
+    /* How far it is ALONG the face, not across the chord. u is a straight
+       coordinate, and this grille wraps around the nose, so equal steps in u
+       are shorter and shorter steps over the surface: the first weave came out
+       with squashed U's at both ends. This walks the middle of the band and
+       keeps the running distance, so the pattern can be spaced in metres. */
+    const SN = 64, sPos = [], sArc = new Float64Array(SN + 1);
+    const tp = new THREE.Vector3(), tn = new THREE.Vector3();
+    for (let i = 0; i <= SN; i++) {
+      const u = uMin + (uMax - uMin) * i / SN, b = bandAt(u);
+      at(u, b ? (b[0] + b[1]) / 2 : (vMin + vMax) / 2, tp, tn);
+      sPos.push(tp.clone());
+      sArc[i] = i ? sArc[i - 1] + tp.distanceTo(sPos[i - 1]) : 0;
+    }
+    const total = sArc[SN];
+    const uAt = (s) => {
+      if (s <= 0) return uMin;
+      if (s >= total) return uMax;
+      let i = 1;
+      while (i < SN && sArc[i] < s) i++;
+      const w = (s - sArc[i - 1]) / Math.max(1e-9, sArc[i] - sArc[i - 1]);
+      return uMin + (uMax - uMin) * (i - 1 + w) / SN;
+    };
+    // metres of surface per unit of u, near u
+    const scaleAt = (u) => {
+      const d = (uMax - uMin) / SN;
+      const a = Math.max(uMin, u - d), b = Math.min(uMax, u + d);
+      const ba = bandAt(a), bb = bandAt(b);
+      at(a, ba ? (ba[0] + ba[1]) / 2 : 0, tp, tn);
+      const p0 = tp.clone();
+      at(b, bb ? (bb[0] + bb[1]) / 2 : 0, tp, tn);
+      return p0.distanceTo(tp) / Math.max(1e-6, b - a);
+    };
+    return { uMin, uMax, vMin, vMax, at, inside, bandAt, uAt, scaleAt, total, ax, cr, n };
+  };
+  /* Rows of U's over that map. A U is drawn as one path - down, round, up - and
+     swept into a square bar that stands off the panel, so it reads as a woven
+     grille rather than as a printed pattern. */
+  const grilleWeave = (geo, rows, rad, dep, out) => {
+    const F = faceMap(geo, 26, 9);
+    if (!F || F.total < 0.05) return null;
+    // one column per cell as tall as the opening, measured over the surface
+    const midB = F.bandAt((F.uMin + F.uMax) / 2);
+    const ch0 = midB ? (midB[1] - midB[0]) / rows : (F.vMax - F.vMin) / rows;
+    const cols = Math.max(2, Math.round(F.total / Math.max(1e-4, ch0)));
+    const step = F.total / cols;
+    const vtx = [];
+    const P = new THREE.Vector3(), N = new THREE.Vector3(), S = new THREE.Vector3(), T = new THREE.Vector3();
+    const ring = [], push = (a, b, c2) => vtx.push(a.x, a.y, a.z, b.x, b.y, b.z, c2.x, c2.y, c2.z);
+    const quad = (a, b, c2, d2) => { push(a, b, c2); push(a, c2, d2); };
+    for (let c2 = 0; c2 < cols; c2++) {
+      const u0 = F.uAt((c2 + 0.5) * step), b0 = F.bandAt(u0);
+      if (!b0) continue;
+      // a margin along the rim, so no U grows into the edge of the opening
+      const pad = (b0[1] - b0[0]) * 0.08, b = [b0[0] + pad, b0[1] - pad];
+      // the rows follow the opening, so a grille that tapers keeps its pattern
+      const ch = (b[1] - b[0]) / rows;
+      const wu = Math.min(step * 0.30 / Math.max(1e-6, F.scaleAt(u0)), (F.uMax - F.uMin) / 3);
+      for (let r = 0; r < rows; r++) {
+        const v0 = b[0] + (r + 0.5) * ch, hh = ch * 0.30, yTop = v0 + hh;
+        const yArc = Math.min(yTop - 1e-4, v0 - hh + wu);
+        const path = [];
+        for (let i = 0; i <= 3; i++) path.push([u0 - wu, yTop + (yArc - yTop) * i / 3]);
+        for (let i = 1; i <= 8; i++) {
+          const a = Math.PI + Math.PI * i / 8;
+          path.push([u0 + wu * Math.cos(a), yArc + wu * Math.sin(a)]);
+        }
+        for (let i = 1; i <= 3; i++) path.push([u0 + wu, yArc + (yTop - yArc) * i / 3]);
+        let ok = true;
+        for (const [u, v] of path) if (!F.inside(u, v)) { ok = false; break; }
+        if (!ok) continue;
+        ring.length = 0;
+        for (let i = 0; i < path.length; i++) {
+          const a = path[Math.max(0, i - 1)], b2 = path[Math.min(path.length - 1, i + 1)];
+          let du = b2[0] - a[0], dv = b2[1] - a[1];
+          const m = Math.hypot(du, dv) || 1;
+          du /= m; dv /= m;
+          F.at(path[i][0], path[i][1], P, N);
+          S.copy(F.ax).multiplyScalar(dv).addScaledVector(F.cr, -du);
+          S.addScaledVector(N, -S.dot(N));
+          if (S.lengthSq() < 1e-9) continue;
+          S.normalize();
+          T.copy(P).addScaledVector(N, out);
+          ring.push([T.clone().addScaledVector(S, rad), T.clone().addScaledVector(S, -rad),
+                     T.clone().addScaledVector(S, -rad).addScaledVector(N, dep),
+                     T.clone().addScaledVector(S, rad).addScaledVector(N, dep)]);
+        }
+        for (let i = 0; i + 1 < ring.length; i++) {
+          const A = ring[i], B = ring[i + 1];
+          for (let j = 0; j < 4; j++) quad(A[j], B[j], B[(j + 1) % 4], A[(j + 1) % 4]);
+        }
+        if (ring.length) {
+          const A = ring[0], B = ring[ring.length - 1];
+          quad(A[3], A[2], A[1], A[0]);
+          quad(B[0], B[1], B[2], B[3]);
+        }
+      }
+    }
+    if (!vtx.length) return null;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(vtx, 3));
+    g.computeVertexNormals(); g.computeBoundingBox(); g.computeBoundingSphere();
+    return g;
+  };
   const unit = (id, label, name, sd, host, kind) => {
     const rec = MESH_LIB[lib].parts[name];
     if (!rec) return null;                   // this reference has no such part
@@ -4534,6 +4768,17 @@ function stage_meshLighting(ctx) {
     addMeshPart(p, subs, M, sd);
     // a centre part cut from the skin is stored as its left half, like a panel
     if (sd > 0 && rec.half && /^(grille|diffuser)$/.test(name)) addMeshPart(p, meshLibPart(lib, name, MS), M, -1);
+    // and the woven pattern over it, for a reference whose grille is a bare panel
+    if (name === 'grille' && d.mesh.grillePattern === 'u') {
+      for (const q of subs) {
+        const g = grilleWeave(q.geometry, 3, 0.0055, 0.011, 0.003);
+        if (!g) continue;
+        for (const s2 of [1, -1]) {
+          const m = new THREE.Mesh(s2 < 0 ? mirrorGeometryZ(g) : g, M.grilleBar);
+          m.castShadow = false; p.add(m, false);
+        }
+      }
+    }
     v.addPart(p, host);
     return p;
   };
