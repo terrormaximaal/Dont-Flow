@@ -198,7 +198,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '4 sep 2026 \u00b7 sedan: de tweede mesh, in onderdelen';
+const VG_BUILD = '5 sep 2026 \u00b7 cabine: stoelen op maat, achterbank, hoedenplank, stuur links';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -3241,7 +3241,7 @@ function buildStructure(v, tub) {
    of a body surface; parts are independent Parts with pivots and damage.
    ========================================================================= */
 
-const SIDE = { l: 1, r: -1 };   // +z is the car's left-hand side
+const SIDE = { l: -1, r: 1 };   // x forward, y up, right-handed: +z is the car's RIGHT-hand side
 
 // Split a v-window of the (u,v) square into bands around holes. A hole's v
 // bounds may be functions of u, so an opening can have a designed outline
@@ -5416,36 +5416,81 @@ function stage_interior(ctx) {
   inte.add(new THREE.Mesh(box(0.36, 0.28, B.hw(dashX) * 1.66, dashX, dashY, 0), M.interior), false);
   inte.add(new THREE.Mesh(box(0.32, 0.05, B.hw(dashX) * 1.60, dashX - 0.03, dashY + 0.16, 0), M.interiorDark), false);
   inte.add(new THREE.Mesh(box(0.7, 0.24, 0.20, dashX - 0.45, dashY - 0.05, 0), M.interiorDark), false);   // centre console
-  const seatX = d.xCowl - d.seatSet, seatY = d.clearance + 0.12;
-  for (const q of [-1, 1]) {
-    const z = q * B.hw(seatX) * 0.40;
-    inte.add(new THREE.Mesh(box(0.52, 0.10, 0.44, seatX, seatY, z), M.interior), false);
-    for (const b of [-1, 1]) inte.add(new THREE.Mesh(box(0.40, 0.16, 0.06, seatX - 0.02, seatY + 0.05, z + b * 0.24), M.interior), false);
-    const back = box(0.12, 0.60, 0.46, seatX - 0.24, seatY + 0.33, z); back.rotateZ(0.20);
+  /* ---- the cabin: seats, bench, shelf, and the walls that close it ------
+     Measured against a real package rather than guessed: a seat cushion is
+     half a metre square, its top sits 0.25-0.32 m above the floor, the
+     backrest is two thirds of a metre with a head restraint on top. The old
+     seats were 44 cm wide on a cushion 6 cm off the floor, which is why they
+     looked like toys through the glass. And the cabin is closed: a floor, a
+     firewall, a rear bulkhead with a parcel shelf, and side walls over the
+     rear arches, so a look through a window meets trim and not a wheel. */
+  const floorY = d.clearance + 0.06;
+  const seatX = d.xCowl - d.seatSet;
+  const cush = clamp((B.belt(seatX) - floorY) * 0.36, 0.20, 0.32);     // floor to cushion top
+  const seatY = floorY + cush - 0.055;                                   // cushion centre
+  const tight = d.doors < 4;                                             // a coupe sits lower under its roof
+  const seat = (x, z, rake, backH, scale) => {
+    const w = 0.50 * scale, len = 0.50 * scale;
+    inte.add(new THREE.Mesh(box(len, 0.11, w, x, seatY, z), M.interior), false);
+    for (const q of [-1, 1]) inte.add(new THREE.Mesh(box(len * 0.8, 0.17, 0.07, x - 0.02, seatY + 0.05, z + q * (w / 2 - 0.035)), M.interior), false);
+    const back = box(0.13, backH, w, x - len / 2 + 0.02, seatY + backH / 2 + 0.03, z); back.rotateZ(rake);
     inte.add(new THREE.Mesh(back, M.interior), false);
-    for (const b of [-1, 1]) { const bol = box(0.09, 0.44, 0.06, seatX - 0.20, seatY + 0.30, z + b * 0.25); bol.rotateZ(0.20); inte.add(new THREE.Mesh(bol, M.interior), false); }
-    inte.add(new THREE.Mesh(box(0.10, 0.14, 0.20, seatX - 0.36, seatY + 0.66, z), M.interior), false);
-  }
+    for (const q of [-1, 1]) { const bol = box(0.10, backH * 0.72, 0.07, x - len / 2 + 0.06, seatY + backH * 0.42, z + q * (w / 2 - 0.035)); bol.rotateZ(rake); inte.add(new THREE.Mesh(bol, M.interior), false); }
+    const hx = x - len / 2 + 0.02 - Math.sin(rake) * (backH + 0.10), hy = seatY + 0.03 + Math.cos(rake) * (backH + 0.10);
+    inte.add(new THREE.Mesh(box(0.11, 0.14, 0.24, hx, hy, z), M.interior), false);           // head restraint
+    inte.add(new THREE.Mesh(box(0.03, 0.08, 0.14, hx + 0.03, hy - 0.10, z), M.interiorDark), false);
+  };
+  for (const q of [-1, 1]) seat(seatX, q * B.hw(seatX) * 0.40, 0.22, tight ? 0.60 : 0.66, 1.0);
+  // the rear bench: full width, two shaped places on a four-door, a cushion
+  // and a backrest on a two-door, both up against the bulkhead
   const rearX = lerp(d.xCowl, d.xDeck, 0.74);
-  if (d.doors >= 4) {
-    /* A four-door seats four: two shaped rear seats on a shared cushion, more
-       upright than the front pair and set on the floor, the way a saloon's
-       rear bench is. A two-door keeps the flat bench it had. */
-    inte.add(new THREE.Mesh(box(0.50, 0.10, B.hw(rearX) * 1.5, rearX, seatY - 0.02, 0), M.interior), false);
-    for (const q of [-1, 1]) {
-      const z = q * B.hw(rearX) * 0.36;
-      inte.add(new THREE.Mesh(box(0.46, 0.06, 0.42, rearX + 0.02, seatY + 0.06, z), M.interior), false);
-      for (const b of [-1, 1]) inte.add(new THREE.Mesh(box(0.36, 0.12, 0.06, rearX, seatY + 0.11, z + b * 0.23), M.interior), false);
-      const back = box(0.12, 0.56, 0.44, rearX - 0.22, seatY + 0.34, z); back.rotateZ(0.14);
-      inte.add(new THREE.Mesh(back, M.interior), false);
-      for (const b of [-1, 1]) { const bol = box(0.09, 0.40, 0.06, rearX - 0.18, seatY + 0.31, z + b * 0.24); bol.rotateZ(0.14); inte.add(new THREE.Mesh(bol, M.interior), false); }
-      inte.add(new THREE.Mesh(box(0.10, 0.13, 0.20, rearX - 0.32, seatY + 0.66, z), M.interior), false);
-    }
-  } else {
-  inte.add(new THREE.Mesh(box(0.42, 0.10, B.hw(rearX) * 1.5, rearX, seatY - 0.02, 0), M.interior), false);
-  inte.add(new THREE.Mesh(box(0.10, 0.34, B.hw(rearX) * 1.5, rearX - 0.24, seatY + 0.16, 0), M.interior), false);
+  const rearHW = B.hw(rearX) * 0.84;
+  // the parcel shelf sits at the rear window's base: the mesh's own if the
+  // car has one, the parametric deck otherwise
+  let shelfX = d.xDeck - 0.02, shelfY = B.belt(d.xDeck) - 0.03;
+  if (d.mesh && d.mesh.skin && MESH_LIB[d.mesh.lib].skin['glass.rear']) {
+    const base = meshExtreme(meshSkinGeometry(d.mesh.lib, 'glass.rear', [d.L, d.H, d.W / 2]), 0, -1, 0);
+    shelfX = base.x + 0.01; shelfY = base.y - 0.025;
   }
-  const drvZ = B.hw(dashX) * 0.42;                       // left-hand drive
+  const bulkX = rearX - 0.36;
+  // above the belt the cabin draws in (tumblehome), so whatever stands that
+  // high - the backrest's top, the bulkhead, the shelf - is cut to the
+  // greenhouse's width there rather than the body's
+  const beltR = B.belt(rearX) - 0.02;
+  const topHW = shelfY > beltR ? Math.min(rearHW, B.cabinHW(rearX, shelfY) * 0.92) : rearHW;
+  const slab = (x, w, y0, y1, hw0, hw1, mat) => {          // a wall in two widths: body width to the belt, greenhouse width above
+    const ym = Math.min(y1, Math.max(y0, beltR));
+    if (ym > y0) inte.add(new THREE.Mesh(box(w, ym - y0, hw0 * 2, x, (y0 + ym) / 2, 0), mat), false);
+    if (y1 > ym) inte.add(new THREE.Mesh(box(w, y1 - ym, hw1 * 2, x, (ym + y1) / 2, 0), mat), false);
+  };
+  inte.add(new THREE.Mesh(box(0.54, 0.11, rearHW * 2, rearX + 0.02, seatY - 0.02, 0), M.interior), false);   // cushion
+  if (d.doors >= 4) {
+    for (const q of [-1, 1]) {
+      const z = q * rearHW * 0.46;
+      inte.add(new THREE.Mesh(box(0.46, 0.06, 0.46, rearX + 0.02, seatY + 0.06, z), M.interior), false);
+      const back = box(0.12, shelfY - seatY - 0.06, 0.48, rearX - 0.24, (shelfY + seatY) / 2, z); back.rotateZ(0.12);
+      inte.add(new THREE.Mesh(back, M.interior), false);
+      for (const bq of [-1, 1]) { const bol = box(0.09, (shelfY - seatY) * 0.7, 0.07, rearX - 0.20, seatY + (shelfY - seatY) * 0.42, z + bq * 0.205); bol.rotateZ(0.12); inte.add(new THREE.Mesh(bol, M.interior), false); }
+      inte.add(new THREE.Mesh(box(0.10, 0.13, 0.22, rearX - 0.30, shelfY + 0.02, z), M.interior), false);   // head restraint
+    }
+  }
+  slab(rearX - 0.26, 0.12, seatY + 0.03, shelfY - 0.03, rearHW, topHW, M.interior);                 // the backrest, full width
+  // the walls: floor, firewall, rear bulkhead, parcel shelf, rear side trims
+  const midX = (d.xCowl + bulkX) / 2, cabHW = B.hw(midX) * 0.84;
+  inte.add(new THREE.Mesh(box(d.xCowl - bulkX, 0.02, cabHW * 2, midX, floorY + 0.01, 0), M.interiorDark), false);
+  inte.add(new THREE.Mesh(box(0.03, dashY + 0.14 - floorY, B.hw(d.xCowl) * 1.66, d.xCowl + 0.01, (dashY + 0.14 + floorY) / 2, 0), M.interiorDark), false);
+  slab(bulkX, 0.03, floorY, shelfY, rearHW, topHW, M.interiorDark);                                 // the bulkhead
+  inte.add(new THREE.Mesh(box(shelfX - bulkX + 0.03, 0.03, topHW * 2, (shelfX + bulkX) / 2, shelfY, 0), M.interior), false);
+  for (const q of [-1, 1]) {
+    // over the rear arch, from the last door's rear edge to the bulkhead
+    const x0 = d.xDoorR - 0.01, x1 = bulkX;
+    const hw = B.hw((x0 + x1) / 2) * 0.80;
+    inte.add(new THREE.Mesh(box(x0 - x1, B.belt((x0 + x1) / 2) - 0.03 - floorY, 0.02, (x0 + x1) / 2, (B.belt((x0 + x1) / 2) - 0.03 + floorY) / 2, q * hw), M.interiorDark), false);
+  }
+  // Left-hand drive. The generator's +z is the car's right-hand side (x
+  // forward, y up, right-handed), so the driver sits on -z. The SIDE map's
+  // 'l' is that side too, so the part labels agree with the geometry.
+  const drvZ = SIDE.l * B.hw(dashX) * 0.42;
   inte.add(new THREE.Mesh(box(0.22, 0.16, 0.34, dashX - 0.10, dashY + 0.13, drvZ), M.interiorDark), false);   // binnacle
   inte.add(new THREE.Mesh(box(0.16, 0.02, 0.28, dashX - 0.16, dashY + 0.14, drvZ), M.accent), false);         // cluster face
   for (const px of [-0.02, 0.06]) {
@@ -5454,7 +5499,7 @@ function stage_interior(ctx) {
   v.addPart(inte);
   const swPart = mk('steering', 'Stuurwiel', { kind: 'fixed', stiffness: 2, stage: 6 });
   const col = new THREE.Group();
-  col.position.set(dashX - 0.17, dashY + 0.10, B.hw(dashX) * 0.42);
+  col.position.set(dashX - 0.17, dashY + 0.10, drvZ);
   col.rotation.z = -0.38;
   const swSpin = new THREE.Group();
   col.add(swSpin);

@@ -535,6 +535,36 @@ kofferklepsneden gingen niet goed.
   0,86 hw zigzagde over de flank, die boven de belt precies tot die breedte
   intrekt, en gaf de klep gekartelde zijkanten en de hoeken boven de lampen.
 
+### Cabine: stoelen op maat, achterbank en hoedenplank, stuur links (5 sep)
+
+Vragen van de opdrachtgever: zijn de stoelen van alle auto's te klein, krijg
+elk model een fatsoenlijke achterbank en hoedenplank zodat je door de ruiten
+geen wielen ziet, en het stuur moet bij elke auto links.
+
+- Te klein: ja. De stoel was een kussen van 44 cm breed op 6 cm boven de
+  vloer, met een rugleuning van 60 cm en geen hoofdsteun. Nu: kussen 50 × 50
+  cm, bovenkant 20–32 cm boven de vloer (36% van vloer-tot-belt, dus per
+  familie: GT laag, SUV hoog), rugleuning 66 cm (60 in de tweedeurs, onder
+  het lage dak), wangen, en een hoofdsteun op een steel. Gecontroleerd
+  tegen de daklijn: 54–116 mm eronder, per familie.
+- Elke auto heeft nu een gesloten cabine: vloer, schot bij de cowl, een
+  achterbank over de volle breedte (twee gevormde plaatsen met hoofdsteunen
+  in de vierdeurs, kussen en rugleuning in de tweedeurs), een schot achter
+  de bank, een hoedenplank tot aan de voet van de achterruit (bij een
+  mesh-auto de voet van haar eigen ruit, `meshExtreme` op glass.rear), en
+  zijwanden over de achterste wielkasten van de laatste deur tot het schot.
+  Boven de belt trekt de kabine in (tumblehome), dus wat zo hoog staat is op
+  de breedte van de kas gesneden (`B.cabinHW`), niet op die van de flank.
+  Alle hoeken van alle binnendelen liggen binnen de flank: 13–73 mm.
+- Stuur links. De generator werkt met x vooruit, y omhoog, rechtshandig: +z
+  is dan de RECHTERkant van de auto. Het commentaar bij `SIDE` zei het
+  omgekeerde en het stuur stond op +z, dus rechts. Nu staat de bestuurder op
+  `SIDE.l`, en `SIDE` is omgedraaid naar `{ l: -1, r: 1 }` zodat "Portier L"
+  ook werkelijk het linkerportier is. Alles wat per kant gebouwd wordt is
+  symmetrisch, dus dat verandert niets aan de vorm.
+- De GT verandert hiermee wél (zichtbaar door het glas): 0,7–1,7% van de
+  pixels per view. De GT-basislijn is daarom opnieuw gezet op deze build.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
