@@ -96,3 +96,18 @@ losse schillen: ze delen geen hoekpunten met de huid. Dat is genoeg.
 Gemeten aan deze mesh: L/H/HW 482,4 / 150,8 / 95,3 cm, wielbasis 0,599 L,
 vooroverhang 0,176 L, band 65,5 cm op een velg van 45 cm, bandvlak op
 0,895 van de halve breedte. Die getallen staan in het archetype.
+
+## De supercar: geen materialen, wel vouwen (5 sep)
+
+Een OBJ van 209 000 driehoeken met twee materialen die niets zeggen. De
+onderdelen komen uit de vouwen van de huid: `cut_super.py` deelt de huid
+bij een vouw van 12 graden in regio's, en voorruit, dak, zijruiten,
+achterruit, portieren, wielkasten, koplampkommen, grille, achterlichtband
+en spiegels komen dan als eigen regio's los; ze krijgen hun naam op hun
+ligging. Kap, schermen, kwartpanelen, motorkap achter, bumpers, dorpels
+worden met vlakken gesneden. De bodemplaat is wat omlaag kijkt.
+Het model is tien eenheden lang; de cut wordt in centimeters weggeschreven
+omdat de sliver-drempel van de packer in cm² is. Voor `smeas.py` geldt
+hetzelfde: lever de OBJ in centimeters aan (het bemonstert in hele eenheden).
+`python3 cut_super.py 18549_supercar_V1.obj super_cut.json` (ruim zes
+minuten) en `python3 pack_mesh.py sportscar-studio.html supercar super_cut.json`.

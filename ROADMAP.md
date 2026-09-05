@@ -599,6 +599,49 @@ geen wielen ziet, en het stuur moet bij elke auto links.
   andere familie. De zaadkeuze trekt nog steeds uit de RNG, dus de
   zaadlijst blijft staan.
 
+### Supercar: vijfde familie, de mesh langs haar eigen vouwen gesneden (5 sep)
+
+De opdrachtgever leverde een supercar-mesh (209 000 driehoeken, OBJ zonder
+materialen) en vroeg dezelfde behandeling als de sedan en de stadsauto. Hij
+staat er als vijfde familie naast de GT ("Aurelia R", middenmotor,
+tweezits); de GT zelf is onveranderd (0 pixels).
+
+```
+18549_supercar_V1.obj  ->  tools/reference/cut_super.py
+    schillen: één geverfde huid van 144 000 driehoeken, wielen als groepen
+      (vallen af), zes diffuserlamellen als losse schillen (deel 'diffuser')
+    de huid heeft geen materialen maar wél vouwen: bij 12 graden komen
+      voorruit, dak, zijruiten, achterruit, portierhuiden, wielkasten,
+      koplampkommen, grille, achterlichtband en spiegelhuizen los als eigen
+      regio's; die krijgen hun naam op hun ligging (station, hoogte, kant)
+    de rest met vlakken: neusvlak 0,035 L, bumpertop 0,45 H, bumper-achterrand
+      0,11 L, kap / scherm 0,66 hw, kap-achterrand langs de voet van de
+      voorruit, dorpel 0,30 H, deurstijlen 0,299 / 0,696 L (uit de
+      portierregio), motorkap achter ('tailgate', de achterruit zit erin)
+      0,755 L en 0,56 hw, achterbumper 0,93 L en 0,575 H
+    de bodemplaat is wat naar de weg kijkt (normaal omlaag), geen hoogte:
+      een vouw scheidt haar van dorpels en bumperlippen
+    het model is in meters-of-zo (tien eenheden lang); de cut gaat in
+      centimeters door, want de sliver-drempel van de packer is in cm²
+->  pack_mesh.py  (bibliotheek 'supercar', 891 kB binair; het bestand is nu 2,5 MB)
+->  studio: archetype 'supercar' (de GT-waarden waar het lichaam verborgen is,
+      de eigen maten voor wielen, stand en cabine: 4,58-4,64 m, H/L 0,267,
+      W/L 0,432, wielbasis 0,615 L, band 0,160 L, bandvlak 0,915 hw),
+      tabellen REFX_* uit smeas.py (belt opgegeven op 0,70 H; de spiegels
+      gladgestreken uit PLAN en CABIN), eigen kwaliteitspoort (cabine 40-44%
+      van de lengte, motorkap 29-32%, dek 6-18 cm, achterruithoek 18-26°,
+      dash-tot-as 16-22%, spoor 74-88%), velgen blade / Y / kruis / dubbel
+```
+
+Een coupé-rugleuning is nu op zijn hoofdruimte gesneden (hoofdsteun 10 cm
+onder de daklijn); de GT houdt zijn 60 cm.
+
+Gemeten: supercar QC 21/21 en geometrie ok op drie zaden; GT 0 pixels
+verschil; zaadlijst identiek. Nog open: de motor staat in de generator
+vooraan, ook bij deze middenmotor (de motorruimte is aan de kap gebouwd);
+de deurgrepen en wissers ontbreken (niet in de mesh); het bestand is door
+deze mesh 1,2 MB zwaarder.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
