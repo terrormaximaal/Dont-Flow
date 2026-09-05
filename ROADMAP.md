@@ -790,6 +790,60 @@ Gemeten: L 5,00 · H 1,48 · B 1,98 · wielbasis 3,00 · spoor 1,58 · velg 0,53
 sedan 40 zaden allemaal foutloos, QC 21/21, GT 0 pixels verschil, zaadlijst
 identiek, geen JS-fouten.
 
+### Lampen met diepte en glas, en een vierkantere sedangrille (5 sep)
+
+**De lampen.** Elk uit een huid gesneden dekglas wordt nu tot een echte lamp
+uitgebouwd: een put in de carrosserie, een schotel achterin, het lichtelement
+midden in de put, en glas over de opening. Alles komt uit het dekglas zelf, dus
+elke lamp houdt de vorm die de auto al heeft, en het element staat gecentreerd
+in het gat omdat het zwaartepunt van het VLAK gebruikt wordt en niet het midden
+van de bounding box - op een druppel schelen die twee centimeters.
+
+De stukken worden gemaakt door het dekglas naar dat midden te SCHALEN, niet
+door het langs zijn normalen te verschuiven. Dat is het hele punt: deze
+dekglazen zijn geen platte lapjes maar lopen om de hoek van de auto heen, 154
+mm welving op de stadsauto en 222 mm op de supercar. Zo'n vel langs zijn eigen
+normalen verschuiven vouwt het door zichzelf, en de schotel kwam als een blaar
+uit het spatbord die groter was dan de lamp erachter. Schalen naar een punt
+binnen de auto kan niet vouwen en leest in beeld als concentrisch, wat precies
+is hoe een lamp achter glas eruitziet.
+
+Twee soorten dekglas komen uit een snede en ze hebben verschillende wanden
+nodig:
+- Een open lap heeft een rand. Daar loopt de wand van die rand naar de schotel,
+  met helder glas erover. De rand wordt gevonden als de ribben die maar bij één
+  driehoek horen, na lassen op positie - een gesneden schil is niet gelast, en
+  anders telt elke naad als rand.
+- Een gesloten peul heeft geen rand om een wand aan te hangen; de lampen van de
+  stadsauto zijn peulen. Die krijgt een getint glas en het element brandt erin.
+  De binnenkant van zo'n peul donker schilderen werkt niet: een gesloten donkere
+  schil verbergt wat erin staat, welke kant je ook wegculled. Half wegsnijden
+  werkt ook niet - op het breedste punt staat het oppervlak op zijn kant en de
+  snede komt als een kam terug.
+
+Wat eerder faalde en niet herhaald moet worden: een helder dekglas plat op de
+carrosserie laat de carrosserie zien en las als lak; geschaalde kopieën die een
+paar millimeter boven het dekglas moesten staan verdwenen, want een bolle schil
+die naar zijn midden krimpt zakt eronder; en een lichtbalk gesneden langs de
+lange as van het dekglas verzint een grafiek die niets met de auto te maken
+heeft. De GT en de SUV bouwen hun lampen parametrisch en hadden al een
+behuizing met projectoren en glas; die zijn niet aangeraakt en verschillen 0
+pixels.
+
+**De sedangrille.** Vierkanter en lager, op verzoek. De snede levert de grille
+en de chroomlijst over de bumper als één deel, dus alleen de band boven
+`from` van de eigen hoogte wordt aangepakt. Daarbinnen wordt de omtrek naar een
+rechthoek geduwd - een punt op een cirkel schuift naar waar het vierkant
+eromheen zou liggen - en daarna in hoogte samengeknepen. De buitenste band
+blijft exact staan, want die past in het gat in de carrosserie: de hele grille
+samenknijpen liet de opening als een donkere spleet eronder zien. Alles
+daarbinnen beweegt wel, dus de opening wordt lager en vierkanter en het frame
+eromheen breder - dezelfde verandering, van binnenuit gemaakt. De breedte blijft
+ongemoeid; ook in de breedte opduwen liet de grille in de koplampen groeien.
+
+Gemeten: QC 21/21 op alle families, geen JS-fouten, GT 0 pixels verschil,
+zaadlijst identiek, sedan 40 zaden foutloos.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.

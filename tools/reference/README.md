@@ -157,3 +157,14 @@ Wat vrij is: de verhouding velg/flank bij gelijke banddiameter, de wielvlakken
 (`faceFrac`) en de rijhoogte. Let op dat `archGap` een parameter is en geen
 meting: de kwaliteitspoort ziet niet of een band door de wielkast van de mesh
 steekt, dus render de wielkast van dichtbij voordat je een grotere band kiest.
+
+## Een lamp uit een gesneden dekglas
+
+Het dekglas van een referentielamp is bijna nooit een plat lapje: het loopt om
+de hoek van de auto heen. Bouw het binnenwerk daarom door het dekglas naar het
+zwaartepunt van zijn eigen VLAK te schalen, niet door het langs zijn normalen te
+verschuiven - dat laatste vouwt het vel door zichzelf. Kijk daarna of de snede
+een open lap of een gesloten peul heeft opgeleverd: een open lap heeft een rand
+(ribben die bij één driehoek horen, na lassen op positie) en kan een put met een
+wand krijgen; een gesloten peul heeft die rand niet en moet het van getint glas
+hebben, want een gesloten donkere binnenschil verbergt wat erin staat.
