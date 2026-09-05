@@ -706,33 +706,37 @@ raakt elke auto, dus de GT verschilt van de oude basislijn in lakglans -
 de vorm is pixel voor pixel dezelfde silhouet, alleen de spiegeling is
 scherper.
 
-### Een geweven U-grille voor de supercar (5 sep)
+### Een lamellengrille voor de supercar (5 sep)
 
-De referentie levert de grille van de supercar als één kaal, gebogen paneel:
-een donkere vlek in de neus zonder patroon.
+De referentie levert de grille van de supercar als een kaal, gebogen paneel:
+een donkere vlek in de neus zonder patroon. Er zijn twee patronen gebouwd; de
+opdrachtgever koos rechte horizontale lamellen boven de U's die er eerst in
+stonden, en dat is wat er nu staat.
 
-- `faceMap` legt een vlak in eigen coordinaten: langs de hoofdas van het
-  paneel en dwars daarop, met per cel van een grof raster de gemiddelde
-  POSITIE en NORMAAL van het vlak daar, en lege cellen bijgevuld vanuit hun
-  buren. Een patroon wordt in die coordinaten getekend en teruggezet op het
-  oppervlak, zodat het de welving volgt in plaats van er dwars doorheen te
-  gaan. Twee dingen die eerst misgingen en waarom:
-  - een celmasker over een gebogen, getrianguleerd paneel zit vol gaten en
-    liet de helft van de U's vallen. Het masker is nu een profiel: hoe hoog
-    en hoe laag het vlak reikt op elke stand langs de opening.
-  - de grille loopt om de neus heen, dus gelijke stappen in de rechte
-    coordinaat worden steeds kortere stappen over het oppervlak, en de U's
-    kwamen aan beide uiteinden geplet uit. De kolommen worden nu op booglengte
-    gezet, gemeten door het midden van de opening te belopen.
-- `grilleWeave` tekent daar rijen U's in: elke U is één pad - omlaag, rond,
-  omhoog - dat tot een vierkante staaf wordt uitgesleept die van het paneel
-  af staat. De rijen volgen de opening, dus waar de grille smaller wordt,
-  worden de U's mee kleiner in plaats van door de rand heen te lopen.
-- Het archetype vraagt erom met `grillePattern: 'u'`; de andere families
+- `grilleSlats` snijdt het paneel zelf. Een lamel is een horizontaal VLAK door
+  de mesh, en dat vlak snijdt de driehoeken van het paneel in een lijn: exact,
+  ononderbroken, en van voren recht hoe het paneel ook om de neus buigt. Waar
+  de opening ophoudt, houdt de lamel vanzelf op.
+- De dikte wordt recht omhoog gemeten, niet dwars op het pad in het vlak. Dat
+  was de eerste versie, en daar was elke lamel zo dik als de plaatselijke stand
+  van het paneel toestond: bij de boven- en onderrand, waar het paneel naar
+  horizontaal draait, kwam een staaf 4 mm terug in plaats van 11. Hoe ver de
+  lamel uit het paneel moet steken hangt van diezelfde stand af, anders zakt
+  een rechtopstaande staaf erin weg.
+- Het patroon wordt op de opgeslagen helft getekend en gespiegeld, dus de twee
+  zijden zijn identiek in plaats van bijna identiek.
+- Het archetype vraagt erom met `grillePattern: 'lines'`; de andere families
   hebben een eigen grille uit hun referentie en veranderen niet.
 
-Gemeten: supercar 315 390 driehoeken waarvan 7 696 in de grille, QC 21/21,
+Gemeten: 7 lamellen, elk 10,0 mm dik, om de 34 mm, spiegelfout links/rechts
+0,0000 mm; supercar 315 590 driehoeken waarvan 7 896 in de grille; QC 21/21,
 GT 0 pixels verschil, zaadlijst identiek.
+
+Wat de eerste poging leerde en nog geldt voor elk patroon op een gesneden
+paneel: teken het niet op een geinterpoleerde kaart van het paneel. Een grof
+raster weet niet precies waar de opening ophoudt, en elke stand die het
+verkeerd raadde brak de lijn - de lamellen kwamen als streepjes terug. Snijden
+in de mesh zelf geeft de lijn in een keer goed.
 
 ## 4. Nieuwe designregels die ik wil voorstellen
 

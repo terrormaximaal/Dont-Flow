@@ -125,12 +125,12 @@ lichtbalk komen uit de vorm van die groep.
 
 ## Een patroon over een gesneden paneel
 
-`faceMap` in `stage_meshLighting` zet een gesneden paneel om in coordinaten
-langs en dwars op zijn hoofdas, met de positie en de normaal van het vlak per
-rastercel. Wie een patroon over een referentie-onderdeel wil leggen - een
-grille, een ventilatierooster - tekent het in die coordinaten en laat de map
-het terugzetten. Twee dingen om te weten: het masker van de opening is een
-hoogteprofiel per kolom, niet een celmasker (een celmasker over een gebogen
-paneel zit vol gaten), en kolommen worden op booglengte gezet, want bij een
-paneel dat om de neus loopt zijn gelijke stappen in de rechte coordinaat
-ongelijke stappen over het oppervlak.
+Levert een referentie een grille of een rooster als een kaal paneel, dan komt
+het patroon van de studio zelf (`grilleSlats` in `stage_meshLighting`). Snijd
+daarvoor in de mesh: een horizontaal vlak door het paneel geeft de lijn van een
+lamel in een keer goed, exact en ononderbroken. Teken het patroon NIET op een
+geinterpoleerde kaart van het paneel - een grof raster weet niet waar de
+opening ophoudt en de lijnen komen als streepjes terug. Meet de dikte van een
+lamel recht omhoog en niet dwars op het pad in het vlak, anders wordt een lamel
+dunner waar het paneel naar horizontaal draait. Teken op de opgeslagen helft en
+spiegel, dan zijn beide zijden exact gelijk.
