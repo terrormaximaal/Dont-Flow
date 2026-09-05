@@ -565,6 +565,19 @@ geen wielen ziet, en het stuur moet bij elke auto links.
 - De GT verandert hiermee wél (zichtbaar door het glas): 0,7–1,7% van de
   pixels per view. De GT-basislijn is daarom opnieuw gezet op deze build.
 
+### Lichte studio-look, sedanstoelen naar voren (5 sep)
+
+- De voorstoelen van de sedan staan 8 cm verder naar voren (`seatSet`
+  0,290 naar 0,262 van de wielbasis achter de cowl).
+- De look van de studio zelf is moderner gemaakt, de auto's niet: licht
+  matglas over het studiogrijs in plaats van donkere platen, haarlijnen,
+  pilvormige knoppen, donkere letters, de groepskleuren dieper zodat ze op
+  wit leesbaar blijven, en dezelfde stijl voor de HUD, de lades
+  (onderdelen, kwaliteitscheck, aanwijzen) en de laadkaart. De maten van
+  de dock (padding, tussenruimte, knophoogte) zijn niet veranderd, dus de
+  rooktest die op de dock klikt landt nog op dezelfde plek: 21/21 na deuken
+  en na repareren, geen JS-fouten. De 3D-scène is ongewijzigd.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
