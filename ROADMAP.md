@@ -738,6 +738,27 @@ raster weet niet precies waar de opening ophoudt, en elke stand die het
 verkeerd raadde brak de lijn - de lamellen kwamen als streepjes terug. Snijden
 in de mesh zelf geeft de lijn in een keer goed.
 
+### Eenvoudige lampen voor de stadsauto en de sedan (5 sep)
+
+De reflector-met-lichtbalk die de supercar leesbaar maakte, was verkeerd voor
+de andere twee: dat binnenwerk verzint een grafiek die niets met de auto te
+maken heeft, en op de ronde sedanlamp kwam het als een schuine bothvorm uit.
+
+- `lampCore` maakt in plaats daarvan een lens in de eigen omtrek van de lamp.
+  De omtrek van het dekglas wordt naar zijn midden geschaald IN HET VLAK van
+  het lampvlak, dus de vorm blijft precies de vorm die de auto al heeft en
+  alleen de voetafdruk krimpt.
+- De hoogte is het punt waar het misgaat als je het naief doet. Wie de hoogte
+  laat staan en alleen de voetafdruk verkleint, laat de lens in het dekglas
+  zakken, want een bolling is hoger naar het midden toe - dezelfde val als de
+  allereerste poging met lampen. Het vlak wordt daarom eerst een stuk naar zijn
+  eigen hoogste punt geperst en daarna opgetild.
+- Welk binnenwerk een lamp krijgt, zegt het archetype (`lampStyle: 'bar'` voor
+  de supercar), want de tags op de stukken kunnen het niet zeggen: een kale lap
+  huid en een gevormd dekglas komen met hetzelfde label binnen.
+
+Gemeten: QC 21/21, GT 0 pixels verschil, zaadlijst identiek, geen JS-fouten.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.

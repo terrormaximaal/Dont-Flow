@@ -215,7 +215,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '5 sep 2026 \u00b7 supercar met lamellengrille';
+const VG_BUILD = '5 sep 2026 \u00b7 lamellengrille, eenvoudige lampen';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1319,7 +1319,7 @@ const ARCHETYPES = {
   supercar: {
     label: 'Aurelia R', doors: 2, layout: 'middenmotor V12 · achterwielaandrijving',
     engineBay: 'mid',
-    mesh: { lib: 'supercar', skin: true, lamps: true, grille: true, grillePattern: 'lines', mirrors: true, diffuser: true },
+    mesh: { lib: 'supercar', skin: true, lamps: true, lampStyle: 'bar', grille: true, grillePattern: 'lines', mirrors: true, diffuser: true },
     L: [4.580, 4.640],
     hRatio: [0.2660, 0.2690], wRatio: [0.4300, 0.4330],
     wbRatio: [0.6130, 0.6170], frontOhShare: [0.489, 0.499], trackRatio: [0.830, 0.860],
@@ -2775,6 +2775,9 @@ function makeMaterials(s) {
   // for parts taken from a reference mesh: a red lamp body, and a tyre
   // without the tread map (the mesh carries no texture coordinates here)
   M.tailRed = std({ color: 0x7a1014, emissive: 0xff2a1a, emissiveIntensity: 0.35, roughness: 0.30, side: THREE.DoubleSide });
+  // the lens of a rear lamp that came as a unit: brighter than the housing
+  // around it, so the lamp reads as glass in a bezel rather than as one blob
+  M.tailLens = std({ color: 0xd42418, emissive: 0xff3a20, emissiveIntensity: 0.55, roughness: 0.22, side: THREE.DoubleSide });
   M.amber = std({ color: 0x8a4a08, emissive: 0xff8a1a, emissiveIntensity: 0.30, roughness: 0.30, side: THREE.DoubleSide });
   M.all = Object.keys(M).filter((k) => M[k] && M[k].isMaterial).map((k) => M[k]);
   return M;
@@ -4634,6 +4637,47 @@ function stage_meshLighting(ctx) {
     g.computeVertexNormals(); g.computeBoundingBox(); g.computeBoundingSphere();
     return g;
   };
+  /* The lens of a lamp the reference already gives as a lamp unit - a cover in
+     a ring of its own, as the city car and the sedan have. Nothing is invented
+     here: the cover's own outline is scaled towards its centre IN THE PLANE OF
+     THE FACE, so the lens keeps the shape of the lamp exactly, and only its
+     footprint shrinks. The sliced inlay used on the supercar was wrong for
+     these: on a round lamp it came out as a diagonal bone, because slicing a
+     round shape along a principal axis has no principal axis to find.
+     Height: the face is pressed part of the way towards its own highest point
+     before it is lifted, which is what keeps it clear of the cover. Keeping the
+     height and shrinking the footprint would sink it, because a dome is higher
+     nearer its middle - the same trap the very first lamp innards fell into. */
+  const lampCore = (geo, k, flat, out, mat) => {
+    const pa = geo.attributes.position, na = geo.attributes.normal;
+    if (!na) return null;
+    geo.computeBoundingBox();
+    const c = geo.boundingBox.getCenter(new THREE.Vector3());
+    const n = new THREE.Vector3();
+    for (let i = 0; i < na.count; i++) n.set(n.x + na.getX(i), n.y + na.getY(i), n.z + na.getZ(i));
+    if (n.lengthSq() < 1e-9) return null;
+    n.normalize();
+    const t = new THREE.Vector3();
+    let hMax = -Infinity;
+    const h = new Float32Array(pa.count);
+    for (let i = 0; i < pa.count; i++) {
+      t.set(pa.getX(i) - c.x, pa.getY(i) - c.y, pa.getZ(i) - c.z);
+      h[i] = t.dot(n);
+      if (h[i] > hMax) hMax = h[i];
+    }
+    const g = geo.clone();
+    const gp = g.attributes.position;
+    for (let i = 0; i < pa.count; i++) {
+      t.set(pa.getX(i) - c.x, pa.getY(i) - c.y, pa.getZ(i) - c.z);
+      t.addScaledVector(n, -h[i]).multiplyScalar(k);            // the outline, smaller
+      t.addScaledVector(n, h[i] + (hMax - h[i]) * flat + out);  // and lifted clear
+      gp.setXYZ(i, c.x + t.x, c.y + t.y, c.z + t.z);
+    }
+    g.computeVertexNormals(); g.computeBoundingBox(); g.computeBoundingSphere();
+    const m = new THREE.Mesh(g, mat);
+    m.castShadow = false;
+    return m;
+  };
   const unit = (id, label, name, sd, host, kind) => {
     const rec = MESH_LIB[lib].parts[name];
     if (!rec) return null;                   // this reference has no such part
@@ -4642,16 +4686,28 @@ function stage_meshLighting(ctx) {
     /* Every lamp cut from a skin gets innards, including the ones that came
        with a chrome ring of their own: a ring around a clear cover over
        bodywork still read as a white blister on the city car and the sedan,
-       for the same reason it did on the supercar. The ring is kept. */
+       for the same reason it did on the supercar. The ring is kept.
+
+       WHICH innards depends on what the reference handed over, and the
+       archetype says which, because the tags on the pieces cannot: a lamp that
+       is a bare patch of skin and a lamp with a moulded cover arrive tagged the
+       same. A bare patch, as the supercar's is, has no shape of its own to work
+       from and gets a reflector with a lit bar in it. Everything else gets one
+       lens in the lamp's own outline and nothing more: the bar treatment
+       invented a graphic that had nothing to do with the car, and on the
+       sedan's round lamp it came out as a diagonal bone. */
     if (/^(headlight|taillight)$/.test(name)) {
       const head = name === 'headlight';
+      const madeUnit = d.mesh.lampStyle !== 'bar';
       subs = subs.map((q) => {
         if (q.mat !== 'lens' && q.mat !== 'tailred') return q;
-        // a bright blade over the ridge, and a slimmer one beside it
-        // a reflector across the whole face, and the lit element inside it
-        for (const [out, wf, uf, mat] of [[0.006, 0.72, 0.90, head ? M.lampDish : M.tailRed],
-                                          [0.013, 0.30, 0.80, head ? M.drl : M.drlRed]]) {
-          const m = lampInlay(q.geometry, out, wf, uf, mat);
+        const dress = madeUnit
+          ? [[0.78, 0.60, 0.002, head ? M.lampOn : M.tailLens]]
+          : [[0.006, 0.72, 0.90, head ? M.lampDish : M.tailRed],
+             [0.013, 0.30, 0.80, head ? M.drl : M.drlRed]];
+        for (const a of dress) {
+          const m = madeUnit ? lampCore(q.geometry, a[0], a[1], a[2], a[3])
+                             : lampInlay(q.geometry, a[0], a[1], a[2], a[3]);
           if (!m) continue;
           if (sd < 0) m.geometry = mirrorGeometryZ(m.geometry);
           m.castShadow = false; p.add(m, false);

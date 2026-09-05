@@ -134,3 +134,15 @@ opening ophoudt en de lijnen komen als streepjes terug. Meet de dikte van een
 lamel recht omhoog en niet dwars op het pad in het vlak, anders wordt een lamel
 dunner waar het paneel naar horizontaal draait. Teken op de opgeslagen helft en
 spiegel, dan zijn beide zijden exact gelijk.
+
+## Welk binnenwerk krijgt een lamp
+
+Twee soorten, en het archetype kiest (`lampStyle`), niet de tag op het stuk:
+een kale lap huid en een gevormd dekglas komen met hetzelfde label binnen.
+Levert de referentie de lamp als een kale lap huid, zoals bij de supercar, dan
+is er geen eigen vorm om mee te werken en bouwt `lampInlay` een reflector met
+een lichtbalk. Levert ze een echte lampunit, dan maakt `lampCore` er een lens
+in met de eigen omtrek van de lamp en verder niets: schaal de omtrek in het
+vlak van het lampvlak, en pers het vlak eerst naar zijn hoogste punt voordat je
+het optilt - anders zakt de lens in het dekglas, want een bolling is hoger naar
+het midden toe.
