@@ -642,6 +642,29 @@ vooraan, ook bij deze middenmotor (de motorruimte is aan de kap gebouwd);
 de deurgrepen en wissers ontbreken (niet in de mesh); het bestand is door
 deze mesh 1,2 MB zwaarder.
 
+### Middenmotor: de motorruimte volgt de lay-out (5 sep)
+
+Openstaand punt van de supercar: de motor stond vooraan, ook bij een
+middenmotor, omdat de motorruimte aan de motorkap was gebouwd.
+
+- Het archetype zegt nu waar de motor hoort (`engineBay: 'mid'`); alle
+  andere families staan op 'front' en veranderen niet.
+- `stage_engine` bouwt dezelfde aankleding om het blok heen, maal een
+  richting: bij een middenmotor staat het blok tussen de stoelen en de
+  achteras (station 0,56 tot 0,80 van de lengte, de achteras op 0,81), en
+  is de hele boel omgedraaid, zodat de poelies en de riemaandrijving naar
+  de staart wijzen en de plaat de ruimte tegen het cabineschot afsluit. Het
+  paneel erboven is de achterklep in plaats van de motorkap, en de
+  krimpregels rekenen tegen de achterste kreukelbalk.
+- Een middenmotor-tweezitter heeft geen achterbank meer: het schot staat
+  direct achter de voorstoelen met een korte richel, en de ruimte
+  daarachter is de motorruimte.
+
+Gemeten: motor van de supercar op station 0,557-0,798 (stoel 0,489,
+achteras 0,806), niets steekt door het paneel erboven; GT, sedan en
+stadsauto onveranderd, hun motor nog op 0,11-0,40; GT 0 pixels verschil;
+zaadlijst identiek; QC 21/21 op alle families behalve de bekende SUV-zaden.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.

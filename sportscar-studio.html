@@ -215,7 +215,7 @@
 // nothing on the page said otherwise. Bumped in the same commit as the change
 // it names - a date and a name rather than a commit hash, because the hash of
 // the commit that carries the stamp is not known until after it is written.
-const VG_BUILD = '5 sep 2026 \u00b7 supercar: de mesh langs haar eigen vouwen gesneden';
+const VG_BUILD = '5 sep 2026 \u00b7 supercar met echte middenmotor';
 /* Proof of life: this is the first script in the document, so if anything runs
    at all the card stops claiming otherwise. */
 (function () {
@@ -1305,6 +1305,7 @@ const ARCHETYPES = {
      where they set the wheels, the stance and the cabin. */
   supercar: {
     label: 'Aurelia R', doors: 2, layout: 'middenmotor V12 · achterwielaandrijving',
+    engineBay: 'mid',
     mesh: { lib: 'supercar', skin: true, lamps: true, grille: true, mirrors: true, diffuser: true },
     L: [4.580, 4.640],
     hRatio: [0.2660, 0.2690], wRatio: [0.4300, 0.4330],
@@ -1771,6 +1772,7 @@ function generateDNA(opts = {}) {
   d.splitterDepth = 0;                 // no front splitter on these cars
   d.pillarThick = 0.100;               // window frame bar: one section throughout
   d.sideVent = A.sideVent === undefined ? true : A.sideVent > 0;
+  d.engineBay = A.engineBay === 'mid' ? 'mid' : 'front';   // where the engine sits, and which way its bay faces
   d.ducktailBoost = DS.ducktailBoost;
   d.exhaust = DS.exhaust;
   d.paint = PAINTS.find((q) => q.name === opts.paint) || PAINTS.find((q) => q.name === 'Liquid silver');
@@ -5189,48 +5191,60 @@ function stage_engine(ctx) {
   /* ================= 4. ENGINE BAY ======================================== */
   const eng = mk('engine', 'Motorruimte', { kind: 'fixed', stiffness: 2.4, stage: 4 });
   const floorY = d.clearance + 0.06;
-  const ex = lerp(d.xCowl, d.xHoodF, 0.34);
+  /* Where the engine sits, and which way its bay faces. A front bay is dressed
+     forward from the block towards the nose and closed off at the firewall. A
+     mid-engined car gets the same assembly behind the cabin, turned round: the
+     pulleys and the belt drive face the tail, the plate closes it against the
+     cabin's rear bulkhead, and the panel over it is the rear cover, not the
+     bonnet. Everything below is written about the block, times a direction. */
+  const mid = d.engineBay === 'mid';
+  const dir = mid ? -1 : 1;
+  const ex = mid ? lerp(d.xCowl - d.seatSet - 0.30, d.xAxleR, 0.50) : lerp(d.xCowl, d.xHoodF, 0.34);
+  const X = (o) => ex + dir * o;                          // an offset along the bay, from the block
+  const lid = mid ? B.deckTopY(ex) : B.hoodY(ex);
   const railY = (v.adaptiveStructure && v.adaptiveStructure.yRail) || (d.clearance + 0.16);
-  const ey = clamp(railY + 0.10, floorY + 0.16, B.hoodY(ex) - 0.30);
+  const ey = clamp(railY + 0.10, floorY + 0.16, lid - 0.30);
   /* The bay is dressed for a long, tall bonnet. Under a short low one - a
      city car has 0.55 m between floor and bonnet where the GT has 0.75 - the
      plenum stood up through the panel. The whole bay scales down to the room
      it has, about the point where the block sits, so nothing moves on a car
      that has the room. */
-  const room = B.hoodY(ex) - floorY;
+  const room = lid - floorY;
   const ky = clamp((room - 0.05) / 0.70, 0.5, 1);
-  // ...and in length: the dressing reaches 0.52 m ahead of the block, which on
-  // a short nose put the pulleys out through the grille. Squeezed towards the
-  // firewall until it stays behind the crash beam.
-  const xFrontNeed = ex + 0.52 - d.xCowl, xFrontRoom = d.arch.xCrashBeamF - 0.10 - d.xCowl;
-  const kx = clamp(xFrontRoom / Math.max(0.05, xFrontNeed), 0.3, 1);
+  // ...and in length: the dressing reaches 0.52 m past the block, which on a
+  // short nose put the pulleys out through the grille. Squeezed towards the
+  // bay's own bulkhead until it stays inside the crash beam at that end.
+  const xAnchor = mid ? Math.min(d.xCowl - d.seatSet - 0.24, ex + 0.55) : d.xCowl;
+  const xNeed = Math.abs(X(0.52) - xAnchor);
+  const xRoom = Math.abs((mid ? d.arch.xCrashBeamR + 0.10 : d.arch.xCrashBeamF - 0.10) - xAnchor);
+  const kx = clamp(xRoom / Math.max(0.05, xNeed), 0.3, 1);
   if (ky < 1 || kx < 1) {
     eng.inner.scale.set(kx, ky, ky);
-    eng.inner.position.set(d.xCowl * (1 - kx), floorY * (1 - ky), 0);
+    eng.inner.position.set(xAnchor * (1 - kx), floorY * (1 - ky), 0);
   }
   eng.add(new THREE.Mesh(box(0.72, 0.36, 0.72, ex, ey, 0), M.engine), false);
-  eng.add(new THREE.Mesh(box(0.66, 0.05, 0.62, ex - 0.02, ey + 0.21, 0), M.accent), false);
-  eng.add(new THREE.Mesh(box(0.34, 0.10, 0.50, ex - 0.10, ey + 0.26, 0), M.matte), false);
+  eng.add(new THREE.Mesh(box(0.66, 0.05, 0.62, X(-0.02), ey + 0.21, 0), M.accent), false);
+  eng.add(new THREE.Mesh(box(0.34, 0.10, 0.50, X(-0.10), ey + 0.26, 0), M.matte), false);
   for (const zq of [0.28, -0.28]) {
     eng.add(new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.18, 14).rotateZ(Math.PI / 2), M.interiorDark), false)
-      .position.set(ex + 0.46, ey + 0.05, zq);
+      .position.set(X(0.46), ey + 0.05, zq);
   }
-  eng.add(new THREE.Mesh(box(0.08, 0.32, 0.58, ex + 0.48, ey, 0), M.brake), false);
-  for (const q of [-1, 1]) eng.add(new THREE.Mesh(box(0.28, 0.16, 0.16, ex - 0.10, ey + 0.05, q * 0.52), M.matte), false);
-  eng.add(new THREE.Mesh(box(0.34, 0.09, 0.30, ex - 0.04, ey + 0.30, 0), M.brushed), false);        // inlet plenum
+  eng.add(new THREE.Mesh(box(0.08, 0.32, 0.58, X(0.48), ey, 0), M.brake), false);
+  for (const q of [-1, 1]) eng.add(new THREE.Mesh(box(0.28, 0.16, 0.16, X(-0.10), ey + 0.05, q * 0.52), M.matte), false);
+  eng.add(new THREE.Mesh(box(0.34, 0.09, 0.30, X(-0.04), ey + 0.30, 0), M.brushed), false);        // inlet plenum
   for (const q of [-1, 1]) {
     eng.add(new THREE.Mesh(box(0.50, 0.06, 0.13, ex, ey + 0.235, q * 0.20), M.accent), false);      // cam cover
-    eng.add(new THREE.Mesh(box(0.20, 0.14, 0.17, ex - 0.30, ey + 0.20, q * 0.40), M.matte), false); // fluid bottle
-    eng.add(new THREE.Mesh(box(0.16, 0.10, 0.14, ex + 0.30, ey + 0.16, q * 0.42), M.interiorDark), false); // fuse box
-    eng.add(new THREE.Mesh(strut(new THREE.Vector3(ex + 0.12, ey + 0.24, q * 0.16),
-      new THREE.Vector3(ex + 0.44, ey + 0.08, q * 0.34), 0.055, 0.055), M.rubberTrim), false);
-    eng.add(new THREE.Mesh(strut(new THREE.Vector3(ex - 0.18, ey + 0.26, q * 0.10),
-      new THREE.Vector3(ex - 0.34, ey + 0.16, q * 0.34), 0.045, 0.045), M.rubberTrim), false);
+    eng.add(new THREE.Mesh(box(0.20, 0.14, 0.17, X(-0.30), ey + 0.20, q * 0.40), M.matte), false); // fluid bottle
+    eng.add(new THREE.Mesh(box(0.16, 0.10, 0.14, X(0.30), ey + 0.16, q * 0.42), M.interiorDark), false); // fuse box
+    eng.add(new THREE.Mesh(strut(new THREE.Vector3(X(0.12), ey + 0.24, q * 0.16),
+      new THREE.Vector3(X(0.44), ey + 0.08, q * 0.34), 0.055, 0.055), M.rubberTrim), false);
+    eng.add(new THREE.Mesh(strut(new THREE.Vector3(X(-0.18), ey + 0.26, q * 0.10),
+      new THREE.Vector3(X(-0.34), ey + 0.16, q * 0.34), 0.045, 0.045), M.rubberTrim), false);
     eng.add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.10, 12), M.brushed), false)
-      .position.set(ex - 0.02, ey + 0.36, q * 0.11);
+      .position.set(X(-0.02), ey + 0.36, q * 0.11);
   }
-  eng.add(new THREE.Mesh(box(0.30, 0.20, 0.24, ex - 0.42, ey + 0.14, 0), M.interiorDark), false);   // battery
-  eng.add(new THREE.Mesh(box(0.05, 0.26, 0.62, d.arch.xFirewall - 0.06, ey + 0.20, 0), M.stamped), false);
+  eng.add(new THREE.Mesh(box(0.30, 0.20, 0.24, X(-0.42), ey + 0.14, 0), M.interiorDark), false);   // battery
+  eng.add(new THREE.Mesh(box(0.05, 0.26, 0.62, mid ? xAnchor - 0.02 : d.arch.xFirewall - 0.06, ey + 0.20, 0), M.stamped), false);
   v.addPart(eng);
 
 }
@@ -5682,16 +5696,21 @@ function stage_interior(ctx) {
   for (const q of [-1, 1]) seat(seatX, q * B.hw(seatX) * 0.40, 0.22, backH, 1.0);
   // the rear bench: full width, two shaped places on a four-door, a cushion
   // and a backrest on a two-door, both up against the bulkhead
-  const rearX = lerp(d.xCowl, d.xDeck, 0.74);
+  /* A mid-engined two-seater has no rear seats: the space behind the cabin is
+     the engine bay. Its bulkhead stands right behind the front seats and
+     carries a short ledge where a saloon has a parcel shelf. */
+  const midEngine = d.engineBay === 'mid';
+  const rearX = midEngine ? seatX - 0.30 : lerp(d.xCowl, d.xDeck, 0.74);
   const rearHW = B.hw(rearX) * 0.84;
   // the parcel shelf sits at the rear window's base: the mesh's own if the
   // car has one, the parametric deck otherwise
-  let shelfX = d.xDeck - 0.02, shelfY = B.belt(d.xDeck) - 0.03;
-  if (d.mesh && d.mesh.skin && MESH_LIB[d.mesh.lib].skin['glass.rear']) {
+  let shelfX = midEngine ? rearX - 0.20 : d.xDeck - 0.02;
+  let shelfY = B.belt(midEngine ? rearX : d.xDeck) - 0.03;
+  if (!midEngine && d.mesh && d.mesh.skin && MESH_LIB[d.mesh.lib].skin['glass.rear']) {
     const base = meshExtreme(meshSkinGeometry(d.mesh.lib, 'glass.rear', [d.L, d.H, d.W / 2]), 0, -1, 0);
     shelfX = base.x + 0.01; shelfY = base.y - 0.025;
   }
-  const bulkX = rearX - 0.36;
+  const bulkX = rearX - (midEngine ? 0.12 : 0.36);
   // above the belt the cabin draws in (tumblehome), so whatever stands that
   // high - the backrest's top, the bulkhead, the shelf - is cut to the
   // greenhouse's width there rather than the body's
@@ -5702,7 +5721,7 @@ function stage_interior(ctx) {
     if (ym > y0) inte.add(new THREE.Mesh(box(w, ym - y0, hw0 * 2, x, (y0 + ym) / 2, 0), mat), false);
     if (y1 > ym) inte.add(new THREE.Mesh(box(w, y1 - ym, hw1 * 2, x, (ym + y1) / 2, 0), mat), false);
   };
-  inte.add(new THREE.Mesh(box(0.54, 0.11, rearHW * 2, rearX + 0.02, seatY - 0.02, 0), M.interior), false);   // cushion
+  if (!midEngine) inte.add(new THREE.Mesh(box(0.54, 0.11, rearHW * 2, rearX + 0.02, seatY - 0.02, 0), M.interior), false);   // cushion
   if (d.doors >= 4) {
     for (const q of [-1, 1]) {
       const z = q * rearHW * 0.46;
@@ -5713,7 +5732,7 @@ function stage_interior(ctx) {
       inte.add(new THREE.Mesh(box(0.10, 0.13, 0.22, rearX - 0.30, shelfY + 0.02, z), M.interior), false);   // head restraint
     }
   }
-  slab(rearX - 0.26, 0.12, seatY + 0.03, shelfY - 0.03, rearHW, topHW, M.interior);                 // the backrest, full width
+  if (!midEngine) slab(rearX - 0.26, 0.12, seatY + 0.03, shelfY - 0.03, rearHW, topHW, M.interior);   // the backrest, full width
   // the walls: floor, firewall, rear bulkhead, parcel shelf, rear side trims
   const midX = (d.xCowl + bulkX) / 2, cabHW = B.hw(midX) * 0.84;
   inte.add(new THREE.Mesh(box(d.xCowl - bulkX, 0.02, cabHW * 2, midX, floorY + 0.01, 0), M.interiorDark), false);
