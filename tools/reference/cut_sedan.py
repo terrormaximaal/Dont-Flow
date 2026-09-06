@@ -182,12 +182,26 @@ print('stijlen: A %.3f..%.3f  B %.3f..%.3f  C %.3f' % (aLine(0.66), aLine(0.96),
 DOOR_F, DOOR_B, DOOR_R = 0.275, 0.522, 0.692
 BELT, ROCKER, FLOOR = 0.655, 0.215, 0.185
 BODY = lambda c, r: r == 'body'
+# The rear door's trailing edge is not a straight line. On nearly every saloon
+# the door runs back OVER the rear wheel arch and its lower rear corner is cut
+# away along that arch, so the door can open with the wheel where it is. The
+# arch was measured off the wheel well itself: in (station, height) it is an
+# ellipse centred at station 0.778, height 0.174, with half-axes 0.098 of the
+# length and 0.315 of the height (the well runs 0.680-0.876 in station and
+# tops out at 0.488). Above the arch the edge is the C-pillar line, so the
+# door's shoulder lines up with the frame above it.
+ARCH_R_S, ARCH_R_Y, ARCH_R_A, ARCH_R_B, ARCH_GAP = 0.778, 0.174, 0.0985, 0.3151, 0.010
+def doorR_edge(y):
+    t = (y - ARCH_R_Y) / ARCH_R_B
+    if abs(t) >= 1: return C_LINE
+    return min(C_LINE, ARCH_R_S - ARCH_R_A * math.sqrt(1 - t * t) - ARCH_GAP)
+print('achterdeur achterrand: %s' % ' '.join('%.2f:%.3f' % (y / 100, doorR_edge(y / 100)) for y in range(22, 68, 8)))
 clip(lambda p: yh(p) - FLOOR, lambda c, r: BODY(c, r) and 0.04 < st(c) < 0.96)                  # underbody
 clip(lambda p: yh(p) - ROCKER, lambda c, r: BODY(c, r) and DOOR_F - 0.02 < st(c) < DOOR_R + 0.02)   # rocker
 clip(lambda p: yh(p) - BELT, lambda c, r: BODY(c, r) and DOOR_F - 0.03 < st(c) < 0.86)          # belt: door skins / frames and pillars
 clip(lambda p: st(p) - DOOR_F, lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT)                # door edges below the belt
 clip(lambda p: st(p) - DOOR_B, lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT)
-clip(lambda p: st(p) - DOOR_R, lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT)
+clip(lambda p: st(p) - doorR_edge(yh(p)), lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT and 0.60 < st(c) < 0.82)
 clip(lambda p: yh(p) - FRAME_TOP, lambda c, r: BODY(c, r) and 0.26 < st(c) < 0.80)              # the drip rail
 # The drip rail is a HEIGHT only in the middle of the cabin. At the front of the
 # roof, where it bends down to the windscreen header, the whole crown drops
@@ -250,9 +264,9 @@ for i, (tri, role, tag) in enumerate(zip(faces, ROLE, TAG)):
     if s > 0.86 and y < 0.455: lab[i] = 'bumper.rear'; continue
     if DOOR_F - 0.02 < s < DOOR_R + 0.02 and y < ROCKER: lab[i] = 'rocker.' + side; continue
     # a door is the flank, not what the shell folds inward behind it
-    if DOOR_F < s < DOOR_R and ROCKER < y < BELT and az < SKIN_HW: lab[i] = 'underbody'; continue
+    if DOOR_F < s < C_LINE and ROCKER < y < BELT and az < SKIN_HW: lab[i] = 'underbody'; continue
     if DOOR_F < s < DOOR_B and y < BELT: lab[i] = 'door.' + side; continue
-    if DOOR_B < s < DOOR_R and y < BELT: lab[i] = 'doorR.' + side; continue
+    if DOOR_B < s < doorR_edge(y) and y < BELT: lab[i] = 'doorR.' + side; continue
     if BELT < y < FRAME_TOP and az > RAIL_HW and aLine(y) < s < bLine(y): lab[i] = 'door.' + side; continue        # the frame
     if BELT < y < FRAME_TOP and az > RAIL_HW and bLine(y) < s < C_LINE: lab[i] = 'doorR.' + side; continue        # the frame, quarter light included
     if 0.045 < s < cowl(z) and az < 0.80 and y > 0.56: lab[i] = 'hood'; continue

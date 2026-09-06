@@ -179,3 +179,13 @@ een meterlang blad dak aan uit. Meet waar de druiprand ligt in BREEDTE (bij deze
 sedan: het dak is vlak tot 0,65 van de halve breedte en is bij 0,86 weggevallen,
 dus 0,66) en gebruik die als grens. Hetzelfde geldt onderaan: waar de plaat naar
 binnen vouwt tot een flens hoort die niet bij de deurhuid.
+
+## Een achterdeur loopt over de wielkast
+
+Snijd de achterdeur van een sedan niet af op een rechte verticale lijn voor de
+wielkast. Op vrijwel elke sedan loopt de deur naar achteren over de kast heen en
+is zijn onderste achterhoek langs die kast uitgesneden. Meet de kast aan de
+wielput (de driehoeken binnen de kast die naar het wiel kijken), beschrijf hem
+als ellips in (station, hoogte), en maak de achterrand van de deur die ellips
+plus een naad, afgetopt op de C-stijl zodat de schouder van de deur uitkomt op
+de raamlijst erboven.

@@ -877,6 +877,24 @@ zoals bij een sedan.
 Gemeten: QC 21/21 op alle families, sedan 40 zaden foutloos, geen JS-fouten,
 GT 0 pixels verschil, zaadlijst identiek.
 
+### De achterdeur langs de wielkast (5 sep)
+
+De achterdeur van de sedan eindigde in een kaarsrechte lijn op station 0,692,
+precies waar de achterwielkast begint. Zo doet bijna geen enkele sedan het: de
+deur loopt naar achteren OVER de wielkast heen en zijn onderste achterhoek is
+langs die kast uitgesneden, zodat hij open kan met het wiel waar het staat.
+
+De kast is aan de wielput zelf opgemeten: in (station, hoogte) is het een
+ellips met haar midden op station 0,778 en hoogte 0,174, met halve assen van
+0,098 van de lengte en 0,315 van de hoogte (de put loopt van 0,680 tot 0,876
+in station en reikt tot 0,488 in hoogte). De achterrand van de deur is nu die
+ellips plus een naad van 0,010, afgetopt op de C-stijl (0,732) zodat de
+schouder van de deur uitkomt op de raamlijst erboven. Gemeten loopt de rand van
+0,671 bij de dorpel via 0,693 op halve hoogte naar 0,732 vanaf 0,54 en hoger.
+
+Gemeten: QC 21/21 op alle families, sedan 40 zaden foutloos, geen JS-fouten,
+GT 0 pixels verschil, zaadlijst identiek.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
