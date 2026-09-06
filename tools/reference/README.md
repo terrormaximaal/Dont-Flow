@@ -168,3 +168,14 @@ een open lap of een gesloten peul heeft opgeleverd: een open lap heeft een rand
 (ribben die bij één driehoek horen, na lassen op positie) en kan een put met een
 wand krijgen; een gesloten peul heeft die rand niet en moet het van getint glas
 hebben, want een gesloten donkere binnenschil verbergt wat erin staat.
+
+## De druiprand is geen hoogte
+
+Bij het snijden van een cabine is de verleiding groot om de grens tussen dak en
+raamlijst als een hoogte te nemen. Dat klopt alleen midden op de auto: vooraan,
+waar het dak naar de voorruit buigt, zakt de hele dakkruin onder die lijn en
+pakken de raamlijstregels het dak mee - de achterdeur van de sedan kwam er met
+een meterlang blad dak aan uit. Meet waar de druiprand ligt in BREEDTE (bij deze
+sedan: het dak is vlak tot 0,65 van de halve breedte en is bij 0,86 weggevallen,
+dus 0,66) en gebruik die als grens. Hetzelfde geldt onderaan: waar de plaat naar
+binnen vouwt tot een flens hoort die niet bij de deurhuid.

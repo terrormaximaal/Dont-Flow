@@ -189,6 +189,18 @@ clip(lambda p: st(p) - DOOR_F, lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT)
 clip(lambda p: st(p) - DOOR_B, lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT)
 clip(lambda p: st(p) - DOOR_R, lambda c, r: BODY(c, r) and FLOOR < yh(c) < BELT)
 clip(lambda p: yh(p) - FRAME_TOP, lambda c, r: BODY(c, r) and 0.26 < st(c) < 0.80)              # the drip rail
+# The drip rail is a HEIGHT only in the middle of the cabin. At the front of the
+# roof, where it bends down to the windscreen header, the whole crown drops
+# below FRAME_TOP, and the frame rules then swallowed the roof: the rear door
+# came out with a metre-long blade of roof hanging off its window frame. Across
+# the cabin the rail sits at a steady 0.66 of the half width (measured: the roof
+# is flat out to 0.65 and has fallen away by 0.86), so that is the line.
+RAIL_HW = 0.66
+clip(lambda p: abs(zh(p)) - RAIL_HW, lambda c, r: BODY(c, r) and BELT < yh(c) < FRAME_TOP + 0.01 and 0.26 < st(c) < 0.80)
+# and the door skins keep to the flank: at the rear door's trailing edge the
+# shell turns in to a return flange that hung off the open door as a fin
+SKIN_HW = 0.86
+clip(lambda p: abs(zh(p)) - SKIN_HW, lambda c, r: BODY(c, r) and ROCKER < yh(c) < BELT and DOOR_F - 0.02 < st(c) < DOOR_R + 0.02)
 above = lambda c, r: BODY(c, r) and BELT < yh(c) < FRAME_TOP + 0.01
 clip(lambda p: st(p) - aLine(yh(p)), lambda c, r: above(c, r) and 0.25 < st(c) < 0.50)          # A-pillar / front door frame
 clip(lambda p: st(p) - bLine(yh(p)), lambda c, r: above(c, r) and 0.45 < st(c) < 0.60)          # front frame / rear frame at the B-pillar
@@ -237,10 +249,12 @@ for i, (tri, role, tag) in enumerate(zip(faces, ROLE, TAG)):
     if s < 0.10 and y < 0.455 or s < 0.045 and y < 0.56: lab[i] = 'bumper.front'; continue
     if s > 0.86 and y < 0.455: lab[i] = 'bumper.rear'; continue
     if DOOR_F - 0.02 < s < DOOR_R + 0.02 and y < ROCKER: lab[i] = 'rocker.' + side; continue
+    # a door is the flank, not what the shell folds inward behind it
+    if DOOR_F < s < DOOR_R and ROCKER < y < BELT and az < SKIN_HW: lab[i] = 'underbody'; continue
     if DOOR_F < s < DOOR_B and y < BELT: lab[i] = 'door.' + side; continue
     if DOOR_B < s < DOOR_R and y < BELT: lab[i] = 'doorR.' + side; continue
-    if BELT < y < FRAME_TOP and aLine(y) < s < bLine(y): lab[i] = 'door.' + side; continue        # the frame
-    if BELT < y < FRAME_TOP and bLine(y) < s < C_LINE: lab[i] = 'doorR.' + side; continue        # the frame, quarter light included
+    if BELT < y < FRAME_TOP and az > RAIL_HW and aLine(y) < s < bLine(y): lab[i] = 'door.' + side; continue        # the frame
+    if BELT < y < FRAME_TOP and az > RAIL_HW and bLine(y) < s < C_LINE: lab[i] = 'doorR.' + side; continue        # the frame, quarter light included
     if 0.045 < s < cowl(z) and az < 0.80 and y > 0.56: lab[i] = 'hood'; continue
     if s > 0.845 and y > 0.50 and az < LID_EDGE(s) and (y > 0.72 or s < 0.93): lab[i] = 'trunk'; continue   # the lid, to the shoulders
     if s > 0.92 and 0.455 < y < 0.74 and az < 0.42: lab[i] = 'trunk'; continue                                       # and down between them, plate and all

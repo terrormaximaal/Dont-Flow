@@ -844,6 +844,39 @@ ongemoeid; ook in de breedte opduwen liet de grille in de koplampen groeien.
 Gemeten: QC 21/21 op alle families, geen JS-fouten, GT 0 pixels verschil,
 zaadlijst identiek, sedan 40 zaden foutloos.
 
+### Rustiger lampen, en de sedandeuren opnieuw gesneden (5 sep)
+
+**De lampen waren te lomp.** Dezelfde opbouw - put, schotel, element, glas -
+maar met veel minder contrast: de put is ondieper (schotel op 0,62 in plaats
+van 0,40 van de lampmaat), het element vult nu 0,78 in plaats van 0,56 en
+gloeit op 0,20 in plaats van 0,55, de wand is grijs in plaats van bijna zwart
+en de schotel is een lichter metaal. Wat overblijft is een dunne donkere rand
+met een lens erin: een lamp die je ziet, geen lamp die schreeuwt.
+
+**De achterdeur van de sedan was verkeerd gesneden**, en de reden staat nu in
+`cut_sedan.py`. De druiprand tussen dak en raamlijst was als een HOOGTE
+gedefinieerd (`FRAME_TOP`), en dat klopt alleen midden op de auto: vooraan,
+waar het dak naar de voorruit buigt, zakt de hele dakkruin onder die lijn.
+De raamlijstregels pakten daar het dak mee, en de achterdeur kwam met een
+meterlang blad dak aan zijn raamlijst uit de auto. Over de hele cabine ligt de
+druiprand wel op een vaste breedte - het dak is vlak tot 0,65 van de halve
+breedte en is bij 0,86 weggevallen - dus de grens is nu `|z| > 0,66`. Onderaan
+speelde hetzelfde: aan de achterrand van de achterdeur vouwt de plaat naar
+binnen tot een flens, en die hing als een vin aan de open deur; de deurhuid
+houdt zich nu aan `|z| > 0,86` en wat daarbinnen valt gaat naar het onderstel.
+
+**Alle vier de deuren openen nu als deuren.** Het scharnier was op de
+binnenste z van het paneel gezet, en dat is bij een deur met een raamlijst de
+bovenkant van die lijst - een halve meter naar binnen. De deur draaide dus om
+een lijn binnen in de cabine en zwaaide met zijn voorrand naar buiten. Het
+scharnier staat nu waar het bij een auto staat: een verticale lijn aan de
+voorrand van de deur, 55 mm binnen de huid, gemeten aan de huid zelf ter
+hoogte van de gordellijn. De achterdeuren openen 41 graden, de voordeuren 50,
+zoals bij een sedan.
+
+Gemeten: QC 21/21 op alle families, sedan 40 zaden foutloos, geen JS-fouten,
+GT 0 pixels verschil, zaadlijst identiek.
+
 ## 4. Nieuwe designregels die ik wil voorstellen
 
 Alleen regels met een aanwijsbare visuele of technische reden. Nog niet gebouwd.
